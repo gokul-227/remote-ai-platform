@@ -1,0 +1,61 @@
+# ─── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+.next/
+dist/
+build/
+out/
+.turbo/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.eggs/
+*.egg-info/
+*.egg
+
+# ─── Environment ──────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+!.env.example
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+*.log
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+infra/docker/.env
+infra/keycloak/data/
+infra/monitoring/grafana/data/
+infra/monitoring/prometheus/data/
+
+# ─── MinIO local storage ──────────────────────────────────────────────────────
+infra/minio/data/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/settings.json
+*.sublime-project
+*.sublime-workspace
+
+# ─── Uploads / generated ──────────────────────────────────────────────────────
+apps/api/uploads/
+apps/api/tmp/
+apps/web/.vercel/
