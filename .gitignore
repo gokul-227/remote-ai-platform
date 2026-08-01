@@ -1,16 +1,28 @@
 # ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 .next/
+coverage/
+logs/
+uploads/
+tmp/
+temp/
+cache/
+*.cache
 dist/
 build/
 out/
 .turbo/
+.cache/
+.tmp/
+*.tmp
+*.pid
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 .venv/
+.venv_local/
 venv/
 env/
 .eggs/
@@ -33,12 +45,11 @@ htmlcov/
 .coverage
 coverage.xml
 *.log
+celerybeat-schedule
 
 # ─── Docker ───────────────────────────────────────────────────────────────────
 infra/docker/.env
 infra/keycloak/data/
-infra/monitoring/grafana/data/
-infra/monitoring/prometheus/data/
 
 # ─── MinIO local storage ──────────────────────────────────────────────────────
 infra/minio/data/
@@ -58,4 +69,6 @@ Thumbs.db
 # ─── Uploads / generated ──────────────────────────────────────────────────────
 apps/api/uploads/
 apps/api/tmp/
+scripts/demo_jobs.json
+scripts/seed_demo_jobs.py
 apps/web/.vercel/

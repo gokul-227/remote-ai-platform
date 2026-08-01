@@ -10,9 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import JobPostResponse
-from app.domains.jobs.schemas import JobSearchQuery
 from app.domains.engineers.repository import EngineerRepository
-from app.domains.engineers.schemas import EngineerProfileResponse, EngineerSearchQuery
+from app.domains.engineers.schemas import EngineerProfileResponse
 
 router = APIRouter(prefix="/search", tags=["Global Search"])
 

@@ -1,0 +1,11 @@
+Taylor Morgan — Senior Full Stack Engineer
+
+Eight years building remote SaaS products with React, Next.js, Python, FastAPI, PostgreSQL, and AWS.
+Led a team that delivered multi-tenant billing and analytics platforms. Designed REST APIs,
+managed PostgreSQL migrations, and operated production services on AWS ECS and RDS.
+
+Experience:
+- Senior Full Stack Engineer, Northstar Systems, 2020–Present
+- Software Engineer, Atlas Cloud, 2017–2020
+
+Portfolio: https://github.com/taylor-morgan

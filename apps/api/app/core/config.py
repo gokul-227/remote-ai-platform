@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # ── Application ────────────────────────────────────────────────────────────
     APP_ENV: str = "development"
-    APP_NAME: str = "WorkMesh AI"
+    APP_NAME: str = "Remote AI Platform"
     APP_VERSION: str = "0.1.0"
     APP_URL: str = "http://localhost:3000"
     API_URL: str = "http://localhost:8000"
@@ -41,7 +41,7 @@ class Settings(BaseSettings):
         return v
 
     # ── Database ───────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://workmesh:workmesh_dev_password@localhost:5432/workmesh"
+    DATABASE_URL: str = "postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost:5432/remote_ai_platform"
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
     DATABASE_POOL_TIMEOUT: int = 30
@@ -54,16 +54,19 @@ class Settings(BaseSettings):
 
     # ── MinIO ─────────────────────────────────────────────────────────────────
     MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_PUBLIC_ENDPOINT: str = "http://localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin_dev_password"
-    MINIO_BUCKET_RESUMES: str = "workmesh-resumes"
-    MINIO_BUCKET_ASSETS: str = "workmesh-assets"
+    MINIO_BUCKET_RESUMES: str = "remote-ai-platform-resumes"
+    MINIO_BUCKET_ASSETS: str = "remote-ai-platform-assets"
     MINIO_SECURE: bool = False
 
     # ── Keycloak ──────────────────────────────────────────────────────────────
     KEYCLOAK_URL: str = "http://localhost:8080"
-    KEYCLOAK_REALM: str = "workmesh"
-    KEYCLOAK_CLIENT_ID: str = "workmesh-api"
+    KEYCLOAK_PUBLIC_URL: str = "http://localhost:8080"
+    KEYCLOAK_REALM: str = "remote-ai-platform"
+    KEYCLOAK_CLIENT_ID: str = "remote-ai-platform-api"
+    KEYCLOAK_WEB_CLIENT_ID: str = "remote-ai-platform-web"
     KEYCLOAK_CLIENT_SECRET: str = "change-me-in-production"
 
     # ── JWT (Internal) ────────────────────────────────────────────────────────
@@ -78,7 +81,11 @@ class Settings(BaseSettings):
     OLLAMA_MODEL_CODER: str = "qwen2.5-coder"
     OLLAMA_MODEL_REASONING: str = "deepseek-coder"
 
-    AI_PROVIDER: str = "ollama/qwen2.5"
+    AI_PROVIDER: str = "ollama"
+    AI_MODEL: str = "qwen2.5"
+    AI_API_KEY: Optional[str] = None
+    LITELLM_BASE_URL: Optional[str] = None
+    AI_FALLBACK_PROVIDERS: str = "ollama/qwen2.5"
     AI_MAX_RETRIES: int = 3
     AI_TIMEOUT_SECONDS: int = 60
 
@@ -91,7 +98,7 @@ class Settings(BaseSettings):
     ARBEITNOW_API_URL: str = "https://www.arbeitnow.com/api/job-board-api"
     REMOTIVE_API_URL: str = "https://remotive.com/api/remote-jobs"
     USAJOBS_API_URL: str = "https://data.usajobs.gov/api/search"
-    USAJOBS_USER_AGENT: str = "WorkMeshAI/0.1 (admin@workmesh.ai)"
+    USAJOBS_USER_AGENT: str = "RemoteAIPlatform/0.1 (admin@remoteaiplatform.ai)"
     USAJOBS_AUTH_KEY: Optional[str] = None
     THEMUSE_API_URL: str = "https://www.themuse.com/api/public/jobs"
 

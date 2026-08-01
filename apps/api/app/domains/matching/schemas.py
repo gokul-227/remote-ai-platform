@@ -21,6 +21,10 @@ class JobMatchResponse(BaseModel):
     skill_score: float
     experience_score: float
     role_score: float
+    timezone_score: float
+    availability_score: float
+    compensation_score: float
+    remote_score: float
     reasoning: str
     matching_skills: List[str]
     missing_skills: List[str]

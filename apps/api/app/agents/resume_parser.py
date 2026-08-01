@@ -2,8 +2,8 @@
 AI Resume Parser Agent.
 """
 
-from typing import Dict, Any, List
-from app.agents.llm_client import LLMClient
+from typing import Dict, Any, List, Optional
+from app.services.ai import AIService
 from app.core.logging import get_logger
 
 logger = get_logger("agents.resume_parser")
@@ -53,13 +53,13 @@ Return ONLY valid JSON without markdown wrapping.
 
 
 class ResumeParserAgent:
-    def __init__(self, model_name: str = "ollama/qwen2.5-coder"):
-        self.client = LLMClient(model_override=model_name)
+    def __init__(self, model_name: Optional[str] = None):
+        self.ai = AIService(model=model_name)
 
     async def parse_resume_text(self, resume_text: str) -> Dict[str, Any]:
         """Parse raw resume text into structured profile dictionary."""
         prompt = f"Extract structured profile data from the following resume text:\n\n{resume_text[:4000]}"
-        result = await self.client.complete_structured_json(prompt, system_prompt=SYSTEM_PROMPT)
+        result = (await self.ai.analyze(prompt, system_prompt=SYSTEM_PROMPT)).data
         
         # Ensure default keys exist
         return {

@@ -31,7 +31,7 @@ async def test_matching_score_calculation(client: AsyncClient):
             title="Senior Python Backend Engineer",
             slug="python-backend-eng",
             description="Looking for Python FastAPI expert",
-            company_name="WorkMesh Tech",
+            company_name="Remote AI Platform Test Co",
             is_remote=True,
             job_type="full-time",
             experience_level="senior",

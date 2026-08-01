@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domains.auth.dependencies import get_current_user
+from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.repository import CompanyRepository
 from app.domains.companies.schemas import (
@@ -44,7 +44,7 @@ async def get_my_company(
 @router.post("/me", response_model=CompanyProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_my_company(
     data: CompanyProfileCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     service: CompanyService = Depends(get_company_service),
 ) -> CompanyProfileResponse:
     """Create or update company profile for current user."""
@@ -55,7 +55,7 @@ async def create_my_company(
 @router.put("/me", response_model=CompanyProfileResponse)
 async def update_my_company(
     data: CompanyProfileUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     service: CompanyService = Depends(get_company_service),
 ) -> CompanyProfileResponse:
     """Update fields for current company profile."""

@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
 
-from sqlalchemy import String, Boolean, DateTime, func, Text, Integer, ForeignKey, JSON
+from sqlalchemy import String, Boolean, DateTime, Float, func, Text, Integer, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -41,6 +41,11 @@ class EngineerProfile(Base):
     languages: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
     years_of_experience: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     primary_role: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    profile_image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    certifications: Mapped[List[Dict[str, Any]]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    previous_companies: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    employment_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    available_hours: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     hourly_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     desired_salary_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     availability: Mapped[Optional[str]] = mapped_column(String(50), default="Immediate", nullable=True)
@@ -59,6 +64,8 @@ class EngineerProfile(Base):
     resume_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     parsed_resume_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=True)
     ai_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    profile_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    missing_skills: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
     matching_keywords: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
 
     # Profile visibility

@@ -19,7 +19,7 @@ class RemoteOKAggregator(BaseAggregator):
         jobs: List[JobPostCreate] = []
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
-                headers = {"User-Agent": "WorkMeshAI/0.1 (admin@workmesh.ai)"}
+                headers = {"User-Agent": "RemoteAIPlatform/0.1 (admin@remoteaiplatform.ai)"}
                 response = await client.get(settings.REMOTEOK_API_URL, headers=headers)
                 if response.status_code != 200:
                     logger.warning(f"RemoteOK API returned status {response.status_code}")

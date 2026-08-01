@@ -1,24 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Search,
   MapPin,
   DollarSign,
-  Filter,
-  ExternalLink,
   Briefcase,
   RefreshCw,
-  Building2,
-  Clock,
+  Bookmark,
   ChevronLeft,
   ChevronRight,
-  SlidersHorizontal,
-  X,
 } from "lucide-react";
-import api from "@/lib/api";
+import { Sidebar } from "@/components/Sidebar";
+import { RightSidebar } from "@/components/RightSidebar";
+import { useJobs } from "@/hooks/useJobs";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
 
 interface JobPost {
   id: string;
@@ -39,396 +37,293 @@ interface JobPost {
 }
 
 const SKILLS_OPTIONS = [
-  "React", "TypeScript", "Python", "Node.js", "Go", "Rust", "Java",
-  "AWS", "Kubernetes", "Docker", "PostgreSQL", "GraphQL",
-  "Machine Learning", "LLM", "Data Engineering", "DevOps", "Terraform",
+  "React", "TypeScript", "Python", "Node.js", "Go", "Rust",
+  "AWS", "Kubernetes", "Docker", "PostgreSQL", "FastAPI", "GraphQL",
 ];
 
-const EXPERIENCE_OPTIONS = [
-  { value: "", label: "Any level" },
-  { value: "junior", label: "Junior (0–2 yrs)" },
-  { value: "mid", label: "Mid (2–5 yrs)" },
-  { value: "senior", label: "Senior (5–8 yrs)" },
-  { value: "lead", label: "Lead / Staff (8+ yrs)" },
-];
-
-const JOB_TYPE_OPTIONS = [
-  { value: "", label: "All types" },
-  { value: "full-time", label: "Full-time" },
-  { value: "contract", label: "Contract" },
-  { value: "part-time", label: "Part-time" },
-];
-
-function SkeletonCard() {
+function JobSkeleton() {
   return (
-    <div className="card p-5 space-y-3 animate-fade-in">
-      <div className="flex items-start gap-3">
-        <div className="skeleton h-10 w-10 rounded-lg flex-shrink-0" />
+    <div className="card-enterprise p-4 space-y-3">
+      <div className="flex gap-3">
+        <div className="skeleton-box h-12 w-12 rounded-lg flex-shrink-0" />
         <div className="flex-1 space-y-2">
-          <div className="skeleton h-4 w-3/4 rounded" />
-          <div className="skeleton h-3 w-1/2 rounded" />
+          <div className="skeleton-box h-4 w-3/4" />
+          <div className="skeleton-box h-3 w-1/2" />
+          <div className="skeleton-box h-3 w-1/3" />
         </div>
       </div>
-      <div className="flex gap-2">
-        <div className="skeleton h-5 w-16 rounded-md" />
-        <div className="skeleton h-5 w-20 rounded-md" />
-      </div>
-      <div className="flex gap-1.5">
-        {[1, 2, 3].map((i) => <div key={i} className="skeleton h-5 w-14 rounded" />)}
-      </div>
-      <div className="skeleton h-8 w-full rounded-lg" />
-    </div>
-  );
-}
-
-function EmptyState({ query, onClear }: { query: string; onClear: () => void }) {
-  return (
-    <div className="col-span-full text-center py-20 space-y-4">
-      <div className="h-16 w-16 rounded-2xl bg-slate-800/50 border border-white/5 flex items-center justify-center mx-auto">
-        <Briefcase className="h-8 w-8 text-slate-600" />
-      </div>
-      <h3 className="text-lg font-semibold text-slate-200">No jobs found</h3>
-      <p className="text-sm text-slate-500 max-w-sm mx-auto">
-        {query
-          ? `No results for "${query}". Try different keywords or clear your filters.`
-          : "No jobs match your current filters. Try adjusting your search."}
-      </p>
-      <button onClick={onClear} className="btn-secondary text-sm inline-flex items-center gap-2 mx-auto">
-        <X className="h-3.5 w-3.5" /> Clear filters
-      </button>
-    </div>
-  );
-}
-
-function JobCard({ job }: { job: JobPost }) {
-  const matchScore = Math.floor(55 + Math.random() * 40); // TODO: replace with real AI score
-  const scoreClass =
-    matchScore >= 85 ? "match-score-high" :
-    matchScore >= 65 ? "match-score-medium" :
-    "match-score-low";
-
-  const postedDate = new Date(job.posted_at);
-  const daysAgo = Math.floor((Date.now() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
-  const timeLabel = daysAgo === 0 ? "Today" : daysAgo === 1 ? "Yesterday" : `${daysAgo}d ago`;
-
-  return (
-    <div className="card card-interactive p-5 space-y-4 group animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 border border-white/10 flex items-center justify-center flex-shrink-0">
-          <Building2 className="h-5 w-5 text-slate-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white group-hover:text-cyan-300 transition-colors text-sm leading-snug line-clamp-2">
-            {job.title}
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5 font-medium">{job.company_name}</p>
-        </div>
-        <div className={`match-score text-[10px] flex-shrink-0 ${scoreClass}`}>
-          {matchScore}%
-        </div>
-      </div>
-
-      {/* Meta */}
-      <div className="flex flex-wrap gap-2 text-xs">
-        <span className="flex items-center gap-1 text-slate-500">
-          <MapPin className="h-3 w-3 text-slate-600" />
-          {job.location || "Remote"}
-        </span>
-        {job.salary_min && (
-          <span className="flex items-center gap-1 text-emerald-400 font-medium">
-            <DollarSign className="h-3 w-3" />
-            ${(job.salary_min / 1000).toFixed(0)}k
-            {job.salary_max ? `–$${(job.salary_max / 1000).toFixed(0)}k` : "+"}
-          </span>
-        )}
-        <span className="flex items-center gap-1 text-slate-500">
-          <Clock className="h-3 w-3 text-slate-600" />
-          {timeLabel}
-        </span>
-      </div>
-
-      {/* Badges */}
-      <div className="flex flex-wrap gap-1.5">
-        <span className="badge badge-neutral">{job.job_type}</span>
-        {job.experience_level && (
-          <span className="badge badge-secondary">{job.experience_level}</span>
-        )}
-        <span className="badge badge-primary">{job.source}</span>
-      </div>
-
-      {/* Skills */}
-      {job.skills?.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {job.skills.slice(0, 5).map((skill) => (
-            <span key={skill} className="tag">{skill}</span>
-          ))}
-          {job.skills.length > 5 && (
-            <span className="tag text-slate-600">+{job.skills.length - 5}</span>
-          )}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="pt-3 border-t border-white/5 flex items-center justify-between gap-2">
-        <Link
-          href={`/jobs/${job.id}`}
-          className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
-        >
-          View details →
-        </Link>
-        <div className="flex items-center gap-1">
-          {job.external_url && (
-            <a
-              href={job.external_url}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-ghost p-1.5"
-              title="Open original listing"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </a>
-          )}
-        </div>
+      <div className="flex gap-2 pt-1 border-t border-slate-100">
+        <div className="skeleton-box h-5 w-16" />
+        <div className="skeleton-box h-5 w-20" />
+        <div className="skeleton-box h-5 w-14" />
       </div>
     </div>
   );
 }
 
-export default function JobsPage() {
+function JobsContent() {
   const searchParams = useSearchParams();
-  const [jobs, setJobs] = useState<JobPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
   const [jobType, setJobType] = useState("");
   const [experience, setExperience] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
-  const limit = 12;
 
-  const fetchJobs = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params: Record<string, unknown> = { limit, skip: page * limit };
-      if (searchQuery) params.query = searchQuery;
-      if (jobType) params.job_type = jobType;
-      if (experience) params.experience_level = experience;
+  const limit = 10;
 
-      const res = await api.get("/jobs", { params });
-      const data: JobPost[] = Array.isArray(res.data) ? res.data : (res.data.items ?? []);
-      setJobs(data);
-      setTotal(res.data.total ?? data.length);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load jobs";
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery, jobType, experience, page]);
+  const jobsQuery = useJobs({ limit, skip: page * limit, query: searchQuery || undefined, job_type: jobType || undefined, experience_level: experience || undefined, skills: selectedSkills.length ? selectedSkills : undefined });
+  const savedJobs = useSavedJobs(true);
+  const jobs: JobPost[] = jobsQuery.data || [];
+  const loading = jobsQuery.isLoading;
+  const error = jobsQuery.error ? "Unable to load jobs. Please retry." : null;
 
-  useEffect(() => {
-    fetchJobs();
-  }, [jobType, experience, page]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(0);
-    fetchJobs();
-  };
-
-  const handleManualSync = async () => {
-    setSyncing(true);
-    try {
-      await api.post("/jobs/sync", null, { params: { limit_per_source: 20 } });
-      await fetchJobs();
-    } catch (e) {
-      console.error("Sync failed", e);
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setJobType("");
-    setExperience("");
-    setSelectedSkills([]);
-    setPage(0);
-  };
-
-  const totalPages = Math.ceil(total / limit);
+  const savedJobIds = new Set((savedJobs.data || []).map((job: JobPost) => job.id));
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Remote Engineering Jobs</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {total > 0 ? `${total.toLocaleString()} jobs aggregated from public APIs` : "Searching live job feeds..."}
-          </p>
-        </div>
-        <button
-          onClick={handleManualSync}
-          disabled={syncing}
-          className="btn-secondary text-sm inline-flex items-center gap-2 flex-shrink-0"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Syncing..." : "Sync Sources"}
-        </button>
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      {/* Left Sidebar */}
+      <div className="lg:col-span-3 space-y-4">
+        <Sidebar />
 
-      {/* ── Search + Filters Bar ── */}
-      <div className="card p-4 mb-6 space-y-4">
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search title, skill, keyword (e.g. React, Python, DevOps)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field pl-9 text-sm"
-            />
+        {/* Filter Panel */}
+        <div className="card-enterprise p-4 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="font-semibold text-slate-900 text-xs">Filter Jobs</h3>
+            <button
+              onClick={() => { setSearchQuery(""); setJobType(""); setExperience(""); setSelectedSkills([]); setPage(0); }}
+              className="text-xs text-[#0A66C2] hover:underline"
+            >
+              Reset
+            </button>
           </div>
-          <button type="submit" className="btn-primary text-sm px-5 flex-shrink-0">
-            Search
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`btn-secondary text-sm px-3 flex-shrink-0 ${showFilters ? "border-cyan-500/40 text-cyan-300" : ""}`}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </button>
-        </form>
 
-        {/* Filter dropdowns */}
-        {showFilters && (
-          <div className="pt-3 border-t border-white/5 flex flex-wrap gap-3 items-end animate-fade-in">
-            <div className="space-y-1">
-              <label className="text-xs text-slate-500 font-medium">Job Type</label>
+          <div className="space-y-3 text-xs">
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1">Job Type</label>
               <select
                 value={jobType}
                 onChange={(e) => { setJobType(e.target.value); setPage(0); }}
-                className="input-field text-sm py-1.5 pr-8 min-w-[130px]"
+                className="input-enterprise py-1.5 text-xs"
               >
-                {JOB_TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="">All Types</option>
+                <option value="full-time">Full-time</option>
+                <option value="contract">Contract</option>
+                <option value="part-time">Part-time</option>
               </select>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs text-slate-500 font-medium">Experience</label>
+
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1">Experience Level</label>
               <select
                 value={experience}
                 onChange={(e) => { setExperience(e.target.value); setPage(0); }}
-                className="input-field text-sm py-1.5 pr-8 min-w-[150px]"
+                className="input-enterprise py-1.5 text-xs"
               >
-                {EXPERIENCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="">Any Level</option>
+                <option value="junior">Junior (0–2 yrs)</option>
+                <option value="mid">Mid (2–5 yrs)</option>
+                <option value="senior">Senior (5–8 yrs)</option>
+                <option value="lead">Lead / Staff (8+ yrs)</option>
               </select>
             </div>
-            <div className="flex-1 min-w-[200px] space-y-1">
-              <label className="text-xs text-slate-500 font-medium">Skills</label>
-              <div className="flex flex-wrap gap-1.5">
-                {SKILLS_OPTIONS.slice(0, 10).map((skill) => (
+
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1.5">Skills</label>
+              <div className="flex flex-wrap gap-1">
+                {SKILLS_OPTIONS.map((skill) => (
                   <button
                     key={skill}
-                    type="button"
                     onClick={() => setSelectedSkills((prev) =>
                       prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
                     )}
-                    className={`tag text-xs cursor-pointer ${selectedSkills.includes(skill) ? "tag-primary" : ""}`}
+                    className={`badge-ent cursor-pointer transition-colors ${
+                      selectedSkills.includes(skill)
+                        ? "badge-ent-brand"
+                        : "badge-ent-neutral hover:bg-slate-200"
+                    }`}
                   >
                     {skill}
                   </button>
                 ))}
               </div>
             </div>
-            <button onClick={clearFilters} className="btn-ghost text-xs text-slate-500 self-end mb-0.5">
-              <X className="h-3.5 w-3.5" /> Clear
-            </button>
           </div>
-        )}
-
-        {/* Active filter chips */}
-        {(searchQuery || jobType || experience || selectedSkills.length > 0) && (
-          <div className="flex flex-wrap gap-2 items-center pt-1">
-            <span className="text-xs text-slate-600">Active filters:</span>
-            {searchQuery && (
-              <span className="badge badge-primary gap-1">
-                "{searchQuery}"
-                <button onClick={() => setSearchQuery("")} className="ml-0.5 opacity-60 hover:opacity-100"><X className="h-3 w-3" /></button>
-              </span>
-            )}
-            {jobType && (
-              <span className="badge badge-secondary gap-1">
-                {jobType}
-                <button onClick={() => setJobType("")}><X className="h-3 w-3" /></button>
-              </span>
-            )}
-            {experience && (
-              <span className="badge badge-neutral gap-1">
-                {experience}
-                <button onClick={() => setExperience("")}><X className="h-3 w-3" /></button>
-              </span>
-            )}
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* ── Main Layout ── */}
-      <div className="space-y-4">
-        {/* Error state */}
-        {error && (
-          <div className="card border-red-500/20 p-4 flex items-center gap-3 animate-fade-in">
-            <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
-              <X className="h-4 w-4 text-red-400" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-red-300">Failed to load jobs</p>
-              <p className="text-xs text-slate-500">{error}. Try refreshing or syncing sources.</p>
-            </div>
-            <button onClick={fetchJobs} className="btn-secondary ml-auto text-xs">Retry</button>
+      {/* Center Feed */}
+      <div className="lg:col-span-6 space-y-4">
+        {/* Search Header */}
+        <div className="card-enterprise p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-[#0A66C2]" />
+              Remote Software Engineering Jobs
+            </h1>
+            <button
+              onClick={() => jobsQuery.refetch()}
+              disabled={jobsQuery.isFetching}
+              className="btn-secondary-brand py-1 px-3 text-xs"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${jobsQuery.isFetching ? "animate-spin" : ""}`} />
+              {jobsQuery.isFetching ? "Refreshing..." : "Refresh jobs"}
+            </button>
           </div>
-        )}
 
-        {/* Job Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {loading
-            ? Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)
-            : jobs.length === 0
-            ? <EmptyState query={searchQuery} onClear={clearFilters} />
-            : jobs.map((job) => <JobCard key={job.id} job={job} />)
-          }
+          <form onSubmit={(e) => { e.preventDefault(); setPage(0); }} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Job title, keywords, or company..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input-enterprise pl-9 py-2 text-sm"
+              />
+            </div>
+            <button type="submit" className="btn-primary-brand py-2 px-5 text-sm">
+              Search
+            </button>
+          </form>
         </div>
 
-        {/* Pagination */}
-        {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 pt-6">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="btn-secondary py-2 px-3 disabled:opacity-30"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-sm text-slate-400">
-              Page <strong className="text-white">{page + 1}</strong> of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="btn-secondary py-2 px-3 disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+        {/* Error Notice */}
+        {error && (
+          <div className="card-enterprise p-4 border-amber-300 bg-amber-50 text-amber-900 text-xs flex items-center justify-between">
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Job List */}
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => <JobSkeleton key={i} />)}
+          </div>
+        ) : jobs.length === 0 ? (
+          <div className="card-enterprise p-10 text-center space-y-3">
+            <Briefcase className="h-10 w-10 text-slate-300 mx-auto" />
+            <h3 className="font-bold text-slate-800 text-base">No positions found</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              There are no job listings matching your filters.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {jobs.map((job) => {
+              const isSaved = savedJobIds.has(job.id);
+
+              return (
+                <div key={job.id} className="card-enterprise p-4 space-y-3 hover:border-slate-300 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-12 w-12 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 flex-shrink-0 text-sm">
+                        {job.company_name?.charAt(0).toUpperCase() || "C"}
+                      </div>
+                      <div>
+                        <Link
+                          href={`/jobs/${job.id}`}
+                          className="font-semibold text-slate-900 text-sm hover:text-[#0A66C2] hover:underline"
+                        >
+                          {job.title}
+                        </Link>
+                        <p className="text-xs text-slate-600 font-medium mt-0.5">{job.company_name}</p>
+                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-slate-400" />
+                            {job.location || "Remote"}
+                          </span>
+                          {job.salary_min && (
+                            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                              <DollarSign className="h-3 w-3 text-emerald-600" />
+                              ${(job.salary_min / 1000).toFixed(0)}k–${((job.salary_max || job.salary_min + 30000) / 1000).toFixed(0)}k
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                    onClick={() => isSaved ? savedJobs.remove.mutate(job.id) : savedJobs.save.mutate(job.id)}
+                        className={`p-1.5 rounded-full hover:bg-slate-100 ${isSaved ? "text-[#0A66C2]" : "text-slate-400"}`}
+                        title={isSaved ? "Saved" : "Save job"}
+                      >
+                        <Bookmark className={`h-4 w-4 ${isSaved ? "fill-[#0A66C2]" : ""}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {job.skills && job.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
+                      {job.skills.slice(0, 5).map((skill) => (
+                        <span key={skill} className="badge-ent badge-ent-neutral">{skill}</span>
+                      ))}
+                      <span className="badge-ent badge-ent-brand capitalize">{job.job_type}</span>
+                      {job.is_remote && <span className="badge-ent badge-ent-success">Remote</span>}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <Link
+                      href={`/jobs/${job.id}`}
+                      className="font-semibold text-[#0A66C2] hover:underline"
+                    >
+                      View Details & Apply →
+                    </Link>
+                    <span className="text-slate-400 font-mono text-[10px]">{job.source}</span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between pt-2">
+              <button
+                disabled={page === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                className="btn-secondary-brand text-xs py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Previous
+              </button>
+              <span className="text-xs text-slate-500">Page {page + 1}</span>
+              <button
+                disabled={jobs.length < limit}
+                onClick={() => setPage((p) => p + 1)}
+                className="btn-secondary-brand text-xs py-1.5 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Right Sidebar */}
+      <div className="lg:col-span-3">
+        <RightSidebar />
+      </div>
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-3">
+          <div className="skeleton-box h-64 w-full" />
+        </div>
+        <div className="lg:col-span-6 space-y-3">
+          <div className="skeleton-box h-24 w-full" />
+          <div className="skeleton-box h-24 w-full" />
+          <div className="skeleton-box h-24 w-full" />
+        </div>
+        <div className="lg:col-span-3">
+          <div className="skeleton-box h-48 w-full" />
+        </div>
+      </div>
+    }>
+      <JobsContent />
+    </Suspense>
   );
 }

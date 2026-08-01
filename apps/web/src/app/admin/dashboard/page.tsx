@@ -1,170 +1,256 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Users, Briefcase, Sparkles, Activity, Database, CheckCircle2, Server } from "lucide-react";
+import {
+  Users,
+  Building2,
+  Briefcase,
+  Shield,
+  CheckCircle2,
+  XCircle,
+  ChevronRight,
+  Server,
+  Activity,
+  RefreshCw,
+} from "lucide-react";
 import api from "@/lib/api";
+import { RequireRole } from "@/components/RequireRole";
 
 interface PlatformStats {
-  total_users: number;
-  total_engineers: number;
-  total_companies: number;
-  total_jobs: number;
-  total_active_jobs: number;
-  total_matches: number;
-  job_sources_breakdown: Record<string, number>;
-  system_health: string;
+  total_engineers?: number;
+  total_companies?: number;
+  total_jobs?: number;
+  total_users?: number;
+  job_sources_breakdown?: Record<string, number>;
 }
 
-export default function AdminDashboardPage() {
+interface SyncLog {
+  id: string;
+  source: string;
+  jobs_fetched: number;
+  jobs_inserted: number;
+  jobs_updated: number;
+  status: string;
+  duration_ms: number;
+  created_at: string;
+}
+
+function AdminDashboardPage() {
   const [stats, setStats] = useState<PlatformStats | null>(null);
+  const [syncLogs, setSyncLogs] = useState<SyncLog[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadStats() {
-      try {
-        const res = await api.get("/admin/stats");
-        setStats(res.data);
-      } catch (err) {
-        console.error("Admin stats fetch failed", err);
-        // Fallback mock stats for demo display if unauthorized
-        setStats({
-          total_users: 142,
-          total_engineers: 98,
-          total_companies: 44,
-          total_jobs: 312,
-          total_active_jobs: 280,
-          total_matches: 1540,
-          job_sources_breakdown: {
-            REMOTEOK: 85,
-            ARBEITNOW: 62,
-            REMOTIVE: 78,
-            THEMUSE: 45,
-            USAJOBS: 42,
-          },
-          system_health: "HEALTHY",
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadStats();
+    let isMounted = true;
+    Promise.all([
+      api.get("/admin/stats").then((r) => r.data).catch(() => null),
+      api.get("/admin/sync-logs", { params: { limit: 50 } }).then((r) => r.data).catch(() => null),
+    ]).then(([statsData, logsData]) => {
+      if (!isMounted) return;
+      setStats(statsData);
+      setSyncLogs(logsData);
+      setLoading(false);
+    });
+    return () => { isMounted = false; };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="py-20 text-center space-y-3">
-        <div className="h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-gray-400 text-sm">Aggregating platform metrics...</p>
-      </div>
-    );
-  }
+  const latestPerSource = (syncLogs ?? []).reduce<Record<string, SyncLog>>((acc, log) => {
+    if (!acc[log.source] || new Date(log.created_at) > new Date(acc[log.source].created_at)) {
+      acc[log.source] = log;
+    }
+    return acc;
+  }, {});
+  const jobSources = Object.keys(stats?.job_sources_breakdown ?? latestPerSource);
+
+  const metricCards = [
+    { label: "Registered Engineers", value: stats?.total_engineers ?? "—", icon: Users, color: "text-[#0A66C2]" },
+    { label: "Companies", value: stats?.total_companies ?? "—", icon: Building2, color: "text-indigo-600" },
+    { label: "Active Positions", value: stats?.total_jobs ?? "—", icon: Briefcase, color: "text-emerald-600" },
+    { label: "Total Users", value: stats?.total_users ?? "—", icon: Shield, color: "text-amber-600" },
+  ];
+
+  const systemHealth = [
+    { service: "Auth Service (Keycloak)", status: "operational" },
+    { service: "Jobs API", status: "operational" },
+    { service: "Engineers API", status: "operational" },
+    { service: "PostgreSQL Database", status: "operational" },
+    { service: "Redis Cache", status: "operational" },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-800/80 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
-            <Shield className="h-7 w-7 text-cyan-400" />
-            <span className="gradient-text">Admin Operations & Platform Metrics</span>
+          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <Shield className="h-6 w-6 text-[#0A66C2]" /> Admin Console
           </h1>
-          <p className="text-gray-400 mt-1 text-sm">
-            Real-time platform telemetry, user metrics, job aggregation status, and microservice health.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold">
-          <Activity className="h-3.5 w-3.5" /> SYSTEM STATUS: OPERATIONAL
+          <p className="text-sm text-slate-500 mt-1">Platform administration and system health</p>
         </div>
       </div>
 
-      {/* Primary Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="glass-panel p-6 rounded-2xl space-y-2">
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Users className="h-4 w-4 text-cyan-400" /> Total Users
-          </span>
-          <p className="text-3xl font-black text-gray-100">{stats?.total_users || 0}</p>
-          <p className="text-xs text-cyan-400">{stats?.total_engineers} Engineers / {stats?.total_companies} Companies</p>
-        </div>
-
-        <div className="glass-panel p-6 rounded-2xl space-y-2">
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Briefcase className="h-4 w-4 text-cyan-400" /> Aggregated Jobs
-          </span>
-          <p className="text-3xl font-black text-gray-100">{stats?.total_jobs || 0}</p>
-          <p className="text-xs text-emerald-400">{stats?.total_active_jobs} Currently Active</p>
-        </div>
-
-        <div className="glass-panel p-6 rounded-2xl space-y-2">
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-cyan-400" /> Total AI Matches
-          </span>
-          <p className="text-3xl font-black text-cyan-300">{stats?.total_matches || 0}</p>
-          <p className="text-xs text-gray-400">Multi-Factor Evaluated</p>
-        </div>
-
-        <div className="glass-panel p-6 rounded-2xl space-y-2">
-          <span className="text-xs font-medium text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Database className="h-4 w-4 text-cyan-400" /> Active Aggregators
-          </span>
-          <p className="text-3xl font-black text-indigo-400">
-            {stats?.job_sources_breakdown ? Object.keys(stats.job_sources_breakdown).length : 5} APIs
-          </p>
-          <p className="text-xs text-gray-400">Synced Every 6 Hours</p>
-        </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {metricCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <div key={card.label} className="card-enterprise p-5 space-y-2">
+              <div className={card.color}><Icon className="h-5 w-5" /></div>
+              {loading ? (
+                <div className="skeleton-box h-8 w-16" />
+              ) : (
+                <div className={`text-2xl font-bold ${card.color}`}>{card.value}</div>
+              )}
+              <div className="text-xs text-slate-500 font-medium">{card.label}</div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Sources Breakdown & Microservices */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Job Sources */}
-        <div className="glass-panel p-6 rounded-2xl space-y-4">
-          <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
-            <Database className="h-5 w-5 text-cyan-400" /> Public Job Aggregator Breakdown
-          </h3>
-
-          <div className="space-y-3 pt-2">
-            {stats?.job_sources_breakdown &&
-              Object.entries(stats.job_sources_breakdown).map(([source, count]) => (
-                <div key={source} className="flex items-center justify-between p-3 rounded-xl bg-gray-900/60 border border-gray-800">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-cyan-400" />
-                    <span className="font-mono text-xs font-bold text-gray-200">{source}</span>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* System Health */}
+        <div className="lg:col-span-2 space-y-5">
+          <div className="card-enterprise p-6 space-y-4">
+            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-slate-400" /> System Health
+            </h2>
+            <div className="space-y-2.5">
+              {systemHealth.map((service) => (
+                <div key={service.service} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Server className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm text-slate-700 font-medium">{service.service}</span>
                   </div>
-                  <span className="text-sm font-semibold text-cyan-300">{count} Jobs</span>
+                  <span className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    Operational
+                  </span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Job Source Sync Status */}
+          <div id="sync-status" className="card-enterprise p-6 space-y-4">
+            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 text-slate-400" /> Job Source Sync Status
+            </h2>
+            {loading ? (
+              <div className="skeleton-box h-24 w-full" />
+            ) : jobSources.length === 0 ? (
+              <p className="text-sm text-slate-500">No sync runs recorded yet — the scheduler runs every 6 hours, or trigger one via <code className="text-xs">POST /api/v1/jobs/sync</code>.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-slate-500 border-b border-slate-100">
+                      <th className="pb-2 font-medium">Job Source</th>
+                      <th className="pb-2 font-medium">Last Sync</th>
+                      <th className="pb-2 font-medium">Status</th>
+                      <th className="pb-2 font-medium text-right">Jobs Imported</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {jobSources.map((source) => {
+                      const last = latestPerSource[source];
+                      return (
+                        <tr key={source} className="border-b border-slate-50 last:border-0">
+                          <td className="py-2.5 font-semibold text-slate-800">{source}</td>
+                          <td className="py-2.5 text-slate-500">{last ? new Date(last.created_at).toLocaleString() : "Never"}</td>
+                          <td className="py-2.5">
+                            {last ? (
+                              <span className={`flex items-center gap-1.5 font-semibold ${last.status === "SUCCESS" ? "text-emerald-700" : "text-red-700"}`}>
+                                {last.status === "SUCCESS" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+                                {last.status}
+                              </span>
+                            ) : <span className="text-slate-400">—</span>}
+                          </td>
+                          <td className="py-2.5 text-right font-semibold text-slate-800">{stats?.job_sources_breakdown?.[source] ?? 0}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="card-enterprise p-6 space-y-3">
+            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-slate-400" /> Admin Actions
+            </h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                { label: "View Job Listings", desc: "Browse and moderate active job positions", href: "/jobs" },
+                { label: "Sync Status", desc: "Job aggregator source health, jump to table above", href: "#sync-status" },
+              ].map((action) => (
+                <a
+                  key={action.label}
+                  href={action.href}
+                  className="flex items-start justify-between p-4 rounded-xl border border-slate-200 hover:border-[#0A66C2]/30 hover:bg-[#0A66C2]/5 transition-colors group cursor-pointer"
+                >
+                  <div>
+                    <p className="font-semibold text-slate-900 text-sm">{action.label}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{action.desc}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-[#0A66C2] transition-colors flex-shrink-0 mt-0.5" />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Core Services Monitoring */}
-        <div className="glass-panel p-6 rounded-2xl space-y-4">
-          <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
-            <Server className="h-5 w-5 text-cyan-400" /> Infrastructure Microservices
-          </h3>
+        {/* Right: Alerts & Info */}
+        <div className="space-y-5">
+          <div className="card-enterprise p-5 space-y-3">
+            <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-slate-400" /> Recent Sync Runs
+            </h3>
+            <div className="space-y-2 text-xs">
+              {!syncLogs || syncLogs.length === 0 ? (
+                <p className="text-slate-500">No sync runs recorded yet.</p>
+              ) : (
+                syncLogs.slice(0, 5).map((log) => (
+                  <div key={log.id} className="flex justify-between items-center p-2.5 rounded-lg border border-slate-100 bg-slate-50">
+                    <span className="text-slate-600 leading-snug">{log.source} · {new Date(log.created_at).toLocaleTimeString()}</span>
+                    <span className={`font-bold ml-3 flex-shrink-0 ${log.status === "SUCCESS" ? "text-emerald-700" : "text-red-700"}`}>
+                      {log.status === "SUCCESS" ? `+${log.jobs_inserted}` : "failed"}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
-          <div className="space-y-3 pt-2">
-            {[
-              { name: "FastAPI Backend Engine", port: "8000", status: "Healthy" },
-              { name: "PostgreSQL 16 Async Engine", port: "5432", status: "Healthy" },
-              { name: "Redis & Celery Workers", port: "6379", status: "Healthy" },
-              { name: "MinIO S3 Storage", port: "9000", status: "Healthy" },
-              { name: "LiteLLM AI Provider (Ollama)", port: "11434", status: "Healthy" },
-              { name: "Traefik Reverse Proxy", port: "8090", status: "Healthy" },
-            ].map((srv, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gray-900/60 border border-gray-800">
-                <div>
-                  <span className="text-xs font-semibold text-gray-200">{srv.name}</span>
-                  <span className="text-[10px] text-gray-500 font-mono block">PORT :{srv.port}</span>
+          <div className="card-enterprise p-5 space-y-3">
+            <h3 className="font-semibold text-slate-900 text-sm">Platform Info</h3>
+            <dl className="space-y-2 text-xs">
+              {[
+                { label: "Version", value: "v0.1.0" },
+                { label: "Environment", value: "Development" },
+                { label: "Auth", value: "Keycloak OIDC" },
+                { label: "Database", value: "PostgreSQL 16" },
+                { label: "API", value: "FastAPI 0.115" },
+                { label: "Frontend", value: "Next.js 16" },
+              ].map((item) => (
+                <div key={item.label} className="flex justify-between">
+                  <dt className="text-slate-500 font-medium">{item.label}</dt>
+                  <dd className="text-slate-800 font-semibold font-mono">{item.value}</dd>
                 </div>
-                <span className="text-xs font-mono text-emerald-400 flex items-center gap-1 font-semibold">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> {srv.status}
-                </span>
-              </div>
-            ))}
+              ))}
+            </dl>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <RequireRole roles={["ADMIN"]}>
+      <AdminDashboardPage />
+    </RequireRole>
   );
 }

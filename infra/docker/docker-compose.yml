@@ -1,10 +1,8 @@
-name: workmesh-ai
+name: remote-ai-platform
 
 # ─── Networks ─────────────────────────────────────────────────────────────────
 networks:
-  workmesh:
-    driver: bridge
-  monitoring:
+  remote_ai_platform:
     driver: bridge
 
 # ─── Volumes ──────────────────────────────────────────────────────────────────
@@ -13,9 +11,6 @@ volumes:
   redis_data:
   minio_data:
   keycloak_data:
-  prometheus_data:
-  grafana_data:
-  loki_data:
 
 services:
 
@@ -23,36 +18,15 @@ services:
   # INFRASTRUCTURE
   # ─────────────────────────────────────────────────────────────────────────────
 
-  traefik:
-    image: traefik:v3.2
-    container_name: workmesh-traefik
-    restart: unless-stopped
-    command:
-      - --configFile=/etc/traefik/traefik.yml
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8090:8090"   # Traefik dashboard
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ../traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ../traefik/dynamic:/etc/traefik/dynamic:ro
-    networks:
-      - workmesh
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.localhost`)"
-      - "traefik.http.routers.traefik-dashboard.service=api@internal"
-
   # ─── PostgreSQL ───────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: workmesh-postgres
+    container_name: remote-ai-platform-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-workmesh}
-      POSTGRES_USER: ${POSTGRES_USER:-workmesh}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-workmesh_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-remote_ai_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-remote_ai_platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -60,9 +34,9 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - workmesh
+      - remote_ai_platform
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-workmesh} -d ${POSTGRES_DB:-workmesh}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-remote_ai_platform} -d ${POSTGRES_DB:-remote_ai_platform}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -71,7 +45,7 @@ services:
   # ─── Redis ────────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: workmesh-redis
+    container_name: remote-ai-platform-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
@@ -79,7 +53,7 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - workmesh
+      - remote_ai_platform
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -89,7 +63,7 @@ services:
   # ─── MinIO (Object Storage) ───────────────────────────────────────────────────
   minio:
     image: minio/minio:latest
-    container_name: workmesh-minio
+    container_name: remote-ai-platform-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -101,72 +75,65 @@ services:
       - "9000:9000"   # S3 API
       - "9001:9001"   # MinIO Console
     networks:
-      - workmesh
+      - remote_ai_platform
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.minio.rule=Host(`minio.localhost`)"
-      - "traefik.http.services.minio.loadbalancer.server.port=9001"
 
   # MinIO bucket init
   minio-init:
     image: minio/mc:latest
-    container_name: workmesh-minio-init
+    container_name: remote-ai-platform-minio-init
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
         mc alias set local http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin_dev_password};
-        mc mb --ignore-existing local/workmesh-resumes;
-        mc mb --ignore-existing local/workmesh-assets;
-        mc policy set download local/workmesh-assets;
+        mc mb --ignore-existing local/remote-ai-platform-resumes;
+        mc mb --ignore-existing local/remote-ai-platform-assets;
+        mc policy set download local/remote-ai-platform-assets;
         echo 'MinIO buckets initialized';
       "
     networks:
-      - workmesh
+      - remote_ai_platform
 
   # ─── Keycloak (Authentication) ────────────────────────────────────────────────
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    container_name: workmesh-keycloak
+    container_name: remote-ai-platform-keycloak
     restart: unless-stopped
     command: ["start-dev", "--import-realm"]
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_dev_password}
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-workmesh}
-      KC_DB_USERNAME: ${POSTGRES_USER:-workmesh}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-workmesh_dev_password}
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-remote_ai_platform}
+      KC_DB_USERNAME: ${POSTGRES_USER:-remote_ai_platform}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}
       KC_DB_SCHEMA: keycloak
       KC_HOSTNAME_STRICT: false
       KC_HTTP_ENABLED: true
       KC_PROXY: edge
       KC_FEATURES: token-exchange,admin-fine-grained-authz
+      KC_HEALTH_ENABLED: "true"
     volumes:
-      - ../keycloak/realm-workmesh.json:/opt/keycloak/data/import/realm-workmesh.json:ro
+      - ../keycloak/realm-remote-ai-platform.json:/opt/keycloak/data/import/realm-remote-ai-platform.json:ro
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - workmesh
+      - remote_ai_platform
     healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200 OK'"]
       interval: 30s
       timeout: 10s
       retries: 10
       start_period: 90s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.keycloak.rule=Host(`auth.localhost`)"
-      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
 
   # ─────────────────────────────────────────────────────────────────────────────
   # APPLICATION SERVICES
@@ -177,25 +144,32 @@ services:
       context: ../../apps/api
       dockerfile: Dockerfile
       target: development
-    container_name: workmesh-api
+    container_name: remote-ai-platform-api
     restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-workmesh}:${POSTGRES_PASSWORD:-workmesh_dev_password}@postgres:5432/${POSTGRES_DB:-workmesh}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
       MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
       MINIO_SECURE: "false"
       KEYCLOAK_URL: http://keycloak:8080
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-workmesh}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-workmesh-api}
+      KEYCLOAK_PUBLIC_URL: http://localhost:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-remote-ai-platform}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-remote-ai-platform-api}
+      KEYCLOAK_WEB_CLIENT_ID: ${KEYCLOAK_WEB_CLIENT_ID:-remote-ai-platform-web}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-change-me-in-production}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev_secret_key_change_in_prod}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      AI_PROVIDER: ${AI_PROVIDER:-ollama/qwen2.5}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      AI_MODEL: ${AI_MODEL:-qwen2.5}
+      AI_API_KEY: ${AI_API_KEY:-}
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
+      AI_FALLBACK_PROVIDERS: ${AI_FALLBACK_PROVIDERS:-ollama/qwen2.5}
       APP_ENV: ${APP_ENV:-development}
     volumes:
       - ../../apps/api:/app
@@ -210,7 +184,7 @@ services:
       minio:
         condition: service_healthy
     networks:
-      - workmesh
+      - remote_ai_platform
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -219,17 +193,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`api.localhost`)"
-      - "traefik.http.services.api.loadbalancer.server.port=8000"
 
   web:
     build:
       context: ../../apps/web
       dockerfile: Dockerfile
-    container_name: workmesh-web
+    container_name: remote-ai-platform-web
     restart: unless-stopped
+    command: npm run dev
+    volumes:
+      - ../../apps/web:/app
+      - /app/node_modules
     ports:
       - "3000:3000"
     environment:
@@ -237,22 +211,18 @@ services:
     depends_on:
       - api
     networks:
-      - workmesh
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=Host(`localhost`)"
-      - "traefik.http.services.web.loadbalancer.server.port=3000"
+      - remote_ai_platform
 
   celery-worker:
     build:
       context: ../../apps/api
       dockerfile: Dockerfile
       target: development
-    container_name: workmesh-celery-worker
+    container_name: remote-ai-platform-celery-worker
     restart: unless-stopped
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4 -Q default,jobs,ai,matching
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-workmesh}:${POSTGRES_PASSWORD:-workmesh_dev_password}@postgres:5432/${POSTGRES_DB:-workmesh}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
@@ -261,7 +231,11 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
       MINIO_SECURE: "false"
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      AI_PROVIDER: ${AI_PROVIDER:-ollama/qwen2.5}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      AI_MODEL: ${AI_MODEL:-qwen2.5}
+      AI_API_KEY: ${AI_API_KEY:-}
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
+      AI_FALLBACK_PROVIDERS: ${AI_FALLBACK_PROVIDERS:-ollama/qwen2.5}
     volumes:
       - ../../apps/api:/app
       - /app/__pycache__
@@ -271,7 +245,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - workmesh
+      - remote_ai_platform
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -280,11 +254,11 @@ services:
       context: ../../apps/api
       dockerfile: Dockerfile
       target: development
-    container_name: workmesh-celery-beat
+    container_name: remote-ai-platform-celery-beat
     restart: unless-stopped
     command: celery -A app.workers.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-workmesh}:${POSTGRES_PASSWORD:-workmesh_dev_password}@postgres:5432/${POSTGRES_DB:-workmesh}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
@@ -293,107 +267,4 @@ services:
     depends_on:
       - redis
     networks:
-      - workmesh
-
-  flower:
-    build:
-      context: ../../apps/api
-      dockerfile: Dockerfile
-      target: development
-    container_name: workmesh-flower
-    restart: unless-stopped
-    command: celery -A app.workers.celery_app flower --port=5555
-    environment:
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-    ports:
-      - "5555:5555"
-    depends_on:
-      - redis
-    networks:
-      - workmesh
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.flower.rule=Host(`flower.localhost`)"
-      - "traefik.http.services.flower.loadbalancer.server.port=5555"
-
-  # ─────────────────────────────────────────────────────────────────────────────
-  # MONITORING STACK
-  # ─────────────────────────────────────────────────────────────────────────────
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: workmesh-prometheus
-    restart: unless-stopped
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=15d
-      - --web.enable-lifecycle
-    volumes:
-      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - workmesh
-      - monitoring
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.localhost`)"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: workmesh-grafana
-    restart: unless-stopped
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin_dev_password}
-      GF_USERS_ALLOW_SIGN_UP: false
-      GF_SERVER_DOMAIN: grafana.localhost
-      GF_FEATURE_TOGGLES_ENABLE: ngalert
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports:
-      - "3001:3000"
-    depends_on:
-      - prometheus
-      - loki
-    networks:
-      - workmesh
-      - monitoring
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-
-  loki:
-    image: grafana/loki:latest
-    container_name: workmesh-loki
-    restart: unless-stopped
-    command: -config.file=/etc/loki/loki-config.yml
-    volumes:
-      - ../monitoring/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
-      - loki_data:/loki
-    ports:
-      - "3100:3100"
-    networks:
-      - workmesh
-      - monitoring
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: workmesh-promtail
-    restart: unless-stopped
-    command: -config.file=/etc/promtail/promtail-config.yml
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ../monitoring/loki/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
-    depends_on:
-      - loki
-    networks:
-      - workmesh
-      - monitoring
+      - remote_ai_platform

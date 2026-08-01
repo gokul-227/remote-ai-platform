@@ -5,7 +5,7 @@ Repository pattern for Job Post domain.
 import uuid
 import re
 from typing import Optional, List, Sequence
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, cast, Text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.jobs.models import JobPost
@@ -53,10 +53,15 @@ class JobRepository:
             is_remote=data.is_remote,
             job_type=data.job_type,
             experience_level=data.experience_level,
+            budget_min=data.budget_min,
+            budget_max=data.budget_max,
+            timeline=data.timeline,
+            remote_preference=data.remote_preference,
             salary_min=data.salary_min,
             salary_max=data.salary_max,
             currency=data.currency,
             skills=data.skills,
+            ai_analysis=data.ai_analysis,
             external_id=data.external_id,
             external_url=data.external_url,
             source=data.source,
@@ -67,9 +72,10 @@ class JobRepository:
         await self.db.refresh(job)
         return job
 
-    async def upsert_external_job(self, data: JobPostCreate) -> JobPost:
+    async def upsert_external_job(self, data: JobPostCreate) -> tuple[JobPost, bool]:
+        """Returns (job, created) where created=True if a new row was inserted."""
         if not data.external_id:
-            return await self.create(data)
+            return await self.create(data), True
 
         existing = await self.get_by_external_id(data.external_id)
         if existing:
@@ -86,9 +92,9 @@ class JobRepository:
             if data.salary_max:
                 existing.salary_max = data.salary_max
             await self.db.flush()
-            return existing
+            return existing, False
 
-        return await self.create(data)
+        return await self.create(data), True
 
     async def search(
         self,
@@ -122,14 +128,14 @@ class JobRepository:
             stmt = stmt.where(func.upper(JobPost.source) == source.upper())
 
         if query:
-            q = f"%{query.lower()}%"
-            stmt = stmt.where(
-                or_(
-                    func.lower(JobPost.title).like(q),
-                    func.lower(JobPost.description).like(q),
-                    func.lower(JobPost.company_name).like(q),
-                )
+            document = func.to_tsvector(
+                "simple",
+                func.concat_ws(
+                    " ", JobPost.title, JobPost.description, JobPost.company_name,
+                    cast(JobPost.skills, Text),
+                ),
             )
+            stmt = stmt.where(document.op("@@")(func.plainto_tsquery("simple", query)))
 
         stmt = stmt.offset(skip).limit(limit).order_by(JobPost.posted_at.desc())
         result = await self.db.execute(stmt)

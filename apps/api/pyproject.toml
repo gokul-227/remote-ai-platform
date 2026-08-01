@@ -7,9 +7,9 @@ where = ["."]
 include = ["app*"]
 
 [project]
-name = "workmesh-api"
+name = "remote-ai-platform-api"
 version = "0.1.0"
-description = "WorkMesh AI — FastAPI Backend"
+description = "Remote AI Platform — FastAPI Backend"
 readme = "README.md"
 requires-python = ">=3.11"
 
@@ -34,24 +34,15 @@ dependencies = [
     "passlib[bcrypt]==1.7.4",
     "httpx>=0.27.0,<0.28.0",
 
-    # Keycloak OIDC
-    "python-keycloak==4.3.0",
-
     # Background tasks
     "celery[redis]==5.4.0",
     "flower==2.0.1",
-    "apscheduler==3.10.4",
 
     # Object storage
     "minio==7.2.11",
 
-    # AI
+    # AI (litellm pulls in openai + aiohttp transitively)
     "litellm==1.55.2",
-    "openai==1.58.1",
-
-    # HTTP client
-    "httpx>=0.27.0,<0.28.0",
-    "aiohttp==3.11.10",
 
     # Caching
     "redis[hiredis]==5.2.1",
@@ -59,12 +50,6 @@ dependencies = [
     # Monitoring & Logging
     "prometheus-fastapi-instrumentator==7.0.0",
     "structlog==24.4.0",
-
-    # Utilities
-    "python-dateutil==2.9.0",
-    "pytz==2024.2",
-    "Pillow==11.0.0",
-    "python-magic==0.4.27",
 ]
 
 [project.optional-dependencies]
@@ -79,6 +64,7 @@ dev = [
     "mypy==1.13.0",
     "pre-commit==4.0.1",
     "asgi-lifespan==2.1.0",
+    "aiosqlite==0.20.0",
 ]
 
 [tool.ruff]

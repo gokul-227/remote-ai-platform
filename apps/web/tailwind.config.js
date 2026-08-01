@@ -1,25 +1,23 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class',
   content: [
     './src/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
     './app/**/*.{js,ts,jsx,tsx}',
-    './src/**/*.{js,ts,jsx,tsx}'
   ],
   theme: {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0ea5e9',
+          DEFAULT: '#0a66c2',
           foreground: '#ffffff'
         },
-        secondary: '#6366f1',
-        accent: '#a78bfa',
-        background: '#0b0f19',
-        foreground: '#f1f5f9'
+        secondary: '#4f46e5',
+        accent: '#0284c7',
+        background: '#f3f4f6',
+        foreground: '#0f172a'
       }
     }
   },
-  plugins: [require('tailwindcss-animate')]
+  plugins: []
 };

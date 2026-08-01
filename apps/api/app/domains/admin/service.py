@@ -2,10 +2,12 @@
 Service layer for Admin domain.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Sequence
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.admin.models import ApiSyncLog
+from app.domains.admin.repository import AdminRepository
 from app.domains.admin.schemas import PlatformStatsResponse
 from app.domains.auth.models import User, UserRole
 from app.domains.engineers.models import EngineerProfile
@@ -17,6 +19,7 @@ from app.domains.matching.models import JobMatch
 class AdminService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.repo = AdminRepository(db)
 
     async def get_platform_stats(self) -> PlatformStatsResponse:
         total_users = (await self.db.execute(select(func.count(User.id)))).scalar_one() or 0
@@ -42,3 +45,7 @@ class AdminService:
             total_matches=total_matches,
             job_sources_breakdown=sources_breakdown,
         )
+
+    async def get_recent_syncs(self, limit: int = 50) -> Sequence[ApiSyncLog]:
+        """Recent job-aggregator sync runs, most recent first — powers the admin status page."""
+        return await self.repo.list_recent_syncs(limit=limit)

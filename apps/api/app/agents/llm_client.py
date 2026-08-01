@@ -18,7 +18,12 @@ litellm.drop_params = True
 
 class LLMClient:
     def __init__(self, model_override: Optional[str] = None):
-        self.model = model_override or settings.AI_PROVIDER
+        provider = model_override or settings.AI_PROVIDER
+        self.model = provider if "/" in provider else f"{provider}/{settings.AI_MODEL}"
+
+    @property
+    def fallback_models(self) -> list[str]:
+        return [model.strip() for model in settings.AI_FALLBACK_PROVIDERS.split(",") if model.strip()]
 
     async def complete(
         self,
@@ -33,25 +38,30 @@ class LLMClient:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        try:
-            # Format model name for Ollama if running locally
-            model_name = self.model
-            if model_name.startswith("ollama/"):
-                model_name = f"ollama/{model_name.replace('ollama/', '')}"
-
-            response = await litellm.acompletion(
-                model=model_name,
-                messages=messages,
-                temperature=temperature,
-                api_base=settings.OLLAMA_BASE_URL if "ollama" in model_name else None,
-                response_format={"type": "json_object"} if json_mode else None,
-                timeout=settings.AI_TIMEOUT_SECONDS,
-            )
-            return response.choices[0].message.content or "{}"
-        except Exception as e:
-            logger.error(f"LLM completion error: {e}", model=self.model)
-            # Fallback return empty JSON string
-            return "{}"
+        models = [self.model] + [model for model in self.fallback_models if model != self.model]
+        for model_name in models:
+            try:
+                api_base = settings.LITELLM_BASE_URL
+                if model_name.startswith("ollama/"):
+                    api_base = settings.OLLAMA_BASE_URL
+                provider_key = settings.AI_API_KEY
+                if not provider_key and model_name.startswith("groq/"):
+                    provider_key = settings.GROQ_API_KEY
+                if not provider_key and model_name.startswith("openai/"):
+                    provider_key = settings.OPENAI_API_KEY
+                response = await litellm.acompletion(
+                    model=model_name,
+                    messages=messages,
+                    temperature=temperature,
+                    api_key=provider_key,
+                    api_base=api_base or None,
+                    response_format={"type": "json_object"} if json_mode else None,
+                    timeout=settings.AI_TIMEOUT_SECONDS,
+                )
+                return response.choices[0].message.content or "{}"
+            except Exception as exc:
+                logger.warning("LLM provider failed; trying fallback", model=model_name, error=str(exc))
+        return "{}"
 
     async def complete_structured_json(
         self, prompt: str, system_prompt: str

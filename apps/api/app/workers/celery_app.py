@@ -1,5 +1,5 @@
 """
-Celery Application Factory — WorkMesh AI Background Workers
+Celery Application Factory — Remote AI Platform Background Workers
 """
 
 from celery import Celery
@@ -10,7 +10,7 @@ from app.core.config import settings
 
 def create_celery_app() -> Celery:
     app = Celery(
-        "workmesh",
+        "remote-ai-platform",
         broker=settings.CELERY_BROKER_URL,
         backend=settings.CELERY_RESULT_BACKEND,
         include=[

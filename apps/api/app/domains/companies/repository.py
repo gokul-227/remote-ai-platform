@@ -35,6 +35,8 @@ class CompanyRepository:
             industry=data.industry,
             company_size=data.company_size,
             location=data.location,
+            country=data.country,
+            hiring_status=data.hiring_status,
             tech_stack=data.tech_stack,
         )
         self.db.add(company)

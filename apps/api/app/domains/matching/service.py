@@ -14,6 +14,7 @@ from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.matching.models import JobMatch
 from app.domains.matching.repository import MatchingRepository
+from app.services.ai import AIResponse
 
 logger = get_logger("matching.service")
 
@@ -64,9 +65,18 @@ class MatchingService:
         else:
             role_score = 60.0
 
+        timezone_score = 100.0 if not job.remote_preference or not engineer.timezone else 80.0
+        availability_score = 100.0 if engineer.is_open_to_work else 40.0
+        compensation_score = 100.0
+        if job.budget_max and engineer.hourly_rate and job.budget_max < engineer.hourly_rate:
+            compensation_score = 60.0
+        remote_score = 100.0 if job.is_remote and (engineer.remote_preference or "").lower() else 80.0
+
         # Weighted Overall Score
         overall_score = round(
-            0.50 * skill_score + 0.30 * experience_score + 0.20 * role_score, 1
+            0.40 * skill_score + 0.25 * experience_score + 0.15 * role_score
+            + 0.08 * timezone_score + 0.07 * availability_score
+            + 0.03 * compensation_score + 0.02 * remote_score, 1
         )
 
         # Explainable AI rationale
@@ -87,6 +97,13 @@ class MatchingService:
             rationale_parts.append(f"Gaps identified in: {', '.join(missing_skills[:2])}.")
 
         reasoning = " ".join(rationale_parts)
+        analysis = AIResponse(
+            score=overall_score,
+            reason=rationale_parts,
+            skills_match=matching_skills,
+            experience_match=[f"{candidate_exp} years vs {required_exp} required"],
+            recommendations=missing_skills,
+        )
 
         # Save to DB
         return await self.match_repo.upsert_match(
@@ -96,9 +113,13 @@ class MatchingService:
             skill_score=round(skill_score, 1),
             experience_score=round(experience_score, 1),
             role_score=round(role_score, 1),
-            reasoning=reasoning,
-            matching_skills=matching_skills,
-            missing_skills=missing_skills,
+            timezone_score=round(timezone_score, 1),
+            availability_score=round(availability_score, 1),
+            compensation_score=round(compensation_score, 1),
+            remote_score=round(remote_score, 1),
+            reasoning=" ".join(analysis.reason),
+            matching_skills=analysis.skills_match,
+            missing_skills=analysis.recommendations,
         )
 
     async def get_recommendations_for_engineer(

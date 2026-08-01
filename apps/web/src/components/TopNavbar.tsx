@@ -7,17 +7,21 @@ import {
   Search,
   Bell,
   Menu,
-  X,
-  Sparkles,
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
   Briefcase,
-  LayoutDashboard,
+  User,
   Building2,
+  Shield,
+  ChevronDown,
+  LogOut,
+  Home,
+  Users,
+  MessageSquare,
+  FolderKanban,
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import api from "@/lib/api";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface TopNavbarProps {
   onMenuClick?: () => void;
@@ -25,6 +29,7 @@ interface TopNavbarProps {
 
 export function TopNavbar({ onMenuClick }: TopNavbarProps) {
   const { user, logout } = useAuth();
+  const notifications = useNotifications(!!user);
   const router = useRouter();
   const pathname = usePathname();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -33,150 +38,210 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchVal.trim()) router.push(`/jobs?query=${encodeURIComponent(searchVal.trim())}`);
+    if (searchVal.trim()) {
+      router.push(`/jobs?query=${encodeURIComponent(searchVal.trim())}`);
+    }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      logout();
+    }
     router.push("/");
   };
 
+  const navItems =
+    user?.role === "COMPANY"
+      ? [
+          { name: "Home", href: "/", icon: Home },
+          { name: "My Jobs", href: "/company/jobs", icon: Briefcase },
+          { name: "Candidates", href: "/company/candidates", icon: Users },
+          { name: "Network", href: "/network", icon: Users },
+          { name: "Projects", href: "/projects", icon: FolderKanban },
+          { name: "Messages", href: "/messages", icon: MessageSquare },
+        ]
+      : [
+          { name: "Home", href: "/", icon: Home },
+          { name: "Jobs", href: "/jobs", icon: Briefcase },
+          { name: "Freelancers", href: "/freelancers", icon: Users },
+          ...(user?.role === "ENGINEER"
+            ? [{ name: "For You", href: "/engineer/recommendations", icon: Sparkles }]
+            : []),
+          { name: "Network", href: "/network", icon: Users },
+          { name: "Projects", href: "/projects", icon: FolderKanban },
+          { name: "Messages", href: "/messages", icon: MessageSquare },
+        ];
+
   return (
-    <header className="sticky top-0 z-30 glass border-b border-white/[0.06] px-4 py-2.5 flex items-center gap-3">
-      {/* Mobile menu toggle */}
-      <button
-        onClick={onMenuClick}
-        className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-        aria-label="Menu"
-      >
-        <Menu className="h-5 w-5" />
-      </button>
-
-      {/* Mobile logo */}
-      <Link href="/" className="md:hidden flex items-center gap-2">
-        <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-cyan-500 to-indigo-600 flex items-center justify-center">
-          <Sparkles className="h-3.5 w-3.5 text-white" />
-        </div>
-        <span className="font-bold text-sm gradient-text">WorkMesh AI</span>
-      </Link>
-
-      {/* Search bar */}
-      <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-lg items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
-          <input
-            type="text"
-            value={searchVal}
-            onChange={(e) => setSearchVal(e.target.value)}
-            placeholder="Search jobs, engineers, skills..."
-            className="input-field pl-9 py-2 text-sm"
-          />
-        </div>
-        <button type="submit" className="btn-primary py-2 px-4 text-sm">
-          Search
-        </button>
-      </form>
-
-      <div className="flex-1 md:hidden" />
-
-      {/* Right actions */}
-      <div className="flex items-center gap-1">
-        {/* Notifications */}
-        <div className="relative">
+    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-1.5 shadow-xs">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        {/* Left: Logo + Search */}
+        <div className="flex items-center gap-3 flex-1 max-w-xl">
           <button
-            onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
-            className="btn-ghost relative"
+            onClick={onMenuClick}
+            className="md:hidden p-1.5 rounded-md text-slate-600 hover:bg-slate-100"
+            aria-label="Toggle menu"
           >
-            <Bell className="h-4.5 w-4.5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-cyan-500 ring-2 ring-[#0b0f19]" />
+            <Menu className="h-5 w-5" />
           </button>
-          {notifOpen && (
-            <div className="absolute right-0 mt-2 w-72 glass rounded-xl p-3 border border-white/10 shadow-xl">
-              <p className="text-xs font-semibold text-slate-300 mb-2">Notifications</p>
-              <div className="space-y-2">
-                {[
-                  { text: "New job match: Senior React Engineer at Stripe", time: "2m ago" },
-                  { text: "Your profile was viewed by 3 companies", time: "1h ago" },
-                  { text: "AI suggestions updated for your profile", time: "3h ago" },
-                ].map((n, i) => (
-                  <div key={i} className="flex gap-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer">
-                    <div className="h-1.5 w-1.5 rounded-full bg-cyan-500 mt-1.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-slate-200">{n.text}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{n.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+            <div className="h-9 w-9 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-xl shadow-xs">
+              W
             </div>
-          )}
+            <span className="hidden sm:inline font-bold text-lg text-slate-900 tracking-tight">
+              Remote <span className="text-[#0A66C2]">AI Platform</span>
+            </span>
+          </Link>
+
+          {/* Global Search Bar */}
+          <form onSubmit={handleSearch} className="flex-1 hidden md:block">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                placeholder="Search jobs, skills, companies..."
+                className="input-enterprise pl-9 py-1.5 text-xs bg-slate-100 focus:bg-white border-transparent focus:border-[#0A66C2]"
+              />
+            </div>
+          </form>
         </div>
 
-        {/* Profile menu */}
-        {user ? (
+        {/* Center Navigation */}
+        <nav className="hidden lg:flex items-center gap-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex flex-col items-center px-3 py-1 text-[11px] font-medium transition-colors relative ${
+                  isActive
+                    ? "text-[#0A66C2] border-b-2 border-[#0A66C2]"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <Icon className="h-5 w-5 mb-0.5" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Notifications */}
           <div className="relative">
             <button
-              onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
-              className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/5 transition-colors"
+              onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
+              className="p-2 rounded-full text-slate-600 hover:bg-slate-100 relative"
+              title="Notifications"
             >
-              <div className="avatar h-7 w-7 text-xs">
-                {user.full_name?.charAt(0).toUpperCase() || "U"}
-              </div>
-              <span className="hidden md:block text-sm text-slate-300 font-medium max-w-[100px] truncate">
-                {user.full_name?.split(" ")[0]}
-              </span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#0A66C2]" />
             </button>
-
-            {profileOpen && (
-              <div className="absolute right-0 mt-2 w-56 glass rounded-xl overflow-hidden border border-white/10 shadow-xl">
-                <div className="px-3 py-2.5 border-b border-white/5">
-                  <p className="text-sm font-semibold text-slate-200">{user.full_name}</p>
-                  <p className="text-xs text-slate-500 truncate">{user.email}</p>
+            {notifOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 p-4 z-50 animate-fade-in">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
+                  <h4 className="text-sm font-semibold text-slate-900">Notifications</h4>
+                  <span className="text-xs text-[#0A66C2] cursor-pointer hover:underline">Mark all read</span>
                 </div>
-                <div className="py-1">
-                  {[
-                    { label: "My Profile", href: "/engineer/profile", icon: User },
-                    { label: "Dashboard", href: "/engineer/dashboard", icon: LayoutDashboard },
-                    { label: "Company Hub", href: "/company/dashboard", icon: Building2 },
-                    { label: "Settings", href: "/settings", icon: Settings },
-                  ].map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                      >
-                        <Icon className="h-3.5 w-3.5 text-slate-500" />
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-                <div className="border-t border-white/5 py-1">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
-                  >
-                    <LogOut className="h-3.5 w-3.5" />
-                    Sign out
-                  </button>
+                <div className="space-y-2.5">
+                  {notifications.data?.length ? notifications.data.map((n: { id: string; title: string; body: string }) => (
+                    <div key={n.id} className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                      <div className="h-2 w-2 rounded-full bg-[#0A66C2] mt-1.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-slate-800 font-medium">{n.title}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{n.body}</p>
+                      </div>
+                    </div>
+                  )) : <p className="text-xs text-slate-500">No new notifications.</p>}
                 </div>
               </div>
             )}
           </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Link href="/auth/login" className="btn-ghost text-sm">
-              Sign in
-            </Link>
-            <Link href="/auth/register" className="btn-primary py-2 px-4 text-sm">
-              Get started
-            </Link>
-          </div>
-        )}
+
+          {/* User profile dropdown or Sign in button */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
+                className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-100 transition-colors"
+              >
+                <div className="h-8 w-8 rounded-full bg-[#0A66C2] text-white flex items-center justify-center font-bold text-xs">
+                  {user.full_name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{user.full_name}</p>
+                    <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                  </div>
+                  <div className="py-1 text-xs">
+                    <Link
+                      href="/engineer/profile"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                    >
+                      <User className="h-4 w-4 text-slate-500" />
+                      My Profile
+                    </Link>
+                    <Link
+                      href="/engineer/dashboard"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                    >
+                      <Briefcase className="h-4 w-4 text-slate-500" />
+                      Career Dashboard
+                    </Link>
+                    <Link
+                      href="/company/dashboard"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                    >
+                      <Building2 className="h-4 w-4 text-slate-500" />
+                      Hiring Dashboard
+                    </Link>
+                    <Link
+                      href="/admin/dashboard"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                    >
+                      <Shield className="h-4 w-4 text-slate-500" />
+                      Admin Console
+                    </Link>
+                  </div>
+                  <div className="border-t border-slate-100 pt-1">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link href="/auth/login" className="btn-subtle text-xs font-semibold">
+                Sign In
+              </Link>
+              <Link href="/auth/register" className="btn-secondary-brand text-xs px-3 py-1">
+                Join Now
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

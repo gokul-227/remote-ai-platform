@@ -1,4 +1,4 @@
-"""Initial schema for WorkMesh AI MVP v1
+"""Initial schema for Remote AI Platform MVP v1
 
 Revision ID: 001_initial_schema
 Revises: 
@@ -19,11 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # 1. UserRole enum
-    user_role_enum = postgresql.ENUM('ENGINEER', 'COMPANY', 'ADMIN', name='user_role_enum')
-    user_role_enum.create(op.get_bind(), checkfirst=True)
-
-    # 2. users table
+    # 1. users table
     op.create_table(
         'users',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True),

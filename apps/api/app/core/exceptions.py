@@ -13,7 +13,7 @@ from app.core.schemas import ErrorResponse, ErrorDetail
 logger = structlog.get_logger(__name__)
 
 
-class WorkMeshException(Exception):
+class PlatformException(Exception):
     """Base domain exception."""
     def __init__(
         self,
@@ -27,23 +27,23 @@ class WorkMeshException(Exception):
         super().__init__(message)
 
 
-class NotFoundException(WorkMeshException):
+class NotFoundException(PlatformException):
     def __init__(self, resource: str, id: str | int | None = None):
         detail = f"{resource} not found" if id is None else f"{resource} with id '{id}' not found"
         super().__init__(detail, status.HTTP_404_NOT_FOUND, "NOT_FOUND")
 
 
-class UnauthorizedException(WorkMeshException):
+class UnauthorizedException(PlatformException):
     def __init__(self, message: str = "Authentication required"):
         super().__init__(message, status.HTTP_401_UNAUTHORIZED, "UNAUTHORIZED")
 
 
-class ForbiddenException(WorkMeshException):
+class ForbiddenException(PlatformException):
     def __init__(self, message: str = "Insufficient permissions"):
         super().__init__(message, status.HTTP_403_FORBIDDEN, "FORBIDDEN")
 
 
-class ConflictException(WorkMeshException):
+class ConflictException(PlatformException):
     def __init__(self, message: str):
         super().__init__(message, status.HTTP_409_CONFLICT, "CONFLICT")
 
@@ -56,8 +56,8 @@ DuplicateError = ConflictException
 
 
 def register_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(WorkMeshException)
-    async def workmesh_exception_handler(request: Request, exc: WorkMeshException):
+    @app.exception_handler(PlatformException)
+    async def platform_exception_handler(request: Request, exc: PlatformException):
         logger.warning("Domain exception", message=exc.message, code=exc.code)
         return JSONResponse(
             status_code=exc.status_code,

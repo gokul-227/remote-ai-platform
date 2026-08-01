@@ -1,0 +1,139 @@
+{
+  "realm": "remote-ai-platform",
+  "displayName": "Remote AI Platform",
+  "displayNameHtml": "<b>Remote AI Platform</b>",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 10,
+  "accessTokenLifespan": 900,
+  "refreshTokenMaxReuse": 0,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "roles": {
+    "realm": [
+      {
+        "name": "engineer",
+        "description": "Remote software engineer role",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "company",
+        "description": "Company/employer role",
+        "composite": false,
+        "clientRole": false
+      },
+      {
+        "name": "admin",
+        "description": "Platform administrator",
+        "composite": false,
+        "clientRole": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "remote-ai-platform-api",
+      "name": "Remote AI Platform API",
+      "description": "FastAPI backend client",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "secret": "change-me-in-production"
+    },
+    {
+      "clientId": "remote-ai-platform-web",
+      "name": "Remote AI Platform Web",
+      "description": "Next.js frontend client",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:3000/api/auth/callback/keycloak"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "github",
+      "displayName": "GitHub",
+      "providerId": "github",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "config": {
+        "clientId": "${env.GITHUB_CLIENT_ID:}",
+        "clientSecret": "${env.GITHUB_CLIENT_SECRET:}",
+        "useJwksUrl": "true",
+        "syncMode": "IMPORT"
+      }
+    },
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "updateProfileFirstLoginMode": "on",
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "config": {
+        "clientId": "${env.GOOGLE_CLIENT_ID:}",
+        "clientSecret": "${env.GOOGLE_CLIENT_SECRET:}",
+        "useJwksUrl": "true",
+        "syncMode": "IMPORT",
+        "hostedDomain": ""
+      }
+    }
+  ],
+  "smtpServer": {
+    "host": "${env.SMTP_HOST:localhost}",
+    "port": "${env.SMTP_PORT:25}",
+    "from": "${env.SMTP_FROM:noreply@remoteaiplatform.ai}",
+    "fromDisplayName": "Remote AI Platform"
+  },
+  "loginTheme": "keycloak",
+  "accountTheme": "keycloak.v3",
+  "adminTheme": "keycloak.v2",
+  "emailTheme": "keycloak",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "de", "fr", "es", "ar", "zh-CN"],
+  "defaultLocale": "en"
+}

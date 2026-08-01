@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { use } from "react";
 import Link from "next/link";
-import { MapPin, DollarSign, Briefcase, ExternalLink, ArrowLeft, Sparkles, Building2, CheckCircle2 } from "lucide-react";
+import { MapPin, DollarSign, Briefcase, ExternalLink, ArrowLeft, Building2, Bookmark, Share2, CheckCircle2 } from "lucide-react";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
+import { useApplications } from "@/hooks/useApplications";
 
 interface JobPost {
   id: string;
   title: string;
   company_name: string;
-  company_logo?: string;
   location?: string;
   description: string;
   is_remote: boolean;
@@ -26,28 +29,25 @@ interface JobPost {
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [job, setJob] = useState<JobPost | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadJob() {
-      try {
-        const res = await api.get(`/jobs/${id}`);
-        setJob(res.data);
-      } catch (err) {
-        console.error("Failed to load job", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadJob();
-  }, [id]);
+  const { user } = useAuth();
+  const jobQuery = useQuery<JobPost>({ queryKey: ["job", id], queryFn: async () => (await api.get(`/jobs/${id}`)).data });
+  const savedJobs = useSavedJobs(!!user);
+  const applications = useApplications(!!user && user.role === "ENGINEER");
+  const job = jobQuery.data || null;
+  const loading = jobQuery.isLoading;
+  const saved = !!savedJobs.data?.some((item: JobPost) => item.id === id);
+  const alreadyApplied = !!applications.data?.some((entry: { job: { id: string } }) => entry.job.id === id);
 
   if (loading) {
     return (
-      <div className="py-20 text-center space-y-3">
-        <div className="h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-gray-400 text-sm">Loading job details...</p>
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
+        <div className="skeleton-box h-6 w-32" />
+        <div className="card-enterprise p-8 space-y-4">
+          <div className="skeleton-box h-10 w-2/3" />
+          <div className="skeleton-box h-6 w-1/3" />
+          <div className="skeleton-box h-4 w-full" />
+          <div className="skeleton-box h-32 w-full" />
+        </div>
       </div>
     );
   }
@@ -55,89 +55,130 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   if (!job) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
-        <h2 className="text-xl font-bold">Job Not Found</h2>
-        <Link href="/jobs" className="text-cyan-400 text-sm hover:underline">
-          ← Back to All Jobs
+        <Briefcase className="h-12 w-12 text-slate-300 mx-auto" />
+        <h2 className="text-xl font-bold text-slate-900">Position Not Found</h2>
+        <p className="text-sm text-slate-500">This position may have been filled or the listing is no longer active.</p>
+        <Link href="/jobs" className="btn-primary-brand py-2 px-4 text-xs inline-flex">
+          ← Browse All Positions
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
-      <Link href="/jobs" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-cyan-400 transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back to Remote Jobs
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
+      <Link href="/jobs" className="inline-flex items-center gap-2 text-xs font-semibold text-[#0A66C2] hover:underline">
+        <ArrowLeft className="h-4 w-4" /> Back to Jobs
       </Link>
 
-      <div className="glass-panel p-8 rounded-3xl space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-gray-800/80">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs uppercase font-mono px-2.5 py-1 rounded bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
-                {job.source}
-              </span>
-              <span className="text-xs px-2.5 py-1 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-semibold">
-                {job.is_remote ? "100% Remote" : "Hybrid"}
-              </span>
+      {/* Job Header Card */}
+      <div className="card-enterprise p-6 space-y-5">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-4 pb-5 border-b border-slate-200">
+          <div className="flex items-start gap-4">
+            <div className="h-14 w-14 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-xl flex-shrink-0">
+              {job.company_name?.charAt(0).toUpperCase() || "C"}
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-100">{job.title}</h1>
-            <p className="text-lg text-cyan-400 font-medium mt-1 flex items-center gap-2">
-              <Building2 className="h-5 w-5" /> {job.company_name}
-            </p>
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="badge-ent badge-ent-neutral uppercase font-mono text-[10px]">{job.source}</span>
+                <span className="badge-ent badge-ent-brand font-semibold">{job.is_remote ? "100% Remote" : "Hybrid"}</span>
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900">{job.title}</h1>
+              <p className="text-sm text-[#0A66C2] font-semibold mt-1 flex items-center gap-2">
+                <Building2 className="h-4 w-4" /> {job.company_name}
+              </p>
+              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
+                <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{job.location || "Worldwide"}</span>
+                {job.salary_min && (
+                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                    <DollarSign className="h-3 w-3" />
+                    ${(job.salary_min / 1000).toFixed(0)}k–${((job.salary_max || job.salary_min + 30000) / 1000).toFixed(0)}k
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          {job.external_url && (
-            <a
-              href={job.external_url}
-              target="_blank"
-              rel="noreferrer"
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 font-medium text-sm text-white shadow-lg shadow-cyan-500/20 hover:opacity-90 transition-opacity flex items-center gap-2"
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => user && (saved ? savedJobs.remove.mutate(id) : savedJobs.save.mutate(id))}
+              className={`p-2 rounded-lg border transition-colors ${saved ? "bg-sky-50 border-sky-200 text-[#0A66C2]" : "border-slate-200 text-slate-400 hover:bg-slate-50"}`}
+              title="Save job"
             >
-              Apply Now <ExternalLink className="h-4 w-4" />
-            </a>
-          )}
+              <Bookmark className={`h-5 w-5 ${saved ? "fill-[#0A66C2]" : ""}`} />
+            </button>
+            <button className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50">
+              <Share2 className="h-5 w-5" />
+            </button>
+            {job.external_url ? (
+              <a
+                href={job.external_url}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary-brand py-2 px-5 text-sm flex items-center gap-2"
+              >
+                Apply <ExternalLink className="h-4 w-4" />
+              </a>
+            ) : user?.role === "ENGINEER" ? (
+              alreadyApplied ? (
+                <span className="btn-secondary-brand py-2 px-5 text-sm flex items-center gap-2 cursor-default">
+                  <CheckCircle2 className="h-4 w-4" /> Applied
+                </span>
+              ) : (
+                <button
+                  onClick={() => applications.apply.mutate({ jobId: id })}
+                  disabled={applications.apply.isPending}
+                  className="btn-primary-brand py-2 px-5 text-sm disabled:opacity-70"
+                >
+                  {applications.apply.isPending ? "Applying…" : "Apply"}
+                </button>
+              )
+            ) : !user ? (
+              <Link href="/auth/login" className="btn-primary-brand py-2 px-5 text-sm">
+                Sign in to apply
+              </Link>
+            ) : null}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-gray-900/60 p-4 rounded-2xl border border-gray-800/80">
+        {/* Job metadata row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
           <div>
-            <span className="text-xs text-gray-500 block">Job Type</span>
-            <span className="font-semibold text-gray-200 capitalize">{job.job_type}</span>
+            <span className="text-[11px] text-slate-500 block font-medium">Type</span>
+            <span className="font-semibold text-slate-800 capitalize">{job.job_type}</span>
           </div>
           <div>
-            <span className="text-xs text-gray-500 block">Location</span>
-            <span className="font-semibold text-gray-200">{job.location || "Worldwide"}</span>
+            <span className="text-[11px] text-slate-500 block font-medium">Location</span>
+            <span className="font-semibold text-slate-800">{job.location || "Worldwide"}</span>
           </div>
           <div>
-            <span className="text-xs text-gray-500 block">Experience Level</span>
-            <span className="font-semibold text-gray-200 capitalize">{job.experience_level || "Mid-Senior"}</span>
+            <span className="text-[11px] text-slate-500 block font-medium">Seniority</span>
+            <span className="font-semibold text-slate-800 capitalize">{job.experience_level || "Mid-Senior"}</span>
           </div>
           <div>
-            <span className="text-xs text-gray-500 block">Est. Salary</span>
-            <span className="font-semibold text-emerald-400">
+            <span className="text-[11px] text-slate-500 block font-medium">Compensation</span>
+            <span className="font-semibold text-emerald-700">
               {job.salary_min ? `$${job.salary_min.toLocaleString()} ${job.currency}` : "Competitive"}
             </span>
           </div>
         </div>
 
+        {/* Skills */}
         {job.skills && job.skills.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Required Skills & Tech Stack</h3>
-            <div className="flex flex-wrap gap-2">
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Required Skills</h3>
+            <div className="flex flex-wrap gap-1.5">
               {job.skills.map((skill, i) => (
-                <span
-                  key={i}
-                  className="px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-xs font-medium"
-                >
-                  {skill}
-                </span>
+                <span key={i} className="badge-ent badge-ent-neutral">{skill}</span>
               ))}
             </div>
           </div>
         )}
 
-        <div className="space-y-4 pt-4 border-t border-gray-800/80">
-          <h3 className="text-lg font-bold text-gray-200">Job Description</h3>
-          <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-line bg-gray-900/40 p-6 rounded-2xl border border-gray-800/60">
+        {/* Description */}
+        <div className="space-y-2.5 pt-4 border-t border-slate-200">
+          <h3 className="text-base font-bold text-slate-900">About this role</h3>
+          <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-5 rounded-xl border border-slate-200">
             {job.description}
           </div>
         </div>

@@ -34,6 +34,7 @@ class UserRepository:
         user = User(
             keycloak_id=data.keycloak_id,
             email=data.email,
+            password_hash=data.password_hash,
             full_name=data.full_name,
             role=data.role,
             avatar_url=data.avatar_url,

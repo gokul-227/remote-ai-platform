@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { LayoutShell } from "@/components/LayoutShell";
+import { QueryProvider } from "@/components/QueryProvider";
 
 export const metadata: Metadata = {
-  title: "WorkMesh AI — AI-Powered Remote Engineering Marketplace",
+  title: "Remote AI Platform — Remote Work Marketplace",
   description:
-    "Discover remote engineering jobs, build AI-enhanced profiles, and connect companies with world-class remote talent.",
-  keywords: ["remote jobs", "engineering marketplace", "AI matching", "software developer jobs"],
+    "Discover remote engineering positions, manage developer profiles, and connect companies with global software talent.",
+  keywords: ["remote jobs", "engineering marketplace", "software developers", "hiring"],
   openGraph: {
-    title: "WorkMesh AI",
-    description: "AI-powered remote engineering marketplace",
+    title: "Remote AI Platform",
+    description: "Remote work marketplace",
     type: "website",
   },
 };
@@ -21,11 +22,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#0b0f19] text-slate-100 antialiased min-h-screen">
-        <AuthProvider>
-          <LayoutShell>{children}</LayoutShell>
-        </AuthProvider>
+    <html lang="en">
+      <body className="antialiased min-h-screen">
+        <QueryProvider><AuthProvider><LayoutShell>{children}</LayoutShell></AuthProvider></QueryProvider>
       </body>
     </html>
   );

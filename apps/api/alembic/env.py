@@ -19,6 +19,13 @@ import app.domains.engineers.models  # noqa: F401
 import app.domains.companies.models  # noqa: F401
 import app.domains.jobs.models  # noqa: F401
 import app.domains.matching.models  # noqa: F401
+import app.domains.projects.models  # noqa: F401
+import app.domains.marketplace.models  # noqa: F401
+import app.domains.network.models  # noqa: F401
+import app.domains.admin.models  # noqa: F401
+import app.domains.applications.models  # noqa: F401
+import app.domains.notifications.models  # noqa: F401
+import app.domains.saved_jobs.models  # noqa: F401
 
 config = context.config
 

@@ -4,7 +4,7 @@ Job Post domain models.
 
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 
 from sqlalchemy import String, Boolean, DateTime, func, Text, Integer, Float, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -43,12 +43,17 @@ class JobPost(Base):
     
     job_type: Mapped[str] = mapped_column(String(50), default="full-time", nullable=False)  # full-time, contract, part-time
     experience_level: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)     # junior, mid, senior, lead
+    budget_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    budget_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    timeline: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    remote_preference: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     salary_min: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     salary_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     currency: Mapped[str] = mapped_column(String(10), default="USD", nullable=False)
     
     skills: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    ai_analysis: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=True)
     
     # Aggregator fields
     external_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, unique=True, index=True)

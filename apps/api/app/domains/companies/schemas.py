@@ -16,6 +16,8 @@ class CompanyProfileBase(BaseModel):
     industry: Optional[str] = Field(None, max_length=255)
     company_size: Optional[str] = Field(None, max_length=50)
     location: Optional[str] = Field(None, max_length=255)
+    country: Optional[str] = None
+    hiring_status: Optional[str] = "actively_hiring"
     tech_stack: List[str] = []
 
 
@@ -31,6 +33,8 @@ class CompanyProfileUpdate(BaseModel):
     industry: Optional[str] = None
     company_size: Optional[str] = None
     location: Optional[str] = None
+    country: Optional[str] = None
+    hiring_status: Optional[str] = None
     tech_stack: Optional[List[str]] = None
 
 

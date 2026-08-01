@@ -1,79 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
-  User,
   Briefcase,
-  Star,
-  TrendingUp,
   Sparkles,
   CheckCircle2,
   Clock,
-  Bookmark,
-  ArrowRight,
-  ChevronRight,
-  Building2,
-  DollarSign,
-  MapPin,
-  PlusCircle,
-  AlertCircle,
 } from "lucide-react";
 import api from "@/lib/api";
+import { Sidebar } from "@/components/Sidebar";
+import { RightSidebar } from "@/components/RightSidebar";
 import { useAuth } from "@/lib/auth";
-
-const profileCompletion = [
-  { label: "Profile photo", done: false },
-  { label: "Headline added", done: true },
-  { label: "About section", done: true },
-  { label: "Skills listed", done: true },
-  { label: "Resume uploaded", done: false },
-  { label: "GitHub linked", done: false },
-  { label: "Experience added", done: true },
-  { label: "Availability set", done: false },
-];
-
-const aiSuggestions = [
-  { skill: "Kubernetes", impact: "+18%", reason: "High demand in 340 matching roles" },
-  { skill: "Terraform", impact: "+12%", reason: "Required by 180 DevOps openings" },
-  { skill: "Go", impact: "+9%", reason: "Backend roles with 30% salary premium" },
-];
-
-const recentActivity = [
-  { icon: Briefcase, text: "Applied to Senior React Engineer at Stripe", time: "2h ago", color: "text-cyan-400" },
-  { icon: Star, text: "Saved: ML Engineer at Anthropic", time: "5h ago", color: "text-amber-400" },
-  { icon: Sparkles, text: "AI profile score updated to 82/100", time: "Yesterday", color: "text-indigo-400" },
-  { icon: TrendingUp, text: "Profile viewed by 3 companies", time: "2d ago", color: "text-emerald-400" },
-];
-
-function CompletionRing({ percent }: { percent: number }) {
-  const r = 36;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (percent / 100) * circ;
-  return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg width="88" height="88" className="-rotate-90">
-        <circle cx="44" cy="44" r={r} stroke="rgba(255,255,255,0.06)" strokeWidth="7" fill="none" />
-        <circle
-          cx="44" cy="44" r={r}
-          stroke="url(#grad)" strokeWidth="7" fill="none"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          strokeLinecap="round"
-          style={{ transition: "stroke-dashoffset 0.8s ease" }}
-        />
-        <defs>
-          <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#0891b2" />
-            <stop offset="100%" stopColor="#6366f1" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <div className="absolute text-center">
-        <p className="text-xl font-bold text-white">{percent}%</p>
-      </div>
-    </div>
-  );
-}
+import { useEngineerProfile } from "@/hooks/useEngineerProfile";
+import { useJobs } from "@/hooks/useJobs";
+import { useSavedJobs } from "@/hooks/useSavedJobs";
+import { useApplications } from "@/hooks/useApplications";
 
 interface JobPost {
   id: string;
@@ -81,218 +23,174 @@ interface JobPost {
   company_name: string;
   salary_min?: number;
   salary_max?: number;
-  location?: string;
   skills: string[];
-  posted_at: string;
 }
 
 export default function EngineerDashboard() {
   const { user } = useAuth();
-  const [recommendedJobs, setRecommendedJobs] = useState<JobPost[]>([]);
-  const [loadingJobs, setLoadingJobs] = useState(true);
-
-  const completedCount = profileCompletion.filter((s) => s.done).length;
-  const completionPercent = Math.round((completedCount / profileCompletion.length) * 100);
-
-  useEffect(() => {
-    api.get("/jobs", { params: { limit: 5 } })
-      .then((r) => setRecommendedJobs(Array.isArray(r.data) ? r.data : r.data.items ?? []))
-      .catch(() => setRecommendedJobs([]))
-      .finally(() => setLoadingJobs(false));
-  }, []);
+  const profile = useEngineerProfile(!!user);
+  const jobs = useJobs({ limit: 5 });
+  const savedJobs = useSavedJobs(!!user);
+  const applications = useApplications(!!user);
+  const matches = useQuery({ queryKey: ["recommendations", user?.id], queryFn: async () => (await api.get("/matching/recommendations", { params: { limit: 20 } })).data, enabled: !!user });
+  const recommendedJobs: JobPost[] = jobs.data || [];
+  const loadingJobs = jobs.isLoading;
+  const profileData = profile.data as { headline?: string; bio?: string; primary_role?: string; skills?: string[]; resume_url?: string; github_url?: string; experience?: unknown[] } | undefined;
+  const completionItems = [
+    { label: "Headline & bio", done: !!(profileData?.headline && profileData?.bio) },
+    { label: "Primary role & skills", done: !!(profileData?.primary_role && profileData?.skills?.length) },
+    { label: "Resume uploaded", done: !!profileData?.resume_url },
+    { label: "GitHub profile linked", done: !!profileData?.github_url },
+    { label: "Work experience added", done: !!profileData?.experience?.length },
+  ];
+  const completionPercent = Math.round((completionItems.filter((s) => s.done).length / completionItems.length) * 100);
+  const matchScore = matches.data?.[0]?.overall_score;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">
-            Welcome back, {user?.full_name?.split(" ")[0] || "Engineer"} 👋
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Here's your career overview today.</p>
-        </div>
-        <Link href="/engineer/profile" className="btn-primary text-sm flex-shrink-0">
-          <PlusCircle className="h-4 w-4" /> Update Profile
-        </Link>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      {/* Left Sidebar */}
+      <div className="lg:col-span-3 space-y-4">
+        <Sidebar />
       </div>
 
-      {/* ── Top Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "AI Match Score", value: "82/100", icon: Sparkles, color: "text-cyan-400", bg: "bg-cyan-500/10", border: "border-cyan-500/20" },
-          { label: "Jobs Matched", value: "47", icon: Briefcase, color: "text-indigo-400", bg: "bg-indigo-500/10", border: "border-indigo-500/20" },
-          { label: "Profile Views", value: "12", icon: TrendingUp, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-          { label: "Saved Jobs", value: "8", icon: Bookmark, color: "text-amber-400", bg: "bg-amber-500/10", border: "border-amber-500/20" },
-        ].map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.label} className="card p-5">
-              <div className={`h-9 w-9 rounded-xl ${stat.bg} border ${stat.border} flex items-center justify-center mb-3`}>
-                <Icon className={`h-4.5 w-4.5 ${stat.color}`} />
-              </div>
-              <p className="text-2xl font-bold text-white">{stat.value}</p>
-              <p className="text-xs text-slate-500 mt-1">{stat.label}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── Main Grid ── */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* ── Left Column ── */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* AI Recommended Jobs */}
-          <div className="card p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="font-semibold text-white flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-cyan-400" />
-                  AI Recommended Jobs
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">Based on your skills and profile</p>
-              </div>
-              <Link href="/jobs" className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
-                View all <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
-            </div>
-
-            <div className="space-y-3">
-              {loadingJobs
-                ? Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5 animate-pulse">
-                    <div className="skeleton h-9 w-9 rounded-lg" />
-                    <div className="flex-1 space-y-1.5">
-                      <div className="skeleton h-3.5 w-2/3 rounded" />
-                      <div className="skeleton h-3 w-1/3 rounded" />
-                    </div>
-                  </div>
-                ))
-                : recommendedJobs.length === 0
-                ? (
-                  <div className="text-center py-8 space-y-2">
-                    <AlertCircle className="h-8 w-8 text-slate-600 mx-auto" />
-                    <p className="text-sm text-slate-500">No job recommendations yet.</p>
-                    <Link href="/jobs" className="text-xs text-cyan-400">Browse all jobs →</Link>
-                  </div>
-                )
-                : recommendedJobs.map((job) => {
-                  const matchScore = Math.floor(65 + Math.random() * 30);
-                  const scoreClass = matchScore >= 85 ? "match-score-high" : matchScore >= 70 ? "match-score-medium" : "match-score-low";
-                  return (
-                    <Link
-                      key={job.id}
-                      href={`/jobs/${job.id}`}
-                      className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-cyan-500/30 hover:bg-white/[0.04] transition-all group"
-                    >
-                      <div className="h-9 w-9 rounded-lg bg-slate-800 border border-white/10 flex items-center justify-center flex-shrink-0">
-                        <Building2 className="h-4 w-4 text-slate-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white group-hover:text-cyan-300 transition-colors truncate">{job.title}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{job.company_name}</p>
-                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                          {job.skills?.slice(0, 3).map((s) => (
-                            <span key={s} className="tag text-[10px] px-1.5">{s}</span>
-                          ))}
-                          {job.salary_min && (
-                            <span className="tag text-[10px] text-emerald-400 px-1.5">
-                              ${(job.salary_min/1000).toFixed(0)}k+
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className={`match-score h-8 w-8 text-[9px] flex-shrink-0 ${scoreClass}`}>
-                        {matchScore}%
-                      </div>
-                    </Link>
-                  );
-                })}
-            </div>
+      {/* Center Feed */}
+      <div className="lg:col-span-6 space-y-4">
+        {/* Welcome Header */}
+        <div className="card-enterprise p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">
+              Welcome back, {user?.full_name?.split(" ")[0] || "Engineer"} 👋
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">Your career activity and job recommendations today.</p>
           </div>
-
-          {/* Recent Activity */}
-          <div className="card p-6">
-            <h2 className="font-semibold text-white flex items-center gap-2 mb-5">
-              <Clock className="h-4 w-4 text-slate-400" />
-              Recent Activity
-            </h2>
-            <div className="space-y-4">
-              {recentActivity.map((item, i) => {
-                const Icon = item.icon;
-                return (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-white/[0.03] border border-white/5 flex items-center justify-center flex-shrink-0">
-                      <Icon className={`h-4 w-4 ${item.color}`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-slate-300">{item.text}</p>
-                      <p className="text-xs text-slate-600 mt-0.5">{item.time}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <Link href="/engineer/profile" className="btn-primary-brand text-xs">
+            My Profile
+          </Link>
         </div>
 
-        {/* ── Right Column ── */}
-        <div className="space-y-6">
-          {/* Profile Completion */}
-          <div className="card p-6">
-            <h2 className="font-semibold text-white mb-4">Profile Completion</h2>
-            <div className="flex items-center gap-4 mb-5">
-              <CompletionRing percent={completionPercent} />
-              <div>
-                <p className="text-sm font-medium text-white">
-                  {completedCount}/{profileCompletion.length} completed
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {completionPercent < 80
-                    ? "Complete your profile to get more matches"
-                    : "Great profile! Keep it updated."}
-                </p>
-              </div>
+        {/* Key Metrics Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Match Rating", value: matchScore == null ? "—" : `${matchScore}/100`, color: "text-[#0A66C2]" },
+            { label: "Matched Roles", value: matches.data?.length ?? 0, color: "text-slate-900" },
+            { label: "Applications", value: applications.data?.length ?? 0, color: "text-emerald-700" },
+            { label: "Saved Jobs", value: savedJobs.data?.length ?? 0, color: "text-amber-700" },
+          ].map((s) => (
+            <div key={s.label} className="card-enterprise p-4 text-center">
+              <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+              <div className="text-[11px] text-slate-500 font-medium mt-0.5">{s.label}</div>
             </div>
-            <div className="space-y-2">
-              {profileCompletion.map((item) => (
-                <div key={item.label} className="flex items-center gap-2.5">
-                  {item.done
-                    ? <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                    : <div className="h-4 w-4 rounded-full border border-white/15 flex-shrink-0" />
-                  }
-                  <span className={`text-xs ${item.done ? "text-slate-400" : "text-slate-600"}`}>
-                    {item.label}
-                  </span>
-                  {!item.done && (
-                    <span className="ml-auto text-[10px] text-cyan-400 cursor-pointer hover:underline">Add</span>
-                  )}
-                </div>
-              ))}
+          ))}
+        </div>
+
+        {/* Recommended Jobs */}
+        <div className="card-enterprise p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#0A66C2]" />
+                Recommended Positions
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">Top opportunities matching your skills</p>
             </div>
-            <Link href="/engineer/profile" className="btn-primary w-full text-sm mt-5 justify-center">
-              Edit Profile <ArrowRight className="h-4 w-4" />
+            <Link href="/jobs" className="text-xs font-semibold text-[#0A66C2] hover:underline">
+              View all
             </Link>
           </div>
 
-          {/* AI Improvement Suggestions */}
-          <div className="card p-6">
-            <h2 className="font-semibold text-white flex items-center gap-2 mb-4">
-              <Sparkles className="h-4 w-4 text-indigo-400" />
-              AI Skill Suggestions
-            </h2>
-            <div className="space-y-3">
-              {aiSuggestions.map((s) => (
-                <div key={s.skill} className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/15 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-white">{s.skill}</span>
-                    <span className="badge badge-success text-[10px]">{s.impact} match</span>
+          <div className="space-y-2.5">
+            {loadingJobs ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex gap-3 p-3 rounded-lg bg-slate-50 animate-pulse">
+                  <div className="skeleton-box h-10 w-10 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <div className="skeleton-box h-4 w-2/3" />
+                    <div className="skeleton-box h-3 w-1/3" />
                   </div>
-                  <p className="text-xs text-slate-500">{s.reason}</p>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : recommendedJobs.length === 0 ? (
+              <div className="text-center py-6 space-y-2">
+                <Briefcase className="h-8 w-8 text-slate-300 mx-auto" />
+                <p className="text-xs text-slate-500">No positions loaded yet.</p>
+                <Link href="/jobs" className="btn-primary-brand py-1.5 px-4 text-xs inline-flex">
+                  Browse Jobs
+                </Link>
+              </div>
+            ) : (
+              recommendedJobs.map((job) => {
+                return (
+                  <Link
+                    key={job.id}
+                    href={`/jobs/${job.id}`}
+                    className="flex items-start justify-between gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors group"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 flex-shrink-0 text-xs">
+                        {job.company_name?.charAt(0).toUpperCase() || "C"}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-slate-900 text-xs group-hover:text-[#0A66C2] truncate">
+                          {job.title}
+                        </h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5">{job.company_name}</p>
+                        <div className="flex gap-1 mt-1.5 flex-wrap">
+                          {job.skills?.slice(0, 3).map((s) => (
+                            <span key={s} className="badge-ent badge-ent-neutral text-[10px]">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <span className="pill-match pill-match-high text-[10px] flex-shrink-0">
+                      —
+                    </span>
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
+
+        {/* Recent Activity */}
+        <div className="card-enterprise p-5 space-y-3">
+          <h2 className="font-semibold text-slate-900 text-sm flex items-center gap-2 border-b border-slate-100 pb-2">
+            <Clock className="h-4 w-4 text-slate-400" /> Recent Activity
+          </h2>
+          <div className="space-y-3 text-xs">
+            <p className="text-xs text-slate-500">Activity will appear as you save jobs and submit applications.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column */}
+      <div className="lg:col-span-3 space-y-4">
+        {/* Profile Completion */}
+        <div className="card-enterprise p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-slate-900 text-sm">Profile Progress</h3>
+            <span className="font-bold text-[#0A66C2] text-xs">{completionPercent}%</span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div className="bg-[#0A66C2] h-full rounded-full transition-all" style={{ width: `${completionPercent}%` }} />
+          </div>
+          <div className="space-y-1.5 pt-1">
+            {completionItems.map((item) => (
+              <div key={item.label} className="flex items-center gap-2 text-xs">
+                {item.done ? (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
+                ) : (
+                  <div className="h-3.5 w-3.5 rounded-full border border-slate-300 flex-shrink-0" />
+                )}
+                <span className={item.done ? "text-slate-600" : "text-slate-400"}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+          <Link href="/engineer/profile" className="btn-secondary-brand text-xs w-full block text-center mt-2">
+            Complete Profile
+          </Link>
+        </div>
+
+        <RightSidebar />
       </div>
     </div>
   );

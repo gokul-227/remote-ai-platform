@@ -20,6 +20,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     keycloak_id: Optional[str] = None
     is_active: bool = True
+    password_hash: Optional[str] = None
 
 
 class UserUpdate(BaseModel):
@@ -62,12 +63,28 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
 class AuthSyncRequest(BaseModel):
     keycloak_id: str
     email: EmailStr
     full_name: str
     role: UserRole = UserRole.ENGINEER
     avatar_url: Optional[str] = None
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6)
+    full_name: str = Field(..., min_length=1, max_length=255)
+    role: UserRole = UserRole.ENGINEER
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 
 class LoginUrlResponse(BaseModel):

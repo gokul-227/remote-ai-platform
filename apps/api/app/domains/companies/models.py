@@ -40,6 +40,8 @@ class CompanyProfile(Base):
     industry: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     company_size: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g., "1-10", "11-50"
     location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    hiring_status: Mapped[Optional[str]] = mapped_column(String(50), default="actively_hiring", nullable=True)
 
     tech_stack: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

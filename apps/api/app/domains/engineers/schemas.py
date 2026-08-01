@@ -35,11 +35,20 @@ class EducationItem(BaseModel):
 
 
 class EngineerProfileBase(BaseModel):
+    country: Optional[str] = None
+    profile_image_url: Optional[str] = None
     headline: Optional[str] = Field(None, max_length=255)
     bio: Optional[str] = None
     location: Optional[str] = Field(None, max_length=255)
+    timezone: Optional[str] = None
+    availability: Optional[str] = None
+    remote_preference: Optional[str] = None
     years_of_experience: int = Field(0, ge=0, le=50)
     primary_role: Optional[str] = Field(None, max_length=255)
+    certifications: List[Dict[str, Any]] = []
+    previous_companies: List[str] = []
+    employment_type: Optional[str] = None
+    available_hours: Optional[int] = Field(None, ge=0, le=168)
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
@@ -56,11 +65,20 @@ class EngineerProfileCreate(EngineerProfileBase):
 
 
 class EngineerProfileUpdate(BaseModel):
+    country: Optional[str] = None
+    profile_image_url: Optional[str] = None
     headline: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
+    timezone: Optional[str] = None
+    availability: Optional[str] = None
+    remote_preference: Optional[str] = None
     years_of_experience: Optional[int] = Field(None, ge=0, le=50)
     primary_role: Optional[str] = None
+    certifications: Optional[List[Dict[str, Any]]] = None
+    previous_companies: Optional[List[str]] = None
+    employment_type: Optional[str] = None
+    available_hours: Optional[int] = Field(None, ge=0, le=168)
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
@@ -80,6 +98,8 @@ class EngineerProfileResponse(EngineerProfileBase):
     resume_url: Optional[str] = None
     parsed_resume_data: Optional[Dict[str, Any]] = None
     ai_summary: Optional[str] = None
+    profile_score: Optional[float] = None
+    missing_skills: List[str] = []
     matching_keywords: List[str] = []
     created_at: datetime
     updated_at: datetime

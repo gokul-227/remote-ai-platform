@@ -8,60 +8,56 @@ import { X } from "lucide-react";
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Close on resize to desktop
   useEffect(() => {
     const handler = () => { if (window.innerWidth >= 768) setMobileOpen(false); };
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  // Prevent body scroll when mobile nav open
-  useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [mobileOpen]);
-
   return (
-    <div className="flex min-h-screen bg-[#0b0f19] text-slate-100">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-64 flex-shrink-0">
-        <div className="fixed top-0 left-0 w-64 h-screen">
-          <Sidebar />
-        </div>
-      </aside>
+    <div className="min-h-screen bg-[#F3F2EF] text-slate-900 flex flex-col">
+      <TopNavbar onMenuClick={() => setMobileOpen(!mobileOpen)} />
 
-      {/* Mobile Drawer Backdrop */}
+      {/* Mobile Sidebar Drawer */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-50 bg-black/40 md:hidden"
           onClick={() => setMobileOpen(false)}
-        />
+        >
+          <div
+            className="w-72 h-full bg-white p-4 shadow-xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+              <span className="font-bold text-slate-900 text-sm">Navigation</span>
+              <button onClick={() => setMobileOpen(false)} className="p-1 rounded text-slate-400 hover:bg-slate-100">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <Sidebar />
+          </div>
+        </div>
       )}
 
-      {/* Mobile Drawer */}
-      <aside
-        className={`fixed top-0 left-0 z-50 h-screen w-64 transition-transform duration-300 md:hidden ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="relative h-full">
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 z-10"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <Sidebar />
-        </div>
-      </aside>
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <TopNavbar onMenuClick={() => setMobileOpen(!mobileOpen)} />
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+      {/* Main Container */}
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+        {children}
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-200 py-6 px-4 text-xs text-slate-500 mt-auto">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-800">Remote AI Platform</span>
+            <span>© 2026 Remote AI Platform. All rights reserved.</span>
+          </div>
+          <div className="flex items-center gap-4 text-slate-600">
+            <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="hover:text-[#0A66C2]">API Swagger Docs</a>
+            <a href="http://localhost:8080" target="_blank" rel="noreferrer" className="hover:text-[#0A66C2]">Identity Admin</a>
+            <a href="http://localhost:9001" target="_blank" rel="noreferrer" className="hover:text-[#0A66C2]">Object Storage</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

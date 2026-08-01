@@ -45,6 +45,7 @@ class User(Base):
         nullable=False,
         index=True,
     )
+    password_hash: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     full_name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,

@@ -4,24 +4,33 @@ Pydantic schemas for Job Post domain.
 
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class JobPostBase(BaseModel):
     title: str = Field(..., min_length=2, max_length=255)
     description: str
-    company_name: str = Field(..., min_length=1, max_length=255)
+    # Optional at the request layer: company-posted jobs have this derived
+    # server-side from the caller's CompanyProfile (see jobs/router.py create_job).
+    # Aggregator/demo-seeded jobs always pass it explicitly. JobService.create_job
+    # rejects a request where it's still missing after that derivation.
+    company_name: Optional[str] = Field(None, max_length=255)
     company_logo: Optional[str] = None
     location: Optional[str] = "Remote"
     is_remote: bool = True
     job_type: str = "full-time"
     experience_level: Optional[str] = "mid"
+    budget_min: Optional[float] = Field(None, ge=0)
+    budget_max: Optional[float] = Field(None, ge=0)
+    timeline: Optional[str] = None
+    remote_preference: Optional[str] = None
     salary_min: Optional[float] = None
     salary_max: Optional[float] = None
     currency: str = "USD"
     skills: List[str] = []
     external_url: Optional[str] = None
+    ai_analysis: Optional[Dict[str, Any]] = None
 
 
 class JobPostCreate(JobPostBase):
@@ -39,6 +48,10 @@ class JobPostUpdate(BaseModel):
     is_remote: Optional[bool] = None
     job_type: Optional[str] = None
     experience_level: Optional[str] = None
+    budget_min: Optional[float] = None
+    budget_max: Optional[float] = None
+    timeline: Optional[str] = None
+    remote_preference: Optional[str] = None
     salary_min: Optional[float] = None
     salary_max: Optional[float] = None
     currency: Optional[str] = None
@@ -59,6 +72,11 @@ class JobPostResponse(JobPostBase):
     posted_at: datetime
     created_at: datetime
     updated_at: datetime
+    budget_min: Optional[float] = None
+    budget_max: Optional[float] = None
+    timeline: Optional[str] = None
+    remote_preference: Optional[str] = None
+    ai_analysis: Optional[Dict[str, Any]] = None
 
 
 class JobSearchQuery(BaseModel):

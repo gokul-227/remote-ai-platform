@@ -6,10 +6,13 @@ import uuid
 from typing import List, Optional, Dict
 from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
+from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import (
     JobPostCreate,
@@ -18,6 +21,8 @@ from app.domains.jobs.schemas import (
     JobSearchQuery,
 )
 from app.domains.jobs.service import JobService
+from app.domains.companies.models import CompanyProfile
+from app.domains.admin.repository import AdminRepository
 
 router = APIRouter(prefix="/jobs", tags=["Job Posts"])
 
@@ -54,6 +59,21 @@ async def list_jobs(
     return [JobPostResponse.model_validate(j) for j in results]
 
 
+@router.get("/company", response_model=List[JobPostResponse])
+async def list_company_jobs(
+    current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
+    service: JobService = Depends(get_job_service),
+) -> List[JobPostResponse]:
+    company = await service.repo.db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+    if not company and current_user.role == UserRole.COMPANY:
+        raise HTTPException(status_code=404, detail="Company profile required")
+    query = select(JobPost).order_by(JobPost.posted_at.desc())
+    if company:
+        query = query.where(JobPost.company_id == company.id)
+    result = await service.repo.db.execute(query)
+    return [JobPostResponse.model_validate(job) for job in result.scalars().all()]
+
+
 @router.get("/{job_id}", response_model=JobPostResponse)
 async def get_job_by_id(
     job_id: uuid.UUID,
@@ -71,17 +91,30 @@ async def create_job(
     service: JobService = Depends(get_job_service),
 ) -> JobPostResponse:
     """Post a new job (Requires COMPANY or ADMIN role)."""
-    job = await service.create_job(data)
+    if current_user.role == UserRole.COMPANY and not data.company_id:
+        company = await service.repo.db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+        if not company:
+            raise HTTPException(status_code=404, detail="Company profile required")
+        data = data.model_copy(update={"company_id": company.id, "company_name": company.name, "company_logo": company.logo_url})
+    try:
+        job = await service.create_job(data)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return JobPostResponse.model_validate(job)
 
 
 @router.post("/sync", response_model=Dict[str, int])
 async def trigger_job_sync(
     limit_per_source: int = Query(30, ge=5, le=200),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
     service: JobService = Depends(get_job_service),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, int]:
-    """Manually trigger background sync across all 5 public job aggregators."""
-    stats = await service.sync_all_job_sources(limit_per_source=limit_per_source)
+    """Manually trigger background sync across all 5 public job aggregators. Admin only —
+    a scheduled sync already runs via Celery beat every 6 hours."""
+    admin_repo = AdminRepository(db)
+    stats = await service.sync_all_job_sources(limit_per_source=limit_per_source, admin_repo=admin_repo)
+    await db.commit()
     return stats
 
 
@@ -102,7 +135,10 @@ DEMO_JOBS_SEED = [
 async def seed_demo_jobs(
     service: JobService = Depends(get_job_service),
 ) -> Dict[str, int]:
-    """Seed 50 realistic software engineering remote jobs into the database."""
+    """Seed 50 realistic software engineering remote jobs into the database.
+    Disabled in production — demo/local-dev convenience only."""
+    if settings.is_production:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Demo seeding is disabled in production")
     created_count = 0
     for idx, item in enumerate(DEMO_JOBS_SEED):
         for sub_idx in range(5):  # Create variations to make 50 jobs
@@ -121,7 +157,7 @@ async def seed_demo_jobs(
                 skills=item["skills"],
                 source=item["source"],
                 external_id=f"demo-{idx}-{sub_idx}",
-                external_url=f"https://workmesh.ai/jobs/demo-{idx}-{sub_idx}",
+                external_url=f"https://remoteaiplatform.ai/jobs/demo-{idx}-{sub_idx}",
             )
             try:
                 await service.create_job(job_data)
@@ -129,4 +165,3 @@ async def seed_demo_jobs(
             except Exception:
                 pass
     return {"created": created_count}
-

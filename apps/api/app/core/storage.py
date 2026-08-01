@@ -79,10 +79,10 @@ class StorageService:
                 length=len(data),
                 content_type=content_type,
             )
-            return f"http://{settings.MINIO_ENDPOINT}/{bucket_name}/{object_name}"
+            return f"{settings.MINIO_PUBLIC_ENDPOINT.rstrip('/')}/{bucket_name}/{object_name}"
         except Exception as e:
-            logger.warning(f"MinIO upload error (falling back to mock URL): {e}")
-            return f"http://localhost:9000/{bucket_name}/{object_name}"
+            logger.error("MinIO upload failed", bucket=bucket_name, object=object_name, error=str(e))
+            raise RuntimeError("Object storage upload failed") from e
 
 
 @lru_cache

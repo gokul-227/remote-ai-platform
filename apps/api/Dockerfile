@@ -1,4 +1,4 @@
-# WorkMesh AI — FastAPI Dockerfile
+# Remote AI Platform — FastAPI Dockerfile
 # Multi-stage build for development and production targets
 
 # ─── Base ─────────────────────────────────────────────────────────────────────

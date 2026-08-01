@@ -28,6 +28,18 @@ async def get_engineer_service(db: AsyncSession = Depends(get_db)) -> EngineerSe
     return EngineerService(repo)
 
 
+@router.get("", response_model=List[EngineerProfileResponse])
+async def list_engineers(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    service: EngineerService = Depends(get_engineer_service),
+) -> List[EngineerProfileResponse]:
+    """List public engineer profiles for company dashboards."""
+    params = EngineerSearchQuery(skip=skip, limit=limit)
+    results = await service.search_engineers(params)
+    return [EngineerProfileResponse.model_validate(profile) for profile in results]
+
+
 @router.get("/me", response_model=EngineerProfileResponse)
 async def get_my_profile(
     current_user: User = Depends(get_current_user),
@@ -46,7 +58,7 @@ async def get_my_profile(
 @router.post("/me", response_model=EngineerProfileResponse, status_code=status.HTTP_201_CREATED)
 async def create_my_profile(
     data: EngineerProfileCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.ENGINEER, UserRole.ADMIN)),
     service: EngineerService = Depends(get_engineer_service),
 ) -> EngineerProfileResponse:
     """Create or replace profile for current engineer."""
@@ -57,11 +69,21 @@ async def create_my_profile(
 @router.put("/me", response_model=EngineerProfileResponse)
 async def update_my_profile(
     data: EngineerProfileUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role(UserRole.ENGINEER, UserRole.ADMIN)),
     service: EngineerService = Depends(get_engineer_service),
 ) -> EngineerProfileResponse:
     """Update profile fields for current engineer."""
     profile = await service.update_profile(current_user.id, data)
+    return EngineerProfileResponse.model_validate(profile)
+
+
+@router.post("/me/ai-enhance", response_model=EngineerProfileResponse)
+async def enhance_my_profile(
+    current_user: User = Depends(get_current_user),
+    service: EngineerService = Depends(get_engineer_service),
+) -> EngineerProfileResponse:
+    """Analyze the saved profile through the provider-neutral AI service."""
+    profile = await service.enhance_profile(current_user.id)
     return EngineerProfileResponse.model_validate(profile)
 
 

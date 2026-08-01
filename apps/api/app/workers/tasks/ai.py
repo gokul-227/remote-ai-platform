@@ -48,12 +48,12 @@ async def _async_enrich_job(job_id_str: str):
             return None
 
         enricher = JobEnricherAgent()
-        enrichment = await enricher.enrich_job_post(job.title, job.description)
+        enrichment = await enricher.enrich_job(job.title, job.description)
 
-        if enrichment.get("extracted_skills"):
-            job.skills = list(set((job.skills or []) + enrichment["extracted_skills"]))
-        if enrichment.get("seniority"):
-            job.experience_level = enrichment["seniority"]
+        if enrichment.get("skills"):
+            job.skills = list(set((job.skills or []) + enrichment["skills"]))
+        if enrichment.get("experience_level"):
+            job.experience_level = enrichment["experience_level"]
 
         await session.commit()
         logger.info(f"Job enriched for {job_id}")

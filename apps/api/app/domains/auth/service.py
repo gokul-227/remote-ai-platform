@@ -26,15 +26,15 @@ class AuthService:
         In dev mode or if Keycloak fails, decodes token or creates fallback payload.
         """
         try:
-            # First try unverified decode to inspect headers/claims
-            unverified_claims = jwt.get_unverified_claims(token)
+            claims = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+            unverified_claims = claims
             
             # Keycloak JWT payload parsing
             sub = unverified_claims.get("sub")
             if not sub:
                 raise AuthenticationError("Invalid token: missing subject (sub)")
 
-            email = unverified_claims.get("email") or unverified_claims.get("preferred_username") or f"{sub}@workmesh.local"
+            email = unverified_claims.get("email") or unverified_claims.get("preferred_username") or f"{sub}@remoteaiplatform.local"
             name = unverified_claims.get("name") or unverified_claims.get("preferred_username") or email.split("@")[0]
             
             # Extract roles from Keycloak realm_access or resource_access
@@ -82,7 +82,7 @@ class AuthService:
                 await self.user_repo.db.flush()
                 return user
 
-        # Map Keycloak roles to WorkMesh UserRole
+        # Map Keycloak roles to Remote AI Platform user roles
         role = UserRole.ENGINEER
         if "admin" in payload.roles or "ADMIN" in payload.roles:
             role = UserRole.ADMIN
@@ -92,8 +92,8 @@ class AuthService:
         # Create new user record
         user_create = UserCreate(
             keycloak_id=payload.sub,
-            email=payload.email or f"{payload.sub}@workmesh.local",
-            full_name=payload.name or "WorkMesh User",
+            email=payload.email or f"{payload.sub}@remoteaiplatform.local",
+            full_name=payload.name or "Remote AI Platform User",
             role=role,
             is_active=True,
         )
@@ -122,8 +122,8 @@ class AuthService:
     def get_login_url(self, redirect_uri: str = "http://localhost:3000/auth/callback") -> str:
         """Generate Keycloak login URL for OIDC frontend flow."""
         return (
-            f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/auth"
-            f"?client_id={settings.KEYCLOAK_CLIENT_ID}"
+            f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/auth"
+            f"?client_id={settings.KEYCLOAK_WEB_CLIENT_ID}"
             f"&response_type=code"
             f"&scope=openid+profile+email"
             f"&redirect_uri={redirect_uri}"
@@ -132,7 +132,7 @@ class AuthService:
     def get_logout_url(self, redirect_uri: str = "http://localhost:3000") -> str:
         """Generate Keycloak logout URL."""
         return (
-            f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/logout"
-            f"?client_id={settings.KEYCLOAK_CLIENT_ID}"
+            f"{settings.KEYCLOAK_PUBLIC_URL}/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/logout"
+            f"?client_id={settings.KEYCLOAK_WEB_CLIENT_ID}"
             f"&post_logout_redirect_uri={redirect_uri}"
         )

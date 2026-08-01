@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domains.admin.schemas import PlatformStatsResponse, UserStatusUpdate
+from app.domains.admin.schemas import ApiSyncLogResponse, PlatformStatsResponse, UserStatusUpdate
 from app.domains.admin.service import AdminService
 from app.domains.auth.dependencies import require_role
 from app.domains.auth.models import User, UserRole
@@ -29,6 +29,17 @@ async def get_platform_stats(
 ) -> PlatformStatsResponse:
     """Get high-level platform statistics (Admin only)."""
     return await service.get_platform_stats()
+
+
+@router.get("/sync-logs", response_model=List[ApiSyncLogResponse])
+async def get_sync_logs(
+    limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    service: AdminService = Depends(get_admin_service),
+) -> List[ApiSyncLogResponse]:
+    """Recent job-aggregator sync runs — source, status, counts, duration (Admin only)."""
+    logs = await service.get_recent_syncs(limit=limit)
+    return [ApiSyncLogResponse.model_validate(log) for log in logs]
 
 
 @router.get("/users", response_model=List[UserResponse])

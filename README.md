@@ -1,91 +1,150 @@
-# WorkMesh AI
+# Remote AI Platform
 
-> **AI-powered Remote Engineering Marketplace**
->
-> Aggregate remote jobs from public APIs · Build AI-enhanced engineer profiles · Match talent with companies
+> AI-powered remote engineering marketplace connecting companies with remote engineers through
+> transparent, explainable AI matching.
 
----
+## 1. Product overview
 
-## What is WorkMesh AI?
+Remote AI Platform aggregates remote engineering jobs from public job boards, builds AI-enhanced
+engineer profiles from resumes, and computes explainable engineer↔job match scores. Companies get a
+talent-discovery dashboard and hiring pipeline; engineers get a job marketplace, AI profile enhancement,
+and a project workspace once hired.
 
-WorkMesh AI is an AI-powered remote engineering marketplace connecting companies with world-class remote engineers through transparent, explainable AI matching.
+## 2. Architecture
 
-**Core MVP Capabilities:**
-- 🎨 **Enterprise SaaS UI**: Built with Next.js 16 (App Router), TypeScript, Tailwind CSS, and Lucide icons.
-- 💼 **Job Marketplace**: Aggregates remote engineering listings from 5 public sources (RemoteOK, Remotive, Arbeitnow, USAJobs, The Muse) with deduplication and filtering.
-- 🧑‍💻 **Engineer Experience**: LinkedIn-style profiles, resume AI extraction, match score analytics, and AI skill improvement recommendations.
-- 🏢 **Company Experience**: Talent discovery dashboard, candidate pipeline visualization, active role management, and AI matching insights.
-- 🤖 **AI Layer**: LiteLLM-based provider abstraction supporting Gemini, Claude, OpenAI, and local Ollama models.
-- 🔐 **Enterprise Auth & Infra**: Keycloak OIDC, PostgreSQL, MinIO S3 object storage, and Redis + Celery task queue.
+```mermaid
+flowchart LR
+    Web["Next.js 16 (apps/web)"] -- REST + WS --> API["FastAPI (apps/api)"]
+    API --> PG[(PostgreSQL)]
+    API --> Minio[(MinIO)]
+    API --> Keycloak["Keycloak (OIDC)"]
+    API -- broker --> Redis[(Redis)]
+    Worker["Celery worker + beat"] --> Redis
+    Worker --> PG
+    Worker --> External["RemoteOK / Arbeitnow /\nRemotive / USAJobs / The Muse"]
+    API --> Agents["AI Agents (LiteLLM)"] -.-> LLM["Groq / Ollama / OpenAI / Gemini"]
+```
 
----
+Full write-up: [docs/architecture.md](docs/architecture.md).
 
-## Tech Stack
+## 3. Features
+
+- **Job marketplace** — aggregates remote engineering roles from 5 public sources (RemoteOK, Remotive,
+  Arbeitnow, USAJobs, The Muse) with dedup-on-sync and search/filtering.
+- **Engineer profiles** — resume upload, AI-extracted skills/experience, AI profile enhancement, public
+  profile pages.
+- **Company profiles & hiring** — company profile, job posting with AI job analysis, candidate ranking,
+  applications pipeline.
+- **AI matching engine** — multi-factor explainable match scores (skills, experience, role, timezone,
+  compensation, remote fit) between engineers and jobs.
+- **Networking & messaging** — connection requests and real-time chat over WebSocket.
+- **Project workspace** — milestones, tasks, comments, and AI-generated project plans/progress/risk
+  reports once an engineer is engaged.
+- **Admin console** — platform stats and job-aggregator sync status (source, last sync, status, jobs
+  imported).
+
+## 4. Technology stack
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | Next.js 16 (App Router) + TypeScript + Tailwind CSS |
-| **Backend** | FastAPI + SQLAlchemy 2 + Alembic |
-| **Database** | PostgreSQL 16 (FTS + pg_trgm) |
-| **Cache / Task Queue** | Redis 7 + Celery 5 (Flower Monitoring UI) |
-| **Object Storage** | MinIO (S3 Compatible) |
-| **Authentication** | Keycloak OIDC (GitHub, Google, Email) |
-| **AI Matching** | LiteLLM + Ollama / Gemini / Groq |
-| **Deployment** | Vercel (Frontend), Render / Fly.io (Backend), Neon (Database) |
+| Frontend | Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + TanStack Query |
+| Backend | FastAPI + SQLAlchemy 2 (async) + Alembic |
+| Database | PostgreSQL 16 |
+| Cache / Task queue | Redis 7 + Celery 5 |
+| Object storage | MinIO (S3-compatible) |
+| Authentication | Email/password JWT (primary) + Keycloak OIDC (provisioned) |
+| AI | LiteLLM — Groq / Ollama / OpenAI / Gemini, provider-agnostic |
+| Deployment targets | Vercel (frontend), Render/Fly.io (backend), Neon/Supabase (database) |
 
----
+## 5. Local setup
 
-## Quickstart
-
-### 1. Clone & Configure
 ```bash
-git clone https://github.com/workmesh-ai/workmesh-ai.git
-cd workmesh-ai
+git clone <this-repo-url>
+cd remote-ai-platform
 cp .env.example .env
+npm install
 ```
 
-### 2. Run Local Infrastructure
+Then either run everything via Docker (§6), or run the two apps directly:
 ```bash
-docker compose up -d
-```
+cd apps/api && python3.11 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+uvicorn app.main:app --reload            # terminal 1 — API on :8000
 
-### 3. Seed Demo Data (50 Remote Jobs)
+cd apps/web && npm run dev                # terminal 2 — web on :3000
+```
+Full walkthrough, including running Postgres/Redis/MinIO/Keycloak without Docker for the backend to
+connect to: [docs/development.md](docs/development.md).
+
+## 6. Docker setup
+
 ```bash
-python3 scripts/seed_demo_jobs.py
-# Or trigger via backend API:
-curl -X POST "http://localhost:8000/api/v1/jobs/seed_demo"
+cp .env.example .env
+docker compose -f infra/docker/docker-compose.yml up -d
 ```
 
-### 4. Start Development Servers
+Brings up 9 services: `postgres`, `redis`, `minio` + `minio-init`, `keycloak`, `api`, `web`,
+`celery-worker`, `celery-beat`. All app containers hot-reload from bind-mounted source.
+
+| Service | URL |
+|---|---|
+| Web app | http://localhost:3000 |
+| API docs | http://localhost:8000/docs |
+| Keycloak admin | http://localhost:8080 |
+| MinIO console | http://localhost:9001 |
+
+Seed demo jobs (local/dev only — disabled when `APP_ENV=production`):
 ```bash
-# Terminal 1 — Backend API
-cd apps/api && uvicorn app.main:app --reload
-
-# Terminal 2 — Next.js Frontend
-cd apps/web && npm run dev
+curl -X POST http://localhost:8000/api/v1/jobs/seed_demo
 ```
 
----
+## 7. Environment variables
 
-## Access URLs
+All variables are documented with placeholder values in [`.env.example`](.env.example) — app config,
+Postgres, Redis, MinIO, Keycloak, JWT, AI/LiteLLM, job-aggregator source URLs, and feature flags.
+`NEXT_PUBLIC_API_URL` is the one variable the frontend itself reads (bare API host, no `/api/v1` suffix).
+The default secrets in `.env.example`/`docker-compose.yml` are development-only placeholders — always
+set real high-entropy secrets for any non-local deployment.
 
-| Service | Access URL | Credentials / Notes |
-|---|---|---|
-| **Frontend Web App** | http://localhost:3000 | Next.js 16 Enterprise UI |
-| **FastAPI Swagger Docs** | http://localhost:8000/docs | REST API specifications |
-| **Keycloak Admin** | http://localhost:8080 | `admin` / `admin_dev_password` |
-| **MinIO Console** | http://localhost:9001 | `minioadmin` / `minioadmin_dev_password` |
-| **Celery Flower** | http://localhost:5555 | Task worker monitoring |
+## 8. AI configuration
 
----
+All AI calls go through LiteLLM — no direct provider SDK usage in application code. Configure via
+`AI_PROVIDER`, `AI_MODEL`, `AI_FALLBACK_PROVIDERS`. Details and Groq/Ollama setup:
+[docs/ai-providers.md](docs/ai-providers.md).
 
-## Project Documentation
+## 9. Database migrations
 
-- 📜 [Deployment Guide](docs/deployment.md) — Steps for Vercel, Render, Neon Postgres, and AI keys.
-- 🔧 [Local Services](docs/local-services.md) — Overview of MinIO, Celery Flower, Keycloak, and Redis setup.
+```bash
+cd apps/api
+alembic upgrade head                              # apply
+alembic revision --autogenerate -m "description"  # create a new migration
+```
+New domain models must be imported in `apps/api/alembic/env.py` before `--autogenerate` will see them.
 
----
+## 10. Testing
+
+```bash
+cd apps/api && pytest                 # backend — in-memory SQLite, no external services needed
+cd apps/web && npm run lint && npm run build   # frontend — no test suite configured yet
+```
+Or without a local Python interpreter, via the built dev image:
+```bash
+docker build -f apps/api/Dockerfile --target development -t remote-ai-api:dev apps/api
+docker run --rm -v "$(pwd)/apps/api:/app" -w /app remote-ai-api:dev pytest -q
+```
+
+## 11. Deployment
+
+Production topology (Vercel + Render/Fly.io + Neon/Supabase) and step-by-step instructions:
+[docs/deployment.md](docs/deployment.md). API reference: [docs/api.md](docs/api.md).
+
+## Documentation index
+
+- [docs/architecture.md](docs/architecture.md) — system design, domain layout, AI pipeline
+- [docs/api.md](docs/api.md) — API domains, auth model, example requests
+- [docs/development.md](docs/development.md) — local dev, testing, migrations
+- [docs/deployment.md](docs/deployment.md) — production deployment guide
+- [docs/ai-providers.md](docs/ai-providers.md) — LiteLLM provider configuration
 
 ## License
 
-MIT © WorkMesh AI
+MIT © Remote AI Platform

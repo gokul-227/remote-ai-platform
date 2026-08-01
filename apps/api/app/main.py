@@ -1,5 +1,5 @@
 """
-WorkMesh AI — FastAPI Application Factory
+Remote AI Platform — FastAPI Application Factory
 """
 
 from contextlib import asynccontextmanager
@@ -27,6 +27,11 @@ from app.domains.jobs.router import router as jobs_router
 from app.domains.search.router import router as search_router
 from app.domains.matching.router import router as matching_router
 from app.domains.admin.router import router as admin_router
+from app.domains.saved_jobs.router import router as saved_jobs_router
+from app.domains.applications.router import router as applications_router
+from app.domains.projects.router import router as projects_router
+from app.domains.notifications.router import router as notifications_router
+from app.domains.network.router import router as network_router
 
 logger = structlog.get_logger(__name__)
 
@@ -36,7 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan — runs startup and shutdown logic."""
     configure_logging()
     logger.info(
-        "WorkMesh AI starting",
+        "Remote AI Platform starting",
         version=settings.APP_VERSION,
         environment=settings.APP_ENV,
     )
@@ -56,12 +61,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Shutdown
     await engine.dispose()
-    logger.info("WorkMesh AI shutdown complete")
+    logger.info("Remote AI Platform shutdown complete")
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="WorkMesh AI",
+        title="Remote AI Platform",
         description=(
             "AI-powered Remote Engineering Marketplace — "
             "Aggregate remote jobs, match engineers with AI, and connect talent with companies."
@@ -94,7 +99,7 @@ def create_app() -> FastAPI:
         should_respect_env_var=True,
         should_instrument_requests_inprogress=True,
         excluded_handlers=["/metrics", "/api/v1/health"],
-        inprogress_name="workmesh_inprogress_requests",
+        inprogress_name="remote_ai_platform_inprogress_requests",
         inprogress_labels=True,
     ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
@@ -106,8 +111,14 @@ def create_app() -> FastAPI:
     app.include_router(engineers_router, prefix=prefix)
     app.include_router(companies_router, prefix=prefix)
     app.include_router(jobs_router, prefix=prefix)
+    app.include_router(search_router, prefix=prefix)
     app.include_router(matching_router, prefix=prefix)
     app.include_router(admin_router, prefix=prefix)
+    app.include_router(saved_jobs_router, prefix=prefix)
+    app.include_router(applications_router, prefix=prefix)
+    app.include_router(projects_router, prefix=prefix)
+    app.include_router(notifications_router, prefix=prefix)
+    app.include_router(network_router, prefix=prefix)
 
     return app
 

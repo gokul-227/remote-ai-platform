@@ -35,6 +35,10 @@ class MatchingRepository:
         skill_score: float,
         experience_score: float,
         role_score: float,
+        timezone_score: float,
+        availability_score: float,
+        compensation_score: float,
+        remote_score: float,
         reasoning: str,
         matching_skills: list,
         missing_skills: list,
@@ -45,6 +49,10 @@ class MatchingRepository:
             existing.skill_score = skill_score
             existing.experience_score = experience_score
             existing.role_score = role_score
+            existing.timezone_score = timezone_score
+            existing.availability_score = availability_score
+            existing.compensation_score = compensation_score
+            existing.remote_score = remote_score
             existing.reasoning = reasoning
             existing.matching_skills = matching_skills
             existing.missing_skills = missing_skills
@@ -58,6 +66,10 @@ class MatchingRepository:
             skill_score=skill_score,
             experience_score=experience_score,
             role_score=role_score,
+            timezone_score=timezone_score,
+            availability_score=availability_score,
+            compensation_score=compensation_score,
+            remote_score=remote_score,
             reasoning=reasoning,
             matching_skills=matching_skills,
             missing_skills=missing_skills,
@@ -73,7 +85,7 @@ class MatchingRepository:
     ) -> Sequence[JobMatch]:
         stmt = (
             select(JobMatch)
-            .options(selectinload(JobMatch.job))
+            .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer))
             .where(
                 JobMatch.engineer_id == engineer_id,
                 JobMatch.overall_score >= min_score,
@@ -91,7 +103,7 @@ class MatchingRepository:
     ) -> Sequence[JobMatch]:
         stmt = (
             select(JobMatch)
-            .options(selectinload(JobMatch.engineer))
+            .options(selectinload(JobMatch.engineer), selectinload(JobMatch.job))
             .where(JobMatch.job_id == job_id, JobMatch.overall_score >= min_score)
             .order_by(JobMatch.overall_score.desc())
             .offset(skip)

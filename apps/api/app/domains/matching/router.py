@@ -5,11 +5,14 @@ API Router for AI Matching domain.
 import uuid
 from typing import List
 from fastapi import APIRouter, Depends, Query, status, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
+from app.domains.companies.models import CompanyProfile
+from app.domains.engineers.models import EngineerProfile
 from app.domains.matching.schemas import JobMatchResponse, MatchStatusUpdate
 from app.domains.matching.service import MatchingService
 
@@ -43,6 +46,13 @@ async def get_candidates_for_job(
     service: MatchingService = Depends(get_matching_service),
 ) -> List[JobMatchResponse]:
     """Get top matching engineer candidates for a company's job post."""
+    if current_user.role == UserRole.COMPANY:
+        job = await service.job_repo.get_by_id(job_id)
+        if not job:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job post not found")
+        company = await service.db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+        if not company or job.company_id != company.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view candidates for this job")
     matches = await service.get_top_candidates_for_job(job_id, skip=skip, limit=limit)
     return [JobMatchResponse.model_validate(m) for m in matches]
 
@@ -58,6 +68,9 @@ async def update_match_status(
     match_obj = await service.match_repo.get_by_id(match_id)
     if not match_obj:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
+    engineer = await service.db.get(EngineerProfile, match_obj.engineer_id)
+    if not engineer or engineer.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this match")
     match_obj.status = body.status
     await service.db.commit()
     return JobMatchResponse.model_validate(match_obj)

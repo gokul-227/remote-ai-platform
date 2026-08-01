@@ -19,16 +19,7 @@ async def _async_sync_all_sources():
         service = JobService(repo)
         admin_repo = AdminRepository(session)
 
-        stats = await service.sync_all_job_sources(limit_per_source=50)
-
-        for source_name, count in stats.items():
-            await admin_repo.log_sync(
-                source=source_name,
-                jobs_fetched=count,
-                jobs_inserted=count,
-                jobs_updated=0,
-                status="SUCCESS",
-            )
+        stats = await service.sync_all_job_sources(limit_per_source=50, admin_repo=admin_repo)
         await session.commit()
         return stats
 

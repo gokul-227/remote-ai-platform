@@ -46,6 +46,10 @@ class JobMatch(Base):
     skill_score: Mapped[float] = mapped_column(Float, nullable=False)               # 0.0 to 100.0
     experience_score: Mapped[float] = mapped_column(Float, nullable=False)          # 0.0 to 100.0
     role_score: Mapped[float] = mapped_column(Float, nullable=False)                # 0.0 to 100.0
+    timezone_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    availability_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    compensation_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    remote_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
 
     reasoning: Mapped[str] = mapped_column(Text, nullable=False)
     matching_skills: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
