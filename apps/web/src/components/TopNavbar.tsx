@@ -56,6 +56,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
     user?.role === "COMPANY"
       ? [
           { name: "Home", href: "/", icon: Home },
+          { name: "Feed", href: "/feed", icon: MessageSquare },
           { name: "My Jobs", href: "/company/jobs", icon: Briefcase },
           { name: "Candidates", href: "/company/candidates", icon: Users },
           { name: "Network", href: "/network", icon: Users },
@@ -64,6 +65,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
         ]
       : [
           { name: "Home", href: "/", icon: Home },
+          { name: "Feed", href: "/feed", icon: MessageSquare },
           { name: "Jobs", href: "/jobs", icon: Briefcase },
           { name: "Freelancers", href: "/freelancers", icon: Users },
           ...(user?.role === "ENGINEER"

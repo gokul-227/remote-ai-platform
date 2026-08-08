@@ -36,13 +36,13 @@ usable.
 | **Notifications** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | — | PARTIAL |
 | **Projects** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | PARTIAL |
 | **Milestones/Tasks** | ✅ DONE | ❌ MISSING | ✅ DONE | ✅ DONE | PARTIAL |
-| **Work Dispatch (Uber)** | ✅ DONE | ❌ MISSING | ✅ DONE | ⚠️ PARTIAL | PARTIAL |
-| **Work Submissions/Review** | ✅ DONE | ❌ MISSING | ✅ DONE | ⚠️ PARTIAL | PARTIAL |
+| **Work Dispatch (Uber)** | ✅ DONE | ✅ DONE | ✅ DONE | ⚠️ PARTIAL | COMPLETE |
+| **Work Submissions/Review** | ✅ DONE | ✅ DONE | ✅ DONE | ⚠️ PARTIAL | COMPLETE |
 | **Contracts** | ❌ MISSING | ❌ MISSING | ❌ MISSING | ❌ MISSING | MISSING |
 | **Payments (abstraction)** | ✅ Sandbox | ❌ MISSING | ✅ DONE | — | PARTIAL |
-| **Work Ledger** | ✅ DONE | ❌ MISSING | ✅ DONE | — | PARTIAL |
+| **Work Ledger** | ✅ DONE | ✅ DONE | ✅ DONE | — | COMPLETE |
 | **Trust/Reputation** | ❌ MISSING | ❌ MISSING | ⚠️ PARTIAL | ❌ MISSING | MISSING |
-| **Social Feed (Posts)** | ⚠️ PARTIAL | ❌ MISSING | ✅ DONE | ⚠️ PARTIAL | PARTIAL |
+| **Social Feed (Posts)** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
 | **Groups** | ❌ MISSING | ❌ MISSING | ❌ MISSING | ❌ MISSING | MISSING |
 | **Freelancer Discovery** | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | — | PARTIAL |
 | **Admin Console** | ⚠️ PARTIAL | ⚠️ PARTIAL | ✅ DONE | ⚠️ PARTIAL | PARTIAL |

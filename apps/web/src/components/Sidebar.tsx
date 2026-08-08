@@ -27,6 +27,8 @@ export function Sidebar() {
 
   const navItems = [
     { name: "My Profile", href: "/engineer/profile", icon: User },
+    { name: "Execution Workspace", href: "/engineer/workspace", icon: FolderKanban },
+    { name: "Social Feed", href: "/feed", icon: MessageSquare },
     { name: "Saved Jobs", href: "/jobs?saved=true", icon: Bookmark, count: savedJobs.data?.length },
     { name: "My Applications", href: "/engineer/applications", icon: FileText, count: applications.data?.length },
     { name: "Recommendations", href: "/engineer/recommendations", icon: LayoutDashboard },

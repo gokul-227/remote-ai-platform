@@ -469,6 +469,59 @@ async def respond_to_task_offer(offer_id: uuid.UUID, data: TaskOfferResponse, cu
     return offer
 
 
+@router.get("/my-offers")
+async def list_my_task_offers(
+    current_user: User = Depends(require_role(UserRole.ENGINEER)),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all task assignment offers received by the current engineer."""
+    result = await db.execute(
+        select(TaskAssignmentOffer, ProjectTask, Project)
+        .join(ProjectTask, TaskAssignmentOffer.task_id == ProjectTask.id)
+        .join(Project, ProjectTask.project_id == Project.id)
+        .where(TaskAssignmentOffer.candidate_user_id == current_user.id)
+        .order_by(TaskAssignmentOffer.created_at.desc())
+    )
+    items = []
+    for offer, task, project in result.all():
+        items.append({
+            "offer": offer,
+            "task": task,
+            "project_id": str(project.id),
+            "project_title": project.title,
+        })
+    return items
+
+
+@router.get("/my-tasks")
+async def list_my_assigned_tasks(
+    current_user: User = Depends(require_role(UserRole.ENGINEER)),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all tasks assigned to the current engineer across all projects."""
+    result = await db.execute(
+        select(ProjectTask, Project)
+        .join(Project, ProjectTask.project_id == Project.id)
+        .where(ProjectTask.assigned_user_id == current_user.id)
+        .order_by(ProjectTask.created_at.desc())
+    )
+    items = []
+    for task, project in result.all():
+        # Get latest submission if any
+        submission = await db.scalar(
+            select(WorkSubmission)
+            .where(WorkSubmission.task_id == task.id)
+            .order_by(WorkSubmission.version.desc())
+        )
+        items.append({
+            "task": task,
+            "project_id": str(project.id),
+            "project_title": project.title,
+            "latest_submission": submission,
+        })
+    return items
+
+
 @router.patch("/task-offers/{offer_id}/cancel")
 async def cancel_task_offer(offer_id: uuid.UUID, current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)), db: AsyncSession = Depends(get_db)):
     offer = await db.get(TaskAssignmentOffer, offer_id)
