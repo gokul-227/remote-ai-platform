@@ -1,7 +1,7 @@
 # Agent Handoff Contract
 
 **Current Branch**: `main`  
-**Current Commit**: `6390d1c` (fix(web): resolve TypeScript type errors and broken apiClient module imports)  
+**Current Commit**: `871012a` (docs: update FINAL_ENGINEERING_REPORT and AGENT_HANDOFF with empirical audit results)  
 **Date**: 2026-08-08  
 
 ---
