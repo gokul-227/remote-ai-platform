@@ -19,6 +19,7 @@ import {
   FolderKanban,
   Sparkles,
   Globe,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";

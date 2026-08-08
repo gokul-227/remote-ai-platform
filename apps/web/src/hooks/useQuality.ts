@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apiClient";
+import api from "@/lib/api";
 
 export interface QualityIssue {
   severity: "critical" | "warning" | "info";
@@ -44,7 +44,7 @@ export function useEvaluateSubmission() {
     Error,
     { task_title: string; task_description: string; submission_content: string; requirements?: string[] }
   >({
-    mutationFn: (data) => apiClient.post("/quality/evaluate", data).then((r) => r.data),
+    mutationFn: (data) => api.post("/quality/evaluate", data).then((r: { data: SubmissionQualityReport }) => r.data),
   });
 }
 
@@ -54,6 +54,7 @@ export function useCodeReview() {
     Error,
     { task_description: string; code_snippet: string; language: string }
   >({
-    mutationFn: (data) => apiClient.post("/quality/review-code", data).then((r) => r.data),
+    mutationFn: (data) => api.post("/quality/review-code", data).then((r: { data: CodeReviewReport }) => r.data),
   });
 }
+

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/apiClient";
+import api from "@/lib/api";
 
 export interface Group {
   id: string;
@@ -55,7 +55,7 @@ export function useGroups(params?: { category?: string; search?: string; page?: 
       if (params?.category) p.set("category", params.category);
       if (params?.search) p.set("search", params.search);
       if (params?.page) p.set("page", String(params.page));
-      return apiClient.get(`/groups?${p.toString()}`).then((r) => r.data);
+      return api.get(`/groups?${p.toString()}`).then((r: { data: GroupListResponse }) => r.data);
     },
   });
 }
@@ -63,14 +63,14 @@ export function useGroups(params?: { category?: string; search?: string; page?: 
 export function useMyGroups() {
   return useQuery<GroupListResponse>({
     queryKey: ["groups", "me"],
-    queryFn: () => apiClient.get("/groups/me/joined").then((r) => r.data),
+    queryFn: () => api.get("/groups/me/joined").then((r: { data: GroupListResponse }) => r.data),
   });
 }
 
 export function useGroup(groupId: string) {
   return useQuery<Group>({
     queryKey: ["group", groupId],
-    queryFn: () => apiClient.get(`/groups/${groupId}`).then((r) => r.data),
+    queryFn: () => api.get(`/groups/${groupId}`).then((r: { data: Group }) => r.data),
     enabled: !!groupId,
   });
 }
@@ -78,7 +78,7 @@ export function useGroup(groupId: string) {
 export function useGroupPosts(groupId: string) {
   return useQuery<GroupPostListResponse>({
     queryKey: ["group-posts", groupId],
-    queryFn: () => apiClient.get(`/groups/${groupId}/posts`).then((r) => r.data),
+    queryFn: () => api.get(`/groups/${groupId}/posts`).then((r: { data: GroupPostListResponse }) => r.data),
     enabled: !!groupId,
   });
 }
@@ -87,7 +87,7 @@ export function useCreateGroup() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { name: string; description?: string; category: string; tags: string[]; is_private: boolean }) =>
-      apiClient.post("/groups", data).then((r) => r.data),
+      api.post("/groups", data).then((r: { data: Group }) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] });
     },
@@ -97,7 +97,7 @@ export function useCreateGroup() {
 export function useJoinGroup() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (groupId: string) => apiClient.post(`/groups/${groupId}/join`).then((r) => r.data),
+    mutationFn: (groupId: string) => api.post(`/groups/${groupId}/join`).then((r: { data: unknown }) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] });
       queryClient.invalidateQueries({ queryKey: ["group"] });
@@ -108,7 +108,7 @@ export function useJoinGroup() {
 export function useLeaveGroup() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (groupId: string) => apiClient.post(`/groups/${groupId}/leave`).then((r) => r.data),
+    mutationFn: (groupId: string) => api.post(`/groups/${groupId}/leave`).then((r: { data: unknown }) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["groups"] });
       queryClient.invalidateQueries({ queryKey: ["group"] });
@@ -119,7 +119,7 @@ export function useLeaveGroup() {
 export function useCreateGroupPost(groupId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (content: string) => apiClient.post(`/groups/${groupId}/posts`, { content }).then((r) => r.data),
+    mutationFn: (content: string) => api.post(`/groups/${groupId}/posts`, { content }).then((r: { data: GroupPost }) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-posts", groupId] });
     },
@@ -129,9 +129,10 @@ export function useCreateGroupPost(groupId: string) {
 export function useDeleteGroupPost(groupId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (postId: string) => apiClient.delete(`/groups/${groupId}/posts/${postId}`).then((r) => r.data),
+    mutationFn: (postId: string) => api.delete(`/groups/${groupId}/posts/${postId}`).then((r: { data: unknown }) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["group-posts", groupId] });
     },
   });
 }
+

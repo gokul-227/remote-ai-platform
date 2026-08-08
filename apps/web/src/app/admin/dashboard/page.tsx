@@ -121,7 +121,7 @@ function AdminDashboardPage() {
     { label: "Total Users", value: stats?.total_users ?? "—", icon: Shield, color: "text-amber-600" },
   ];
 
-  const systemHealth = [
+  const systemHealth: ServiceHealthStatus[] = [
     { service: "Auth Service (Keycloak)", status: "operational" },
     { service: "Jobs API", status: "operational" },
     { service: "Engineers API", status: "operational" },
