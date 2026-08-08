@@ -38,6 +38,7 @@ from app.domains.contracts.router import router as contracts_router
 from app.domains.trust.router import router as trust_router
 from app.domains.payments.router import router as payments_router
 from app.domains.groups.router import router as groups_router
+from app.domains.quality.router import router as quality_router
 
 logger = structlog.get_logger(__name__)
 
@@ -133,6 +134,7 @@ def create_app() -> FastAPI:
     app.include_router(trust_router, prefix=prefix)
     app.include_router(payments_router, prefix=prefix)
     app.include_router(groups_router, prefix=prefix)
+    app.include_router(quality_router, prefix=prefix)
 
     return app
 

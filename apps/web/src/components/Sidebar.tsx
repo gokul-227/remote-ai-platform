@@ -15,6 +15,7 @@ import {
   Users,
   MessageSquare,
   Globe,
+  BrainCircuit,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
@@ -33,6 +34,7 @@ export function Sidebar() {
     { name: "Wallet & Payments", href: "/payments", icon: Bookmark },
     { name: "Social Feed", href: "/feed", icon: MessageSquare },
     { name: "Communities", href: "/groups", icon: Globe },
+    { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
     { name: "Saved Jobs", href: "/jobs?saved=true", icon: Bookmark, count: savedJobs.data?.length },
     { name: "My Applications", href: "/engineer/applications", icon: FileText, count: applications.data?.length },
     { name: "Recommendations", href: "/engineer/recommendations", icon: LayoutDashboard },
