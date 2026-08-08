@@ -9,6 +9,7 @@ import {
   CheckCircle2, Calendar, Sparkles,
 } from "lucide-react";
 import api from "@/lib/api";
+import { TrustBadge } from "@/components/TrustBadge";
 
 type ExperienceItem = {
   title: string;
@@ -201,6 +202,9 @@ export default function PublicEngineerProfilePage({
                     <span>{profile.remote_preference}</span>
                   )}
                 </p>
+                <div className="mt-1">
+                  <TrustBadge userId={id} />
+                </div>
               </div>
             </div>
             {/* CTA */}

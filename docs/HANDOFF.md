@@ -34,35 +34,40 @@ fix the `.gitignore` to stop tracking generated artifacts, then begin Phase 2 (S
    - Migration `020_contracts.py` (`contracts` and `contract_milestones` tables)
    - SQLAlchemy models in `apps/api/app/domains/contracts/models.py`
    - Pydantic schemas in `apps/api/app/domains/contracts/schemas.py`
-   - FastAPI router in `apps/api/app/domains/contracts/router.py` (create, list, details, update, digital sign, terminate, add milestone)
-   - Registered `contracts_router` in `apps/api/app/main.py`
-   - Backend test suite in `apps/api/tests/test_contracts.py`
-   - Frontend TanStack Query hooks `useContracts` and `useContract` in `apps/web/src/hooks/useContracts.ts`
-   - Frontend Contracts List page at `/contracts` (`apps/web/src/app/contracts/page.tsx`) with status filtering, digital sign triggers, and contract creation modal
-   - Frontend Contract Details page at `/contracts/[id]` (`apps/web/src/app/contracts/[id]/page.tsx`) with digital signature tracking, scope/terms inspection, and milestone management
+   - FastAPI router in `apps/api/app/domains/contracts/router.py`
+   - Test suite in `apps/api/tests/test_contracts.py`
+   - Frontend TanStack Query hooks and pages at `/contracts` and `/contracts/[id]`
+7. **Implemented Trust & Reputation Engine (Phase 16)**:
+   - Migration `021_trust_reputation.py` (`user_verifications` and `user_trust_scores` tables)
+   - SQLAlchemy models in `apps/api/app/domains/trust/models.py`
+   - Pydantic schemas in `apps/api/app/domains/trust/schemas.py`
+   - Explainable Trust Calculation engine in `apps/api/app/domains/trust/service.py` (multi-factor scoring: verifications, peer reviews, task delivery, platform standing)
+   - FastAPI router in `apps/api/app/domains/trust/router.py` (`GET /trust/scores/{id}`, `GET/POST /trust/reviews`, `GET/POST /trust/verifications`)
+   - Test suite in `apps/api/tests/test_trust_reputation.py`
+   - Frontend TanStack Query hook `useTrust.ts`
+   - Reusable `TrustBadge.tsx` component with popover factor breakdown and self-verification triggers embedded into engineer profiles (`/engineers/[id]`)
 
 ---
 
 ## Database State
 
-20 Alembic migrations in `apps/api/alembic/versions/`:
+21 Alembic migrations in `apps/api/alembic/versions/`:
 - `001` to `018` — initial & intermediate migrations
 - `019` — `019_social_feed` (posts, post_likes, post_comments)
 - `020` — `020_contracts` (contracts, contract_milestones)
+- `021` — `021_trust_reputation` (user_verifications, user_trust_scores)
 
-**Current migration head**: `020_contracts`
+**Current migration head**: `021_trust_reputation`
 
 ---
 
 ## Next Recommended Task
 
-### **Trust & Reputation Engine** (Phase 16)
+### **Financial Ledger & Escrow Payment UI** (Phase 17)
 
-Now build the explicit **Trust & Reputation** domain:
-1. **Backend**: `apps/api/app/domains/trust/`
-   - Calculate explainable trust score (identity verification status, contract completion rate, on-time delivery rate, rating average, dispute history).
-   - Endpoints: `GET /api/v1/trust/scores/{user_id}`, `GET /api/v1/trust/reviews/{user_id}`
-2. **Frontend**: Trust badge & reputation component embedded into profile pages (`/engineers/[id]` and `/companies/[id]`).
+Build the explicit **Financial Ledger & Payment Abstraction** UI:
+1. **Backend**: Extend `apps/api/app/domains/projects/router.py` payments abstraction or create `apps/api/app/domains/payments/` with minor integer units ($15,000.00 = 1,500,000 cents), immutable ledger entries, escrow release & refund flows.
+2. **Frontend**: Build `/company/payments` or `/payments` wallet dashboard showing Escrow Balances, Transaction Ledger history, Payouts, and Release Escrow controls.
 
 ### Alternative Next Task: Worker Execution Workspace
 
