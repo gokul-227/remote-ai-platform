@@ -1,0 +1,1 @@
+# Groups & Communities domain package

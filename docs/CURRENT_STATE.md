@@ -43,7 +43,7 @@ usable.
 | **Work Ledger** | ✅ DONE | ✅ DONE | ✅ DONE | — | COMPLETE |
 | **Trust/Reputation** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
 | **Social Feed (Posts)** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
-| **Groups** | ❌ MISSING | ❌ MISSING | ❌ MISSING | ❌ MISSING | MISSING |
+| **Groups** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
 | **Freelancer Discovery** | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | — | PARTIAL |
 | **Admin Console** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
 | **AI (Resume Parser)** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
@@ -191,7 +191,7 @@ usable.
 | `/projects`, `/projects/[id]` | ⚠️ Partial |
 | `/admin/dashboard` | ⚠️ Partial |
 | `/feed` | ❌ MISSING |
-| `/groups` | ❌ MISSING |
+| `/groups` | ✅ |
 | `/workspace` (task execution UI) | ❌ MISSING |
 
 ---

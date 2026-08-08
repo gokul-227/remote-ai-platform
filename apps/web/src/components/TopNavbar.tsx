@@ -18,6 +18,7 @@ import {
   MessageSquare,
   FolderKanban,
   Sparkles,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
@@ -60,6 +61,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           { name: "My Jobs", href: "/company/jobs", icon: Briefcase },
           { name: "Candidates", href: "/company/candidates", icon: Users },
           { name: "Contracts", href: "/contracts", icon: FileText },
+          { name: "Communities", href: "/groups", icon: Globe },
           { name: "Network", href: "/network", icon: Users },
           { name: "Projects", href: "/projects", icon: FolderKanban },
           { name: "Messages", href: "/messages", icon: MessageSquare },
@@ -70,6 +72,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           { name: "Jobs", href: "/jobs", icon: Briefcase },
           { name: "Freelancers", href: "/freelancers", icon: Users },
           { name: "Contracts", href: "/contracts", icon: FileText },
+          { name: "Communities", href: "/groups", icon: Globe },
           ...(user?.role === "ENGINEER"
             ? [{ name: "For You", href: "/engineer/recommendations", icon: Sparkles }]
             : []),
