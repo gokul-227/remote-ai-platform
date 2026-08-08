@@ -59,6 +59,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           { name: "Feed", href: "/feed", icon: MessageSquare },
           { name: "My Jobs", href: "/company/jobs", icon: Briefcase },
           { name: "Candidates", href: "/company/candidates", icon: Users },
+          { name: "Contracts", href: "/contracts", icon: FileText },
           { name: "Network", href: "/network", icon: Users },
           { name: "Projects", href: "/projects", icon: FolderKanban },
           { name: "Messages", href: "/messages", icon: MessageSquare },
@@ -68,6 +69,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           { name: "Feed", href: "/feed", icon: MessageSquare },
           { name: "Jobs", href: "/jobs", icon: Briefcase },
           { name: "Freelancers", href: "/freelancers", icon: Users },
+          { name: "Contracts", href: "/contracts", icon: FileText },
           ...(user?.role === "ENGINEER"
             ? [{ name: "For You", href: "/engineer/recommendations", icon: Sparkles }]
             : []),

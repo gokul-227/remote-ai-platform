@@ -38,7 +38,7 @@ usable.
 | **Milestones/Tasks** | ✅ DONE | ❌ MISSING | ✅ DONE | ✅ DONE | PARTIAL |
 | **Work Dispatch (Uber)** | ✅ DONE | ✅ DONE | ✅ DONE | ⚠️ PARTIAL | COMPLETE |
 | **Work Submissions/Review** | ✅ DONE | ✅ DONE | ✅ DONE | ⚠️ PARTIAL | COMPLETE |
-| **Contracts** | ❌ MISSING | ❌ MISSING | ❌ MISSING | ❌ MISSING | MISSING |
+| **Contracts** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
 | **Payments (abstraction)** | ✅ Sandbox | ❌ MISSING | ✅ DONE | — | PARTIAL |
 | **Work Ledger** | ✅ DONE | ✅ DONE | ✅ DONE | — | COMPLETE |
 | **Trust/Reputation** | ❌ MISSING | ❌ MISSING | ⚠️ PARTIAL | ❌ MISSING | MISSING |

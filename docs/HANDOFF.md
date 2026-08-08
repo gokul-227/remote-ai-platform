@@ -30,29 +30,39 @@ fix the `.gitignore` to stop tracking generated artifacts, then begin Phase 2 (S
    - Frontend TanStack Query hook `useWorkerWorkspace.ts`
    - Frontend Execution Hub page at `/engineer/workspace` (`apps/web/src/app/engineer/workspace/page.tsx`)
    - Navigation updates in `Sidebar.tsx` and `TopNavbar.tsx`
+6. **Implemented Contracts Domain & Lifecycle (Phase 15)**:
+   - Migration `020_contracts.py` (`contracts` and `contract_milestones` tables)
+   - SQLAlchemy models in `apps/api/app/domains/contracts/models.py`
+   - Pydantic schemas in `apps/api/app/domains/contracts/schemas.py`
+   - FastAPI router in `apps/api/app/domains/contracts/router.py` (create, list, details, update, digital sign, terminate, add milestone)
+   - Registered `contracts_router` in `apps/api/app/main.py`
+   - Backend test suite in `apps/api/tests/test_contracts.py`
+   - Frontend TanStack Query hooks `useContracts` and `useContract` in `apps/web/src/hooks/useContracts.ts`
+   - Frontend Contracts List page at `/contracts` (`apps/web/src/app/contracts/page.tsx`) with status filtering, digital sign triggers, and contract creation modal
+   - Frontend Contract Details page at `/contracts/[id]` (`apps/web/src/app/contracts/[id]/page.tsx`) with digital signature tracking, scope/terms inspection, and milestone management
 
 ---
 
 ## Database State
 
-19 Alembic migrations in `apps/api/alembic/versions/`:
-- `001` to `018` — previous migrations
+20 Alembic migrations in `apps/api/alembic/versions/`:
+- `001` to `018` — initial & intermediate migrations
 - `019` — `019_social_feed` (posts, post_likes, post_comments)
+- `020` — `020_contracts` (contracts, contract_milestones)
 
-**Current migration head**: `019_social_feed`
+**Current migration head**: `020_contracts`
 
 ---
 
 ## Next Recommended Task
 
-### **Contracts Domain & Lifecycle** (Phase 15)
+### **Trust & Reputation Engine** (Phase 16)
 
-Now that the dispatch, execution, and social layers are complete, build the explicit **Contracts** domain:
-1. **Backend**: `apps/api/app/domains/contracts/`
-   - Models: `Contract` (connecting Client, Worker, Project, Scope, Rate, Status, Terms, Milestones)
-   - Migration: `020_contracts.py`
-   - Router: `/api/v1/contracts/`
-2. **Frontend**: Contract view & sign interface for both Client and Worker.
+Now build the explicit **Trust & Reputation** domain:
+1. **Backend**: `apps/api/app/domains/trust/`
+   - Calculate explainable trust score (identity verification status, contract completion rate, on-time delivery rate, rating average, dispute history).
+   - Endpoints: `GET /api/v1/trust/scores/{user_id}`, `GET /api/v1/trust/reviews/{user_id}`
+2. **Frontend**: Trust badge & reputation component embedded into profile pages (`/engineers/[id]` and `/companies/[id]`).
 
 ### Alternative Next Task: Worker Execution Workspace
 

@@ -34,6 +34,7 @@ from app.domains.projects.router import router as projects_router
 from app.domains.notifications.router import router as notifications_router
 from app.domains.network.router import router as network_router
 from app.domains.social.router import router as social_router
+from app.domains.contracts.router import router as contracts_router
 
 logger = structlog.get_logger(__name__)
 
@@ -125,6 +126,7 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix=prefix)
     app.include_router(network_router, prefix=prefix)
     app.include_router(social_router, prefix=prefix)
+    app.include_router(contracts_router, prefix=prefix)
 
     return app
 
