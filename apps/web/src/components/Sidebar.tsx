@@ -29,6 +29,7 @@ export function Sidebar() {
     { name: "My Profile", href: "/engineer/profile", icon: User },
     { name: "Execution Workspace", href: "/engineer/workspace", icon: FolderKanban },
     { name: "Contracts", href: "/contracts", icon: FileText },
+    { name: "Wallet & Payments", href: "/payments", icon: Bookmark },
     { name: "Social Feed", href: "/feed", icon: MessageSquare },
     { name: "Saved Jobs", href: "/jobs?saved=true", icon: Bookmark, count: savedJobs.data?.length },
     { name: "My Applications", href: "/engineer/applications", icon: FileText, count: applications.data?.length },

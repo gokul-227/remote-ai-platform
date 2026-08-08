@@ -39,7 +39,7 @@ usable.
 | **Work Dispatch (Uber)** | ✅ DONE | ✅ DONE | ✅ DONE | ⚠️ PARTIAL | COMPLETE |
 | **Work Submissions/Review** | ✅ DONE | ✅ DONE | ✅ DONE | ⚠️ PARTIAL | COMPLETE |
 | **Contracts** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
-| **Payments (abstraction)** | ✅ Sandbox | ❌ MISSING | ✅ DONE | — | PARTIAL |
+| **Payments (abstraction)** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
 | **Work Ledger** | ✅ DONE | ✅ DONE | ✅ DONE | — | COMPLETE |
 | **Trust/Reputation** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
 | **Social Feed (Posts)** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |

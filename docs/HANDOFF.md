@@ -41,11 +41,18 @@ fix the `.gitignore` to stop tracking generated artifacts, then begin Phase 2 (S
    - Migration `021_trust_reputation.py` (`user_verifications` and `user_trust_scores` tables)
    - SQLAlchemy models in `apps/api/app/domains/trust/models.py`
    - Pydantic schemas in `apps/api/app/domains/trust/schemas.py`
-   - Explainable Trust Calculation engine in `apps/api/app/domains/trust/service.py` (multi-factor scoring: verifications, peer reviews, task delivery, platform standing)
-   - FastAPI router in `apps/api/app/domains/trust/router.py` (`GET /trust/scores/{id}`, `GET/POST /trust/reviews`, `GET/POST /trust/verifications`)
+   - Explainable Trust Calculation engine in `apps/api/app/domains/trust/service.py`
+   - FastAPI router in `apps/api/app/domains/trust/router.py`
    - Test suite in `apps/api/tests/test_trust_reputation.py`
    - Frontend TanStack Query hook `useTrust.ts`
-   - Reusable `TrustBadge.tsx` component with popover factor breakdown and self-verification triggers embedded into engineer profiles (`/engineers/[id]`)
+   - Reusable `TrustBadge.tsx` component embedded into engineer profile (`/engineers/[id]`)
+8. **Implemented Financial Ledger & Escrow Payment Wallet (Phase 17)**:
+   - Backend Pydantic schemas in `apps/api/app/domains/payments/schemas.py`
+   - FastAPI router in `apps/api/app/domains/payments/router.py` (`GET /payments/wallet`, `GET /payments/transactions`, `POST /payments/escrow`, `POST /payments/{id}/release`, `POST /payments/{id}/refund`)
+   - Registered `payments_router` in `apps/api/app/main.py`
+   - Test suite in `apps/api/tests/test_payments.py`
+   - Frontend TanStack Query hook `usePayments.ts`
+   - Frontend Wallet & Financial Ledger page at `/payments` (`apps/web/src/app/payments/page.tsx`) with balance summary cards, transaction history, inline release/refund triggers, and escrow funding modal
 
 ---
 
@@ -63,11 +70,12 @@ fix the `.gitignore` to stop tracking generated artifacts, then begin Phase 2 (S
 
 ## Next Recommended Task
 
-### **Financial Ledger & Escrow Payment UI** (Phase 17)
+### **Enterprise Admin Console Extensions & Moderation** (Phase 18)
 
-Build the explicit **Financial Ledger & Payment Abstraction** UI:
-1. **Backend**: Extend `apps/api/app/domains/projects/router.py` payments abstraction or create `apps/api/app/domains/payments/` with minor integer units ($15,000.00 = 1,500,000 cents), immutable ledger entries, escrow release & refund flows.
-2. **Frontend**: Build `/company/payments` or `/payments` wallet dashboard showing Escrow Balances, Transaction Ledger history, Payouts, and Release Escrow controls.
+Now extend the **Admin Console**:
+1. **Backend**: `apps/api/app/domains/admin/`
+   - Add admin system health monitoring metrics, user account suspension/ban actions, contract dispute resolution endpoints, and AI usage metrics aggregation.
+2. **Frontend**: Extend `/admin/dashboard` to include User Ban/Unban controls, Dispute Resolution tab, and AI token/cost monitoring widget.
 
 ### Alternative Next Task: Worker Execution Workspace
 
