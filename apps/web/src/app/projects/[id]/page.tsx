@@ -1,110 +1,454 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
-import { useProject, useProjectAIReportActions, useProjectAIReports, useProjectLedger, useProjectLedgerActions, useProjectPaymentActions, useProjectPayments, useProjectPlanActions, useProjectReviewActions, useProjectReviews, useProjectSubmissionActions, useProjectWorkspaceActions, type MilestoneRecord, type TaskRecord } from "@/hooks/useProject";
+import { useParams, useRouter } from "next/navigation";
+import {
+  ArrowLeft,
+  Sparkles,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Circle,
+  Play,
+  FolderKanban,
+  Brain,
+  BarChart3,
+  Shield,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Star,
+  Zap,
+  X,
+} from "lucide-react";
+import {
+  useProject,
+  useProjectPlanActions,
+  useProjectWorkspaceActions,
+  useProjectSubmissionActions,
+  useProjectReviews,
+  useProjectReviewActions,
+  useProjectAIReportActions,
+  TaskRecord,
+  MilestoneRecord,
+  SubmissionRecord,
+} from "@/hooks/useProject";
 import { useAuth } from "@/lib/auth";
 
-const taskStatuses = ["TODO", "IN_PROGRESS", "BLOCKED", "REVIEW", "COMPLETED"];
+// ── Status configs ────────────────────────────────────────────────────────────
+const TASK_STATUS: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  TODO: { label: "To Do", color: "#64748b", icon: Circle },
+  IN_PROGRESS: { label: "In Progress", color: "#38bdf8", icon: Play },
+  REVIEW: { label: "In Review", color: "#facc15", icon: AlertTriangle },
+  DONE: { label: "Done", color: "#34d399", icon: CheckCircle },
+  COMPLETED: { label: "Done", color: "#34d399", icon: CheckCircle },
+  BLOCKED: { label: "Blocked", color: "#f87171", icon: X },
+};
 
-export default function ProjectWorkspacePage() {
-  const params = useParams<{ id: string }>();
-  const project = useProject(params.id);
-  const planActions = useProjectPlanActions(params.id);
-  const aiReports = useProjectAIReports(params.id);
-  const aiReportActions = useProjectAIReportActions(params.id);
-  const workspaceActions = useProjectWorkspaceActions(params.id);
-  const submissionActions = useProjectSubmissionActions(params.id);
-  const ledger = useProjectLedger(params.id);
-  const ledgerActions = useProjectLedgerActions(params.id);
-  const payments = useProjectPayments(params.id);
-  const paymentActions = useProjectPaymentActions(params.id);
-  const reviews = useProjectReviews(params.id);
-  const reviewActions = useProjectReviewActions(params.id);
+const PROJECT_STATUS: Record<string, { label: string; color: string }> = {
+  PLANNING: { label: "Planning", color: "#38bdf8" },
+  ACTIVE: { label: "Active", color: "#34d399" },
+  PAUSED: { label: "Paused", color: "#facc15" },
+  COMPLETED: { label: "Completed", color: "#a78bfa" },
+  CANCELLED: { label: "Cancelled", color: "#f87171" },
+};
+
+// ── Section collapsible ───────────────────────────────────────────────────────
+function Section({
+  title,
+  icon: Icon,
+  iconColor = "#a78bfa",
+  children,
+  defaultOpen = true,
+  badge,
+}: {
+  title: string;
+  icon: React.ElementType;
+  iconColor?: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  badge?: number;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+      >
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: `${iconColor}18`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Icon size={15} color={iconColor} />
+        </div>
+        <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>{title}</span>
+        {badge !== undefined && (
+          <span style={{ fontSize: 11, fontWeight: 700, background: "rgba(255,255,255,0.06)", color: "#64748b", borderRadius: 20, padding: "2px 8px" }}>{badge}</span>
+        )}
+        {open ? <ChevronDown size={16} color="#475569" /> : <ChevronRight size={16} color="#475569" />}
+      </button>
+      {open && <div style={{ padding: "0 18px 18px" }}>{children}</div>}
+    </div>
+  );
+}
+
+// ── Task Card ─────────────────────────────────────────────────────────────────
+function TaskCard({ task, onStatusChange, updating }: { task: TaskRecord; onStatusChange: (status: string) => void; updating: boolean }) {
+  const conf = TASK_STATUS[task.status] ?? TASK_STATUS.TODO;
+  const Icon = conf.icon;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10 }}>
+      <Icon size={16} color={conf.color} style={{ flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{task.title}</div>
+        {task.priority && <span style={{ fontSize: 10, color: "#64748b" }}>Priority: {task.priority}</span>}
+      </div>
+      <select
+        value={task.status}
+        onChange={(e) => onStatusChange(e.target.value)}
+        disabled={updating}
+        style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, color: conf.color, fontSize: 11, padding: "4px 8px", cursor: "pointer", outline: "none", fontFamily: "inherit" }}
+      >
+        {Object.entries(TASK_STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+// ── Submission Card ───────────────────────────────────────────────────────────
+function SubmissionCard({ sub, onReview, onAIReview, updating }: {
+  sub: SubmissionRecord;
+  onReview: (status: "APPROVED" | "CHANGES_REQUESTED", note?: string) => void;
+  onAIReview: () => void;
+  updating: boolean;
+}) {
+  const [note, setNote] = useState("");
+  return (
+    <div style={{ padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>v{sub.version} — {sub.summary}</div>
+          <div style={{ fontSize: 11, color: "#475569", marginTop: 2 }}>Status: <span style={{ color: sub.status === "APPROVED" ? "#34d399" : sub.status === "PENDING_REVIEW" ? "#facc15" : "#94a3b8" }}>{sub.status}</span></div>
+        </div>
+        <button
+          onClick={onAIReview}
+          disabled={updating}
+          style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, border: "none", background: "rgba(167,139,250,0.12)", color: "#a78bfa", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+        >
+          <Brain size={12} />AI Review
+        </button>
+      </div>
+      {sub.ai_feedback && (
+        <div style={{ fontSize: 12, color: "#94a3b8", background: "rgba(167,139,250,0.05)", borderRadius: 8, padding: "8px 12px", marginBottom: 10, fontStyle: "italic" }}>
+          {sub.ai_feedback}
+        </div>
+      )}
+      {sub.status === "PENDING_REVIEW" && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const, marginTop: 8 }}>
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Review note (optional)…"
+            style={{ flex: 1, minWidth: 160, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, color: "#e2e8f0", fontSize: 12, padding: "6px 10px", outline: "none", fontFamily: "inherit" }}
+          />
+          <button onClick={() => onReview("APPROVED", note)} disabled={updating} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(52,211,153,0.12)", color: "#34d399", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            ✓ Approve
+          </button>
+          <button onClick={() => onReview("CHANGES_REQUESTED", note)} disabled={updating} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.08)", color: "#f87171", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            ✗ Changes
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function ProjectDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { user } = useAuth();
-  const [taskId, setTaskId] = useState("");
-  const [dependsOnTaskId, setDependsOnTaskId] = useState("");
-  const [candidateId, setCandidateId] = useState("");
-  const [submissionTaskId, setSubmissionTaskId] = useState("");
-  const [submissionSummary, setSubmissionSummary] = useState("");
-  const [ledgerTaskId, setLedgerTaskId] = useState("");
-  const [ledgerMinutes, setLedgerMinutes] = useState("60");
-  const [ledgerDescription, setLedgerDescription] = useState("");
-  const [paymentTaskId, setPaymentTaskId] = useState("");
-  const [paymentPayeeId, setPaymentPayeeId] = useState("");
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [revieweeId, setRevieweeId] = useState("");
-  const [reviewRating, setReviewRating] = useState("5");
-  const [reviewComment, setReviewComment] = useState("");
 
-  if (project.isLoading) return <main className="mx-auto max-w-6xl px-4 py-10"><div className="card-enterprise h-40 animate-pulse bg-slate-100" /></main>;
-  if (project.error) return <main className="mx-auto max-w-6xl px-4 py-10"><div className="card-enterprise p-6"><p className="text-slate-700">Unable to load this project.</p><button className="button-primary mt-4" onClick={() => void project.refetch()}>Retry</button></div></main>;
-  if (!project.data) return <main className="mx-auto max-w-6xl px-4 py-10"><div className="card-enterprise p-6 text-slate-500">Project details are unavailable.</div></main>;
+  const { data, isLoading, isError } = useProject(id);
+  const planActions = useProjectPlanActions(id);
+  const workspaceActions = useProjectWorkspaceActions(id);
+  const submissionActions = useProjectSubmissionActions(id);
+  const reviews = useProjectReviews(id);
+  const reviewActions = useProjectReviewActions(id);
+  const aiReportActions = useProjectAIReportActions(id);
 
-  const { project: details, milestones = [], tasks = [], dependencies = [], submissions = [], plan } = project.data;
-  const canApprove = user?.role === "COMPANY" || user?.role === "ADMIN";
-  const latestReport = (type: string) => aiReports.data?.find((report) => report.report_type === type);
-  const progressReport = latestReport("PROGRESS_SUMMARY");
-  const riskReport = latestReport("RISK_ANALYSIS");
-  const reportValue = (report: typeof progressReport, key: string) => report?.payload[key] as string | undefined;
-  const addDependency = () => {
-    if (taskId && dependsOnTaskId && taskId !== dependsOnTaskId) {
-      workspaceActions.addDependency.mutate({ taskId, dependsOnTaskId });
-    }
-  };
-  const offerTask = () => {
-    if (taskId && candidateId) workspaceActions.offerTask.mutate({ taskId, candidateId });
-  };
-  const submitWork = () => {
-    if (submissionTaskId && submissionSummary.trim()) {
-      submissionActions.submit.mutate({ taskId: submissionTaskId, summary: submissionSummary.trim(), artifactUrls: [] });
-      setSubmissionSummary("");
-    }
-  };
-  const taskTitle = (id: string) => tasks.find((task) => task.id === id)?.title || "Unknown task";
-  const recordEffort = () => {
-    const durationMinutes = Number(ledgerMinutes);
-    if (ledgerTaskId && durationMinutes > 0 && ledgerDescription.trim()) {
-      ledgerActions.record.mutate({ taskId: ledgerTaskId, durationMinutes, description: ledgerDescription.trim() });
-      setLedgerDescription("");
-    }
-  };
-  const createEscrow = () => {
-    const amount = Number(paymentAmount);
-    if (paymentPayeeId && amount > 0) {
-      paymentActions.escrow.mutate({ amount, currency: "USD", taskId: paymentTaskId || undefined, payeeId: paymentPayeeId });
-      setPaymentAmount("");
-    }
-  };
-  const submitReview = () => {
-    const rating = Number(reviewRating);
-    if (revieweeId && rating >= 1 && rating <= 5 && reviewComment.trim()) {
-      reviewActions.create.mutate({ revieweeId, rating, comment: reviewComment.trim() });
-      setReviewComment("");
-    }
-  };
+  const [reviewForm, setReviewForm] = useState({ revieweeId: "", rating: 5, comment: "" });
 
-  return <main className="mx-auto max-w-6xl px-4 py-8">
-    <section className="card-enterprise p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-medium text-[#0A66C2]">Project workspace</p><h1 className="mt-1 text-3xl font-bold text-slate-900">{details.title}</h1><p className="mt-2 max-w-3xl text-slate-600">{details.description}</p></div><span className="badge-enterprise">{details.status}</span></div>
-      <div className="mt-6 grid gap-4 text-sm text-slate-600 sm:grid-cols-4"><div><span className="font-semibold text-slate-900">Timeline</span><br />{details.timeline || "Not set"}</div><div><span className="font-semibold text-slate-900">Milestones</span><br />{milestones.length}</div><div><span className="font-semibold text-slate-900">Tasks</span><br />{tasks.length}</div><div><span className="font-semibold text-slate-900">Dependencies</span><br />{dependencies.length}</div></div>
-    </section>
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#080e1c", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", fontFamily: "Inter, system-ui, sans-serif" }}>
+        <div style={{ textAlign: "center" }}>
+          <FolderKanban size={40} color="#1e293b" style={{ marginBottom: 12 }} />
+          <p>Loading project…</p>
+        </div>
+      </div>
+    );
+  }
 
-    {canApprove && <section className="card-enterprise mt-6 p-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-slate-900">AI project plan</h2><p className="mt-1 text-sm text-slate-500">Review the draft before it creates milestones and tasks.</p></div><div className="flex gap-2">{details.status !== "ACTIVE" && <button onClick={() => planActions.generatePlan.mutate()} disabled={planActions.generatePlan.isPending} className="btn-secondary-brand px-3 py-2 text-xs">{planActions.generatePlan.isPending ? "Generating…" : plan ? "Regenerate draft" : "Generate draft plan"}</button>}{plan && details.status !== "ACTIVE" && <button onClick={() => planActions.approvePlan.mutate()} disabled={planActions.approvePlan.isPending} className="btn-primary-brand px-3 py-2 text-xs">{planActions.approvePlan.isPending ? "Approving…" : "Approve and activate"}</button>}</div></div>{planActions.generatePlan.isError && <p className="mt-3 text-sm text-red-700">The plan could not be generated. Configure an AI provider and retry.</p>}{planActions.approvePlan.isError && <p className="mt-3 text-sm text-red-700">The plan could not be approved. Generate a fresh draft and retry.</p>}{plan && <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm leading-6 text-slate-700">{plan.summary || "Draft plan ready for review."}</p><div className="mt-3 flex gap-4 text-xs text-slate-500"><span>{plan.milestones?.length ?? 0} milestones</span><span>{plan.tasks?.length ?? 0} tasks</span></div></div>}</section>}
+  if (isError || !data) {
+    return (
+      <div style={{ minHeight: "100vh", background: "#080e1c", display: "flex", alignItems: "center", justifyContent: "center", color: "#f87171", fontFamily: "Inter, system-ui, sans-serif" }}>
+        <div style={{ textAlign: "center" }}>
+          <X size={40} color="#ef4444" style={{ marginBottom: 12 }} />
+          <p>Project not found or access denied.</p>
+          <button onClick={() => router.push("/projects")} style={{ marginTop: 12, padding: "8px 18px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.1)", color: "#f87171", cursor: "pointer", fontFamily: "inherit" }}>
+            ← Back to Projects
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-    <section className="card-enterprise mt-6 p-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-lg font-semibold text-slate-900">AI project manager</h2><p className="mt-1 text-sm text-slate-500">Generate an evidence-based progress summary or delivery risk analysis from the current task state.</p></div><div className="flex gap-2"><button onClick={() => aiReportActions.generateProgress.mutate()} disabled={aiReportActions.generateProgress.isPending} className="btn-secondary-brand px-3 py-2 text-xs">{aiReportActions.generateProgress.isPending ? "Analyzing…" : "Progress summary"}</button><button onClick={() => aiReportActions.generateRisk.mutate()} disabled={aiReportActions.generateRisk.isPending} className="btn-primary-brand px-3 py-2 text-xs">{aiReportActions.generateRisk.isPending ? "Analyzing…" : "Risk analysis"}</button></div></div>{(aiReportActions.generateProgress.isError || aiReportActions.generateRisk.isError) && <p className="mt-3 text-sm text-red-700">The AI report could not be generated. Configure an AI provider and retry.</p>}<div className="mt-5 grid gap-4 md:grid-cols-2"><div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Latest progress</p><p className="mt-2 text-sm leading-6 text-slate-700">{progressReport?.content || reportValue(progressReport, "summary") || "No progress summary generated yet."}</p>{progressReport && <p className="mt-3 text-xs text-slate-400">Generated {new Date(progressReport.created_at).toLocaleString()}</p>}</div><div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Delivery risk</p><p className="mt-2 text-sm leading-6 text-slate-700">{riskReport?.content || reportValue(riskReport, "reason") || "No risk analysis generated yet."}</p>{riskReport && <p className="mt-3 text-xs text-slate-400">Risk level: {reportValue(riskReport, "risk_level") || "Not classified"}</p>}</div></div></section>
+  const { project, milestones, tasks, submissions, plan } = data;
+  const statusConf = PROJECT_STATUS[project.status] ?? { label: project.status, color: "#94a3b8" };
+  const tasksDone = tasks.filter((t: TaskRecord) => t.status === "DONE" || t.status === "COMPLETED").length;
+  const progress = tasks.length ? Math.round((tasksDone / tasks.length) * 100) : 0;
 
-    <div className="mt-6 grid gap-6 lg:grid-cols-2"><section className="card-enterprise p-6"><h2 className="text-lg font-semibold text-slate-900">Milestones</h2><div className="mt-4 space-y-3">{milestones.length ? milestones.map((item: MilestoneRecord) => <div key={item.id} className="border-b border-slate-100 pb-3"><p className="font-medium text-slate-900">{item.title}</p><p className="text-sm text-slate-500">{item.description || "No description"}</p></div>) : <p className="text-sm text-slate-500">No milestones yet.</p>}</div></section><section className="card-enterprise p-6"><h2 className="text-lg font-semibold text-slate-900">Tasks</h2><div className="mt-4 space-y-3">{tasks.length ? tasks.map((item: TaskRecord) => <div key={item.id} className="border-b border-slate-100 pb-3"><div className="flex items-center justify-between gap-3"><div><p className="font-medium text-slate-900">{item.title}</p><p className="text-sm text-slate-500">{item.milestone || "General task"}{item.priority ? ` · ${item.priority}` : ""}</p></div><select aria-label={`Status for ${item.title}`} value={item.status.toUpperCase()} onChange={(event) => workspaceActions.updateTask.mutate({ taskId: item.id, status: event.target.value })} disabled={workspaceActions.updateTask.isPending} className="rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600">{taskStatuses.map((status) => <option key={status}>{status}</option>)}</select></div>{dependencies.filter((dependency) => dependency.task_id === item.id).map((dependency) => <p key={dependency.id} className="mt-2 text-xs text-slate-500">Depends on: <span className="font-medium text-slate-700">{taskTitle(dependency.depends_on_task_id)}</span></p>)}</div>) : <p className="text-sm text-slate-500">No tasks yet.</p>}</div></section></div>
+  return (
+    <>
+      <style>{`
+        input:focus, textarea:focus, select:focus { border-color: rgba(167,139,250,0.4) !important; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+      `}</style>
 
-    <section className="card-enterprise mt-6 p-6"><div><h2 className="text-lg font-semibold text-slate-900">Task dependencies</h2><p className="mt-1 text-sm text-slate-500">Connect a prerequisite to a task. Prerequisites must be completed first.</p></div><div className="mt-4 flex flex-col gap-3 sm:flex-row"><select aria-label="Task" value={taskId} onChange={(event) => setTaskId(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="">Select task</option>{tasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select><select aria-label="Prerequisite task" value={dependsOnTaskId} onChange={(event) => setDependsOnTaskId(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="">Select prerequisite</option>{tasks.filter((task) => task.id !== taskId).map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select><button onClick={addDependency} disabled={!taskId || !dependsOnTaskId || workspaceActions.addDependency.isPending} className="btn-primary-brand px-4 py-2 text-sm">{workspaceActions.addDependency.isPending ? "Adding…" : "Add dependency"}</button></div>{workspaceActions.addDependency.isError && <p className="mt-3 text-sm text-red-700">That dependency could not be added.</p>}</section>
-    {canApprove && <section className="card-enterprise mt-6 p-6"><div><h2 className="text-lg font-semibold text-slate-900">Offer a task</h2><p className="mt-1 text-sm text-slate-500">Enter an engineer profile or user ID. The API checks profile visibility, availability, and required skills.</p></div><div className="mt-4 flex flex-col gap-3 sm:flex-row"><select aria-label="Offer task" value={taskId} onChange={(event) => setTaskId(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="">Select task</option>{tasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select><input aria-label="Candidate ID" value={candidateId} onChange={(event) => setCandidateId(event.target.value)} placeholder="Engineer profile ID" className="input-enterprise" /><button onClick={offerTask} disabled={!taskId || !candidateId || workspaceActions.offerTask.isPending} className="btn-primary-brand px-4 py-2 text-sm">{workspaceActions.offerTask.isPending ? "Offering…" : "Send offer"}</button></div>{workspaceActions.offerTask.isError && <p className="mt-3 text-sm text-red-700">The task offer could not be sent. Check the profile ID and qualification.</p>}</section>}
+      <div style={{ minHeight: "100vh", background: "#080e1c", fontFamily: "'Inter', system-ui, sans-serif", color: "#e2e8f0" }}>
+        {/* Header */}
+        <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", padding: "20px 32px" }}>
+          <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+            <button
+              onClick={() => router.push("/projects")}
+              style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#64748b", fontSize: 13, cursor: "pointer", padding: 0, marginBottom: 14 }}
+            >
+              <ArrowLeft size={14} />Back to Projects
+            </button>
 
-    <section className="card-enterprise mt-6 p-6"><div><h2 className="text-lg font-semibold text-slate-900">Work submissions</h2><p className="mt-1 text-sm text-slate-500">Workers submit versioned evidence; reviewers can request changes or approve delivery.</p></div>{tasks.some((task) => task.assigned_user_id === user?.id) && <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-semibold text-slate-800">Submit work</p><div className="mt-3 flex flex-col gap-3"><select aria-label="Submission task" value={submissionTaskId} onChange={(event) => setSubmissionTaskId(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="">Select assigned task</option>{tasks.filter((task) => task.assigned_user_id === user?.id).map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select><textarea aria-label="Submission summary" value={submissionSummary} onChange={(event) => setSubmissionSummary(event.target.value)} placeholder="Describe what was delivered and how it was verified" rows={3} className="input-enterprise" /><button onClick={submitWork} disabled={!submissionTaskId || !submissionSummary.trim() || submissionActions.submit.isPending} className="btn-primary-brand self-start px-4 py-2 text-sm">{submissionActions.submit.isPending ? "Submitting…" : "Submit work"}</button></div></div>}<div className="mt-4 space-y-3">{submissions.length === 0 ? <p className="text-sm text-slate-500">No submissions yet.</p> : submissions.map((submission) => <article key={submission.id} className="rounded-xl border border-slate-200 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold text-slate-900">{taskTitle(submission.task_id)} · v{submission.version}</p><p className="mt-1 text-sm text-slate-600">{submission.summary}</p></div><span className="badge-enterprise">{submission.status}</span></div>{submission.ai_feedback && <p className="mt-2 text-xs text-slate-500">AI feedback: {submission.ai_feedback}{submission.quality_score != null ? ` (${submission.quality_score}/100)` : ""}</p>}{submission.review_note && <p className="mt-2 text-xs text-amber-700">Reviewer note: {submission.review_note}</p>}{canApprove && ["SUBMITTED", "CHANGES_REQUESTED"].includes(submission.status) && <div className="mt-3 flex flex-wrap gap-2"><button onClick={() => submissionActions.review.mutate({ submissionId: submission.id, status: "APPROVED" })} disabled={submissionActions.review.isPending} className="btn-primary-brand px-3 py-2 text-xs">Approve</button><button onClick={() => submissionActions.review.mutate({ submissionId: submission.id, status: "CHANGES_REQUESTED", reviewNote: "Please revise and resubmit with additional evidence." })} disabled={submissionActions.review.isPending} className="btn-secondary-brand px-3 py-2 text-xs">Request changes</button><button onClick={() => submissionActions.aiReview.mutate(submission.id)} disabled={submissionActions.aiReview.isPending} className="btn-secondary-brand px-3 py-2 text-xs">{submissionActions.aiReview.isPending ? "Reviewing…" : "AI quality review"}</button></div>}</article>)}</div></section>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" as const }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: statusConf.color, background: `${statusConf.color}18`, padding: "3px 10px", borderRadius: 20 }}>
+                    {statusConf.label}
+                  </span>
+                </div>
+                <h1 style={{ fontSize: 26, fontWeight: 900, color: "#f1f5f9", margin: "0 0 6px", letterSpacing: "-0.02em" }}>{project.title}</h1>
+                <p style={{ fontSize: 14, color: "#64748b", margin: 0 }}>{project.description}</p>
+              </div>
 
-    <section className="card-enterprise mt-6 p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold text-slate-900">Work ledger</h2><p className="mt-1 text-sm text-slate-500">Non-financial effort tracking for delivery transparency.</p></div><span className="badge-enterprise">{ledger.data?.total_minutes ?? 0} minutes recorded</span></div>{tasks.some((task) => task.assigned_user_id === user?.id) && <div className="mt-4 flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-end"><div><label className="text-xs font-semibold text-slate-600">Task</label><select aria-label="Ledger task" value={ledgerTaskId} onChange={(event) => setLedgerTaskId(event.target.value)} className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="">Select task</option>{tasks.filter((task) => task.assigned_user_id === user?.id).map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select></div><div><label className="text-xs font-semibold text-slate-600">Minutes</label><input aria-label="Ledger minutes" type="number" min="1" max="1440" value={ledgerMinutes} onChange={(event) => setLedgerMinutes(event.target.value)} className="mt-1 w-24 rounded-lg border border-slate-200 px-3 py-2 text-sm" /></div><div className="flex-1"><label className="text-xs font-semibold text-slate-600">Description</label><input aria-label="Ledger description" value={ledgerDescription} onChange={(event) => setLedgerDescription(event.target.value)} placeholder="What did you work on?" className="input-enterprise mt-1" /></div><button onClick={recordEffort} disabled={!ledgerTaskId || !ledgerDescription.trim() || ledgerActions.record.isPending} className="btn-primary-brand px-4 py-2 text-sm">{ledgerActions.record.isPending ? "Recording…" : "Record effort"}</button></div>}<div className="mt-4 space-y-2">{(ledger.data?.entries ?? []).slice(0, 8).map((entry) => <div key={entry.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2 text-sm"><div><span className="font-medium text-slate-800">{taskTitle(entry.task_id)}</span><span className="ml-2 text-slate-500">{entry.description}</span></div><span className="text-xs text-slate-500">{entry.duration_minutes} min · {entry.status}</span></div>)}</div></section>
+              <div style={{ display: "flex", gap: 10, flexShrink: 0, flexWrap: "wrap" as const }}>
+                {!plan && (
+                  <button
+                    onClick={() => planActions.generatePlan.mutate()}
+                    disabled={planActions.generatePlan.isPending}
+                    style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #7c3aed, #4f46e5)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(124,58,237,0.3)", opacity: planActions.generatePlan.isPending ? 0.7 : 1 }}
+                  >
+                    <Sparkles size={14} />
+                    {planActions.generatePlan.isPending ? "Generating…" : "Generate AI Plan"}
+                  </button>
+                )}
+                {plan && project.status === "PLANNING" && (
+                  <button
+                    onClick={() => planActions.approvePlan.mutate()}
+                    disabled={planActions.approvePlan.isPending}
+                    style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #059669, #0d9488)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: planActions.approvePlan.isPending ? 0.7 : 1 }}
+                  >
+                    <CheckCircle size={14} />
+                    {planActions.approvePlan.isPending ? "Activating…" : "Approve & Activate"}
+                  </button>
+                )}
+                <button
+                  onClick={() => aiReportActions.generateProgress.mutate()}
+                  disabled={aiReportActions.generateProgress.isPending}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 10, border: "1px solid rgba(56,189,248,0.3)", background: "rgba(56,189,248,0.08)", color: "#38bdf8", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: aiReportActions.generateProgress.isPending ? 0.7 : 1 }}
+                >
+                  <BarChart3 size={14} />
+                  {aiReportActions.generateProgress.isPending ? "Generating…" : "Progress Report"}
+                </button>
+              </div>
+            </div>
 
-    {canApprove && <section className="card-enterprise mt-6 p-6"><div><h2 className="text-lg font-semibold text-slate-900">Sandbox payments</h2><p className="mt-1 text-sm text-slate-500">Simulation only—no real funds move. Create escrow for an assigned engineer, then release or refund it.</p></div><div className="mt-4 flex flex-col gap-3 sm:flex-row"><select aria-label="Payment task" value={paymentTaskId} onChange={(event) => setPaymentTaskId(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option value="">Project-level escrow</option>{tasks.map((task) => <option key={task.id} value={task.id}>{task.title}</option>)}</select><input aria-label="Payment payee ID" value={paymentPayeeId} onChange={(event) => setPaymentPayeeId(event.target.value)} placeholder="Engineer user ID" className="input-enterprise" /><input aria-label="Payment amount" type="number" min="0.01" step="0.01" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} placeholder="Amount USD" className="input-enterprise sm:max-w-32" /><button onClick={createEscrow} disabled={!paymentPayeeId || Number(paymentAmount) <= 0 || paymentActions.escrow.isPending} className="btn-primary-brand px-4 py-2 text-sm">{paymentActions.escrow.isPending ? "Creating…" : "Create escrow"}</button></div><div className="mt-4 space-y-2">{(payments.data ?? []).map((payment) => <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm"><span><strong>{payment.amount.toFixed(2)} {payment.currency}</strong><span className="ml-2 text-slate-500">{payment.provider} · {payment.status}</span></span>{payment.status === "ESCROWED" && <span className="flex gap-2"><button onClick={() => paymentActions.release.mutate(payment.id)} disabled={paymentActions.release.isPending} className="btn-primary-brand px-3 py-1.5 text-xs">Release</button><button onClick={() => paymentActions.refund.mutate(payment.id)} disabled={paymentActions.refund.isPending} className="btn-secondary-brand px-3 py-1.5 text-xs">Refund</button></span>}</div>)}</div></section>}
+            {/* Progress bar */}
+            {tasks.length > 0 && (
+              <div style={{ marginTop: 18 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#475569", marginBottom: 6 }}>
+                  <span>{tasksDone} of {tasks.length} tasks complete</span>
+                  <span style={{ fontWeight: 700, color: progress >= 80 ? "#34d399" : "#a78bfa" }}>{progress}%</span>
+                </div>
+                <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${progress}%`, background: progress >= 80 ? "#34d399" : "linear-gradient(90deg, #7c3aed, #4f46e5)", borderRadius: 6, transition: "width 0.8s ease" }} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
-    {details.status === "COMPLETED" && <section className="card-enterprise mt-6 p-6"><div><h2 className="text-lg font-semibold text-slate-900">Project reputation</h2><p className="mt-1 text-sm text-slate-500">Leave one review for another project participant after completion. Reviews are reciprocal and explainable.</p></div><div className="mt-4 flex flex-col gap-3 sm:flex-row"><input aria-label="Review participant ID" value={revieweeId} onChange={(event) => setRevieweeId(event.target.value)} placeholder="Participant user ID" className="input-enterprise" /><select aria-label="Review rating" value={reviewRating} onChange={(event) => setReviewRating(event.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating}/5</option>)}</select><input aria-label="Review comment" value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} placeholder="Describe the collaboration" className="input-enterprise" /><button onClick={submitReview} disabled={!revieweeId || !reviewComment.trim() || reviewActions.create.isPending} className="btn-primary-brand px-4 py-2 text-sm">{reviewActions.create.isPending ? "Saving…" : "Leave review"}</button></div>{reviewActions.create.isError && <p className="mt-3 text-sm text-red-700">Review could not be saved. Check the participant ID or whether you already reviewed them.</p>}<div className="mt-4 space-y-2">{(reviews.data ?? []).map((review) => <div key={review.id} className="rounded-lg border border-slate-200 p-3 text-sm"><span className="font-semibold text-slate-900">{review.rating}/5</span><span className="ml-2 text-slate-600">{review.comment}</span></div>)}</div></section>}
-  </main>;
+        {/* Body */}
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 14 }}>
+          {/* AI Plan */}
+          {plan && (
+            <Section title="AI Generated Plan" icon={Brain} iconColor="#a78bfa">
+              {plan.summary && (
+                <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7, margin: "0 0 14px", fontStyle: "italic" }}>{plan.summary}</p>
+              )}
+              {plan.milestones && plan.milestones.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+                  {plan.milestones.map((m: { title: string; description?: string }, i: number) => (
+                    <div key={i} style={{ padding: "10px 14px", background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: 10 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{m.title}</div>
+                      {m.description && <p style={{ fontSize: 12, color: "#64748b", margin: "4px 0 0" }}>{m.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => aiReportActions.generateRisk.mutate()}
+                disabled={aiReportActions.generateRisk.isPending}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.08)", color: "#f87171", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+              >
+                <Shield size={12} />{aiReportActions.generateRisk.isPending ? "Analyzing…" : "Risk Analysis"}
+              </button>
+            </Section>
+          )}
+
+          {/* No plan yet */}
+          {!plan && (
+            <div style={{ textAlign: "center", padding: "40px 24px", background: "rgba(255,255,255,0.01)", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: 14 }}>
+              <Sparkles size={36} color="#334155" style={{ marginBottom: 12 }} />
+              <p style={{ fontSize: 14, color: "#475569", margin: "0 0 14px" }}>No AI plan generated yet</p>
+              <button
+                onClick={() => planActions.generatePlan.mutate()}
+                disabled={planActions.generatePlan.isPending}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #7c3aed, #4f46e5)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+              >
+                <Sparkles size={15} />
+                {planActions.generatePlan.isPending ? "Generating Plan…" : "Generate AI Plan"}
+              </button>
+            </div>
+          )}
+
+          {/* Milestones & Tasks */}
+          {(milestones.length > 0 || tasks.length > 0) && (
+            <Section title="Milestones & Tasks" icon={FolderKanban} iconColor="#34d399" badge={tasks.length}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {milestones.map((m: MilestoneRecord) => {
+                  const mTasks = tasks.filter((t: TaskRecord) => t.milestone === m.title);
+                  return (
+                    <div key={m.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <CheckCircle size={14} color="#34d399" />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{m.title}</span>
+                        <span style={{ fontSize: 11, color: "#475569" }}>({mTasks.length})</span>
+                      </div>
+                      {m.description && <p style={{ fontSize: 12, color: "#64748b", margin: "0 0 8px", paddingLeft: 22 }}>{m.description}</p>}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 22 }}>
+                        {mTasks.map((t: TaskRecord) => (
+                          <TaskCard
+                            key={t.id} task={t}
+                            onStatusChange={(status) => workspaceActions.updateTask.mutate({ taskId: t.id, status })}
+                            updating={workspaceActions.updateTask.isPending}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Tasks with no milestone */}
+                {(() => {
+                  const unassigned = tasks.filter((t: TaskRecord) => !t.milestone || !milestones.some((m: MilestoneRecord) => m.title === t.milestone));
+                  if (unassigned.length === 0) return null;
+                  return (
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: "0.05em" }}>General Tasks</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {unassigned.map((t: TaskRecord) => (
+                          <TaskCard
+                            key={t.id} task={t}
+                            onStatusChange={(status) => workspaceActions.updateTask.mutate({ taskId: t.id, status })}
+                            updating={workspaceActions.updateTask.isPending}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </Section>
+          )}
+
+          {/* Submissions */}
+          {submissions.length > 0 && (
+            <Section title="Work Submissions" icon={FileText} iconColor="#facc15" badge={submissions.length}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {submissions.map((sub: SubmissionRecord) => (
+                  <SubmissionCard
+                    key={sub.id}
+                    sub={sub}
+                    onReview={(status, note) => submissionActions.review.mutate({ submissionId: sub.id, status, reviewNote: note })}
+                    onAIReview={() => submissionActions.aiReview.mutate(sub.id)}
+                    updating={submissionActions.review.isPending || submissionActions.aiReview.isPending}
+                  />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Peer Reviews */}
+          <Section title="Peer Reviews" icon={Star} iconColor="#facc15" defaultOpen={false}>
+            {(reviews.data ?? []).length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+                {reviews.data!.map((r) => (
+                  <div key={r.id} style={{ padding: "12px 14px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10 }}>
+                    <div style={{ display: "flex", gap: 3, marginBottom: 4 }}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={13} fill={i < r.rating ? "#facc15" : "none"} color={i < r.rating ? "#facc15" : "#334155"} />
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>{r.comment}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <input value={reviewForm.revieweeId} onChange={(e) => setReviewForm((f) => ({ ...f, revieweeId: e.target.value }))} placeholder="Reviewee user ID" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#e2e8f0", fontSize: 13, padding: "8px 12px", outline: "none", fontFamily: "inherit" }} />
+              <div style={{ display: "flex", gap: 4 }}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <button key={i} onClick={() => setReviewForm((f) => ({ ...f, rating: i + 1 }))} style={{ background: "none", border: "none", cursor: "pointer", padding: 2 }}>
+                    <Star size={20} fill={i < reviewForm.rating ? "#facc15" : "none"} color={i < reviewForm.rating ? "#facc15" : "#334155"} />
+                  </button>
+                ))}
+              </div>
+              <textarea value={reviewForm.comment} onChange={(e) => setReviewForm((f) => ({ ...f, comment: e.target.value }))} placeholder="Share your experience…" rows={3} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "#e2e8f0", fontSize: 13, padding: "8px 12px", outline: "none", fontFamily: "inherit", resize: "none" as const }} />
+              <button
+                onClick={() => { if (reviewForm.revieweeId && reviewForm.comment) reviewActions.create.mutate(reviewForm, { onSuccess: () => setReviewForm({ revieweeId: "", rating: 5, comment: "" }) }); }}
+                disabled={!reviewForm.revieweeId || !reviewForm.comment || reviewActions.create.isPending}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", borderRadius: 9, border: "none", background: (reviewForm.revieweeId && reviewForm.comment) ? "linear-gradient(135deg, #7c3aed, #4f46e5)" : "rgba(255,255,255,0.05)", color: (reviewForm.revieweeId && reviewForm.comment) ? "#fff" : "#475569", fontSize: 13, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start" as const }}
+              >
+                <Star size={13} />{reviewActions.create.isPending ? "Submitting…" : "Submit Review"}
+              </button>
+            </div>
+          </Section>
+
+          {/* Project meta */}
+          <Section title="Project Info" icon={Zap} iconColor="#38bdf8" defaultOpen={false}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+              {project.timeline && (
+                <div>
+                  <div style={{ fontSize: 11, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 4 }}>Timeline</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e8f0", display: "flex", alignItems: "center", gap: 6 }}><Clock size={14} color="#38bdf8" />{project.timeline}</div>
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: 11, color: "#475569", textTransform: "uppercase" as const, letterSpacing: "0.05em", marginBottom: 4 }}>Project ID</div>
+                <div style={{ fontSize: 12, color: "#64748b", fontFamily: "monospace" }}>{project.id}</div>
+              </div>
+            </div>
+          </Section>
+        </div>
+      </div>
+    </>
+  );
 }
