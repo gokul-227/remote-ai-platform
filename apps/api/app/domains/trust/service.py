@@ -18,7 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.auth.models import User
 from app.domains.contracts.models import Contract
 from app.domains.engineers.models import EngineerProfile
-from app.domains.projects.models import ProjectReview, ProjectTask, WorkSubmission
+from app.domains.marketplace.models import ProjectTask
+from app.domains.projects.models import ProjectReview, WorkSubmission
 from app.domains.trust.models import UserTrustScore, UserVerification
 
 

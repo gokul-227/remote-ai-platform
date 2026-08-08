@@ -6,7 +6,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.agents.quality_engine import QualityEngineAgent
-from app.core.security import get_current_user
+from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.quality.schemas import (
     BatchEvaluationRequest,

@@ -51,3 +51,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+# Alias for backward compatibility
+AsyncSessionLocal = AsyncSessionFactory

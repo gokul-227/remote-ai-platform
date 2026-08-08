@@ -15,7 +15,7 @@ from app.domains.engineers.models import EngineerProfile
 from app.domains.companies.models import CompanyProfile
 from app.domains.jobs.models import JobPost
 from app.domains.groups.models import Group
-from app.domains.projects.models import Project, ProjectStatus
+from app.domains.projects.models import Project
 
 
 async def seed_demo_data():
