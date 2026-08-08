@@ -1,124 +1,124 @@
-# WorkMesh AI — E2E Verification
+# E2E Verification — Forensic Round 2 (commit da4534e)
 
-**Audit date:** 2026-08-08
-**Method:** Attempted end-to-end flows. **E2E execution was NOT possible** because the API process crashes on startup (P0 import error) and the database is at migration 009 (13 behind head).
+> Audit date: 2026-08-08 | Commit `da4534e98b282ab9f734d1daf60b2f040ee59513` (main, clean)
 
----
+## Result
 
-## Blocker Reason (P0)
+**FAIL — NO E2E workflow was executed successfully. Zero E2E PASS.**
 
-```
-ImportError: cannot import name 'get_current_user' from 'app.core.security'
-  File "/app/app/main.py", line 40 — from app.domains.groups.router import router as groups_router
-  File "/app/app/domains/groups/router.py", line 16 — from app.core.security import get_current_user
-```
+The API service is completely down due to the P0 ImportError (B1), so no end-to-end workflow that depends on the backend could start. This document records the blocking evidence and the exact steps a future Phase B must execute once unblocked.
 
-Result: `localhost:8000` refuses connections; all backend API calls fail. E2E cannot proceed past registration/login.
+## Blockers
 
----
+- **B1 (P0):** API ImportError — `cannot import name 'get_current_user' from 'app.core.security'` at `app/domains/groups/router.py:16` (import chain from `app/main.py:40`). API never boots. All `http://localhost:8000*` probes return `000`.
+- **B2 (P0-class):** Live DB is 13 migrations behind repo head (`009_project_management` vs `022_groups`); 18 tables missing — including `work_submissions`, `payment_transactions`, `contracts`, `groups`, social posts, etc. Even after B1, these features cannot function.
+- **B3 (P1):** Frontend lint fails (3 errors / 51 warnings).
+- **B4 (P2):** No `type-check` script configured.
 
-## E2E Flow 1 — Engineer
+## What DID Run (non-API)
 
-| Step | Result |
+| Item | Evidence |
 |---|---|
-| Register engineer | BLOCKED — API down |
-| Login | BLOCKED |
-| Create/update profile | BLOCKED |
-| Upload resume | BLOCKED |
-| Resume parsing | BLOCKED |
-| Browse jobs | BLOCKED |
-| Search/filter jobs | BLOCKED |
-| Open job | BLOCKED |
-| Apply | BLOCKED |
-| View application | BLOCKED |
-| View recommendations | BLOCKED |
-| Connect with another user | BLOCKED |
-| Send message | BLOCKED |
-| Receive message | BLOCKED |
-| View project/task opportunity | BLOCKED |
-| Accept task | BLOCKED |
-| Update task progress | BLOCKED |
-| Submit work | BLOCKED |
-| AI quality evaluation | BLOCKED |
-| Client review | BLOCKED |
-| Approval | BLOCKED |
-| Ledger/payment record | BLOCKED |
-| Trust/reputation update | BLOCKED |
+| Web | `GET http://localhost:3000` → **200** (Next.js 16.2.11, ready in 251ms) |
+| Celery worker | `celery@… ready.` |
+| Celery beat | `beat: Starting...` |
+| Keycloak | `http://localhost:8080` → 302 (healthy, realm imported) |
+| MinIO | console `http://localhost:9001` → 200; buckets initialized |
 
-## E2E Flow 2 — Client / Company
+## Planned E2E Flows — All NOT EXECUTED
 
-| Step | Result |
-|---|---|
-| Register company | BLOCKED |
-| Login | BLOCKED |
-| Create company profile | BLOCKED |
-| Create job | BLOCKED |
-| Publish job | BLOCKED |
-| Create project | BLOCKED |
-| Enter project brief | BLOCKED |
-| Generate AI plan | BLOCKED |
-| Review plan | BLOCKED |
-| Approve plan | BLOCKED |
-| Tasks created | BLOCKED |
-| Workers discover task | BLOCKED |
-| Worker expresses interest | BLOCKED |
-| Client reviews worker | BLOCKED |
-| Client approves worker | BLOCKED |
-| Task assigned | BLOCKED |
-| Worker starts task | BLOCKED |
-| Worker submits deliverable | BLOCKED |
-| AI quality evaluation | BLOCKED |
-| Client reviews | BLOCKED |
-| Approve / request changes | BLOCKED |
-| Payment/ledger update | BLOCKED |
-| Contract/project completion | BLOCKED |
+### Engineer Flow
+| # | Step | Status |
+|---|---|---|
+| 1 | Register | NOT EXECUTED — blocked by B1 |
+| 2 | Login | NOT EXECUTED — blocked by B1 |
+| 3 | Create profile | NOT EXECUTED — blocked by B1 |
+| 4 | Add skills | NOT EXECUTED — blocked by B1 |
+| 5 | Upload resume | NOT EXECUTED — blocked by B1 |
+| 6 | Parse resume | NOT EXECUTED — blocked by B1 |
+| 7 | Browse jobs | NOT EXECUTED — blocked by B1 |
+| 8 | Save job | NOT EXECUTED — blocked by B1 |
+| 9 | Apply | NOT EXECUTED — blocked by B1 |
+| 10 | View recommendation | NOT EXECUTED — blocked by B1 (AI provider absent) |
+| 11 | Send connection request | NOT EXECUTED — blocked by B1 |
+| 12 | Messaging | NOT EXECUTED — blocked by B1 |
+| 13 | Receive task | NOT EXECUTED — blocked by B1+B2 |
+| 14 | Accept task | NOT EXECUTED — blocked by B1+B2 |
+| 15 | Submit work | NOT EXECUTED — blocked by B1+B2 |
+| 16 | AI quality review | NOT EXECUTED — blocked by B1+B2+AI provider |
+| 17 | Revision if requested | NOT EXECUTED — blocked by B1+B2 |
+| 18 | Approval | NOT EXECUTED — blocked by B1+B2 |
+| 19 | Completion | NOT EXECUTED — blocked by B1+B2 |
 
-## E2E Flow 3 — Admin
+### Company Flow
+| # | Step | Status |
+|---|---|---|
+| 1 | Register | NOT EXECUTED — blocked by B1 |
+| 2 | Login | NOT EXECUTED — blocked by B1 |
+| 3 | Company profile | NOT EXECUTED — blocked by B1 |
+| 4 | Create job | NOT EXECUTED — blocked by B1 |
+| 5 | Publish job | NOT EXECUTED — blocked by B1 |
+| 6 | Review applicants | NOT EXECUTED — blocked by B1 |
+| 7 | Create project | NOT EXECUTED — blocked by B1 |
+| 8 | Generate AI plan | NOT EXECUTED — blocked by B1+AI provider |
+| 9 | Approve plan | NOT EXECUTED — blocked by B1 |
+| 10 | Create tasks | NOT EXECUTED — blocked by B1 |
+| 11 | Offer task | NOT EXECUTED — blocked by B1+B2 |
+| 12 | Engineer accepts | NOT EXECUTED — blocked by B1+B2 |
+| 13 | Engineer submits | NOT EXECUTED — blocked by B1+B2 |
+| 14 | Company reviews | NOT EXECUTED — blocked by B1+B2 |
+| 15 | Request changes / approve | NOT EXECUTED — blocked by B1+B2 |
+| 16 | Complete | NOT EXECUTED — blocked by B1+B2 |
 
-| Step | Result |
-|---|---|
-| Admin login | BLOCKED |
-| Admin dashboard | BLOCKED |
-| View users | BLOCKED |
-| View engineers | BLOCKED |
-| View companies | BLOCKED |
-| View jobs | BLOCKED |
-| View projects | BLOCKED |
-| View moderation | BLOCKED |
-| Suspend user | BLOCKED |
-| Verify suspended user access | BLOCKED |
-| Reactivate user | BLOCKED |
-| View audit logs | BLOCKED |
-| View AI usage | BLOCKED |
-| View system health | BLOCKED |
+### Admin Flow
+| # | Step | Status |
+|---|---|---|
+| 1 | Admin login | NOT EXECUTED — blocked by B1 |
+| 2 | Dashboard | NOT EXECUTED — blocked by B1 |
+| 3 | Statistics | NOT EXECUTED — blocked by B1 |
+| 4 | Users | NOT EXECUTED — blocked by B1 |
+| 5 | Suspend user | NOT EXECUTED — blocked by B1 |
+| 6 | Verify access denied | NOT EXECUTED — blocked by B1 |
+| 7 | Reactivate user | NOT EXECUTED — blocked by B1 |
+| 8 | Moderation | NOT EXECUTED — blocked by B1+B2 (moderation_reports table missing) |
+| 9 | AI usage | NOT EXECUTED — blocked by B1+B2 (ai_usage_logs missing) |
+| 10 | Health | NOT EXECUTED — blocked by B1 |
 
-## E2E Flow 4 — Uber-like Dispatch
+### Messaging Flow (incl. WebSocket)
+| # | Step | Status |
+|---|---|---|
+| 1 | User A login | NOT EXECUTED — blocked by B1 |
+| 2 | User B login | NOT EXECUTED — blocked by B1 |
+| 3 | Connection | NOT EXECUTED — blocked by B1 |
+| 4 | Conversation | NOT EXECUTED — blocked by B1 |
+| 5 | WebSocket connect | NOT EXECUTED — blocked by B1 |
+| 6 | Send message | NOT EXECUTED — blocked by B1 |
+| 7 | Receive message | NOT EXECUTED — blocked by B1 |
+| 8 | Persistence | NOT EXECUTED — blocked by B1 |
+| 9 | Reload conversation | NOT EXECUTED — blocked by B1 |
 
-| Step | Result |
-|---|---|
-| Client creates task | BLOCKED |
-| Task becomes available | BLOCKED |
-| Eligible workers discovered | BLOCKED |
-| Workers notified | BLOCKED |
-| Worker expresses interest | BLOCKED |
-| Client sees candidate | BLOCKED |
-| Client accepts worker | BLOCKED |
-| Assignment created | BLOCKED |
-| Other candidates rejected/expired | BLOCKED |
-| Worker performs task | BLOCKED |
-| Worker submits | BLOCKED |
-| Client approves | BLOCKED |
-| Payment/ledger calculated | BLOCKED |
+### Dispatch (Jobs Aggregation)
+| # | Step | Status |
+|---|---|---|
+| 1 | Trigger sync | NOT EXECUTED — blocked by B1 |
+| 2 | Adapter fetch (arbeitnow, remoteok, remotive, themuse, usajobs) | NOT EXECUTED — blocked by B1 |
+| 3 | Normalize | NOT EXECUTED — blocked by B1 |
+| 4 | Deduplicate | NOT EXECUTED — blocked by B1 |
+| 5 | Store | NOT EXECUTED — blocked by B1 |
+| 6 | Searchable | NOT EXECUTED — blocked by B1 |
 
----
+## Static-Only Readiness Notes
+- Frontend routes (34) exist and compile (`npm run build` exit 0, TypeScript checks active).
+- 24 hooks with 85 `api.*` calls reference real backend endpoints; WebSocket hook references correct path.
+- None of this executed against a running API.
 
-## What Was Verified Instead (non-E2E)
-
-- **Frontend:** `next build` passes (exit 0); dev server returns HTTP 200.
-- **Authentication code:** register/login/local JWT wired in `auth/router.py`; frontend `/auth/login` calls `POST /auth/login`.
-- **WebSocket:** endpoint `network/router.py:148-180`, authenticated via `?token=`, persists messages to DB. Not runtime-tested (API down).
-- **Job aggregation:** 5 adapters + Celery beat schedule every 6h (code-verified, not run).
-
-## Conclusion
-
-**E2E status: NOT EXECUTABLE (blocked).** Prior claims of "E2E verified" are not reproducible in the current repository state.
+## Post-Unblock Verification Checklist (Phase B)
+1. Fix B1 (groups/router.py import) and re-run `docker compose up -d`.
+2. Apply migrations 010–022 (B2) so live DB matches head `022_groups`.
+3. Re-run `docker compose ps` — expect api healthy.
+4. Re-run pytest: must collect >0 tests and report real pass/fail counts.
+5. Re-run HTTP probes: `/docs`, `/api/v1/health` expect 200.
+6. Execute Engineer/Company/Admin/Messaging/Dispatch flows above in order; record each step's HTTP status.
+7. Verify WebSocket send/receive + persistence.
+8. Verify AI provider availability (Ollama/Groq/OpenAI) before classifying AI features.
+9. Re-run `npm run lint` (currently failing) and add/fix `type-check` script.

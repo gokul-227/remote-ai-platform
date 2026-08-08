@@ -1,435 +1,323 @@
-# WorkMesh AI — Forensic Audit Report
+# WorkMesh AI — Forensic Audit Report (Round 2)
 
-**Audit date:** 2026-08-08
-**Auditor:** AI Engineering Agent (read-only, independent verification)
+**Audit date:** 2026-08-08 21:05–21:12 (Europe/Berlin)
+**Auditor:** Cline forensic audit (read-only; no application source modified)
 **Repository:** `/Users/gokulr/Developer/Remote_Work_Platform`
-**Git:** branch `main` (clean), commit `bc4fe10` (`bc4fe10ddc9a3b15c8ee3b62a4577cca7155eb28`), remote `origin → https://github.com/gokul-227/remote-ai-platform.git`
+**Git:** commit `da4534e` (`da4534e98b282ab9f734d1daf60b2f040ee59513`), branch `main`, working tree clean
+**Remote:** `origin → https://github.com/gokul-227/remote-ai-platform.git`
 
 ---
 
 ## 1. Executive Summary
 
-**The repository is NOT 100% complete.**
+**The repository is NOT runnable end-to-end today, and zero features are E2E-verified.**
 
-Previous agent reports and `docs/CURRENT_STATE.md` claim 20+ features are `COMPLETE`. **These claims are contradicted by runtime evidence.**
+The API container fails to boot with a P0 `ImportError`. As a direct consequence:
 
-Actual verified state:
-
-| Area | Status |
+| Metric | Result |
 |---|---|
-| Features verified working at runtime | 0 |
-| Features implemented but not runtime-verified | ~18 (backend/DB/API code exists, API blocked by P0) |
-| Partially implemented | ~4 |
-| Broken / blocking | 1 P0 (API import error) + 1 P0-class (DB 13 migrations behind) |
-| Mock-only | 1 (payments = sandbox ledger abstraction, by design) |
-| Tests passing | **0 of 92** (entire suite blocked by P0) |
+| Features VERIFIED_WORKING at runtime | **0** |
+| Features IMPLEMENTED_NOT_RUNTIME_VERIFIED | ~18 (static) |
+| Features PARTIALLY_IMPLEMENTED | 4 (Payments sandbox-only, AI provider absent, Keycloak not wired to API, monitoring not in compose) |
+| Features BROKEN / BLOCKING | 1 P0 (API import) + 1 P0-class (DB 13 migrations behind) |
+| MOCK_OR_SANDBOX | Payments escrow ledger; `DEMO_JOBS_SEED` fixture; dev mock user (`DEBUG=True` only) |
+| Tests executed / total | **0 / (suite blocked at collection)** |
+| Frontend lint | **FAIL** (3 errors, 51 warnings) |
+| Frontend build | **PASS** (exit 0, TypeScript checks enabled) |
 
 ---
 
-## 2. Repository State
+## 2. Repository State (captured this audit)
 
 ```text
-Branch:    main (clean)
-Commit:    bc4fe10ddc9a3b15c8ee3b62a4577cca7155eb28
-Status:    working tree clean (no pre-existing or audit changes)
-Remote:    origin → https://github.com/gokul-227/remote-ai-platform.git
-Structure: monorepo (turbo): apps/api (FastAPI), apps/web (Next.js 16), packages/*, infra/, docs/
+$ git status --short --branch
+main...origin/main
+
+$ git branch --show-current
+main
+
+$ git log --oneline -10
+da4534e newcodes
+bc4fe10 new codesss
+c993770 docs: sync commit hash in AGENT_HANDOFF.md
+871012a docs: update FINAL_ENGINEERING_REPORT and AGENT_HANDOFF with empirical audit results
+6390d1c fix(web): resolve TypeScript type errors and broken apiClient module imports
+4b6ac43 docs: add ACTUAL_ARCHITECTURE, VERIFICATION_MATRIX, and FINAL_ENGINEERING_REPORT
+7728cf5 docs: add DOCKER.md and update CURRENT_SYSTEM_AUDIT.md
+2caf5ad docs: add AGENT_STATE.md handoff contract
+4024056 docs: add AUDIT.md and update CURRENT_STATE.md to 100% complete status
+685fc09 docs & tooling: add seed_data script, TESTING.md, updated API_CONTRACT, architecture, and HANDOFF docs
+
+$ git rev-parse HEAD
+da4534e98b282ab9f734d1daf60b2f040ee59513
+
+$ git remote -v
+origin  https://github.com/gokul-227/remote-ai-platform.git (fetch)
+origin  https://github.com/gokul-227/remote-ai-platform.git (push)
 ```
+
+> **Note on prior docs:** the previous `docs/FORENSIC_AUDIT.md` cites commit `bc4fe10`. The current HEAD `da4534e` supersedes it. This audit re-recorded all evidence at `da4534e`.
 
 ---
 
-## 3. Actual Architecture
+## 3. Docker Verification (executed)
 
 ```text
-apps/api         FastAPI (Python 3.12 local/3.11 Docker), async SQLAlchemy 2.x, Alembic
-apps/web         Next.js 16 (app router), React 19, TanStack Query, Axios, Tailwind 4
-infra/docker     docker-compose: postgres 16, redis 7, minio, keycloak 24,
-                 api, web, celery-worker, celery-beat, minio-init
-infra/keycloak   realm-remote-ai-platform.json (imported at startup)
-infra/monitoring prometheus + loki configs (present but not in compose)
-infra/traefik    traefik configs (present but NOT in compose file)
-packages/        config, shared, ui (referenced but minimal usage)
-tests/e2e        Playwright spec (not executed)
+$ docker compose -f infra/docker/docker-compose.yml config          → EXIT 0 (valid)
+$ docker compose -f infra/docker/docker-compose.yml build           → PASS (api, web, celery-worker, celery-beat images built)
+$ docker compose -f infra/docker/docker-compose.yml up -d --force-recreate → all containers created
 ```
 
----
-
-## 4. Complete Feature Matrix
-
-See `docs/VERIFICATION_MATRIX.md` for the full per-feature table.
-
----
-
-## 5. Authentication Audit
-
-- Local JWT auth IS implemented (register/login/logout, access+refresh tokens, password hashing via `get_password_hash`) — `app/domains/auth/`.
-- Keycloak IS genuinely configured in compose (realm imported successfully at `:8080` start; **healthy**).
-- The API does **NOT** currently use Keycloak for user verification despite `KEYCLOAK_URL` being set in compose. Auth domain is local-JWT-first (`AuthService.verify_token` uses `JWT_SECRET_KEY`). This is an architectural ambiguity — see REMAINING_WORK.
-- **Runtime impact:** Un-testable while P0 blocks API startup.
-
----
-
-## 6. Engineer/Freelancer Audit
-
-Code exists for: profile CRUD, bio/headline/skills/experience/education/portfolio/certifications/languages/hourly rate/availability/location-resume upload+parse (MinIO + resume_parser), job browse/search/filter/save/apply, application status/history, recommendations, engineer dashboard/workspace, task accept/reject/progress, deliverable submission, revisions, work approval.
-- Resume parsing: uses `resume_parser.py` (AI or rule-based extraction — see section 18).
-- **Runtime:** NOT VERIFIED (P0 blocks).
-
----
-
-## 7. Client/Company Audit
-
-Code exists for: company registration/profile/description/website/industry/size/tech stack/verification, job create/edit/publish/unpublish/visibility/requirements/skills/compensation/remote config/status, project create/plan/milestones/tasks/dependencies/duration/budget/sprint/approval.
-- AI project plan generation: see section 12.
-- **Runtime:** NOT VERIFIED (P0 blocks).
-
----
-
-## 8. Job Aggregation Audit
-
-**Verified implementation exists** — 5 real adapters in `app/domains/jobs/aggregators/`:
-`remoteok.py`, `arbeitnow.py`, `remotive.py`, `themuse.py`, `usajobs.py` (+ `base.py`).
-- Async HTTP fetches with normalization + skill extraction.
-- Celery beat schedules every 6h (jobs sync) / 12h / daily 2am — `celery_app.py:82-95`.
-- Background task `sync_all_sources` → `JobService.sync_all_job_sources(limit_per_source=50)`.
-- **Not run** during this audit (cells would hit external APIs, and API is down anyway).
-- Scheduler verified configured; actual fetch success/failure against live APIs **NOT verified**.
-
----
-
-## 9. AI Matching Audit
-
-- `matching/` domain implements skill/experience/role/timezone/compensation/remote compatibility scoring, missing-skills, reasoning, ranking, persistence to `job_matches`/`recommendations`.
-- Scores are calculated by the matching service (rule-based + AI-assisted path via `AIService`) — NOT hardcoded. Dynamic scoring confirmed in code.
-- **Runtime:** NOT VERIFIED (P0).
-
----
-
-## 10. Network/Social/Groups Audit
-
-- Network: real DB-backed connections (`connections` table), statuses pending/accept/reject, cancel, privacy rules (profile visibility `public/connections`), search users — all in `network/`.
-- Social: real posts/likes/comments CRUD (`posts`, `post_likes`, `post_comments` tables) tied to users.
-- Groups: real membership + roles (admin/moderator/member), private groups, group posts (`groups` migration 022).
-- Notifications: service + `notifications` table; **business-event-triggered creation is partial** — task/job/connection events create notifications, but coverage is incomplete (see REMAINING_WORK).
-- **Runtime:** NOT VERIFIED (P0).
-
----
-
-## 11. Messaging Audit — VERIFIED IN CODE
-
-- **Real WebSocket exists:** `@router.websocket("/messages/ws/{conversation_id}")` in `app/domains/network/router.py:148-180`, mounted under `/api/v1`.
-- **Authenticated:** token passed as `?token=`, verified via `AuthService.verify_token`; on failure `close(4401)`.
-- **Persisted:** messages `db.add(Message(...))` + commit on WS receive.
-- **Frontend consumer:** `apps/web/src/hooks/useMessages.ts` builds `ws://.../api/v1/messages/ws/{conversationId}?token=...` with HTTP POST fallback.
-- **Limitation:** WS verifies token against existing users only (does NOT auto-create users from token — unlike `get_current_user`).
-- Runtime connection of the WS was NOT possible because API cannot start (P0).
-
----
-
-## 12. Projects / Tasks / Dispatch Audit
-
-- **Uber-like dispatch is PARTIALLY implemented (code-level):**
-  - Client creates project → AI plan → milestones → tasks with dependencies.
-  - Task offers exist (`011_task_assignment_offers`: `task_assignment_offers` table) — worker interest / offer / acceptance.
-  - Assignment → IN_PROGRESS → submission → review → approval/rejection.
-- Statuses present in code: `CREATED / OPEN / OFFERED / ACCEPTED / IN_PROGRESS / SUBMITTED / UNDER_REVIEW / APPROVED / REJECTED / CHANGES_REQUESTED / COMPLETED / CANCELLED` (see `projects/models.py`).
-- Worker notification/interest/approval flow is present but **the dispatch lifecycle is not fully runtime-verified** — see REMAINING_WORK for gaps (e.g. rejection/reassignment/abandon handling).
-- **The AI project plan is persisted** (`ai_reports` table + project plan fields), but note **migration 010+ not applied** to live DB → tables for offers/submissions/ledger/payments/social/contracts/trust/groups are ABSENT at runtime.
-
----
-
-## 13. Work Submission Audit
-
-- `012_work_submissions` migration + `app/domains/quality/`; submissions have review state, revisions (`CHANGES_REQUESTED`).
-- AI quality evaluation: see section 18.
-- **Runtime:** NOT VERIFIED (P0 + DB missing tables).
-
----
-
-## 14. Contracts Audit
-
-- `020_contracts` migration creates `contracts` + `contract_milestones`.
-- Contract lifecycle: create/terms/milestones/worker/client/status/signing/acceptance/timestamps are implemented in `contracts/` domain.
-- **Runtime:** NOT VERIFIED — table absent from live DB.
-
----
-
-## 15. Payments / Ledger Audit
-
-- **MOCK/SANDBOX by design:** `SandboxPaymentProvider` (`app/services/payments/service.py:29-45`) generates fake `sandbox_auth_*` references; never contacts a payment network. Docstring: *"Deterministic adapter for development and tests; it never contacts a payment network."*
-- Provider-independent abstraction exists (Protocols for Payment/Escrow/Payout), but **no real provider adapter exists** (no Stripe/etc.).
-- `013_work_ledger` (non-financial) + `014_payment_abstraction` (sandbox payment transactions) exist in migrations; NOT applied to live DB.
-- Classification: **MOCK/LEDGER-ONLY** (intentional, but MUST NOT be reported as real payments).
-
----
-
-## 16. Trust / Reputation Audit
-
-- `021_trust_reputation` migration + `trust/` domain: `user_verifications`, `user_trust_scores`, reviews/ratings, badges.
-- Trust score calculation exists; manipulation-prevention via server-side calc + admin moderation. Full detail in subagent audit.
-- **Runtime:** NOT VERIFIED — tables absent from live DB.
-
----
-
-## 17. Notifications Audit
-
-- `notifications` table + service; created by business events in multiple domains (jobs/applications/network/projects/tasks).
-- **Coverage partial:** message notifications NOT implemented (no WebSocket-unread notification hook); some project/dispatch events lack notification hooks.
-- In-app display exists in frontend.
-
----
-
-## 18. AI Quality Engine Audit
-
-- **REAL LLM call, with HARDCODED FALLBACK:**
-  - `quality_engine.py:120` → `AIService.analyze()` → `LLMClient.complete_structured_json()` (`llm_client.py:79`) → `litellm.acompletion()` (`llm_client.py:57`).
-  - Provider resolution: `model_config.py:20-29` — `AI_PROVIDER` (default `ollama`), model (default `qwen2.5`), `AI_FALLBACK_PROVIDERS`.
-  - **Fallback:** when LLM call fails/timeouts, engine falls back to deterministic/rule-based scoring (`quality_engine.py` — HARDCODED_FALLBACK). It does NOT return mock as primary path.
-- Resume parsing: AI-assisted with rule-based fallback.
-- Matching: dynamic scoring (rule-based + optional AI reasoning via LLM).
-- Can operate **without external keys** via Ollama default (`OLLAMA_BASE_URL=http://localhost:11434`). Groq/OpenAI optional.
-- Provider abstraction = LiteLLM (real multi-provider library, not a facade).
-
----
-
-## 19. Admin Audit
-
-- All admin endpoints protected by `require_role(UserRole.ADMIN)`.
-- Endpoints: `/admin/stats`, `/admin/sync-logs`, `/admin/activity-logs`, `/admin/users`, `PATCH /admin/users/{id}/status` (suspend/activate), `PATCH /admin/jobs/{id}/status`, `/admin/ai-usage`, `/admin/health/details`, `/moderation/reports` (POST any user; GET/PATCH admin-only).
-- Audit via `activity_logs` + `api_sync_logs`.
-- **Runtime:** NOT VERIFIED (P0).
-
----
-
-## 20. Database Audit
-
-- 22 migrations (`001_initial_schema` → `022_groups`), linear chain, single head. Verified via `alembic history` (head `022_groups`) inside the API container.
-- **Live DB is at `009_project_management`** — 13 migrations behind head. `alembic_version` → `009_project_management`.
-- Tables present: 25 (users, profiles, jobs, applications, projects, tasks, connections, conversations, messages, notifications, etc.).
-- Tables **missing at runtime**: task_assignment_offers, work_submissions, work_ledger, payment_transactions, project reviews, moderation, ai_usage_logs, social posts/likes/comments, contracts, trust scores, verifications, groups.
-- Postgres init SQL (`postgres-init.sql`) creates extensions + `keycloak` schema; ran only on first volume init. It ran (keycloak schema exists). Keycloak started cleanly after network fix.
-
----
-
-## 21. API Audit
-
-Routers registered in `main.py`: auth, engineers, companies, jobs, saved_jobs, applications, matching, network, notifications, projects, marketplace, quality, payments, contracts, trust, social, groups, search, admin (+ moderation).
-
-### Complete Endpoint Inventory (extracted from routers)
-
-**auth** (`/auth`): POST /register, POST /token + /login, POST /refresh, POST /logout, GET /me, POST /sync, GET /login-url, GET /logout-url, PATCH /role
-**engineers** (`/engineers`): GET "", GET /me, POST /me, PUT /me, POST /me/ai-enhance, POST /me/resume, GET /search, GET /{id}
-**companies** (`/companies`): GET /me, POST /me, PUT /me, GET /public, GET /{id}
-**jobs** (`/jobs`): GET "", GET /company, GET /{id}, POST "", POST /sync, POST /seed_demo
-**saved_jobs** (`/saved-jobs`): GET "", POST /{job_id}, DELETE /{job_id}
-**applications** (`/applications`): GET /me, POST /jobs/{job_id}, PATCH /{id}/withdraw, GET /company, POST /jobs/{job_id}/invite/{engineer_id}, PATCH /{id}/status
-**matching** (`/matching`): GET /recommendations, GET /candidates/{job_id}, PATCH /{match_id}/status
-**network** (`/network`): GET/POST /connections, PATCH/DELETE /connections/{id}, GET/POST /conversations, GET/POST /conversations/{id}/messages, **WS /messages/ws/{conversation_id}**
-**notifications** (`/notifications`): GET "", GET /unread-count, PATCH /{id}/read, PATCH /read-all
-**projects** (`/projects`): GET "", POST "", GET/PATCH /{project_id}/status, POST /milestones, GET /{project_id}/milestones, POST /tasks, GET /{project_id}/tasks, POST /tasks/{task_id}/ledger, GET /{project_id}/ledger, PATCH /ledger/{entry_id}/void, GET /{project_id}/payments, GET /reputation/{user_id}, POST/GET /{project_id}/reviews, POST /{project_id}/payments/escrow, PATCH /payments/{payment_id}/release|refund, POST /tasks/{task_id}/offers, PATCH /task-offers/{offer_id}, GET /my-offers, GET /my-tasks, PATCH /task-offers/{offer_id}/cancel, POST/GET /tasks/{task_id}/submissions, PATCH /submissions/{submission_id}/review, POST /submissions/{submission_id}/ai-review, PATCH /tasks/{task_id}, POST /tasks/{task_id}/dependencies|comments, POST /{project_id}/plan, POST /{project_id}/approve-plan, GET /{project_id}/ai-report, POST /{project_id}/ai/progress-summary|risk-analysis|documentation, GET /{project_id}/activity; GET /task-offers
-**quality** (`/quality`): POST /evaluate, POST /review-code, POST /batch-evaluate, GET /health
-**payments** (`/payments`): GET /wallet, GET /transactions, POST /escrow, POST /{payment_id}/release, POST /{payment_id}/refund
-**contracts** (`/contracts`): POST "", GET /me, GET /{contract_id}, PATCH /{contract_id}, POST /{contract_id}/sign, POST /{contract_id}/terminate, (POST /{contract_id}/milestones)
-**trust** (`/trust`): GET /scores/{user_id}, GET /reviews/{user_id}, POST /reviews, GET /verifications/{user_id}, POST /verifications
-**social** (`/social`): GET /feed, GET /posts/public, POST /posts, GET/PATCH/DELETE /posts/{post_id}, POST /posts/{post_id}/like, GET /posts/{post_id}/comments, POST /posts/{post_id}/comments, DELETE /posts/{post_id}/comments/{comment_id}
-**groups** (`/groups`): GET/POST "", GET/PATCH/DELETE /{group_id}, POST /{group_id}/join|leave, GET /{group_id}/members, PATCH /{group_id}/members/{user_id}/role, GET /me/joined, GET/POST /{group_id}/posts, DELETE /{group_id}/posts/{post_id}
-**search** (`/search`): GET ""
-**admin** (`/admin`): GET /stats, GET /sync-logs, GET /activity-logs, GET /users, PATCH /users/{user_id}/status, PATCH /jobs/{job_id}/status, GET /ai-usage, GET /health/details
-**moderation** (`/moderation`): POST /reports, GET /reports, PATCH /reports/{report_id}
-
-### Auth Evidence
-
-- **Logout:** POST /auth/logout — stateless JWT (client discards tokens) + `/auth/logout-url` available for Keycloak OIDC redirect. Verified in code.
-- **Duplicate registration:** POST /auth/register returns 400 `"User with this email already exists"` (auth/router.py:71). Verified in code.
-- **Refresh token:** POST /auth/refresh (JWT_ACCESS_TOKEN_EXPIRE_MINUTES=15, JWT_REFRESH_TOKEN_EXPIRE_DAYS=7).
-
-### Cache
-
-- `app/core/cache.py` implements best-effort Redis JSON cache for low-risk read models (redis.asyncio). Redis container healthy; cache usage active in code.
-
-### Frontend↔Backend Route Comparison (spot check)
-
-- All frontend calls (`src/lib/api.ts`) match backend prefixes verified above (`/auth/login`, `/jobs`, `/engineers/search`, `/companies/public`, `/projects`, `/network/conversations`, etc.). Deeper per-route diff pending runtime once API starts.
-
-**P0:** entire API cannot start → no endpoint testable at runtime.
-
----
-
-## 22. Frontend Audit
-
-- `npm run build` **PASSES** (exit 0) with 25+ routes (webpack).
-- `npm run lint`: **3 errors, 51 warnings**.
-- No `type-check` script exists in `apps/web/package.json`.
-- All app pages (non-landing) call the API via `src/lib/api.ts` — no hardcoded data on dashboards (verified: `/engineer/dashboard`, `/company/dashboard` fetch real endpoints).
-- Landing page `/` is static marketing.
-- Auth guards: token checked in client components (redirect to `/login`) — partial coverage.
-- WebSocket client in `src/hooks/useMessages.ts`.
-- **Runtime:** web renders HTTP 200, but API calls fail (P0).
-
----
-
-## 23. Docker Audit
-
-- Compose file valid (`docker compose config --quiet` → exit 0).
-- Build: `docker compose build` — all 4 images built OK.
-- Runtime (after `--force-recreate` of postgres/redis/minio to restore network topology): **Postgres/Redis/MinIO healthy, Keycloak healthy (realm imported), Celery worker ready, Celery beat running, Web 200 — API unhealthy (P0 import).**
-- Monitoring (prometheus/loki) and traefik configs exist but are **NOT included** in the compose file — they're standalone configs only (not running).
-
----
-
-## 24. Runtime Verification
-
-| Check | Result |
+| Container | Status |
 |---|---|
-| `docker compose config` | ✅ valid |
-| `docker compose build` | ✅ 4/4 images |
-| `docker compose up -d` | ✅ containers started |
-| `curl localhost:3000` | ✅ HTTP 200 |
-| `curl localhost:8000/api/v1/health` | ❌ connection refused (API crash) |
-| Postgres/Redis/MinIO health | ✅ healthy |
-| Keycloak health | ✅ healthy (realm imported) |
-| Celery worker | ✅ ready (post network fix) |
-| Celery beat | ✅ running |
-| Alembic history/heads | ✅ linear 022 head |
-| Alembic current | ⚠️ 009 (13 behind) |
+| postgres | healthy |
+| redis | healthy |
+| minio | healthy |
+| minio-init | one-shot; buckets `remote-ai-platform-resumes`, `remote-ai-platform-assets` created |
+| keycloak | healthy (`:8080` → HTTP 302) |
+| api | **UP but crash-looping** → `ImportError` (see §4) |
+| web | up; `GET /` → **200** |
+| celery-worker | up; `celery@... ready` |
+| celery-beat | up; `beat: Starting...` |
 
----
-
-## 25. E2E Verification
-
-**NOT EXECUTED** — impossible while API cannot start and DB is 13 migrations behind. Every E2E flow (engineer, client, admin, dispatch) is **BLOCKED** by P0.
-
----
-
-## 26. Security Audit
-
-- Password hashing: implemented (auth domain).
-- JWT: access+refresh tokens, expiry config.
-- Keycloak: configured, imported; not the active user-verification path.
-- Admin: `require_role(UserRole.ADMIN)` enforced.
-- Uploads: resume upload validated (extension, magic bytes, size) + private MinIO object names.
-- `.env.example` has no real secrets (placeholders only). No `.env` file found in tree.
-- WS auth: token required, `close(4401)` on failure.
-- **Note:** default dev credentials (`postgres`, `minio`, keycloak admin) are in compose/environment — must be changed for production.
-
----
-
-## 27. Zero-Cost / Vendor-Independence Audit
-
-| Component | Open source? | Self-hostable? | Replaceable? | Vendor-specific? |
-|---|---|---|---|---|
-| PostgreSQL | ✅ | ✅ | ✅ | standard SQL |
-| Redis | ✅ | ✅ | ✅ | standard |
-| MinIO | ✅ | ✅ | ✅ | S3 API |
-| Keycloak | ✅ | ✅ | ✅ | OIDC standard |
-| FastAPI | ✅ | ✅ | ✅ | open |
-| Next.js | ✅ | ✅ | ✅ | open |
-| Celery | ✅ | ✅ | ✅ | standard |
-| LiteLLM | ✅ | ✅ | ✅ | multi-provider |
-| Ollama | ✅ | ✅ | ✅ | local models |
-
-**Verdict:** Zero-cost/local-capable: AI defaults to Ollama (local, no keys); requires only local Docker images. No hard vendor lock-in.
-
----
-
-## 28. Project Folder Cleanliness
-
-Runtime/generated artifacts present (gitignored — confirm via `git status` clean):
+### HTTP reachability (curl, actual status codes)
 
 ```text
-node_modules/          root + apps/web
-apps/web/.next/        build output
-apps/web/.turbo/       turbo cache + logs
-apps/api/.venv/        local venv (contains ONLY pip — empty, no deps)
-__pycache__/           api + alembic + tests
-.pytest_cache/         root + apps/api
+200  http://localhost:3000
+000  http://localhost:8000          ← API DOWN
+000  http://localhost:8000/docs     ← API DOWN
+000  http://localhost:8000/api/v1/health   ← API DOWN
+000  http://localhost:8000/openapi.json    ← API DOWN
+302  http://localhost:8080          ← Keycloak redirect (expected)
+200  http://localhost:9001          ← MinIO console
 ```
 
-**Violation of "no generated artifacts" requirement:** YES — these exist in the source tree. All are gitignored (repo remains clean), but should be excluded/cleaned for a truly clean source folder. Docker named volumes hold runtime data externally (✅ correct).
+---
+
+## 4. P0 — API container crash (root cause, NOT fixed)
+
+```text
+$ docker compose logs api
+...
+File "/app/app/main.py", line 40, in <module>
+    from app.domains.groups.router import router as groups_router
+File "/app/app/domains/groups/router.py", line 16, in <module>
+    from app.core.security import get_current_user
+ImportError: cannot import name 'get_current_user' from 'app.core.security' (/app/app/core/security.py)
+```
+
+**Root cause:** `apps/api/app/domains/groups/router.py:16` imports `get_current_user` from `app.core.security`.
+The function actually lives in `apps/api/app/domains/auth/dependencies.py`.
+
+**Severity:** P0 — blocks the entire API, `/docs`, all runtime API verification, and the pytest suite (conftest imports `app.main`).
+
+**Reproduction evidence:**
+- `docker compose logs api` (above)
+- `pytest` collection:
+  ```text
+  ImportError while loading conftest '/app/tests/conftest.py'.
+  tests/conftest.py:11: in <module>
+      from app.main import app
+  app/main.py:40: in <module>
+      from app.domains.groups.router import router as groups_router
+  E   ImportError: cannot import name 'get_current_user' from 'app.core.security'
+  ```
 
 ---
 
-## 29. Documentation Audit
+## 5. Database Verification (executed, live)
 
-- **ACCURATE:** `docs/ai-providers.md`, `docs/ACTUAL_ARCHITECTURE.md` (mostly), `docs/DOMAIN_MODEL.md`, `docs/SECURITY_MODEL.md`.
-- **CONTRADICTED BY RUNTIME:** `docs/CURRENT_STATE.md` (20+ features marked COMPLETE), `docs/IMPLEMENTATION_STATUS.md`, `docs/FINAL_ENGINEERING_REPORT.md`, `docs/AUDIT.md`, `docs/VERIFICATION_MATRIX.md` (claims pass without reproducible runs), `docs/HANDOFF.md`, `docs/AGENT_HANDOFF.md`.
-- **MISSING:** `docs/DOCKER_VERIFICATION.md`, `docs/E2E_VERIFICATION.md`, `docs/REMAINING_WORK.md`, `docs/FORENSIC_AUDIT.md` (new), `docs/ACTUAL_ARCHITECTURE.md` needs runtime-accuracy updates.
+```text
+Repository migration head:  022_groups
+Live database current:      009_project_management   ← 13 migrations behind
+```
 
----
+| Source | Revision |
+|---|---|
+| `alembic heads` | `022_groups (head)` |
+| `alembic current` (live DB) | `009_project_management` |
 
-## 30. Critical Issues
+### Live tables (25) — `\dt` on PostgreSQL 16
 
-### P0 — BLOCKER
-1. **API cannot start:** `ImportError: cannot import name 'get_current_user' from 'app.core.security'` — `app/domains/groups/router.py:16` should import from `app.domains.auth.dependencies`. Entire API + all tests blocked.
-2. **Database 13 migrations behind:** live DB at `009_project_management`, head `022_groups`. Shipping, social, contracts, trust, groups, payments tables absent at runtime.
+```text
+activity_logs, ai_reports, alembic_version, api_sync_logs, company_profiles,
+connections, conversations, engineer_profiles, job_applications, job_matches,
+job_posts, job_skills, messages, milestones, notifications, project_activity,
+project_members, project_tasks, projects, recommendations, saved_jobs, skills,
+task_comments, user_skills, users
+```
 
-### P1 — CRITICAL
-3. Keycloak vs local-JWT ambiguity — which is authoritative for API auth is not clearly enforced (auth domain uses local JWT; Keycloak configured but not used for verification).
-4. Payments are sandbox/mock-only (by design, but must not be called "complete").
-5. Full E2E flows cannot run.
+### Missing tables (created by migrations 010–022, NOT in live DB)
 
-### P2 — IMPORTANT
-6. Dispatch lifecycle lacks robust rejection/reassignment/abandon handling (code exists but incomplete edge-case coverage).
-7. Notifications not triggered for all events (messages/unread missing).
-8. Monitoring/traefik not wired into compose (configs only).
+```text
+task_dependencies, task_assignment_offers, work_submissions, work_ledger_entries,
+payment_transactions, project_reviews, moderation_reports, ai_usage_logs,
+posts, post_likes, post_comments, contracts, contract_milestones,
+user_verifications, user_trust_scores, groups, group_memberships, group_posts
+```
 
-### P3 — POLISH
-9. Frontend lint: 3 errors, 51 warnings.
-10. Landing page is static marketing (by design).
-11. `.venv` empty (no deps installed) — developer bootstrap issue.
-12. Docs overstate completeness.
-
----
-
-## 31. What Is Actually Complete
-
-Things with direct evidence of working:
-
-- ✅ Docker builds (all 4 images)
-- ✅ Compose config valid
-- ✅ Postgres / Redis / MinIO / Keycloak / Celery worker / Celery beat run healthy
-- ✅ Web builds and serves HTTP 200
-- ✅ Alembic migration chain valid (001→022, linear, single head)
-- ✅ **Frontend `next build` passes**
-- ✅ Backend `compileall` passes (Python 3.12 + 3.11 Docker)
-- ✅ WebSocket messaging implemented (code-verified, authenticated, persisted)
-- ✅ Job aggregation adapters (5 sources) implemented
-- ✅ AI layer real LLM via LiteLLM/Ollama with graceful fallback
-- ✅ Payments are intentionally sandbox (ledger abstraction)
-- ✅ Admin RBAC enforced in code
-
-## 32. What Is NOT Complete
-
-- ❌ API server running (P0)
-- ❌ Any backend test executing (0/92 runnable)
-- ❌ E2E flows (engineer/client/admin/dispatch)
-- ❌ DB schema at head (13 migrations behind)
-- ❌ Real payment processing (sandbox only)
-- ❌ Keycloak actually used for API authentication (configured only)
-- ❌ Full notification coverage
-- ❌ Production readiness confirmation
-
-## 33. What Must Be Fixed Later
-
-1. Fix `groups/router.py` import → API starts.
-2. Run `alembic upgrade head` (after diffing models vs migrations) → DB at 022.
-3. Run full test suite; fix failures.
-4. Decide Keycloak vs local-JWT strategy (document + enforce).
-5. Complete dispatch edge cases (reject/reassign/abandon) + notification hooks.
-6. Add monitoring/traefik to compose or remove configs.
-7. Add real payment provider adapter when required (sandbox is fine for dev).
-8. Fix lint errors/warnings.
-9. Clean runtime artifacts from source tree (node_modules/.next/.venv/__pycache__).
-
-## 34. Recommended Next Phase
-
-**Phase 1 — "Unblock and Prove":**
-1. Fix the P0 import (one-line change: `from app.domains.auth.dependencies import get_current_user`).
-2. Apply migrations to head on the running Postgres (or fresh volume).
-3. Run the 92 tests; fix what fails.
-4. Re-verify API health, then execute E2E flows 1–3 against the running stack.
-Only after these 4 steps can any feature be labeled `VERIFIED_WORKING`.
+**Severity:** P0-class. Even if the ImportError were fixed, APIs for groups, social, contracts, trust, submissions, payments, ledger, quality would fail against the live DB. **Not fixed per audit rules.**
 
 ---
 
-*This audit is a baseline snapshot. No application code was modified.*
+## 6. Test Suite
+
+- Test files inventoried: **25 files** under `apps/api/tests/` (`conftest.py` + 24 `test_*.py`; see `find apps/api/tests tests -type f`). Playwright `tests/e2e/` and root `tests/` not executed.
+- **Executed:** `python -m pytest tests -x --collect-only -q` inside the dev container.
+- **Result:** collection failed at conftest → same P0 ImportError.
+- **Tests executed: 0. Tests passing: 0.** Do not treat "tests exist" as "tests pass".
+
+---
+
+## 7. Frontend Verification
+
+### Lint
+
+```text
+$ npm run lint
+✖ 54 problems (3 errors, 51 warnings)
+- 3 errors: react/no-unescaped-entities in apps/web/src/app/auth/register/page.tsx (lines ~36, 289, 322)
+- 51 warnings: @typescript-eslint/no-unused-vars
+```
+
+### Type-check
+
+```text
+Type-check script: NOT CONFIGURED   (no "type-check" in apps/web/package.json)
+```
+
+### Build
+
+```text
+$ npm run build
+BUILD_EXIT=0
+✓ Compiled successfully in 1139ms
+(next.config.ts does NOT disable typescript or eslint — build compiled 34 app routes with type-checking active)
+```
+
+### Route/component/hook inventory (all real API-backed, static)
+
+- 34 routes under `apps/web/src/app/` (admin/dashboard, auth/login+register, companies, company/*, contracts, engineer/*, engineers, feed, freelancers, groups, jobs, messages, network, payments, projects, quality, workspace).
+- 12 components (`LayoutShell`, `QueryProvider`, `RequireRole`, `Sidebar`, `TopNavbar`, `TrustBadge`, …).
+- 24 hooks under `apps/web/src/hooks/` — **85 `api.*` calls found, all targeting real backend endpoints** (axios + TanStack Query).
+- WebSocket: `useMessages.ts` connects to `/api/v1/conversations/${id}/messages/ws?token=…`.
+
+---
+
+## 8. Feature Classification (static + runtime evidence)
+
+Legend: ✔ = evidence obtained | ✖ = blocked/absent
+
+| # | Feature area | Backend | Model | Migration (repo) | Live DB table | API | Frontend calls API | Tests | Runtime | Classification |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Auth (register/login/logout/refresh/JWT/hash/RBAC) | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ files | ✖ API down | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 2 | Keycloak integration | infra only | — | — | — | ✖ wired to API | ✖ | ✖ | ✖ | PARTIALLY_IMPLEMENTED |
+| 3 | Engineer profile/skills/exp/edu/portfolio/certs | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 4 | Resume upload/parse + AI skill extraction | ✔ (MinIO+parser) | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 5 | Engineer dashboard/workspace | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 6 | Company profile/verification/dashboard | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 7 | Jobs CRUD/publish/unpublish | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 8 | Job aggregation (arbeitnow/remoteok/remotive/themuse/usajobs) | ✔ adapters | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ network | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 9 | Search/filters/saved jobs | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 10 | Applications + lifecycle | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 11 | AI matching/scoring/ranking/recommendations | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ AI | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 12 | Network connections (req/accept/reject/cancel/search/privacy) | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 13 | Messaging REST + WS + auth + reconnect | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 14 | Social posts/likes/comments/feed | ✔ | ✔ | ✔ (019) | ✖ | ✔ routes exist (API down) | ✔ | ✔ | ✖ | IMPLEMENTED_NEEDS_MIGRATION |
+| 15 | Groups create/search/categories/membership/roles/posts | ✔ | ✔ | ✔ (022) | ✖ | ✖ import broken | ✔ | ✔ | ✖ | BROKEN (P0 import) — logic static present |
+| 16 | Projects/brief/AI plan/milestones/tasks/deps/offers | ✔ | ✔ | ✔ (009–011) | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 17 | Submissions/revisions/review/approval/completion | ✔ | ✔ | ✔ (012) | ✖ | ✖ API down | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED (migration needed) |
+| 18 | Contracts create/milestones/sign/terminate | ✔ | ✔ | ✔ (020) | ✖ | ✖ API down | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED (migration needed) |
+| 19 | Trust/reputation/verifications/reviews/ratings | ✔ | ✔ | ✔ (015,021) | ✖ | ✖ API down | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED (migration needed) |
+| 20 | Payments — sandbox escrow/ledger | ✔ sandbox | ✔ | ✔ (013–014) | ✖ | ✖ | ✔ | ✔ | ✖ | MOCK_OR_SANDBOX (no real provider) |
+| 21 | AI quality engine (eval/code-review/LLM/fallback) | ✔ agent | ✔ | ✔ (017) | ✖ | ✖ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED (provider absent) |
+| 22 | Admin dashboard/stats/users/suspend/moderation/AI usage/health | ✔ | ✔ | ✔ (002,016) | partial | ✖ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 23 | Notifications create/persist/unread/events | ✔ | ✔ | ✔ (006) | ✔ | ✔ | ✔ | ✔ | ✖ | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+
+**Nothing is VERIFIED_WORKING at runtime. Zero features E2E.**
+
+---
+
+## 9. AI Verification (static trace)
+
+```text
+Frontend hook → API router → service → agent (quality_engine / resume_parser / job_enricher / matching)
+→ LLMClient (litellm.acompletion) → provider
+   - default: ollama/qwen2.5 via http://host.docker.internal:11434 (no Ollama container shipped)
+   - fallback chain configurable: AI_FALLBACK_PROVIDERS
+   - groq/ → GROQ_API_KEY ; openai/ → OPENAI_API_KEY
+```
+
+**Runtime:** NOT VERIFIED — no provider reachable (API down; no Ollama container in compose).
+
+---
+
+## 10. Payment Verification
+
+```text
+Real money movement?                NO
+Real payment provider (Stripe etc.) NO   (no Stripe/processor import found)
+Sandbox provider?                   YES — PaymentTransaction ledger + escrow endpoints named "sandbox"
+Ledger?                             YES (work_ledger, payment_transactions in migrations)
+Escrow abstraction?                 YES (sandbox ledgers only)
+Wallet accounting?                  NO
+```
+
+---
+
+## 11. Security Verification (static)
+
+| Control | Evidence |
+|---|---|
+| Password hashing | ✔ `get_password_hash` in auth domain |
+| JWT validation | ✔ access+refresh; expiry; `auth/refresh` |
+| RBAC | ✔ `require_role(...)` across every domain router |
+| Admin protection | ✔ all admin routes `require_role(UserRole.ADMIN)` |
+| Upload validation | ✔ `validate_resume_upload` (extension, content-type, 5 MB, magic bytes PDF/DOCX) |
+| MinIO private storage | ✔ resumes bucket + `build_private_resume_object_name` (private); assets bucket public by design |
+| WebSocket auth | ✔ token query param; 4401 close on invalid; membership check |
+| CORS | ✔ lock to `http://localhost:3000` |
+| Secrets | ⚠ compose defaults `dev_secret_key_change_in_prod` / `admin_dev_password`; acceptable for dev, NOT production-safe |
+| Dev-only mock | ⚠ `auth/dependencies.py` creates dev mock user when `DEBUG=True` — dev fallback, documented |
+
+---
+
+## 12. Source Cleanliness
+
+- Backend scan (`TODO|FIXME|HACK|placeholder|mock|dummy|sample|hardcoded|fake|random|coming soon|not implemented`): only legitimate matches (task status `"TODO"`, `DEMO_JOBS_SEED` in `scripts/seed_data.py`, dev mock user).
+- Frontend scan: **0 matches**.
+
+---
+
+## 13. Documentation Audit
+
+| Doc | Claim vs reality |
+|---|---|
+| `CURRENT_STATE.md` | claims features COMPLETE — **contradicted** (API P0, DB drift) |
+| `FINAL_ENGINEERING_REPORT.md` | claims verification — **contradicted** (no runtime E2E) |
+| `IMPLEMENTATION_STATUS.md` | optimistic — stale |
+| `HANDOFF.md` | stale |
+| Previous `FORENSIC_AUDIT.md` | cites `bc4fe10` — superseded by `da4534e` |
+| `VERIFICATION_MATRIX.md` | in use — will be replaced by this audit's evidence |
+| `E2E_VERIFICATION.md` | check against runtime — replaced |
+
+---
+
+## 14. Critical Blockers
+
+| ID | Sev | Description | Evidence |
+|---|---|---|---|
+| B1 | P0 | API won't boot: `groups/router.py` imports `get_current_user` from `app.core.security` (wrong module; actual: `app.domains.auth.dependencies`) | docker logs api / pytest collection |
+| B2 | P0-class | Live DB at `009_project_management`; repo head `022_groups` (13 behind; 18 tables missing) | alembic heads/current + `\dt` |
+| B3 | P1 | Frontend lint fails (3 errors / 51 warnings) | npm run lint |
+| B4 | P2 | No `type-check` script configured | package.json |
+
+---
+
+## 15. Bottom Line
+
+> **"If I clone this repository today and run the documented Docker commands, does the complete WorkMesh AI platform actually work end-to-end?"**
+
+**NO.**
+
+The documented commands fail at `docker compose up`: the API container crash-loops on a P0 `ImportError`, the live database is 13 migrations behind the repository head, zero automated tests execute, zero HTTP API endpoints respond, and zero E2E workflows can run. The frontend compiles and serves, but every page depends on an API that never comes up.

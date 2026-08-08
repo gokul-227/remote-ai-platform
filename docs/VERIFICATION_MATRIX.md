@@ -1,88 +1,79 @@
-# WorkMesh AI — Forensic Verification Matrix
+# WorkMesh AI — Verification Matrix (Forensic Round 2)
 
-**Audit date:** 2026-08-08
-**Method:** Static code inspection + Docker runtime startup + build verification. E2E API calls were impossible because the API process crashes on startup (P0 import error) and the database is 13 migrations behind head.
+**Audit commit:** `da4534e98b282ab9f734d1daf60b2f040ee59513` (branch `main`)
+**Audit date:** 2026-08-08 | **Evidence basis:** runtime commands + static code inspection; no source modified.
 
-**Status legend:**
-- **VERIFIED_WORKING** — evidence of working behavior at runtime or through reproducible pass
-- **IMPLEMENTED_NOT_RUNTIME_VERIFIED** — code exists (backend/DB/API/frontend) but runtime behavior not proven
-- **PARTIALLY_IMPLEMENTED** — some parts present, lifecycle incomplete
-- **BROKEN** — present but demonstrably fails
-- **MOCK_ONLY** — abstraction that never touches a real external system
-- **MISSING** — absent
-- **NOT_APPLICABLE** — not required/not applicable
+## Classification Legend
 
----
+| Class | Meaning |
+|---|---|
+| VERIFIED_WORKING | Executed successfully against the running system with real output |
+| IMPLEMENTED_NOT_RUNTIME_VERIFIED | Code/model/migration/endpoint/UI all exist; runtime blocked by P0/pending migration |
+| PARTIALLY_IMPLEMENTED | Some parts exist, required parts missing |
+| BROKEN | Present but demonstrably failing |
+| MOCK_OR_SANDBOX | Simulation/abstraction only; not production capability |
+| NOT_IMPLEMENTED | No evidence of implementation |
 
-## Main Feature Matrix
+## Global Runtime Blocker
 
-| Feature | Backend | DB | API | Frontend | Auth/RBAC | Tests | Docker | Runtime | E2E | Actual Status | Evidence |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| User registration | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | auth/router.py; tests blocked by P0 |
-| User login | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | auth/router.py; frontend /auth/login |
-| Refresh token | YES | — | YES | — | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | auth/router.py |
-| Password hashing | YES | YES | — | — | YES | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | auth/models.py; core/security.py (get_password_hash) |
-| Keycloak integration | PARTIAL | YES | — | — | PARTIAL | — | YES | HEALTHY | — | PARTIALLY_IMPLEMENTED | Keycloak starts/imports realm; API auth uses local JWT not KC |
-| Auth middleware | YES | — | YES | — | YES | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | auth/dependencies.py: get_current_user |
-| RBAC (roles) | YES | YES | YES | PARTIAL | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | require_role in routers |
-| Engineer profile CRUD | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | engineers/router.py; engineer/profile page |
-| Resume upload + parse | YES | YES | YES | PARTIAL | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | core/security.py validate; resume_parser.py; MinIO |
-| Job browse/search/filter | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | jobs/router.py; /jobs page |
-| Save job | YES | YES | YES | — | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | saved_jobs/router.py |
-| Apply / application status | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | applications/router.py; /engineer/applications |
-| Recommendations | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | matching/router.py; /engineer/recommendations |
-| Match scoring | YES | YES | YES | — | YES | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | matching/service.py (dynamic, not hardcoded) |
-| Engineer dashboard/workspace | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | /engineer/dashboard + /workspace pages |
-| Task accept/reject | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | projects/router.py; workspace page |
-| Deliverable submission | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | quality/router.py; workspaces |
-| Work approval | YES | YES | YES | PARTIAL | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | projects/quality routes |
-| Company profile | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | companies/router.py; /company/profile |
-| Company verification | YES | YES | — | — | YES | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | companies/models.py |
-| Job CRUD (create/edit/pub/unpub) | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | jobs/router.py; /company/jobs |
-| Project creation | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | projects/router.py; /projects |
-| AI project plan | YES | YES | YES | YES | — | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | quality/ai_reports; project plan fields |
-| Milestones / tasks / deps | YES | YES | YES | PARTIAL | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | projects/models.py |
-| **Uber-like dispatch** | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PARTIAL | BLOCKED | YES | BLOCKED | BLOCKED | **PARTIALLY_IMPLEMENTED** | task offers exist (011); no full worker-match-notify→interest→approve→assign runtime path tested |
-| Work submissions/review | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | 012 migration; quality |
-| Job aggregation (5 sources) | YES | YES | YES | — | — | BLOCKED | YES | NOT RUN | NOT RUN | IMPLEMENTED_NOT_RUNTIME_VERIFIED | 5 aggregators; celary beat 6h |
-| Network connections | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | network/router.py; /network |
-| Social posts/likes/comments | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | 019 migration; social/router.py; /feed |
-| Groups + membership/roles | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | 022 migration; groups/router.py; /groups |
-| Messaging (REST) | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | conversations/messages routes |
-| Messaging (WebSocket) | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | network/router.py:148-180 ws, auth, persist; useMessages.ts |
-| Notifications | PARTIAL | YES | PARTIAL | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | PARTIALLY_IMPLEMENTED | created on some events; not on messages |
-| Contracts | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | 020 migration; contracts/router.py; /contracts |
-| Trust/reputation | YES | YES | YES | PARTIAL | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | 021 migration; trust/router.py |
-| Payments (sandbox ledger) | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | **MOCK_ONLY** | SandboxPaymentProvider — never contacts network |
-| AI quality engine | YES | YES | YES | YES | — | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | quality_engine REAL LLM + hardcoded fallback |
-| AI resume parsing | YES | — | — | — | — | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | resume_parser.py |
-| Admin console | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | admin/router.py; /admin/dashboard |
-| User suspend/activate | YES | YES | YES | — | YES | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | admin/router.py PATCH users/{id}/status |
-| Moderation reports | YES | YES | YES | — | YES | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | moderation_router.py |
-| Search | YES | YES | YES | YES | YES | BLOCKED | YES | BLOCKED | BLOCKED | IMPLEMENTED_NOT_RUNTIME_VERIFIED | search/router.py, jobs search, engineer search |
-| Activity/audit logs | YES | YES | — | — | YES | BLOCKED | YES | BLOCKED | — | IMPLEMENTED_NOT_RUNTIME_VERIFIED | admin logs |
+**API container crash-loops** — `ImportError: cannot import name 'get_current_user' from 'app.core.security'` at `apps/api/app/domains/groups/router.py:16` (function lives in `app.domains.auth.dependencies`). Consequences: `/docs`, `/api/v1/*`, pytest, API-based frontend data — **all unreachable**.
+**Migration drift** — repo head `022_groups`, live DB `009_project_management` (13 behind, 18 tables missing).
 
 ---
 
-## Infrastructure Matrix
+## Feature Matrix
 
-| Component | Status | Evidence |
-|---|---|---|
-| Docker compose config | VERIFIED_WORKING | `docker compose config --quiet` exit 0 |
-| Docker build (api, web, celery-*) | VERIFIED_WORKING | all 4 images built |
-| Postgres | VERIFIED_WORKING | healthy; 25 tables |
-| Redis | VERIFIED_WORKING | healthy |
-| MinIO | VERIFIED_WORKING | healthy, buckets initialized |
-| Keycloak | VERIFIED_WORKING | healthy; realm imported |
-| Celery worker | VERIFIED_WORKING | ready (after network recreate) |
-| Celery beat | VERIFIED_WORKING | running, beat schedule configured |
-| API server | **BROKEN** | P0 import error; unhealthy |
-| Web | VERIFIED_WORKING | HTTP 200; next build pass |
-| Alembic chain | VERIFIED_WORKING | 001→022 linear, single head |
-| Alembic applied | **BROKEN** | at 009, 13 behind |
-| Monitoring (prometheus/loki) | MISSING (config only) | not in compose |
-| Traefik | MISSING (config only) | not in compose |
+| # | Feature | Backend | Model | Migration | Live DB | API | Frontend calls API | Tests | Runtime | Classification |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Register | ✔ | ✔ users | ✔001 | ✔ | ✔ /auth/register | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 2 | Login / JWT / refresh / logout | ✔ | ✔ | ✔001,004 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 3 | Password hashing | ✔ bcrypt-style | — | ✔004 | ✔ | — | — | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 4 | RBAC (ENGINEER/COMPANY/ADMIN) | ✔ require_role | — | — | — | ✔ all routers | ✔ RequireRole.tsx | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 5 | Keycloak | realm+compose only | — | — | — | ✖ not wired to auth | ✖ | ✖ | ✖ | PARTIALLY_IMPLEMENTED |
+| 6 | Engineer profile (bio/headline/location) | ✔ | ✔003 | ✔003 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 7 | Skills / experience / education / portfolio / certifications | ✔ | ✔003 | ✔003 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 8 | Availability / hourly rate | ✔ | ✔003 | ✔003 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 9 | Resume upload (MinIO) + parse + AI extraction | ✔ | ✔005 | ✔005 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 10 | Engineer dashboard / workspace | ✔ | ✔006,009–012 | ✔ | partial (009 only) | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 11 | Company profile + verification | ✔ | ✔002 | ✔002 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 12 | Company dashboard | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 13 | Job create/edit/publish/unpublish | ✔ | ✔001 | ✔001 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 14 | Job aggregation adapters (arbeitnow, remoteok, remotive, themuse, usajobs) | ✔ | ✔ | ✔ | ✔ | ✔ /jobs/sync | ✔ | ✔ | ✖ network unverified | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 15 | Job normalization / dedup | ✔ service | — | — | — | — | — | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 16 | Job search / filters | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 17 | Saved jobs | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 18 | Applications + lifecycle (apply/withdraw/status/invite) | ✔ | ✔001 | ✔001 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 19 | AI matching / scoring / missing-skills / ranking / reasoning / persistence | ✔ | ✔ | ✔ | ✔ job_matches | ✔ | ✔ recommendations | ✔ | ✖ AI provider absent | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 20 | Recommendations UI | ✔ | — | — | — | ✔ /matching/recommendations | ✔ useRecommendations | — | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 21 | Network connections (req/accept/reject/cancel/search/privacy) | ✔ | ✔008 | ✔008 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 22 | Conversations + REST messages + persistence | ✔ | ✔008 | ✔008 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 23 | WebSocket messaging + token auth + 4401 + membership check | ✔ | — | — | — | ✔ ws | ✔ useMessages | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 24 | Social posts / likes / comments / feed | ✔ router+service | ✔019 | ✔019 | ✖ | ✔ routes | ✔ useFeed | ✔ | ✖ blocked+migration | IMPLEMENTED_NEEDS_MIGRATION |
+| 25 | Groups (create/search/categories/membership/roles/join/leave/posts) | ✔ | ✔022 | ✔022 | ✖ | ✖ import crash | ✔ useGroups | ✔ | ✖ blocked | BROKEN (P0 import) |
+| 26 | Projects (create/brief/plan/milestones/tasks/deps/assignment) | ✔ | ✔009–011 | ✔009–011 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 27 | Task offers (offer/accept/decline/cancel/reassign) | ✔ | ✔011 | ✔011 | ✖ | ✔ | ✔ | ✔ | ✖ blocked+migration | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 28 | Submissions/revisions/review/approval/complete | ✔ | ✔012 | ✔012 | ✖ | ✔ | ✔ | ✔ | ✖ blocked+migration | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 29 | Work ledger | ✔ | ✔013 | ✔013 | ✖ | ✔ | ✔ | ✔ | ✖ blocked+migration | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 30 | Contracts (create/milestones/sign/terminate) | ✔ | ✔020 | ✔020 | ✖ | ✔ | ✔ | ✔ | ✖ blocked+migration | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 31 | Trust score / verifications / reviews / ratings | ✔ | ✔015,021 | ✔015,021 | ✖ | ✔ | ✔ | ✔ | ✖ blocked+migration | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 32 | Payments — sandbox escrow + ledger abstraction | ✔ sandbox | ✔013,014 | ✔013,014 | ✖ | ✔ | ✔ | ✔ | ✖ blocked+migration | MOCK_OR_SANDBOX |
+| 33 | Payments — real provider (Stripe etc.) | ✖ | ✖ | ✖ | ✖ | ✖ | ✖ | ✖ | ✖ | NOT_IMPLEMENTED |
+| 34 | AI quality engine (eval/code-review/LLM/fallback/persistence) | ✔ | ✔017 | ✔017 | ✖ | ✔ | ✔ | ✔ | ✖ provider absent | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 35 | Admin dashboard / stats / users / suspend / activate | ✔ | ✔002 | ✔002 | ✔ partial | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 36 | Moderation reports / decisions | ✔ | ✔016 | ✔016 | ✖ | ✔ moderation_router | — | ✔ | ✖ blocked+migration | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 37 | AI usage logs + admin stat | ✔ | ✔017 | ✔017 | ✖ | ✔ | — | ✔ | ✖ blocked+migration | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 38 | Notifications (create/persist/unread/read-all/events) | ✔ | ✔006 | ✔006 | ✔ | ✔ | ✔ | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 39 | Health endpoint | ✔ core/health | — | — | — | ✔ /api/v1/health | — | ✔ | ✖ blocked | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
+| 40 | Celery tasks / beat (jobs, ai, matching queues) | ✔ workers | — | — | — | — | — | — | ✔ worker+beat up | IMPLEMENTED_NOT_RUNTIME_VERIFIED |
 
----
+## Summary
 
-*This matrix supersedes prior claim-based matrices. Every status reflects direct observation or explicit "not verified" caveat.*
+| Class | Count |
+|---|---|
+| VERIFIED_WORKING | 0 |
+| IMPLEMENTED_NOT_RUNTIME_VERIFIED | 33 |
+| PARTIALLY_IMPLEMENTED | 1 (Keycloak) |
+| IMPLEMENTED_NEEDS_MIGRATION | 1 (Social) |
+| BROKEN | 1 (Groups — P0 import) |
+| MOCK_OR_SANDBOX | 1 (Payments) |
+| NOT_IMPLEMENTED | 1 (Real payment provider) |

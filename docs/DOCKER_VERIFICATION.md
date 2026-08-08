@@ -1,101 +1,75 @@
-# WorkMesh AI — Docker Verification
+# Docker Verification — Forensic Round 2 (commit da4534e)
 
-**Audit date:** 2026-08-08
-**Method:** Build, startup, health checks, container inspection. All commands executed; results recorded exactly.
+> Audit date: 2026-08-08 | Commit `da4534e98b282ab9f734d1daf60b2f040ee59513` (main, clean)
 
----
+## 1. Environment
+| Item | Value |
+|---|---|
+| Docker Engine | 29.6.2 |
+| Docker Compose | v5.3.1 |
+| Compose file | `infra/docker/docker-compose.yml` |
+| Container name prefix | `remote-ai-platform-*` |
 
-## 1. Compose File
+## 2. Commands Executed with Exit Codes
+| # | Command | Exit | Result |
+|---|---|---|---|
+| 1 | `docker compose -f infra/docker/docker-compose.yml config` | 0 | VALID (9 services) |
+| 2 | `docker compose -f infra/docker/docker-compose.yml build` | 0 | PASS — api, web, celery-worker, celery-beat images built |
+| 3 | `docker compose -f infra/docker/docker-compose.yml up -d --force-recreate` | 0 | All containers created |
+| 4 | `docker compose -f infra/docker/docker-compose.yml ps` | 0 | See matrix below |
 
-**Path:** `infra/docker/docker-compose.yml`
+## 3. Container Matrix
+| Component | Status | Detail |
+|---|---|---|
+| Docker infrastructure | **PASS** | daemon 29.6.2, compose v5.3.1, config valid, build/up succeeded |
+| postgres | **PASS** | healthy (pg_isready) |
+| redis | **PASS** | healthy (redis-cli ping) |
+| minio | **PASS** | healthy, console 200 @ :9001 |
+| minio-init | **PASS** | one-shot, buckets created |
+| keycloak | **PASS** | healthy, 302 @ :8080 (expected), realm imported |
+| api | **FAIL** | crash-looping — ImportError (see §5) |
+| web | **PASS** | up, HTTP 200 @ :3000 (Next.js ready in 251ms) |
+| celery-worker | **PASS** | `celery@… ready.` |
+| celery-beat | **PASS** | `beat: Starting...` |
 
-Services defined: `postgres`, `redis`, `minio`, `minio-init`, `keycloak`, `api`, `web`, `celery-worker`, `celery-beat`.
+## 4. HTTP Reachability Matrix
+| URL | Status | Meaning |
+|---|---|---|
+| http://localhost:3000 | **200** | web serves |
+| http://localhost:8000 | **000** | API DOWN (connection refused) |
+| http://localhost:8000/docs | **000** | API DOWN |
+| http://localhost:8000/api/v1/health | **000** | API DOWN |
+| http://localhost:8000/openapi.json | **000** | API DOWN |
+| http://localhost:8080 | **302** | Keycloak redirect (expected) |
+| http://localhost:9001 | **200** | MinIO console |
 
-Not defined (config exists but is not wired): prometheus, loki, traefik.
-
-### Validation
-
-```bash
-docker compose -f infra/docker/docker-compose.yml config --quiet
-# exit 0 — valid
-```
-
-## 2. Build Verification
-
-```bash
-docker compose -f infra/docker/docker-compose.yml build
-# 4 images built successfully: api, web, celery-worker, celery-beat
-```
-
-## 3. Container Status (after `--force-recreate` of posture/redis/minio to fix stale network topology)
-
-```
-NAME                               STATUS
-remote-ai-platform-api             Up 24 minutes (unhealthy)
-remote-ai-platform-celery-beat     Up 21 minutes
-remote-ai-platform-celery-worker   Up 21 minutes
-remote-ai-platform-keycloak        Up 22 minutes (healthy)
-remote-ai-platform-minio           Up 22 minutes (healthy)
-remote-ai-platform-postgres        Up 22 minutes (healthy)
-remote-ai-platform-redis           Up 22 minutes (healthy)
-remote-ai-platform-web             Up 24 minutes
-```
-
-## 4. Service Details
-
-| Service | Port | Healthcheck | Status | Notes |
-|---|---|---|---|---|
-| postgres | 5432 | pg_isready | healthy | 25 tables; alembic at 009 |
-| redis | 6379 | redis-cli ping | healthy | |
-| minio | 9000/9001 | curl health | healthy | buckets initialized by minio-init |
-| keycloak | 8080 | curl health | healthy | realm `remote-ai-platform` imported (logs confirm `--import-realm`) |
-| api | 8000 | curl /api/v1/health | **unhealthy** | **P0 import error** — see below |
-| web | 3000 | none (http check) | running | HTTP 200 on `/` |
-| celery-worker | — | none | ready | connected to redis broker (after network fix) |
-| celery-beat | — | none | running | beat schedule loaded |
-
-## 5. API Failure — Exact Error
-
+## 5. API Container Failure Analysis
+Exact traceback from `docker compose logs api`:
 ```text
-ImportError: cannot import name 'get_current_user' from 'app.core.security' (/app/app/core/security.py)
-
 File "/app/app/main.py", line 40, in <module>
     from app.domains.groups.router import router as groups_router
 File "/app/app/domains/groups/router.py", line 16, in <module>
     from app.core.security import get_current_user
+ImportError: cannot import name 'get_current_user' from 'app.core.security' (/app/app/core/security.py)
 ```
+- **Root cause:** wrong import target in `groups/router.py:16` — `get_current_user` lives in `app.domains.auth.dependencies`.
+- **Severity:** P0 — blocks entire API.
+- **NOT FIXED** per audit rules.
 
-Root cause: `groups/router.py` imports `get_current_user` from `app.core.security`. That function is defined in `app.domains.auth.dependencies` (every other router imports it correctly).
+## 6. Database Migration State
+| Source | Revision |
+|---|---|
+| `alembic heads` | `022_groups (head)` |
+| `alembic current` (live) | `009_project_management` |
 
-## 6. Environment Variables (compose)
+Live DB has 25 tables; 18 tables from migrations 010–022 **missing** (task_dependencies, task_assignment_offers, work_submissions, work_ledger_entries, payment_transactions, project_reviews, moderation_reports, ai_usage_logs, posts, post_likes, post_comments, contracts, contract_milestones, user_verifications, user_trust_scores, groups, group_memberships, group_posts).
 
-- Set from `.env` (root). `.env.example` documents all required values with placeholders.
-- Visible env names (not values): `DATABASE_URL`, `REDIS_URL`, `CELERY_BROKER_URL`, `MINIO_*`, `KEYCLOAK_*`, `JWT_SECRET_KEY`, `AI_PROVIDER`, `AI_MODEL`, `OLLAMA_*`, `GROQ_API_KEY`, `AI_API_KEY`, aggregator API URLs, feature flags.
-- Safety note: `.env.example` contains **no real secrets**. No `.env` file found in repo tree.
+## 7. Service Log Summaries
+- **web:** Next.js 16.2.11 (Turbopack); `✓ Ready in 251ms`; `GET / 200`.
+- **celery-worker:** ready; non-fatal warning re `broker_connection_retry_on_startup` (Celery 6.0+).
+- **celery-beat:** starting with PersistentScheduler (`celerybeat-schedule`).
+- **minio-init:** `Added local successfully`; buckets created; `MinIO buckets initialized`.
+- **api:** uvicorn reloader started, then child process crashed on ImportError.
 
-## 7. Keycloak Verification
-
-- Startup command includes `--import-realm` — confirmed in container inspect/logs.
-- Realm file: `infra/keycloak/realm-remote-ai-platform.json`.
-- Health endpoint returned success; login page reachable; containers show healthy.
-- NOTE: The API does **not** use Keycloak for user verification currently (local JWT path is active).
-
-## 8. Known Docker Issues
-
-1. **API container is unhealthy** — P0 import error. Must be fixed before any E2E.
-2. **Stale network topology** — the first `up` left postgres/redis without network attachment. `--force-recreate` fixed it (volumes preserved; init SQL not re-run). Recommend `docker compose down -v` for a truly clean bootstrap when acceptable.
-3. **Monitoring/traefik** — configs present under `infra/` but not part of compose; not running.
-4. **Web image** runs `next dev` for dev (start command). Production web would need `npm run build && next start` (build works).
-5. Healthcheck only exists for api (points to broken route), postgres, redis, minio, keycloak. Web/celery lack healthchecks.
-
-## 9. Volumes
-
-- Named volumes are used for postgres (`postgres_data`), keycloak (`keycloak_data`), minio (`minio_data`), redis — runtime data lives **outside** the source tree. ✅ correct per cleanliness requirement.
-
-## 10. Verdict
-
-- Docker configuration: **PARTIALLY VERIFIED.**
-- Builds: ✅ PASS (all 4 images).
-- Infra services: ✅ PASS (postgres/redis/minio/keycloak healthy, celery worker/beat up).
-- API: ❌ FAIL (P0 import crash).
-- Web: ✅ PASS (serves HTTP 200, production build passes).
+## 8. Bottom Line
+**Docker infrastructure itself PASSES (config, build, up, postgres/redis/minio/keycloak/web/celery all run). The API application does NOT boot, so the documented "fully runnable locally" claim is FALSE at this commit.**

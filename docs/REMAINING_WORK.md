@@ -1,109 +1,60 @@
-# WorkMesh AI — Remaining Work (Evidence-Based)
+# WorkMesh AI — Remaining Work (Proven by Forensic Audit)
 
-**Source:** Forensic audit 2026-08-08. Contains only gaps identified with evidence.
+> Evidence-based only. Nothing listed here is speculative; each item is backed by evidence from the audit at commit `da4534e98b282ab9f734d1daf60b2f040ee59513` (2026-08-08).
 
----
+## P0 — Must fix before anything can run
 
-## P0 — Blockers (must fix first)
+| ID | Item | Evidence | Fix scope |
+|---|---|---|---|
+| B1 | `app/domains/groups/router.py:16` imports `get_current_user` from `app.core.security` (wrong module) | API crash traceback; pytest collection failure | 1-line import fix (function lives in `app.domains.auth.dependencies`) |
+| B2 | Live DB is 13 migrations behind repo head (`009_project_management` vs `022_groups`); 18 tables missing | `alembic heads` vs `alembic current`; `\dt` shows 25 tables | Apply migrations 010–022 (Phase B action) |
 
-### 1. API crash — wrong import in groups router
-- **File:** `apps/api/app/domains/groups/router.py:16`
-- **Bug:** `from app.core.security import get_current_user`
-- **Fix direction:** import from `app.domains.auth.dependencies` (where `get_current_user` and `require_role` are defined). All other routers import correctly.
-- **Impact:** Entire API + all 92 tests + all E2E blocked.
+After B1+B2, the remaining items below become verifiable.
 
-### 2. Database 13 migrations behind
-- Live DB `alembic_version` = `009_project_management`; head = `022_groups`.
-- **Impact:** Runtime tables absent for offers (011), submissions (012), ledger (013), payments (014), reputation (015), moderation (016), AI logs (017), social feed (019), contracts (020), trust (021), groups (022).
-- **Action:** Diff models vs migrations, then apply `alembic upgrade head` (or fresh volume init) after API fix.
+## P1 — Quality gates
 
-### 3. No test can run
-- `tests/conftest.py` imports `app.main` → crashes with P0. 24 test files / 92 test functions are dead until P0 fixed.
+| ID | Item | Evidence |
+|---|---|---|
+| B3 | Frontend lint fails — 3 errors (`react/no-unescaped-entities` in `apps/web/src/app/auth/register/page.tsx`), 51 warnings (`@typescript-eslint/no-unused-vars`) | `npm run lint` → exit 1, "54 problems" |
+| B4 | No `type-check` script in `apps/web/package.json` | `grep type-check package.json` → absent |
+| — | Celery warning: `broker_connection_retry_on_startup` should be set for Celery 6.0+ | `docker compose logs celery-worker` |
 
----
+## Runtime verification still needed (all blocked by B1/B2 — not yet proven)
 
-## P1 — Critical
+- Register/login/logout/refresh E2E
+- Engineer profile + skills + resume upload/parse + AI extraction
+- Company profile + verification + dashboard
+- Jobs CRUD, publish/unpublish, aggregation sync (5 adapters), dedup, search, saved jobs
+- Applications lifecycle
+- AI matching (requires AI provider available), recommendations UI
+- Connections + messaging REST + WebSocket send/receive/persistence/reconnect
+- Projects: brief, AI plan, tasks, dependencies, offers, submissions, revisions, approval
+- Contracts: create/milestones/sign/terminate
+- Trust/reviews/verifications
+- Payments sandbox escrow flows (release/refund)
+- Quality engine (requires AI provider)
+- Admin: dashboard/stats/users/suspend/activate/moderation/AI usage/health
+- Notifications: create/persist/unread/read-all/event coverage
+- Groups + Social (require B2 tables)
 
-### 4. Keycloak vs local-JWT ambiguity
-- Keycloak starts + imports realm (✅) but **API auth does not verify Keycloak tokens** — local JWT path is active. Either integrate KC token verification (OIDC) into `auth/dependencies.py` or explicitly disable KC for API and document. Currently both configured = ambiguous.
+## AI provider readiness
 
-### 5. Payments are sandbox-only
-- `SandboxPaymentProvider` never contacts a network (by design). Classification: **MOCK_ONLY**. Real adapter (Stripe/etc.) required for paid production.
-- Provider abstraction exists (Protocols) but no DI/config switch. When adding real provider, add a registry + env-driven selection.
+- Compose defaults to `ollama/qwen2.5 @ host.docker.internal:11434` but **no Ollama container is shipped** in compose.
+- `.env` or runtime must provide working `AI_PROVIDER`, `AI_MODEL`, `AI_API_KEY`, `GROQ_API_KEY`, `OPENAI_API_KEY`, and/or a reachable Ollama endpoint.
+- Until then, AI features remain IMPLEMENTED_NOT_RUNTIME_VERIFIED.
 
-### 6. Full E2E flows not executable
-- Until P0/P1 fixed, all 4 E2E flows remain blocked.
+## Security hardening (production)
 
----
+- Replace dev defaults in compose/env: `JWT_SECRET_KEY=dev_secret_key_change_in_prod`, `KEYCLOAK_CLIENT_SECRET=change-me-in-production`, `MINIO_SECRET_KEY`, `KEYCLOAK_ADMIN_PASSWORD=admin_dev_password`, `POSTGRES_PASSWORD`.
+- Decide Keycloak integration: API currently uses local JWT; Keycloak is healthy but **not wired** into auth.
+- Confirm `DEBUG=True` dev-mock-user behavior is disabled in production.
 
-## P2 — Important
+## Infrastructure gaps
 
-### 7. Dispatch lifecycle edge cases
-Code has task offers + assignment, but missing/weak:
-- Rejection (worker rejects offer → notify next candidate)
-- Reassignment (task abandoned → re-offer)
-- Task expiration/timeout of offers
-- Atomic state transition guards (invalid transitions blocked centrally?)
-- Audit trail for dispatch transitions
+- `web` service has **no healthcheck** (compose).
+- `infra/monitoring` (Prometheus/Loki) and `infra/traefik` configs exist but **are not containers** in compose — not runnable as documented.
+- No CDN/traefik routing wired for web/api.
 
-### 8. Notifications incomplete
-- Message/unread notifications not implemented.
-- Some project/dispatch events lack notification hooks.
-- Verify every business event that should notify does (jobs, applications, connections yes; messages/dispatch partial).
+## Documentation debt
 
-### 9. Monitoring/traefik not wired
-- `infra/monitoring/*` and `infra/traefik/*` configs exist but are **not in compose**. Either add to compose or remove (dead config).
-
-### 10. Resume upload frontend
-- Backend validation exists; frontend upload flow partially wired. Verify full upload → parse → profile update path.
-
-### 11. Job aggregator live verification
-- Adapters implemented; Celery beat configured. **Not yet executed against live APIs.** Run once, verify per-source fetch/dedup/error handling; check USAJobs requires auth header (optional key).
-
----
-
-## P3 — Polish
-
-### 12. Frontend lint
-- `npm run lint`: 3 errors, 51 warnings (unused imports). Fix.
-
-### 13. `type-check` script missing
-- Add `"type-check": "tsc --noEmit"` and make it pass.
-
-### 14. Empty local venv
-- `apps/api/.venv` contains only pip. Developers can't run/lint/test locally without installing deps. Either install deps or add bootstrap script/README.
-
-### 15. Docs overstate completeness
-- `docs/CURRENT_STATE.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/FINAL_ENGINEERING_REPORT.md`, `docs/AUDIT.md`, old `docs/VERIFICATION_MATRIX.md`, `docs/HANDOFF.md`, `docs/AGENT_HANDOFF.md` claim COMPLETE/E2E-verified — **contradicted by runtime**. Update to reference forensic docs.
-
-### 16. Runtime artifacts in source tree
-- `node_modules/`, `apps/web/.next/`, `.turbo/`, `__pycache__/`, `.pytest_cache/`, `apps/api/.venv/` exist in the repo folder (all gitignored). Clean them for a pristine source state.
-
-### 17. Landing page is static
-- `/` is marketing-only (no API). If dynamic feature listing is desired, implement.
-
-### 18. Docker healthchecks
-- web/celery have no healthchecks; api healthcheck points to route that returns once API starts. Add healthchecks + restart policies.
-
----
-
-## Commands That Must Be Run in the Fix Phase
-
-```bash
-# 1. Fix P0 in groups/router.py
-# 2. Inside api container (after rebuild):
-python -m alembic upgrade head
-python -m pytest --no-header -q
-# 3. Verify:
-curl -f http://localhost:8000/api/v1/health
-# 4. E2E flows 1-4 against running stack
-# 5. Trigger job aggregation once and observe celery worker logs
-```
-
-## Do NOT Assume
-
-- Do not assume any feature works just because code exists.
-- Do not assume tests pass (0/92 runnable).
-- Do not assume payments work (sandbox only).
-- Do not assume Keycloak protects the API.
-- Do not assume E2E was ever verified in this repo state.
+- `CURRENT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `FINAL_ENGINEERING_REPORT.md`, `HANDOFF.md`, previous `FORENSIC_AUDIT.md` (cites `bc4fe10`) contain claims contradicted by this audit — must be updated to match evidence at `da4534e`.
