@@ -5,6 +5,20 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export const api = axios.create({
   baseURL: `${API_URL}/api/v1`,
   timeout: 5000,
+  paramsSerializer: {
+    serialize: (params) => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === "") return;
+        if (Array.isArray(value)) {
+          value.forEach((item) => searchParams.append(key, String(item)));
+          return;
+        }
+        searchParams.append(key, String(value));
+      });
+      return searchParams.toString();
+    },
+  },
   headers: {
     "Content-Type": "application/json",
   },

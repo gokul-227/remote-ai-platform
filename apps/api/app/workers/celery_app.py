@@ -4,8 +4,39 @@ Celery Application Factory — Remote AI Platform Background Workers
 
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import task_failure, task_postrun, task_prerun
+import time
 
 from app.core.config import settings
+from app.core.metrics import CELERY_TASK_DURATION, CELERY_TASKS
+
+_task_start_times: dict[str, float] = {}
+
+
+@task_prerun.connect
+def record_task_start(task_id=None, task=None, **kwargs):
+    if task_id:
+        _task_start_times[task_id] = time.perf_counter()
+
+
+@task_postrun.connect
+def record_task_success(task_id=None, task=None, state=None, **kwargs):
+    if task is None:
+        return
+    queue = getattr(task.request, "delivery_info", {}).get("routing_key", "default")
+    CELERY_TASKS.labels(task=task.name, queue=queue, status=state or "SUCCESS").inc()
+    started = _task_start_times.pop(task_id, None) if task_id else None
+    if started is not None:
+        CELERY_TASK_DURATION.labels(task=task.name, queue=queue).observe(time.perf_counter() - started)
+
+
+@task_failure.connect
+def record_task_failure(task_id=None, task=None, **kwargs):
+    if task is None:
+        return
+    queue = getattr(task.request, "delivery_info", {}).get("routing_key", "default")
+    CELERY_TASKS.labels(task=task.name, queue=queue, status="FAILURE").inc()
+    _task_start_times.pop(task_id, None)
 
 
 def create_celery_app() -> Celery:

@@ -86,6 +86,7 @@ class JobSearchQuery(BaseModel):
     job_type: Optional[str] = None
     experience_level: Optional[str] = None
     min_salary: Optional[float] = None
+    max_salary: Optional[float] = None
     source: Optional[str] = None
     skip: int = 0
     limit: int = 20

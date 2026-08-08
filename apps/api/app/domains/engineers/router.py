@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, File, UploadFile, Query, status, HTTPExc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.core.security import ALLOWED_RESUME_TYPES
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.engineers.repository import EngineerRepository
@@ -94,21 +95,29 @@ async def upload_resume(
     service: EngineerService = Depends(get_engineer_service),
 ) -> ResumeUploadResponse:
     """Upload resume PDF document to S3/MinIO for current engineer."""
-    if not file.filename or not (file.filename.endswith(".pdf") or file.filename.endswith(".docx")):
+    filename = (file.filename or "").lower()
+    if not filename or not (filename.endswith(".pdf") or filename.endswith(".docx")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File format not supported. Upload PDF or DOCX.",
         )
-    resume_url = await service.upload_resume(current_user.id, file)
+    if file.content_type not in ALLOWED_RESUME_TYPES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported content type")
+    try:
+        resume_url = await service.upload_resume(current_user.id, file)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return ResumeUploadResponse(resume_url=resume_url)
 
 
 @router.get("/search", response_model=List[EngineerProfileResponse])
 async def search_engineers(
     query: Optional[str] = Query(None, description="Keywords search"),
+    skills: Optional[List[str]] = Query(None, description="Match any listed skill"),
     min_years_exp: Optional[int] = Query(None, ge=0),
     primary_role: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
+    is_open_to_work: bool = Query(True),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: EngineerService = Depends(get_engineer_service),
@@ -116,9 +125,11 @@ async def search_engineers(
     """Search public engineer profiles (for companies & admins)."""
     search_params = EngineerSearchQuery(
         query=query,
+        skills=[skill.strip() for skill in skills or [] if skill.strip()] or None,
         min_years_exp=min_years_exp,
         primary_role=primary_role,
         location=location,
+        is_open_to_work=is_open_to_work,
         skip=skip,
         limit=limit,
     )

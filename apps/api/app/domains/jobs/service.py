@@ -3,12 +3,15 @@ Service layer for Job Post domain & Aggregator coordination.
 """
 
 import asyncio
+import hashlib
+import json
 import time
 import uuid
 from typing import Optional, List, Sequence, Dict
 
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
+from app.core.cache import RedisCache
 from app.domains.admin.repository import AdminRepository
 from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.arbeitnow import ArbeitnowAggregator
@@ -17,7 +20,7 @@ from app.domains.jobs.aggregators.themuse import TheMuseAggregator
 from app.domains.jobs.aggregators.usajobs import USAJobsAggregator
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
-from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate, JobSearchQuery
+from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate, JobPostResponse, JobSearchQuery
 from app.agents.job_enricher import JobEnricherAgent
 from app.domains.marketplace.models import AIReport
 
@@ -34,6 +37,7 @@ class JobService:
             TheMuseAggregator(),
             USAJobsAggregator(),
         ]
+        self.cache = RedisCache("jobs")
 
     async def get_by_id(self, job_id: uuid.UUID) -> JobPost:
         job = await self.repo.get_by_id(job_id)
@@ -74,10 +78,23 @@ class JobService:
             job_type=query.job_type,
             experience_level=query.experience_level,
             min_salary=query.min_salary,
+            max_salary=query.max_salary,
             source=query.source,
             skip=query.skip,
             limit=query.limit,
         )
+
+    async def search_jobs_cached(self, query: JobSearchQuery) -> list[dict]:
+        payload = query.model_dump(mode="json")
+        digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+        cache_key = f"search:{digest}"
+        cached = await self.cache.get_json(cache_key)
+        if cached is not None:
+            return cached
+        jobs = await self.search_jobs(query)
+        serialized = [JobPostResponse.model_validate(job).model_dump(mode="json") for job in jobs]
+        await self.cache.set_json(cache_key, serialized, ttl_seconds=30)
+        return serialized
 
     async def sync_all_job_sources(
         self, limit_per_source: int = 50, admin_repo: Optional[AdminRepository] = None

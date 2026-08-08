@@ -49,6 +49,8 @@ async def get_current_user(
                 detail="User account is inactive",
             )
         return user
+    except HTTPException:
+        raise
     except (AuthenticationError, Exception) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

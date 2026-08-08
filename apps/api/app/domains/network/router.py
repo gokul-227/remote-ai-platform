@@ -12,7 +12,7 @@ from app.core.database import AsyncSessionFactory, get_db
 from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.auth.service import AuthService
-from app.domains.notifications.models import Notification
+from app.services.notifications import notify_user as send_notification
 from app.domains.network.models import Connection, Conversation, Message
 
 router = APIRouter(tags=["Network"])
@@ -35,7 +35,7 @@ class MessageCreate(BaseModel):
 
 
 async def notify(db: AsyncSession, user_id: uuid.UUID, title: str, body: str, kind: str) -> None:
-    db.add(Notification(user_id=user_id, title=title, body=body, kind=kind))
+    await send_notification(db, user_id, title, body, kind)
 
 
 @router.get("/connections")

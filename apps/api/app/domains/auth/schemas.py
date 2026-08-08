@@ -5,7 +5,7 @@ Pydantic schemas for Authentication domain.
 import uuid
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.domains.auth.models import UserRole
 
@@ -80,6 +80,11 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=6)
     full_name: str = Field(..., min_length=1, max_length=255)
     role: UserRole = UserRole.ENGINEER
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, value: UserRole | str) -> UserRole | str:
+        return value.upper() if isinstance(value, str) else value
 
 
 class LoginRequest(BaseModel):

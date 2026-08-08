@@ -4,11 +4,16 @@ Custom FastAPI Middleware
 
 import time
 import uuid
+from collections import defaultdict, deque
 from typing import Callable
 
 import structlog
 from fastapi import Request, Response
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.core.config import settings
+from app.core.metrics import HTTP_REQUESTS
 
 logger = structlog.get_logger(__name__)
 
@@ -41,16 +46,36 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             status_code=response.status_code,
             duration_ms=duration_ms,
         )
+        HTTP_REQUESTS.labels(request.method, request.url.path, str(response.status_code)).inc()
 
         return response
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
-    Basic in-memory rate limiting.
-    In production, replace with Redis-backed sliding window.
+    Small in-process sliding-window limiter for sensitive endpoints.
+    A shared Redis limiter remains the production-scale follow-up.
     """
 
+    def __init__(self, app):
+        super().__init__(app)
+        self._requests: dict[str, deque[float]] = defaultdict(deque)
+
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Passthrough for now — implement Redis sliding window in M7
+        protected_paths = {"/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/engineers/me/resume"}
+        if request.url.path in protected_paths:
+            now = time.monotonic()
+            client_host = request.client.host if request.client else "unknown"
+            key = f"{client_host}:{request.url.path}"
+            window = self._requests[key]
+            cutoff = now - settings.RATE_LIMIT_WINDOW_SECONDS
+            while window and window[0] <= cutoff:
+                window.popleft()
+            if len(window) >= settings.RATE_LIMIT_MAX_REQUESTS:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests. Please try again later."},
+                    headers={"Retry-After": str(settings.RATE_LIMIT_WINDOW_SECONDS)},
+                )
+            window.append(now)
         return await call_next(request)

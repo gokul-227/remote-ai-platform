@@ -39,6 +39,8 @@ async def list_jobs(
     job_type: Optional[str] = Query(None, description="full-time, contract, part-time"),
     experience_level: Optional[str] = Query(None, description="junior, mid, senior, lead"),
     min_salary: Optional[float] = Query(None, ge=0),
+    max_salary: Optional[float] = Query(None, ge=0),
+    skills: Optional[List[str]] = Query(None, description="Match any of these skills"),
     source: Optional[str] = Query(None, description="Filter by source (REMOTEOK, ARBEITNOW, etc.)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
@@ -51,12 +53,13 @@ async def list_jobs(
         job_type=job_type,
         experience_level=experience_level,
         min_salary=min_salary,
+        max_salary=max_salary,
+        skills=[skill.strip() for skill in skills or [] if skill.strip()] or None,
         source=source,
         skip=skip,
         limit=limit,
     )
-    results = await service.search_jobs(search_params)
-    return [JobPostResponse.model_validate(j) for j in results]
+    return await service.search_jobs_cached(search_params)
 
 
 @router.get("/company", response_model=List[JobPostResponse])

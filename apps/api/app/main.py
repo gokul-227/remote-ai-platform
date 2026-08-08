@@ -27,6 +27,7 @@ from app.domains.jobs.router import router as jobs_router
 from app.domains.search.router import router as search_router
 from app.domains.matching.router import router as matching_router
 from app.domains.admin.router import router as admin_router
+from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.saved_jobs.router import router as saved_jobs_router
 from app.domains.applications.router import router as applications_router
 from app.domains.projects.router import router as projects_router
@@ -39,6 +40,7 @@ logger = structlog.get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan — runs startup and shutdown logic."""
+    settings.validate_production_settings()
     configure_logging()
     logger.info(
         "Remote AI Platform starting",
@@ -87,6 +89,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
+    app.add_middleware(RateLimitMiddleware)
     app.add_middleware(RequestIDMiddleware)
 
     # ── Exception handlers ────────────────────────────────────────────────────
@@ -114,6 +117,7 @@ def create_app() -> FastAPI:
     app.include_router(search_router, prefix=prefix)
     app.include_router(matching_router, prefix=prefix)
     app.include_router(admin_router, prefix=prefix)
+    app.include_router(moderation_router, prefix=prefix)
     app.include_router(saved_jobs_router, prefix=prefix)
     app.include_router(applications_router, prefix=prefix)
     app.include_router(projects_router, prefix=prefix)

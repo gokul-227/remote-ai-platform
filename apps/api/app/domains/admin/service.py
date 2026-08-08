@@ -49,3 +49,6 @@ class AdminService:
     async def get_recent_syncs(self, limit: int = 50) -> Sequence[ApiSyncLog]:
         """Recent job-aggregator sync runs, most recent first — powers the admin status page."""
         return await self.repo.list_recent_syncs(limit=limit)
+
+    async def get_activity_logs(self, limit: int = 50) -> Sequence[Any]:
+        return await self.repo.list_activity_logs(limit=limit)

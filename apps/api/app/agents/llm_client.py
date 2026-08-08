@@ -8,6 +8,7 @@ import litellm
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.agents.model_config import get_ai_model_config
 
 logger = get_logger("agents.llm_client")
 
@@ -18,12 +19,14 @@ litellm.drop_params = True
 
 class LLMClient:
     def __init__(self, model_override: Optional[str] = None):
-        provider = model_override or settings.AI_PROVIDER
-        self.model = provider if "/" in provider else f"{provider}/{settings.AI_MODEL}"
+        self.config = get_ai_model_config(model_override)
+        self.model = self.config.primary
+        self.last_usage: Dict[str, Any] = {}
+        self.last_error: Optional[str] = None
 
     @property
     def fallback_models(self) -> list[str]:
-        return [model.strip() for model in settings.AI_FALLBACK_PROVIDERS.split(",") if model.strip()]
+        return list(self.config.fallbacks)
 
     async def complete(
         self,
@@ -33,12 +36,14 @@ class LLMClient:
         json_mode: bool = True,
     ) -> str:
         """Execute completion call via LiteLLM."""
+        self.last_usage = {}
+        self.last_error = None
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        models = [self.model] + [model for model in self.fallback_models if model != self.model]
+        models = self.config.candidates
         for model_name in models:
             try:
                 api_base = settings.LITELLM_BASE_URL
@@ -58,8 +63,16 @@ class LLMClient:
                     response_format={"type": "json_object"} if json_mode else None,
                     timeout=settings.AI_TIMEOUT_SECONDS,
                 )
+                usage = getattr(response, "usage", None)
+                self.last_usage = {
+                    "provider_model": getattr(response, "model", None) or model_name,
+                    "prompt_tokens": int(getattr(usage, "prompt_tokens", 0) or 0),
+                    "completion_tokens": int(getattr(usage, "completion_tokens", 0) or 0),
+                    "total_tokens": int(getattr(usage, "total_tokens", 0) or 0),
+                }
                 return response.choices[0].message.content or "{}"
             except Exception as exc:
+                self.last_error = str(exc)
                 logger.warning("LLM provider failed; trying fallback", model=model_name, error=str(exc))
         return "{}"
 

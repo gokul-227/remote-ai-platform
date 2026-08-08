@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from sqlalchemy import String, DateTime, func, Text, Integer, JSON
+from sqlalchemy import String, DateTime, ForeignKey, func, Text, Integer, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -67,3 +67,19 @@ class ApiSyncLog(Base):
 
     def __repr__(self) -> str:
         return f"<ApiSyncLog source={self.source} status={self.status}>"
+
+
+class ModerationReport(Base):
+    __tablename__ = "moderation_reports"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    reporter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    target_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    target_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="OPEN", nullable=False, index=True)
+    decision: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reviewed_by_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

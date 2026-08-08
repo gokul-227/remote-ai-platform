@@ -4,7 +4,7 @@ Repository pattern for Engineer Profile domain.
 
 import uuid
 from typing import Optional, List, Sequence
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, cast, Text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.engineers.models import EngineerProfile
@@ -106,6 +106,15 @@ class EngineerRepository:
         if location:
             stmt = stmt.where(func.lower(EngineerProfile.location).contains(location.lower()))
 
+        if skills:
+            skill_filters = [
+                cast(EngineerProfile.skills, Text).ilike(f'%"{skill.strip()}"%')
+                for skill in skills
+                if skill.strip()
+            ]
+            if skill_filters:
+                stmt = stmt.where(or_(*skill_filters))
+
         if query:
             q = f"%{query.lower()}%"
             stmt = stmt.where(
@@ -113,6 +122,7 @@ class EngineerRepository:
                     func.lower(EngineerProfile.headline).like(q),
                     func.lower(EngineerProfile.bio).like(q),
                     func.lower(EngineerProfile.primary_role).like(q),
+                    cast(EngineerProfile.skills, Text).ilike(q),
                 )
             )
 

@@ -57,6 +57,12 @@ async def register(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Register a new user directly (Engineer or Company)."""
+    if data.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot self-assign admin role",
+        )
+
     repo = UserRepository(db)
     existing = await repo.get_by_email(data.email)
     if existing:

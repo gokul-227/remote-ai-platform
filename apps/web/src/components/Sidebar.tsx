@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bookmark,
+  Briefcase,
   FileText,
   User,
   LayoutDashboard,
@@ -29,7 +30,9 @@ export function Sidebar() {
     { name: "Saved Jobs", href: "/jobs?saved=true", icon: Bookmark, count: savedJobs.data?.length },
     { name: "My Applications", href: "/engineer/applications", icon: FileText, count: applications.data?.length },
     { name: "Recommendations", href: "/engineer/recommendations", icon: LayoutDashboard },
-    { name: "Freelancer Directory", href: "/freelancers", icon: Building2 },
+    { name: "Browse Engineers", href: "/engineers", icon: Users },
+    { name: "Browse Companies", href: "/companies", icon: Building2 },
+    { name: "Freelancer Directory", href: "/freelancers", icon: Briefcase },
     { name: "Network", href: "/network", icon: Users },
     { name: "Messages", href: "/messages", icon: MessageSquare },
     { name: "Career Dashboard", href: "/engineer/dashboard", icon: LayoutDashboard },

@@ -66,12 +66,14 @@ function JobsContent() {
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
   const [jobType, setJobType] = useState("");
   const [experience, setExperience] = useState("");
+  const [minSalary, setMinSalary] = useState("");
+  const [maxSalary, setMaxSalary] = useState("");
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [page, setPage] = useState(0);
 
   const limit = 10;
 
-  const jobsQuery = useJobs({ limit, skip: page * limit, query: searchQuery || undefined, job_type: jobType || undefined, experience_level: experience || undefined, skills: selectedSkills.length ? selectedSkills : undefined });
+  const jobsQuery = useJobs({ limit, skip: page * limit, query: searchQuery || undefined, job_type: jobType || undefined, experience_level: experience || undefined, min_salary: minSalary || undefined, max_salary: maxSalary || undefined, skills: selectedSkills.length ? selectedSkills : undefined });
   const savedJobs = useSavedJobs(true);
   const jobs: JobPost[] = jobsQuery.data || [];
   const loading = jobsQuery.isLoading;
@@ -90,7 +92,7 @@ function JobsContent() {
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <h3 className="font-semibold text-slate-900 text-xs">Filter Jobs</h3>
             <button
-              onClick={() => { setSearchQuery(""); setJobType(""); setExperience(""); setSelectedSkills([]); setPage(0); }}
+              onClick={() => { setSearchQuery(""); setJobType(""); setExperience(""); setMinSalary(""); setMaxSalary(""); setSelectedSkills([]); setPage(0); }}
               className="text-xs text-[#0A66C2] hover:underline"
             >
               Reset
@@ -125,6 +127,30 @@ function JobsContent() {
                 <option value="senior">Senior (5–8 yrs)</option>
                 <option value="lead">Lead / Staff (8+ yrs)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="font-semibold text-slate-700 block mb-1">Salary range (USD)</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Min"
+                  value={minSalary}
+                  onChange={(e) => { setMinSalary(e.target.value); setPage(0); }}
+                  className="input-enterprise py-1.5 text-xs"
+                  aria-label="Minimum salary"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Max"
+                  value={maxSalary}
+                  onChange={(e) => { setMaxSalary(e.target.value); setPage(0); }}
+                  className="input-enterprise py-1.5 text-xs"
+                  aria-label="Maximum salary"
+                />
+              </div>
             </div>
 
             <div>

@@ -104,6 +104,7 @@ class JobRepository:
         job_type: Optional[str] = None,
         experience_level: Optional[str] = None,
         min_salary: Optional[float] = None,
+        max_salary: Optional[float] = None,
         source: Optional[str] = None,
         skip: int = 0,
         limit: int = 20,
@@ -119,23 +120,45 @@ class JobRepository:
         if experience_level:
             stmt = stmt.where(func.lower(JobPost.experience_level) == experience_level.lower())
 
-        if min_salary:
+        if min_salary is not None:
             stmt = stmt.where(
                 or_(JobPost.salary_min >= min_salary, JobPost.salary_max >= min_salary)
+            )
+
+        if max_salary is not None:
+            stmt = stmt.where(
+                or_(JobPost.salary_min <= max_salary, JobPost.salary_max <= max_salary)
             )
 
         if source:
             stmt = stmt.where(func.upper(JobPost.source) == source.upper())
 
         if query:
-            document = func.to_tsvector(
-                "simple",
-                func.concat_ws(
-                    " ", JobPost.title, JobPost.description, JobPost.company_name,
-                    cast(JobPost.skills, Text),
-                ),
-            )
-            stmt = stmt.where(document.op("@@")(func.plainto_tsquery("simple", query)))
+            dialect_name = self.db.get_bind().dialect.name
+            if dialect_name == "postgresql":
+                document = func.to_tsvector(
+                    "simple",
+                    func.concat_ws(
+                        " ", JobPost.title, JobPost.description, JobPost.company_name,
+                        cast(JobPost.skills, Text),
+                    ),
+                )
+                stmt = stmt.where(document.op("@@")(func.plainto_tsquery("simple", query)))
+            else:
+                keyword = f"%{query.strip()}%"
+                stmt = stmt.where(
+                    or_(
+                        JobPost.title.ilike(keyword),
+                        JobPost.description.ilike(keyword),
+                        JobPost.company_name.ilike(keyword),
+                        cast(JobPost.skills, Text).ilike(keyword),
+                    )
+                )
+
+        if skills:
+            skill_filters = [cast(JobPost.skills, Text).ilike(f'%"{skill.strip()}"%') for skill in skills if skill.strip()]
+            if skill_filters:
+                stmt = stmt.where(or_(*skill_filters))
 
         stmt = stmt.offset(skip).limit(limit).order_by(JobPost.posted_at.desc())
         result = await self.db.execute(stmt)

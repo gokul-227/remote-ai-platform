@@ -143,23 +143,23 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
               title="Notifications"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#0A66C2]" />
+              {(notifications.unread.data?.count ?? 0) > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#0A66C2]" />}
             </button>
             {notifOpen && (
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 p-4 z-50 animate-fade-in">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
                   <h4 className="text-sm font-semibold text-slate-900">Notifications</h4>
-                  <span className="text-xs text-[#0A66C2] cursor-pointer hover:underline">Mark all read</span>
+                  <button onClick={() => notifications.markAllRead.mutate()} className="text-xs text-[#0A66C2] cursor-pointer hover:underline">Mark all read</button>
                 </div>
                 <div className="space-y-2.5">
-                  {notifications.data?.length ? notifications.data.map((n: { id: string; title: string; body: string }) => (
-                    <div key={n.id} className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                  {notifications.data?.length ? notifications.data.map((n: { id: string; title: string; body: string; is_read?: boolean }) => (
+                    <button onClick={() => notifications.markRead.mutate(n.id)} key={n.id} className={`flex w-full items-start gap-2.5 p-2 rounded-lg text-left hover:bg-slate-50 cursor-pointer ${n.is_read ? "opacity-60" : ""}`}>
                       <div className="h-2 w-2 rounded-full bg-[#0A66C2] mt-1.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-slate-800 font-medium">{n.title}</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">{n.body}</p>
                       </div>
-                    </div>
+                    </button>
                   )) : <p className="text-xs text-slate-500">No new notifications.</p>}
                 </div>
               </div>

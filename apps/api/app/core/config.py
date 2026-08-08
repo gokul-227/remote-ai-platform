@@ -89,6 +89,11 @@ class Settings(BaseSettings):
     AI_MAX_RETRIES: int = 3
     AI_TIMEOUT_SECONDS: int = 60
 
+    # ── Security ─────────────────────────────────────────────────────────────
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+    RATE_LIMIT_MAX_REQUESTS: int = 60
+    MAX_RESUME_SIZE_BYTES: int = 5 * 1024 * 1024
+
     # Optional: production AI providers via LiteLLM
     GROQ_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
@@ -122,6 +127,20 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
+
+    def validate_production_settings(self) -> None:
+        """Fail fast instead of booting with known development credentials."""
+        if not self.is_production:
+            return
+        errors = []
+        if len(self.JWT_SECRET_KEY) < 32 or "dev_secret" in self.JWT_SECRET_KEY:
+            errors.append("JWT_SECRET_KEY must be a high-entropy production secret")
+        if self.KEYCLOAK_CLIENT_SECRET in {"change-me-in-production", ""}:
+            errors.append("KEYCLOAK_CLIENT_SECRET must be configured")
+        if self.MINIO_SECRET_KEY in {"minioadmin", "minioadmin_dev_password", ""}:
+            errors.append("MINIO_SECRET_KEY must be configured")
+        if errors:
+            raise RuntimeError("Invalid production configuration: " + "; ".join(errors))
 
 
 @lru_cache

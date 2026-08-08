@@ -1,6 +1,6 @@
 # Remote AI Platform — Deployment Guide
 
-This document outlines deployment options and steps for deploying Remote AI Platform to free / developer-friendly cloud services.
+This document outlines the validated free-first deployment topology and the contracts required before exposing the platform publicly.
 
 ---
 
@@ -8,14 +8,14 @@ This document outlines deployment options and steps for deploying Remote AI Plat
 
 ```
  ┌────────────────┐       ┌────────────────┐
- │ Vercel / Netlify│ ────> │ Render / Fly.io│
+ │ Vercel          │ ────> │ Render API     │
  │ (Next.js App)  │       │ (FastAPI API)  │
  └────────────────┘       └────────┬───────┘
                                    │
               ┌────────────────────┼────────────────────┐
               │                    │                    │
       ┌───────▼───────┐    ┌───────▼───────┐    ┌───────▼───────┐
-      │ Neon Postgres │    │ Supabase /    │    │ Gemini /      │
+      │ Neon Postgres │    │ Supabase /    │    │ Groq / Gemini │
       │ / Supabase DB │    │ MinIO S3      │    │ Groq AI       │
       └───────────────┘    └───────────────┘    └───────────────┘
 ```
@@ -42,14 +42,15 @@ DATABASE_URL="postgresql+asyncpg://user:pass@ep-xyz.neon.tech/remote_ai_platform
 
 ---
 
-## 2. Backend API (Render / Fly.io)
+## 2. Backend API (Render)
 
 ### Render (Free Web Service)
 1. Sign up at [render.com](https://render.com).
-2. Create a new **Web Service** connected to your GitHub repository (`apps/api`).
+2. Create a new **Web Service** connected to the repository, with root directory `apps/api`.
 3. Build Command: `pip install -e .`
-4. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Environment Variables:
+4. Start Command: `sh start-production.sh`
+5. The production startup script runs `alembic upgrade head` before starting Uvicorn.
+6. Environment Variables:
    - `DATABASE_URL`: Your Neon/Supabase connection URL.
    - `AI_PROVIDER`: `groq/llama-3.1-70b-versatile` or `gemini/gemini-1.5-flash`
    - `GROQ_API_KEY` / `GEMINI_API_KEY`: Your AI API key.
@@ -79,15 +80,30 @@ Remote AI Platform uses standard AWS S3 / MinIO protocol. Set environment variab
 
 ---
 
-## 5. Post-Deployment Verification
+## 5. Required production contract
 
-1. Access your deployed Vercel frontend URL.
-2. `POST /api/v1/jobs/seed_demo` is disabled whenever `APP_ENV=production` (returns 403) — it's a
+Set `APP_ENV=production` and provide high-entropy values for `JWT_SECRET_KEY`,
+`KEYCLOAK_CLIENT_SECRET`, and `MINIO_SECRET_KEY`. The API now fails fast if known development
+secrets are used in production.
+
+Configure these service URLs with public/private reachability appropriate to the provider:
+
+- `DATABASE_URL`: Neon or Supabase PostgreSQL connection string with SSL.
+- `REDIS_URL`, `CELERY_BROKER_URL`, `CELERY_RESULT_BACKEND`: managed Redis endpoint(s).
+- `MINIO_ENDPOINT`, `MINIO_PUBLIC_ENDPOINT`, `MINIO_SECURE=true`: S3-compatible storage.
+- `NEXT_PUBLIC_API_URL`: the Render API origin only; the frontend appends `/api/v1`.
+
+## 6. Post-Deployment Verification
+
+1. Verify `GET https://<api>/api/v1/health` returns database `ok`.
+2. Verify `GET https://<api>/api/v1/health/queues` returns queue status (or an explicit degraded broker state).
+3. Access your deployed Vercel frontend URL.
+4. `POST /api/v1/jobs/seed_demo` is disabled whenever `APP_ENV=production` (returns 403) — it's a
    local/staging convenience only. In production, populate real data via the job aggregator sync
    (`POST /api/v1/jobs/sync`, admin-only — same job Celery beat runs every 6 hours) or by having
    companies post jobs directly.
-3. Test browsing jobs, filtering, registering as both an Engineer and a Company, creating profiles,
+5. Test browsing jobs, filtering, registering as both an Engineer and a Company, creating profiles,
    posting a job, and AI match scoring.
-4. Set `JWT_SECRET_KEY`, `KEYCLOAK_CLIENT_SECRET`, `POSTGRES_PASSWORD`, and `MINIO_SECRET_KEY` to real
+6. Set `JWT_SECRET_KEY`, `KEYCLOAK_CLIENT_SECRET`, `POSTGRES_PASSWORD`, and `MINIO_SECRET_KEY` to real
    high-entropy secrets — the values in `.env.example`/`infra/docker/docker-compose.yml` are
    local-development defaults only and must never be reused in a real deployment.

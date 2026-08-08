@@ -4,7 +4,7 @@ Pydantic schemas for Admin Domain.
 
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
@@ -21,6 +21,22 @@ class PlatformStatsResponse(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
+
+
+class JobStatusUpdate(BaseModel):
+    is_active: bool
+
+
+class ActivityLogResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: Optional[uuid.UUID] = None
+    action: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[str] = None
+    details: Dict[str, Any]
+    created_at: datetime
 
 
 class ApiSyncLogResponse(BaseModel):

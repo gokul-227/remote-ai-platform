@@ -35,9 +35,16 @@ interface SyncLog {
   created_at: string;
 }
 
+interface AdminUser { id: string; full_name: string; email: string; role: string; is_active: boolean; }
+interface ActivityLog { id: string; action: string; entity_type?: string; entity_id?: string; created_at: string; }
+interface ModerationReport { id: string; target_type: string; target_id: string; reason: string; status: string; decision?: string; created_at: string; }
+
 function AdminDashboardPage() {
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [syncLogs, setSyncLogs] = useState<SyncLog[] | null>(null);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [reports, setReports] = useState<ModerationReport[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,14 +52,30 @@ function AdminDashboardPage() {
     Promise.all([
       api.get("/admin/stats").then((r) => r.data).catch(() => null),
       api.get("/admin/sync-logs", { params: { limit: 50 } }).then((r) => r.data).catch(() => null),
-    ]).then(([statsData, logsData]) => {
+      api.get("/admin/users", { params: { limit: 20 } }).then((r) => r.data).catch(() => []),
+      api.get("/admin/activity-logs", { params: { limit: 20 } }).then((r) => r.data).catch(() => []),
+      api.get("/moderation/reports").then((r) => r.data).catch(() => []),
+    ]).then(([statsData, logsData, usersData, activityData, reportsData]) => {
       if (!isMounted) return;
       setStats(statsData);
       setSyncLogs(logsData);
+      setUsers(usersData ?? []);
+      setActivityLogs(activityData ?? []);
+      setReports(reportsData ?? []);
       setLoading(false);
     });
     return () => { isMounted = false; };
   }, []);
+
+  const toggleUser = async (target: AdminUser) => {
+    const response = await api.patch(`/admin/users/${target.id}/status`, { is_active: !target.is_active });
+    setUsers((current) => current.map((user) => user.id === target.id ? response.data : user));
+  };
+
+  const resolveReport = async (report: ModerationReport, decision: "HIDE_JOB" | "SUSPEND_USER" | "NO_ACTION") => {
+    await api.patch(`/moderation/reports/${report.id}`, { status: "RESOLVED", decision, note: "Reviewed in admin console." });
+    setReports((current) => current.map((item) => item.id === report.id ? { ...item, status: "RESOLVED", decision } : item));
+  };
 
   const latestPerSource = (syncLogs ?? []).reduce<Record<string, SyncLog>>((acc, log) => {
     if (!acc[log.source] || new Date(log.created_at) > new Date(acc[log.source].created_at)) {
@@ -130,6 +153,11 @@ function AdminDashboardPage() {
             </div>
           </div>
 
+          <div className="card-enterprise p-6 space-y-4">
+            <h2 className="font-semibold text-slate-900 flex items-center gap-2"><Shield className="h-4 w-4 text-slate-400" /> Moderation Queue</h2>
+            {reports.filter((report) => report.status === "OPEN").length === 0 ? <p className="text-sm text-slate-500">No open moderation reports.</p> : <div className="space-y-3">{reports.filter((report) => report.status === "OPEN").map((report) => <div key={report.id} className="rounded-lg border border-slate-200 p-3"><p className="text-xs font-semibold text-slate-700">{report.target_type} · {report.target_id}</p><p className="mt-1 text-sm text-slate-600">{report.reason}</p><div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void resolveReport(report, report.target_type === "JOB" ? "HIDE_JOB" : "SUSPEND_USER")} className="btn-primary-brand px-3 py-1.5 text-xs">Take action</button><button onClick={() => void resolveReport(report, "NO_ACTION")} className="btn-secondary-brand px-3 py-1.5 text-xs">Dismiss</button></div></div>)}</div>}
+          </div>
+
           {/* Job Source Sync Status */}
           <div id="sync-status" className="card-enterprise p-6 space-y-4">
             <h2 className="font-semibold text-slate-900 flex items-center gap-2">
@@ -199,6 +227,11 @@ function AdminDashboardPage() {
               ))}
             </div>
           </div>
+
+          <div className="card-enterprise p-6 space-y-4">
+            <h2 className="font-semibold text-slate-900 flex items-center gap-2"><Users className="h-4 w-4 text-slate-400" /> User Controls</h2>
+            {users.length === 0 ? <p className="text-sm text-slate-500">No users available.</p> : <div className="space-y-2">{users.slice(0, 8).map((target) => <div key={target.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 p-3"><div><p className="text-sm font-semibold text-slate-800">{target.full_name}</p><p className="text-xs text-slate-500">{target.email} · {target.role}</p></div><button onClick={() => void toggleUser(target)} disabled={target.id === ""} className={`px-3 py-1.5 text-xs ${target.is_active ? "btn-secondary-brand" : "btn-primary-brand"}`}>{target.is_active ? "Suspend" : "Activate"}</button></div>)}</div>}
+          </div>
         </div>
 
         {/* Right: Alerts & Info */}
@@ -221,6 +254,11 @@ function AdminDashboardPage() {
                 ))
               )}
             </div>
+          </div>
+
+          <div className="card-enterprise p-5 space-y-3">
+            <h3 className="font-semibold text-slate-900 text-sm">Recent Audit Activity</h3>
+            <div className="space-y-2 text-xs">{activityLogs.length === 0 ? <p className="text-slate-500">No administrative activity recorded.</p> : activityLogs.slice(0, 6).map((entry) => <div key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5"><p className="font-semibold text-slate-700">{entry.action}</p><p className="mt-0.5 text-slate-500">{entry.entity_type || "platform"} · {new Date(entry.created_at).toLocaleString()}</p></div>)}</div>
           </div>
 
           <div className="card-enterprise p-5 space-y-3">

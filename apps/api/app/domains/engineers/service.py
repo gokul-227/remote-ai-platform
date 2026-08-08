@@ -10,6 +10,7 @@ from app.core.exceptions import NotFoundError, DuplicateError
 from app.core.logging import get_logger
 from app.core.storage import get_storage
 from app.core.config import settings
+from app.core.security import build_private_resume_object_name, validate_resume_upload
 from app.domains.engineers.models import EngineerProfile
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import (
@@ -37,14 +38,35 @@ class EngineerService:
             raise NotFoundError("Engineer profile not found")
         return profile
 
+    def _recalculate_score(self, profile: EngineerProfile) -> None:
+        fields = [
+            profile.headline,
+            profile.bio,
+            profile.location,
+            profile.country,
+            profile.timezone,
+            profile.primary_role,
+            profile.skills,
+            profile.experience,
+            profile.education,
+            profile.github_url or profile.linkedin_url or profile.portfolio_url,
+            profile.resume_url,
+        ]
+        profile.profile_score = round(sum(bool(v) for v in fields) / len(fields) * 100, 1)
+
     async def create_or_update_profile(
         self, user_id: uuid.UUID, data: EngineerProfileCreate
     ) -> EngineerProfile:
         existing = await self.repo.get_by_user_id(user_id)
         if existing:
             update_data = EngineerProfileUpdate(**data.model_dump())
-            return await self.repo.update(existing, update_data)
-        return await self.repo.create(user_id, data)
+            profile = await self.repo.update(existing, update_data)
+        else:
+            profile = await self.repo.create(user_id, data)
+        self._recalculate_score(profile)
+        await self.repo.db.flush()
+        await self.repo.db.refresh(profile)
+        return profile
 
     async def update_profile(
         self, user_id: uuid.UUID, data: EngineerProfileUpdate
@@ -52,7 +74,11 @@ class EngineerService:
         profile = await self.repo.get_by_user_id(user_id)
         if not profile:
             raise NotFoundError("Engineer profile not found. Please create one first.")
-        return await self.repo.update(profile, data)
+        updated = await self.repo.update(profile, data)
+        self._recalculate_score(updated)
+        await self.repo.db.flush()
+        await self.repo.db.refresh(updated)
+        return updated
 
     async def enhance_profile(self, user_id: uuid.UUID) -> EngineerProfile:
         profile = await self.repo.get_by_user_id(user_id)
@@ -86,7 +112,8 @@ class EngineerService:
 
         # Read file content
         file_bytes = await file.read()
-        filename = f"resumes/{user_id}/{file.filename}"
+        suffix = validate_resume_upload(file.filename, file.content_type, file_bytes, settings.MAX_RESUME_SIZE_BYTES)
+        filename = build_private_resume_object_name(user_id, suffix)
         content_type = file.content_type or "application/pdf"
 
         # Upload to MinIO
