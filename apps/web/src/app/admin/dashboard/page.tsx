@@ -39,12 +39,37 @@ interface AdminUser { id: string; full_name: string; email: string; role: string
 interface ActivityLog { id: string; action: string; entity_type?: string; entity_id?: string; created_at: string; }
 interface ModerationReport { id: string; target_type: string; target_id: string; reason: string; status: string; decision?: string; created_at: string; }
 
+interface AIUsageStats {
+  total_calls: number;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_usd: number;
+  model_breakdown: Record<string, number>;
+  feature_breakdown: Record<string, number>;
+}
+
+interface ServiceHealthStatus {
+  service: string;
+  status: string;
+  latency_ms?: number;
+  details?: string;
+}
+
+interface SystemHealthDetail {
+  overall_status: string;
+  services: ServiceHealthStatus[];
+  timestamp: string;
+}
+
 function AdminDashboardPage() {
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [syncLogs, setSyncLogs] = useState<SyncLog[] | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [reports, setReports] = useState<ModerationReport[]>([]);
+  const [aiUsage, setAiUsage] = useState<AIUsageStats | null>(null);
+  const [healthDetails, setHealthDetails] = useState<SystemHealthDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,13 +80,17 @@ function AdminDashboardPage() {
       api.get("/admin/users", { params: { limit: 20 } }).then((r) => r.data).catch(() => []),
       api.get("/admin/activity-logs", { params: { limit: 20 } }).then((r) => r.data).catch(() => []),
       api.get("/moderation/reports").then((r) => r.data).catch(() => []),
-    ]).then(([statsData, logsData, usersData, activityData, reportsData]) => {
+      api.get("/admin/ai-usage").then((r) => r.data).catch(() => null),
+      api.get("/admin/health/details").then((r) => r.data).catch(() => null),
+    ]).then(([statsData, logsData, usersData, activityData, reportsData, aiData, healthData]) => {
       if (!isMounted) return;
       setStats(statsData);
       setSyncLogs(logsData);
       setUsers(usersData ?? []);
       setActivityLogs(activityData ?? []);
       setReports(reportsData ?? []);
+      setAiUsage(aiData);
+      setHealthDetails(healthData);
       setLoading(false);
     });
     return () => { isMounted = false; };
@@ -133,20 +162,54 @@ function AdminDashboardPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* System Health */}
         <div className="lg:col-span-2 space-y-5">
+          {/* AI Usage & Cost Monitoring */}
+          <div className="card-enterprise p-6 space-y-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white">
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-sm flex items-center gap-2 text-indigo-300">
+                <Server className="h-4 w-4 text-indigo-400" /> AI Provider & Token Cost Monitoring
+              </h2>
+              <span className="text-[10px] font-bold bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded">
+                LiteLLM Gateway
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="bg-white/10 p-3 rounded-lg">
+                <span className="text-slate-300 text-[11px] block">LLM API Calls</span>
+                <span className="text-lg font-bold text-white">{aiUsage?.total_calls ?? 0}</span>
+              </div>
+              <div className="bg-white/10 p-3 rounded-lg">
+                <span className="text-slate-300 text-[11px] block">Total Tokens</span>
+                <span className="text-lg font-bold text-sky-300">{(aiUsage?.total_tokens ?? 0).toLocaleString()}</span>
+              </div>
+              <div className="bg-white/10 p-3 rounded-lg">
+                <span className="text-slate-300 text-[11px] block">Prompt Tokens</span>
+                <span className="text-lg font-bold text-emerald-300">{(aiUsage?.total_prompt_tokens ?? 0).toLocaleString()}</span>
+              </div>
+              <div className="bg-white/10 p-3 rounded-lg">
+                <span className="text-slate-300 text-[11px] block">Estimated Cost</span>
+                <span className="text-lg font-bold text-amber-300">${aiUsage?.estimated_cost_usd ?? 0} USD</span>
+              </div>
+            </div>
+          </div>
+
           <div className="card-enterprise p-6 space-y-4">
             <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-              <Activity className="h-4 w-4 text-slate-400" /> System Health
+              <Activity className="h-4 w-4 text-slate-400" /> System Subsystem Health
             </h2>
             <div className="space-y-2.5">
-              {systemHealth.map((service) => (
+              {(healthDetails?.services || systemHealth).map((service) => (
                 <div key={service.service} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center gap-3">
                     <Server className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm text-slate-700 font-medium">{service.service}</span>
+                    <div>
+                      <span className="text-sm text-slate-700 font-medium block">{service.service}</span>
+                      {service.latency_ms && <span className="text-[10px] text-slate-400">{service.latency_ms}ms latency</span>}
+                    </div>
                   </div>
                   <span className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    Operational
+                    {service.status}
                   </span>
                 </div>
               ))}

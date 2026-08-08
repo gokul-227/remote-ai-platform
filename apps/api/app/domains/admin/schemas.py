@@ -51,3 +51,34 @@ class ApiSyncLogResponse(BaseModel):
     error_message: Optional[str] = None
     duration_ms: int
     created_at: datetime
+
+
+class AIUsageStatsResponse(BaseModel):
+    total_calls: int
+    total_prompt_tokens: int
+    total_completion_tokens: int
+    total_tokens: int
+    estimated_cost_usd: float
+    model_breakdown: Dict[str, int]
+    feature_breakdown: Dict[str, int]
+
+
+class ServiceHealthStatus(BaseModel):
+    service: str
+    status: str  # OPERATIONAL, DEGRADED, DOWN
+    latency_ms: Optional[float] = None
+    details: Optional[str] = None
+
+
+class SystemHealthDetailResponse(BaseModel):
+    overall_status: str
+    services: List[ServiceHealthStatus]
+    timestamp: datetime
+
+
+class DisputeResolveRequest(BaseModel):
+    decision: str  # RELEASE_TO_WORKER, REFUND_TO_CLIENT, SPLIT
+    worker_amount: Optional[float] = None
+    client_amount: Optional[float] = None
+    resolution_notes: str
+

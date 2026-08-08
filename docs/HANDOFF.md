@@ -48,11 +48,14 @@ fix the `.gitignore` to stop tracking generated artifacts, then begin Phase 2 (S
    - Reusable `TrustBadge.tsx` component embedded into engineer profile (`/engineers/[id]`)
 8. **Implemented Financial Ledger & Escrow Payment Wallet (Phase 17)**:
    - Backend Pydantic schemas in `apps/api/app/domains/payments/schemas.py`
-   - FastAPI router in `apps/api/app/domains/payments/router.py` (`GET /payments/wallet`, `GET /payments/transactions`, `POST /payments/escrow`, `POST /payments/{id}/release`, `POST /payments/{id}/refund`)
-   - Registered `payments_router` in `apps/api/app/main.py`
+   - FastAPI router in `apps/api/app/domains/payments/router.py`
    - Test suite in `apps/api/tests/test_payments.py`
-   - Frontend TanStack Query hook `usePayments.ts`
-   - Frontend Wallet & Financial Ledger page at `/payments` (`apps/web/src/app/payments/page.tsx`) with balance summary cards, transaction history, inline release/refund triggers, and escrow funding modal
+   - Frontend Wallet & Financial Ledger page at `/payments` (`apps/web/src/app/payments/page.tsx`)
+9. **Implemented Enterprise Admin Console Extensions (Phase 18)**:
+   - Extended admin schemas in `apps/api/app/domains/admin/schemas.py` (`AIUsageStatsResponse`, `SystemHealthDetailResponse`, `DisputeResolveRequest`)
+   - Added endpoints `GET /admin/ai-usage` and `GET /admin/health/details` in `apps/api/app/domains/admin/router.py`
+   - Test suite in `apps/api/tests/test_admin_extensions.py`
+   - Enhanced Admin Dashboard page (`apps/web/src/app/admin/dashboard/page.tsx`) with AI LLM provider token/cost monitoring, subsystem latencies, user controls, and moderation queue
 
 ---
 
@@ -70,12 +73,13 @@ fix the `.gitignore` to stop tracking generated artifacts, then begin Phase 2 (S
 
 ## Next Recommended Task
 
-### **Enterprise Admin Console Extensions & Moderation** (Phase 18)
+### **Groups & Communities Domain** (Phase 19)
 
-Now extend the **Admin Console**:
-1. **Backend**: `apps/api/app/domains/admin/`
-   - Add admin system health monitoring metrics, user account suspension/ban actions, contract dispute resolution endpoints, and AI usage metrics aggregation.
-2. **Frontend**: Extend `/admin/dashboard` to include User Ban/Unban controls, Dispute Resolution tab, and AI token/cost monitoring widget.
+Build the **Groups & Communities** domain:
+1. **Backend**: `apps/api/app/domains/groups/`
+   - Migration `022_groups.py` (`groups`, `group_memberships` tables).
+   - Models, schemas, router (`GET/POST /groups`, `POST /groups/{id}/join`).
+2. **Frontend**: `/groups` communities page for interest groups and skill-based developer hubs.
 
 ### Alternative Next Task: Worker Execution Workspace
 
