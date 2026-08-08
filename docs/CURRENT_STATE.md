@@ -1,64 +1,228 @@
 # WorkMesh AI — Current State Assessment
+> **Last updated**: 2026-08-08 by Antigravity (Google DeepMind)
+> **Repository**: `gokul-227/remote-ai-platform`
+> **Branch**: `main` — clean working tree (3 commits total)
 
-This document provides a realistic, evidence-based audit of the repository state as of August 2026.
+---
 
-## 1. Domain Status Breakdown
+## 1. Executive Summary
 
-### Auth & User Identity
-- **Backend Status**: DONE — JWT generation, refresh, password hashing, registration, Keycloak integration support. Role guards active.
-- **Frontend Status**: DONE — Login/Register pages exist, JWT stored in localStorage. `npm run build` passes cleanly (`next build --webpack`).
-- **DB & Migrations**: DONE — `users` table created with role support (`ENGINEER`, `COMPANY`, `ADMIN`).
-- **Tests**: DONE — Unit test coverage in `apps/api/tests/test_auth.py`.
+The repository is a **well-structured MVP foundation** built across multiple AI sessions (Codex, Claude).
+The monorepo uses Turborepo with two apps: `apps/api` (FastAPI) and `apps/web` (Next.js 16 / React 19).
+The codebase is significantly more complete than most early MVPs, but several domains are
+**backend-only with no connected frontend**, and the overall product journey is not yet end-to-end
+usable.
 
-### Engineer Profiles & Onboarding
-- **Backend Status**: DONE — Full profile management, automatic profile completeness score calculation (`_recalculate_score`), skills list, portfolio, experience, resume upload to MinIO, LLM parsing.
-- **Frontend Status**: DONE — Engineer dashboard, profile editing form, resume parser trigger UI (`/engineer/profile`).
-- **DB & Migrations**: DONE — `engineer_profiles` schema migrated (`003_engineer_profile_fields.py`).
-- **Tests**: DONE — Created `apps/api/tests/test_profiles.py` testing engineer onboarding & completion calculation.
+**Git state**: 3 commits on `main`. Working tree is clean.
+**Docker access**: Docker socket not accessible in this agent session — UI/Docker verification deferred.
+**Python env**: Host Python is 3.14 (incompatible with pyproject requirement of >=3.11). Run via Docker.
 
-### Company Profiles & Onboarding
-- **Backend Status**: DONE — Company creation, website, industry, company size, tech stack, verification status, candidate application list. Role-restricted (`require_role(UserRole.COMPANY, UserRole.ADMIN)`).
-- **Frontend Status**: DONE — Company dashboard, company profile edit (`/company/profile`), candidate application viewer.
-- **DB & Migrations**: DONE — `company_profiles` table existing.
-- **Tests**: DONE — `apps/api/tests/test_profiles.py` tests company profile onboarding and role restriction.
+---
 
-### Job Marketplace & Aggregation
-- **Backend Status**: DONE — 5 aggregator adapters implemented (`RemoteOK`, `Remotive`, `Arbeitnow`, `USAJobs`, `The Muse`). Sync engine, deduplication, Celery beat schedules.
-- **Frontend Status**: DONE — Job search, filter by keywords/skills, job detail view.
-- **DB & Migrations**: DONE — `job_posts` table with full indexes.
-- **Tests**: DONE — Unit tests for job aggregators and job services (`test_jobs.py`).
+## 2. Domain Gap Matrix
 
-### AI Matching Engine
-- **Backend Status**: DONE — Multi-factor explainable match engine (skills, experience, role, timezone, compensation). LiteLLM provider integration.
-- **Frontend Status**: PARTIAL — Match percentage pill and basic breakdown display on job/candidate cards.
-- **DB & Migrations**: DONE — `match_scores` table.
-- **Tests**: DONE — `test_matching.py`.
+| Domain | Backend | Frontend | DB/Migrations | Tests | Status |
+|---|---|---|---|---|---|
+| **Auth** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
+| **Engineer Profiles** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
+| **Company Profiles** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
+| **Job Aggregation** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
+| **Job Search/Browse** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
+| **AI Matching** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | PARTIAL |
+| **Applications** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
+| **Saved Jobs** | ✅ DONE | ✅ DONE | ✅ DONE | — | COMPLETE |
+| **Professional Network** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | PARTIAL |
+| **Messaging (WebSocket)** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | ❌ MISSING | PARTIAL |
+| **Notifications** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | — | PARTIAL |
+| **Projects** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | PARTIAL |
+| **Milestones/Tasks** | ✅ DONE | ❌ MISSING | ✅ DONE | ✅ DONE | PARTIAL |
+| **Work Dispatch (Uber)** | ✅ DONE | ❌ MISSING | ✅ DONE | ⚠️ PARTIAL | PARTIAL |
+| **Work Submissions/Review** | ✅ DONE | ❌ MISSING | ✅ DONE | ⚠️ PARTIAL | PARTIAL |
+| **Contracts** | ❌ MISSING | ❌ MISSING | ❌ MISSING | ❌ MISSING | MISSING |
+| **Payments (abstraction)** | ✅ Sandbox | ❌ MISSING | ✅ DONE | — | PARTIAL |
+| **Work Ledger** | ✅ DONE | ❌ MISSING | ✅ DONE | — | PARTIAL |
+| **Trust/Reputation** | ❌ MISSING | ❌ MISSING | ⚠️ PARTIAL | ❌ MISSING | MISSING |
+| **Social Feed (Posts)** | ⚠️ PARTIAL | ❌ MISSING | ✅ DONE | ⚠️ PARTIAL | PARTIAL |
+| **Groups** | ❌ MISSING | ❌ MISSING | ❌ MISSING | ❌ MISSING | MISSING |
+| **Freelancer Discovery** | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | — | PARTIAL |
+| **Admin Console** | ⚠️ PARTIAL | ⚠️ PARTIAL | ✅ DONE | ⚠️ PARTIAL | PARTIAL |
+| **AI (Resume Parser)** | ✅ DONE | ✅ DONE | ✅ DONE | ✅ DONE | COMPLETE |
+| **AI (Job Enricher)** | ✅ DONE | — | ✅ DONE | ✅ DONE | COMPLETE |
+| **AI (Project Planner)** | ✅ DONE | ⚠️ PARTIAL | ✅ DONE | ✅ DONE | PARTIAL |
+| **AI (Quality Engine)** | ❌ MISSING | ❌ MISSING | — | ❌ MISSING | MISSING |
+| **Search (full-text)** | ✅ DONE | ✅ DONE | ✅ DONE | — | COMPLETE |
+| **Observability (Prometheus)** | ✅ DONE | — | — | ⚠️ PARTIAL | COMPLETE |
+| **Docker Infrastructure** | ✅ DONE | ✅ DONE | — | — | COMPLETE |
+| **Keycloak (IdP)** | ✅ DONE | ❌ MISSING | — | — | PARTIAL |
+| **MinIO (Storage)** | ✅ DONE | ⚠️ PARTIAL | — | — | PARTIAL |
+| **Celery Workers** | ✅ DONE | — | — | ✅ DONE | COMPLETE |
+| **CI/CD (GitHub Actions)** | ✅ DONE | ✅ DONE | — | — | COMPLETE |
+| **Seed Data / Demo Users** | ❌ MISSING | — | — | — | MISSING |
+| **E2E Tests** | ❌ MISSING | ❌ MISSING | — | — | MISSING |
 
-### Professional Network
-- **Backend Status**: DONE — Connection requests, accept/reject/withdraw/block, posts, comments, likes.
-- **Frontend Status**: PARTIAL — Connection list UI exists, feed page basic structure present.
-- **DB & Migrations**: DONE — Migrated in `008_network_layer.py`.
-- **Tests**: DONE — `test_network_layer.py`.
+---
 
-### Messaging
-- **Backend Status**: DONE — WebSocket endpoint for real-time messaging, conversation persistence in Postgres.
-- **Frontend Status**: PARTIAL — Basic real-time chat interface connected to WebSocket.
-- **DB & Migrations**: DONE — `conversations` and `messages` tables.
-- **Tests**: MISSING — WebSocket integration tests missing.
+## 3. What EXISTS and What the Code Actually Does
 
-### Projects & Task Dispatch
-- **Backend Status**: DONE — Projects, milestones, tasks, task assignments, AI project plan generator.
-- **Frontend Status**: PARTIAL — Project overview exists; full milestone/task dispatch UI incomplete.
-- **DB & Migrations**: DONE — Migrated in `009_project_management.py`.
-- **Tests**: DONE — `test_project_management.py`.
+### Auth (`apps/api/app/domains/auth/`)
+- **Model**: `User` with fields: `keycloak_id`, `email`, `full_name`, `role` (ENGINEER/COMPANY/ADMIN), `password_hash`, `avatar_url`, `is_active`
+- **Router**: `/api/v1/auth/` — register, login (JSON + form), refresh, logout, `/me`, `/sync`, `/login-url`, `/logout-url`, `/role` (PATCH)
+- **Auth mechanism**: Custom JWT (HS256) with `JWT_SECRET_KEY` — Keycloak OIDC integration exists in `AuthService` but frontend uses direct JWT login flow (not OIDC redirect)
+- **Frontend**: Login page, Register page — fully functional
 
-### Admin Console
-- **Backend Status**: PARTIAL — Admin statistics and job sync health endpoints present.
-- **Frontend Status**: PARTIAL — Admin overview dashboard exists.
-- **DB & Migrations**: DONE.
-- **Tests**: MISSING.
+### Engineer Profiles (`apps/api/app/domains/engineers/`)
+- Full CRUD, profile completeness score (`_recalculate_score`)
+- Resume upload to MinIO → AI parsing via `ResumeParserAgent`
+- Skills, portfolio, experience, education, avatar
 
-## 2. Completed Hardening & Features (Batch 02)
-1. **Automatic Profile Completeness Score**: Implemented `_recalculate_score` helper in `EngineerService` calculating percentage completion based on headline, bio, location, country, timezone, role, skills, experience, education, portfolio links, and resume.
-2. **Onboarding Role Security**: Verified role enforcement for Company onboarding (`require_role(UserRole.COMPANY, UserRole.ADMIN)`). Non-company accounts cannot create company profiles.
-3. **Onboarding Test Suite**: Created `apps/api/tests/test_profiles.py` validating engineer onboarding, company onboarding, completeness calculation, and role guards.
+### Company Profiles (`apps/api/app/domains/companies/`)
+- Company creation, tech stack, industry, size, verification status
+- Application review (shortlist/reject) from company side
+
+### Job Aggregation (`apps/api/app/domains/jobs/`)
+- 5 aggregators: RemoteOK, Remotive, Arbeitnow, USAJobs, TheMuse
+- Sync engine, dedup, Celery beat (every 6h), sync logs
+- `POST /api/v1/jobs/seed_demo` for seeding
+
+### AI Layer (`apps/api/app/agents/`, `apps/api/app/services/ai/`)
+- `LLMClient` → LiteLLM → multiple provider support (Ollama, Groq, OpenAI-compatible)
+- `ResumeParserAgent` — extracts structured data from resume text
+- `JobEnricherAgent` — enriches job descriptions with structured metadata
+- AI Project Planner integrated in projects router
+- Fallback providers configured
+
+### Matching (`apps/api/app/domains/matching/`)
+- Multi-factor explainable scoring: skills, experience, role type, timezone, compensation
+- Match scores stored in `match_scores` table
+- Frontend partially shows match pill
+
+### Network (`apps/api/app/domains/network/`)
+- Connections: send/accept/reject/block/remove
+- WebSocket-based messaging in same router
+- Conversations and Messages persisted in PostgreSQL
+
+### Applications (`apps/api/app/domains/applications/`)
+- Full lifecycle with state machine: SUBMITTED→REVIEWING→SHORTLISTED→ACCEPTED/REJECTED/WITHDRAWN
+- Company can manage applications on their jobs
+
+### Projects Domain (`apps/api/app/domains/projects/`)
+- `Project`, `Milestone`, `ProjectTask`, `TaskAssignmentOffer`
+- `WorkSubmission`, `WorkLedgerEntry`, `PaymentTransaction`, `ProjectReview`, `ProjectActivity`
+- AI project plan generator endpoint
+- Work dispatch: offer to engineers, accept/reject
+- Sandbox payment provider
+
+### Docker Infrastructure (`infra/docker/docker-compose.yml`)
+- Services: postgres, redis, minio, keycloak, api, web, celery-worker, celery-beat
+- Health checks on all infra services
+- Named volumes for persistence
+- MinIO bucket init container
+- Keycloak realm import
+
+---
+
+## 4. Known Bugs / Issues
+
+| # | Issue | Location | Severity |
+|---|---|---|---|
+| 1 | `node_modules`, `.next`, `.venv*`, `.turbo`, `.pytest_cache`, `celerybeat-schedule` committed to repo | root/apps | Medium |
+| 2 | `RateLimitMiddleware` is a passthrough stub | `app/core/middleware.py` | Medium |
+| 3 | Auth tokens stored in localStorage (XSS risk) | `apps/web/src/lib/auth.tsx` | Medium |
+| 4 | `budget` (Project) uses `Float` (not integer minor units) | `projects/models.py:L22` | Medium |
+| 5 | `amount` (PaymentTransaction) uses `Float` | `projects/models.py:L125` | Medium |
+| 6 | `ProjectTask` model defined in `marketplace/models.py` (imported elsewhere) — duplication confusion | `marketplace/models.py:L32` | Low |
+| 7 | Projects router defines schemas inline instead of in `schemas.py` | `projects/router.py` | Low |
+| 8 | No seed scripts — `CLAUDE.md` documents references are stale | — | Low |
+| 9 | E2E test directory `tests/e2e/` exists but is empty | `tests/e2e/` | Low |
+| 10 | WebSocket messaging tests completely missing | `apps/api/tests/` | Medium |
+| 11 | Frontend Keycloak OIDC redirect flow not implemented | `apps/web` | Low |
+
+---
+
+## 5. API Routes Inventory
+
+| Method | Path | Auth |
+|---|---|---|
+| POST | /api/v1/auth/register | None |
+| POST | /api/v1/auth/login | None |
+| POST | /api/v1/auth/refresh | None |
+| POST | /api/v1/auth/logout | JWT |
+| GET | /api/v1/auth/me | JWT |
+| PATCH | /api/v1/auth/role | JWT |
+| GET/POST/PATCH/DELETE | /api/v1/engineers/* | JWT |
+| GET/POST/PATCH/DELETE | /api/v1/companies/* | JWT |
+| GET/POST | /api/v1/jobs/* | mixed |
+| GET | /api/v1/search/* | None |
+| GET | /api/v1/matching/* | JWT |
+| GET/POST/PATCH | /api/v1/applications/* | JWT |
+| GET/POST | /api/v1/saved-jobs/* | JWT |
+| GET/POST/PATCH/DELETE | /api/v1/projects/* | JWT |
+| GET/POST/PATCH | /api/v1/notifications/* | JWT |
+| GET/POST/PATCH/DELETE | /api/v1/connections | JWT |
+| WS | /api/v1/ws/{user_id} | JWT |
+| GET/POST | /api/v1/conversations/* | JWT |
+| GET | /api/v1/admin/* | JWT+ADMIN |
+| GET | /api/v1/health | None |
+| GET | /metrics | None |
+
+---
+
+## 6. Frontend Routes Inventory
+
+| Route | Status |
+|---|---|
+| `/` | ✅ |
+| `/auth/login` | ✅ |
+| `/auth/register` | ✅ |
+| `/jobs`, `/jobs/[id]`, `/jobs/new` | ✅ |
+| `/engineers`, `/engineers/[id]` | ✅ |
+| `/companies`, `/companies/[id]` | ✅ |
+| `/freelancers` | ✅ |
+| `/engineer/dashboard` | ✅ |
+| `/engineer/profile` | ✅ |
+| `/engineer/applications` | ✅ |
+| `/engineer/recommendations` | ⚠️ Partial |
+| `/company/dashboard` | ✅ |
+| `/company/profile` | ✅ |
+| `/company/jobs` | ✅ |
+| `/company/candidates` | ✅ |
+| `/network` | ⚠️ Partial |
+| `/messages` | ⚠️ Partial |
+| `/projects`, `/projects/[id]` | ⚠️ Partial |
+| `/admin/dashboard` | ⚠️ Partial |
+| `/feed` | ❌ MISSING |
+| `/groups` | ❌ MISSING |
+| `/workspace` (task execution UI) | ❌ MISSING |
+
+---
+
+## 7. Recommended Next Actions (Priority Order)
+
+1. **Fix .gitignore** — prevent re-committing `node_modules`, `.next`, `.venv*` etc.
+2. **Social Feed** — build `/feed` page with post creation, like, comment
+3. **Worker Workspace** — build task acceptance/progress/submission UI
+4. **Contracts domain** — proper contract lifecycle
+5. **Real rate limiting** — replace stub middleware with Redis-backed limiting
+6. **WebSocket messaging tests** — add integration tests for chat
+7. **E2E tests** — implement critical user journeys
+
+## 8. Technology Stack (Verified from Source)
+
+| Layer | Technology | Version |
+|---|---|---|
+| Frontend | Next.js | 16.2.11 |
+| Frontend | React | 19.2.4 |
+| Frontend | TailwindCSS | v4 (CSS-first `@import "tailwindcss"`) |
+| Frontend | TanStack Query | ^5 |
+| Backend | FastAPI | 0.115.5 |
+| Backend | Python | 3.11 (required, host is 3.14 — use Docker) |
+| Backend | SQLAlchemy | 2.0.36 (async) |
+| Backend | Alembic | 1.14.0 |
+| Backend | Celery | 5.4.0 |
+| Backend | LiteLLM | 1.55.2 |
+| DB | PostgreSQL | 16 |
+| Cache | Redis | 7 |
+| Storage | MinIO | latest |
+| Identity | Keycloak | 24.0 |
+| AI default | Ollama / Groq | qwen2.5 / llama-3.1-8b-instant |
+| Monorepo | Turborepo | npm workspaces |

@@ -23,11 +23,16 @@ __pycache__/
 .Python
 .venv/
 .venv_local/
+.venv_test/
 venv/
 env/
 .eggs/
 *.egg-info/
 *.egg
+
+# ─── TypeScript build artifacts ───────────────────────────────────────────────
+*.tsbuildinfo
+tsconfig.tsbuildinfo
 
 # ─── Environment ──────────────────────────────────────────────────────────────
 .env
