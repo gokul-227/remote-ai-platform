@@ -59,7 +59,6 @@ export default function WorkerWorkspacePage() {
     if (!ledgerTask || durationMinutes <= 0 || !ledgerDescription.trim()) return;
     recordWorkLedger.mutate(
       {
-        projectId: ledgerTask.project_id,
         taskId: ledgerTask.task.id,
         duration_minutes: Number(durationMinutes),
         description: ledgerDescription.trim(),

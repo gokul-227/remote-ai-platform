@@ -64,6 +64,7 @@ function JobSkeleton() {
 function JobsContent() {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
+  const [companyId, setCompanyId] = useState(searchParams.get("company_id") || "");
   const [jobType, setJobType] = useState("");
   const [experience, setExperience] = useState("");
   const [minSalary, setMinSalary] = useState("");
@@ -73,7 +74,7 @@ function JobsContent() {
 
   const limit = 10;
 
-  const jobsQuery = useJobs({ limit, skip: page * limit, query: searchQuery || undefined, job_type: jobType || undefined, experience_level: experience || undefined, min_salary: minSalary || undefined, max_salary: maxSalary || undefined, skills: selectedSkills.length ? selectedSkills : undefined });
+  const jobsQuery = useJobs({ limit, skip: page * limit, query: searchQuery || undefined, company_id: companyId || undefined, job_type: jobType || undefined, experience_level: experience || undefined, min_salary: minSalary || undefined, max_salary: maxSalary || undefined, skills: selectedSkills.length ? selectedSkills : undefined });
   const savedJobs = useSavedJobs(true);
   const jobs: JobPost[] = jobsQuery.data || [];
   const loading = jobsQuery.isLoading;

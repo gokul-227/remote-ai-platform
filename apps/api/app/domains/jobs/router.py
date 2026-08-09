@@ -42,6 +42,7 @@ async def list_jobs(
     max_salary: Optional[float] = Query(None, ge=0),
     skills: Optional[List[str]] = Query(None, description="Match any of these skills"),
     source: Optional[str] = Query(None, description="Filter by source (REMOTEOK, ARBEITNOW, etc.)"),
+    company_id: Optional[uuid.UUID] = Query(None, description="Filter by company profile UUID"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: JobService = Depends(get_job_service),
@@ -56,6 +57,7 @@ async def list_jobs(
         max_salary=max_salary,
         skills=[skill.strip() for skill in skills or [] if skill.strip()] or None,
         source=source,
+        company_id=company_id,
         skip=skip,
         limit=limit,
     )
@@ -77,6 +79,20 @@ async def list_company_jobs(
     return [JobPostResponse.model_validate(job) for job in result.scalars().all()]
 
 
+@router.get("/company/{company_id}", response_model=List[JobPostResponse])
+async def list_public_company_jobs(
+    company_id: uuid.UUID,
+    service: JobService = Depends(get_job_service),
+) -> List[JobPostResponse]:
+    """Get public job listings for a specific company profile (no auth required)."""
+    result = await service.repo.db.execute(
+        select(JobPost)
+        .where(JobPost.company_id == company_id, JobPost.is_active == True)
+        .order_by(JobPost.posted_at.desc())
+    )
+    return [JobPostResponse.model_validate(job) for job in result.scalars().all()]
+
+
 @router.get("/{job_id}", response_model=JobPostResponse)
 async def get_job_by_id(
     job_id: uuid.UUID,
@@ -85,6 +101,30 @@ async def get_job_by_id(
     """Get single job details by UUID."""
     job = await service.get_by_id(job_id)
     return JobPostResponse.model_validate(job)
+
+
+@router.patch("/{job_id}", response_model=JobPostResponse)
+async def update_job(
+    job_id: uuid.UUID,
+    data: JobPostUpdate,
+    current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
+    service: JobService = Depends(get_job_service),
+) -> JobPostResponse:
+    """Update a job post (publish/unpublish, edit fields). COMPANY can only edit its own jobs."""
+    existing = await service.get_by_id(job_id)
+    if current_user.role == UserRole.COMPANY:
+        if existing.company_id is None:
+            raise HTTPException(status_code=403, detail="Aggregated jobs cannot be edited by a company")
+        company = await service.repo.db.scalar(
+            select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
+        )
+        if not company or existing.company_id != company.id:
+            raise HTTPException(status_code=403, detail="You can only edit your own company jobs")
+    try:
+        updated = await service.update_job(job_id, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return JobPostResponse.model_validate(updated)
 
 
 @router.post("", response_model=JobPostResponse, status_code=status.HTTP_201_CREATED)

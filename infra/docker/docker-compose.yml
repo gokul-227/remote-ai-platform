@@ -11,6 +11,7 @@ volumes:
   redis_data:
   minio_data:
   keycloak_data:
+  celery_beat_data:
 
 services:
 
@@ -82,10 +83,11 @@ services:
       timeout: 20s
       retries: 3
 
-  # MinIO bucket init
+  # MinIO bucket init (one-shot)
   minio-init:
     image: minio/mc:latest
     container_name: remote-ai-platform-minio-init
+    restart: "no"
     depends_on:
       minio:
         condition: service_healthy
@@ -139,14 +141,17 @@ services:
   # APPLICATION SERVICES
   # ─────────────────────────────────────────────────────────────────────────────
 
+  # ─── API (FastAPI) ────────────────────────────────────────────────────────────
+  # Production image target: runs `alembic upgrade head` automatically via
+  # start-production.sh, then starts uvicorn. No bind mount so the image is
+  # self-contained and fresh-clone deterministic.
   api:
     build:
       context: ../../apps/api
       dockerfile: Dockerfile
-      target: development
+      target: production
     container_name: remote-ai-platform-api
     restart: unless-stopped
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
       REDIS_URL: redis://redis:6379/0
@@ -171,9 +176,6 @@ services:
       LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
       AI_FALLBACK_PROVIDERS: ${AI_FALLBACK_PROVIDERS:-ollama/qwen2.5}
       APP_ENV: ${APP_ENV:-development}
-    volumes:
-      - ../../apps/api:/app
-      - /app/__pycache__
     ports:
       - "8000:8000"
     depends_on:
@@ -191,9 +193,10 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      start_period: 40s
 
+  # ─── Web (Next.js) ────────────────────────────────────────────────────────────
   web:
     build:
       context: ../../apps/web
@@ -211,12 +214,19 @@ services:
         condition: service_healthy
     networks:
       - remote_ai_platform
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
+  # ─── Celery Worker ────────────────────────────────────────────────────────────
   celery-worker:
     build:
       context: ../../apps/api
       dockerfile: Dockerfile
-      target: development
+      target: production
     container_name: remote-ai-platform-celery-worker
     restart: unless-stopped
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4 -Q default,jobs,ai,matching
@@ -235,9 +245,74 @@ services:
       AI_API_KEY: ${AI_API_KEY:-}
       LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
       AI_FALLBACK_PROVIDERS: ${AI_FALLBACK_PROVIDERS:-ollama/qwen2.5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - remote_ai_platform
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping -d celery@$$HOSTNAME -t 10 2>/dev/null | grep -q pong || exit 1"]
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+
+  # ─── Backend Tests ────────────────────────────────────────────────────────────
+  test:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+      target: test
+    container_name: remote-ai-platform-test
+    # Tests use an in-memory SQLite database, so no external services are needed.
+    environment:
+      APP_ENV: test
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
+      MINIO_SECURE: "false"
+      JWT_SECRET_KEY: test-secret-key-at-least-32-chars-long
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-remote-ai-platform}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-remote-ai-platform-api}
+      KEYCLOAK_WEB_CLIENT_ID: ${KEYCLOAK_WEB_CLIENT_ID:-remote-ai-platform-web}
+      KEYCLOAK_CLIENT_SECRET: change-me-in-production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - remote_ai_platform
+    command: python -m pytest /app/tests -v --ignore=/app/tests/integration
+
+  # ─── Celery Beat ──────────────────────────────────────────────────────────────
+  celery-beat:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+      target: production
+    container_name: remote-ai-platform-celery-beat
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler --schedule=/app/data/celerybeat-schedule
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
     volumes:
-      - ../../apps/api:/app
-      - /app/__pycache__
+      - celery_beat_data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -245,25 +320,9 @@ services:
         condition: service_healthy
     networks:
       - remote_ai_platform
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  celery-beat:
-    build:
-      context: ../../apps/api
-      dockerfile: Dockerfile
-      target: development
-    container_name: remote-ai-platform-celery-beat
-    restart: unless-stopped
-    command: celery -A app.workers.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-    volumes:
-      - ../../apps/api:/app
-    depends_on:
-      - redis
-    networks:
-      - remote_ai_platform
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import sys; data=open('/proc/1/cmdline').read(); sys.exit(0 if ('celery' in data and 'beat' in data) else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s

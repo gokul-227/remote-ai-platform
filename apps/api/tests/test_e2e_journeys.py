@@ -69,3 +69,45 @@ async def test_admin_control_and_moderation_journey(client: AsyncClient):
     logs = await client.get("/api/v1/admin/activity-logs", headers=admin_headers)
     assert logs.status_code == 200
     assert any(log["action"] == "USER_STATUS_UPDATED" for log in logs.json())
+
+
+@pytest.mark.asyncio
+async def test_company_job_publish_unpublish_journey(client: AsyncClient):
+    company = await client.post("/api/v1/auth/register", json={
+        "email": "e2e-publish-company@example.com", "password": "secure-pass",
+        "full_name": "Publish Co", "role": "COMPANY",
+    })
+    company_headers = {"Authorization": f"Bearer {company.json()['access_token']}"}
+    company_profile = await client.post("/api/v1/companies/me", headers=company_headers,
+                                        json={"name": "Publish Labs"})
+    assert company_profile.status_code == 201
+
+    created = await client.post("/api/v1/jobs", headers=company_headers, json={
+        "title": "Publishable Role", "description": "Test publish lifecycle.",
+        "company_name": "Publish Labs", "location": "Remote", "is_remote": True,
+        "job_type": "full-time", "source": "DIRECT", "skills": ["Python"],
+    })
+    assert created.status_code == 201, created.text
+    job_id = created.json()["id"]
+
+    # Unpublish
+    unpub = await client.patch(f"/api/v1/jobs/{job_id}", headers=company_headers,
+                               json={"is_active": False})
+    assert unpub.status_code == 200, unpub.text
+    assert unpub.json()["is_active"] is False
+
+    # Publish
+    pub = await client.patch(f"/api/v1/jobs/{job_id}", headers=company_headers,
+                             json={"is_active": True})
+    assert pub.status_code == 200, pub.text
+    assert pub.json()["is_active"] is True
+
+    # Engineer cannot edit jobs
+    engineer = await client.post("/api/v1/auth/register", json={
+        "email": "e2e-publish-engineer@example.com", "password": "secure-pass",
+        "full_name": "Engineer", "role": "ENGINEER",
+    })
+    eng_headers = {"Authorization": f"Bearer {engineer.json()['access_token']}"}
+    forbidden = await client.patch(f"/api/v1/jobs/{job_id}", headers=eng_headers,
+                                   json={"is_active": False})
+    assert forbidden.status_code == 403

@@ -70,6 +70,13 @@ class JobService:
         await self.repo.db.refresh(job)
         return job
 
+    async def update_job(self, job_id: uuid.UUID, data: JobPostUpdate) -> JobPost:
+        job = await self.repo.update(job_id, data)
+        if not job:
+            raise NotFoundError("Job post not found")
+        return job
+
+
     async def search_jobs(self, query: JobSearchQuery) -> Sequence[JobPost]:
         return await self.repo.search(
             query=query.query,
@@ -80,6 +87,7 @@ class JobService:
             min_salary=query.min_salary,
             max_salary=query.max_salary,
             source=query.source,
+            company_id=query.company_id,
             skip=query.skip,
             limit=query.limit,
         )

@@ -47,9 +47,21 @@ FROM production-deps AS production
 
 COPY . .
 
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+RUN useradd -m -u 1000 appuser \
+    && mkdir -p /app/data \
+    && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8000
 
 CMD ["sh", "start-production.sh"]
+
+# ─── Test ──────────────────────────────────────────────────────────────────────
+FROM deps AS test
+
+COPY . .
+
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+CMD ["python", "-m", "pytest", "-v"]

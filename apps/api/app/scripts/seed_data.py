@@ -7,7 +7,7 @@ Run with:
 
 import asyncio
 import uuid
-from sqlalchemy import select
+from sqlalchemy import select, text
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_password_hash
 from app.domains.auth.models import User, UserRole
@@ -20,7 +20,18 @@ from app.domains.projects.models import Project
 
 async def seed_demo_data():
     async with AsyncSessionLocal() as session:
+        # Serialize concurrent worker startup (multi-worker uvicorn) to avoid
+        # duplicate-key races. The lock is session-scoped and blocks until held.
+        await session.execute(text("SELECT pg_advisory_lock(66778899)"))
         print("🌱 Seeding WorkMesh AI Demo Data...")
+        try:
+            await _seed_locked(session)
+        finally:
+            await session.execute(text("SELECT pg_advisory_unlock(66778899)"))
+
+
+async def _seed_locked(session):
+        # ── 1. Demo users & profiles ────────────────────────────────────────────
 
         # 1. Demo Admin User
         admin_email = "admin@workmesh.ai"
@@ -106,30 +117,32 @@ async def seed_demo_data():
                     id=uuid.uuid4(),
                     company_id=company.id if company else None,
                     title="Senior Backend Systems Engineer (FastAPI & Async Python)",
+                    slug="senior-backend-systems-engineer-fastapi-async-python",
                     company_name="Acme AI Technologies",
                     description="We are seeking an experienced Backend Engineer to scale our distributed worker dispatch and LLM agent pipelines.",
                     location="Remote (US / EU)",
-                    required_skills=["Python", "FastAPI", "PostgreSQL", "Redis", "Celery"],
+                    skills=["Python", "FastAPI", "PostgreSQL", "Redis", "Celery"],
                     salary_min=140000,
                     salary_max=185000,
                     currency="USD",
-                    remote_type="full_remote",
-                    employment_type="FULL_TIME",
+                    is_remote=True,
+                    job_type="full-time",
                     is_active=True,
                 ),
                 JobPost(
                     id=uuid.uuid4(),
                     company_id=company.id if company else None,
                     title="Lead Frontend Engineer (Next.js & React 19)",
+                    slug="lead-frontend-engineer-nextjs-react-19",
                     company_name="Acme AI Technologies",
                     description="Lead frontend developer responsible for building real-time WebSocket dashboards, AI score visualizers, and interactive canvases.",
                     location="Remote",
-                    required_skills=["TypeScript", "Next.js", "React", "TailwindCSS", "TanStack Query"],
+                    skills=["TypeScript", "Next.js", "React", "TailwindCSS", "TanStack Query"],
                     salary_min=130000,
                     salary_max=175000,
                     currency="USD",
-                    remote_type="full_remote",
-                    employment_type="FULL_TIME",
+                    is_remote=True,
+                    job_type="full-time",
                     is_active=True,
                 ),
             ]

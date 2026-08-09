@@ -216,7 +216,7 @@ export default function PublicCompanyProfilePage({
                 <Briefcase className="h-4 w-4 text-slate-400" /> Open Positions
               </h2>
               <Link
-                href={`/jobs?company=${id}`}
+                href={`/jobs?company_id=${id}`}
                 className="text-xs font-semibold text-[#0A66C2] hover:underline"
               >
                 See all jobs →

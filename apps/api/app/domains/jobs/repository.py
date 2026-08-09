@@ -72,6 +72,20 @@ class JobRepository:
         await self.db.refresh(job)
         return job
 
+    async def update(self, job_id: uuid.UUID, data: JobPostUpdate) -> Optional[JobPost]:
+        job = await self.get_by_id(job_id)
+        if not job:
+            return None
+        updates = data.model_dump(exclude_unset=True)
+        for field, value in updates.items():
+            if field == "skills" and value is not None:
+                job.skills = value
+            elif hasattr(job, field):
+                setattr(job, field, value)
+        await self.db.flush()
+        await self.db.refresh(job)
+        return job
+
     async def upsert_external_job(self, data: JobPostCreate) -> tuple[JobPost, bool]:
         """Returns (job, created) where created=True if a new row was inserted."""
         if not data.external_id:
@@ -106,10 +120,14 @@ class JobRepository:
         min_salary: Optional[float] = None,
         max_salary: Optional[float] = None,
         source: Optional[str] = None,
+        company_id: Optional[uuid.UUID] = None,
         skip: int = 0,
         limit: int = 20,
     ) -> Sequence[JobPost]:
         stmt = select(JobPost).where(JobPost.is_active == True)
+
+        if company_id is not None:
+            stmt = stmt.where(JobPost.company_id == company_id)
 
         if is_remote is not None:
             stmt = stmt.where(JobPost.is_remote == is_remote)

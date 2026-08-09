@@ -88,5 +88,6 @@ class JobSearchQuery(BaseModel):
     min_salary: Optional[float] = None
     max_salary: Optional[float] = None
     source: Optional[str] = None
+    company_id: Optional[uuid.UUID] = None
     skip: int = 0
     limit: int = 20

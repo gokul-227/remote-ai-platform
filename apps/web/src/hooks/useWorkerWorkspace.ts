@@ -109,17 +109,16 @@ export function useWorkerWorkspace(enabled = true) {
 
   const recordWorkLedgerMutation = useMutation({
     mutationFn: async ({
-      projectId,
       taskId,
       duration_minutes,
       description,
     }: {
-      projectId: string;
       taskId: string;
       duration_minutes: number;
       description: string;
     }) => {
-      const res = await api.post(`/projects/${projectId}/tasks/${taskId}/work-ledger`, {
+      // Backend endpoint: POST /api/v1/projects/tasks/{task_id}/ledger
+      const res = await api.post(`/projects/tasks/${taskId}/ledger`, {
         duration_minutes,
         description,
       });
