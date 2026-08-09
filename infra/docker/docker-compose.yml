@@ -200,16 +200,15 @@ services:
       dockerfile: Dockerfile
     container_name: remote-ai-platform-web
     restart: unless-stopped
-    command: ["npm", "start"]
-    volumes:
-      - ../../apps/web:/app
-      - /app/node_modules
+    # Production image — no bind mount so the built .next output is used.
+    # The Dockerfile CMD starts `next start` on port 3000.
     ports:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - remote_ai_platform
 
