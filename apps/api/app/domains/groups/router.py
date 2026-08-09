@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.security import get_current_user
+from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.groups.models import Group, GroupMembership, GroupPost
 from app.domains.groups.schemas import (
@@ -233,6 +233,8 @@ async def join_group(
 
     await db.commit()
     await db.refresh(membership)
+    # Ensure server-default columns are loaded before Pydantic validation
+    await db.refresh(membership)
     return MembershipResponse.model_validate(membership)
 
 
@@ -274,7 +276,11 @@ async def list_members(
             GroupMembership.status == "active",
         ).order_by(GroupMembership.joined_at)
     )
-    return [MembershipResponse.model_validate(m) for m in result.scalars().all()]
+    memberships = result.scalars().all()
+    # Refresh each to ensure server-default columns are loaded
+    for m in memberships:
+        await db.refresh(m)
+    return [MembershipResponse.model_validate(m) for m in memberships]
 
 
 @router.patch("/{group_id}/members/{user_id}/role", response_model=MembershipResponse)

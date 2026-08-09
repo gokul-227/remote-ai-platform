@@ -286,7 +286,7 @@ export default function WorkerWorkspacePage() {
 
                         {item.latest_submission.review_note && (
                           <p className="text-slate-500 italic text-[11px]">
-                            Review note: "{item.latest_submission.review_note}"
+                            Review note: &quot;{item.latest_submission.review_note}&quot;
                           </p>
                         )}
                       </div>
@@ -319,7 +319,7 @@ export default function WorkerWorkspacePage() {
               <Briefcase className="h-8 w-8 text-slate-300 mx-auto" />
               <h3 className="font-semibold text-slate-900 text-sm">No assigned tasks</h3>
               <p className="text-xs text-slate-500">
-                You don't have any active task assignments yet. Check the Task Offers tab to accept new work.
+                You don&apos;t have any active task assignments yet. Check the Task Offers tab to accept new work.
               </p>
             </div>
           )}

@@ -55,13 +55,13 @@ async def seed_demo_data():
             eng_profile = EngineerProfile(
                 id=uuid.uuid4(),
                 user_id=eng_user.id,
-                title="Senior Full-Stack AI Engineer",
+                headline="Senior Full-Stack AI Engineer",
                 bio="Passionate engineer building distributed AI systems, Next.js applications, and FastAPI microservices.",
                 skills=["Python", "TypeScript", "FastAPI", "Next.js", "PyTorch", "PostgreSQL", "Docker"],
-                experience_years=6,
+                years_of_experience=6,
                 location="San Francisco, CA",
                 hourly_rate=95.0,
-                is_available=True,
+                is_open_to_work=True,
             )
             session.add(eng_profile)
             print("  ✓ Created Engineer User: engineer@workmesh.ai / engineer123")
@@ -84,13 +84,13 @@ async def seed_demo_data():
             comp_profile = CompanyProfile(
                 id=uuid.uuid4(),
                 user_id=comp_user.id,
-                company_name="Acme AI Technologies",
+                name="Acme AI Technologies",
                 description="Leading enterprise AI solutions provider creating high-throughput automated workflow platform.",
                 website="https://acme-ai.example.com",
                 industry="Artificial Intelligence",
                 company_size="50-200",
                 location="New York, NY",
-                verification_status="VERIFIED",
+                is_verified=True,
             )
             session.add(comp_profile)
             print("  ✓ Created Company User: company@workmesh.ai / company123")
@@ -100,7 +100,7 @@ async def seed_demo_data():
         # 4. Demo Jobs
         job_count = await session.scalar(select(JobPost))
         if not job_count:
-            company = await session.scalar(select(CompanyProfile).where(CompanyProfile.company_name == "Acme AI Technologies"))
+            company = await session.scalar(select(CompanyProfile).where(CompanyProfile.name == "Acme AI Technologies"))
             demo_jobs = [
                 JobPost(
                     id=uuid.uuid4(),

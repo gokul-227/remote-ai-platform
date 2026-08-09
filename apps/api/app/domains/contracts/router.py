@@ -40,6 +40,7 @@ def _user_summary(user: User) -> UserPartySummary:
 
 
 async def _enrich_contract(contract: Contract, db: AsyncSession) -> ContractResponse:
+    await db.refresh(contract)
     client = await db.get(User, contract.client_id)
     worker = await db.get(User, contract.worker_id)
     milestones_res = await db.execute(

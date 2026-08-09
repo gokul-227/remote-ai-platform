@@ -2,12 +2,12 @@ import uuid
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 from jose import jwt
-from passlib.context import CryptContext
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.security import get_password_hash, verify_password, pwd_context
 from app.domains.auth.dependencies import get_current_user, get_auth_service
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
@@ -26,7 +26,6 @@ from app.domains.auth.schemas import (
 from app.domains.auth.service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
 def create_token(user: User, token_type: str, expires_delta: timedelta) -> str:

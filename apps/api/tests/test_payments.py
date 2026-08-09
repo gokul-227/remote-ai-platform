@@ -13,7 +13,7 @@ async def test_wallet_overview_and_escrow_workflow(client: AsyncClient, test_use
     test_user.role = UserRole.COMPANY
     await db.commit()
 
-    company = CompanyProfile(user_id=test_user.id, name="Payments Test Corp", slug="payments-corp")
+    company = CompanyProfile(user_id=test_user.id, name="Payments Test Corp")
     db.add(company)
     await db.flush()
 

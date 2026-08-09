@@ -45,7 +45,6 @@ async def test_submit_project_review(client: AsyncClient, test_user: User, auth_
     company = CompanyProfile(
         user_id=test_user.id,
         name="Trust Review Test Corp",
-        slug="trust-corp",
     )
     db.add(company)
     await db.flush()

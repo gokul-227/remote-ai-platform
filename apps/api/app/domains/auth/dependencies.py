@@ -48,6 +48,9 @@ async def get_current_user(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User account is inactive",
             )
+        # Ensure all server-default/onupdate columns are loaded within the async context
+        # to avoid MissingGreenlet during Pydantic serialization.
+        await repo.db.refresh(user)
         return user
     except HTTPException:
         raise

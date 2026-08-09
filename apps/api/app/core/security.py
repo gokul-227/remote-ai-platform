@@ -4,6 +4,21 @@ import secrets
 from pathlib import PurePosixPath
 from uuid import UUID
 
+from passlib.context import CryptContext
+
+
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
+
+def get_password_hash(password: str) -> str:
+    """Hash a plaintext password using the shared passlib context."""
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, password_hash: str) -> bool:
+    """Verify a plaintext password against its hash using the shared context."""
+    return pwd_context.verify(plain_password, password_hash)
+
 
 ALLOWED_RESUME_TYPES = {
     "application/pdf",

@@ -160,10 +160,19 @@ class TestGroupRouter:
 
         db.execute.side_effect = [group_result, mem_result]
         db.commit = AsyncMock()
-        db.refresh = AsyncMock()
 
         added = []
         db.add = lambda x: added.append(x)
+
+        # Mock refresh to populate server-generated fields
+        async def mock_refresh(obj):
+            if hasattr(obj, 'id') and obj.id is None:
+                obj.id = uuid.uuid4()
+            if hasattr(obj, 'joined_at') and obj.joined_at is None:
+                from datetime import datetime, timezone
+                obj.joined_at = datetime.now(timezone.utc)
+
+        db.refresh = mock_refresh
 
         from app.domains.groups.router import join_group
         result = await join_group(group_id=group.id, db=db, current_user=user)
@@ -188,10 +197,19 @@ class TestGroupRouter:
 
         db.execute.side_effect = [group_result, mem_result]
         db.commit = AsyncMock()
-        db.refresh = AsyncMock()
 
         added = []
         db.add = lambda x: added.append(x)
+
+        # Mock refresh to populate server-generated fields
+        async def mock_refresh(obj):
+            if hasattr(obj, 'id') and obj.id is None:
+                obj.id = uuid.uuid4()
+            if hasattr(obj, 'joined_at') and obj.joined_at is None:
+                from datetime import datetime, timezone
+                obj.joined_at = datetime.now(timezone.utc)
+
+        db.refresh = mock_refresh
 
         from app.domains.groups.router import join_group
         result = await join_group(group_id=group.id, db=db, current_user=user)

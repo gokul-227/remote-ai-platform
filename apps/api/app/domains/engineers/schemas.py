@@ -49,6 +49,9 @@ class EngineerProfileBase(BaseModel):
     previous_companies: List[str] = []
     employment_type: Optional[str] = None
     available_hours: Optional[int] = Field(None, ge=0, le=168)
+    hourly_rate: Optional[float] = Field(None, ge=0)
+    desired_salary_min: Optional[float] = Field(None, ge=0)
+    languages: List[str] = []
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
@@ -79,6 +82,9 @@ class EngineerProfileUpdate(BaseModel):
     previous_companies: Optional[List[str]] = None
     employment_type: Optional[str] = None
     available_hours: Optional[int] = Field(None, ge=0, le=168)
+    hourly_rate: Optional[float] = Field(None, ge=0)
+    desired_salary_min: Optional[float] = Field(None, ge=0)
+    languages: Optional[List[str]] = None
     github_url: Optional[str] = None
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
