@@ -49,9 +49,9 @@ class TrustService:
         profile = await db.scalar(select(EngineerProfile).where(EngineerProfile.user_id == user_id))
         completeness_pts = 0
         if profile:
-            completeness = profile.completeness_score or 0
+            completeness = profile.profile_score if profile.profile_score is not None else 0
             completeness_pts = round((completeness / 100) * 10, 1)
-            factors.append({"category": "Profile Completeness", "points": completeness_pts, "max": 10, "detail": f"{completeness}% complete profile"})
+            factors.append({"category": "Profile Completeness", "points": completeness_pts, "max": 10, "detail": f"{completeness:.1f}% complete profile"})
 
         verification_total = verif_score + completeness_pts
 

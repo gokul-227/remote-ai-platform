@@ -200,7 +200,7 @@ services:
       dockerfile: Dockerfile
     container_name: remote-ai-platform-web
     restart: unless-stopped
-    command: npm run dev
+    command: ["npm", "start"]
     volumes:
       - ../../apps/web:/app
       - /app/node_modules

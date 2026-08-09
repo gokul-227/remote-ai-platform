@@ -116,6 +116,21 @@ async def batch_evaluate(
     )
 
 
+@router.get("/dashboard")
+async def quality_dashboard(current_user: User = Depends(get_current_user)):
+    """Quality engine dashboard with status and capabilities."""
+    return {
+        "status": "operational",
+        "agent": "QualityEngineAgent",
+        "capabilities": ["submission_evaluation", "code_review", "batch_evaluation"],
+        "endpoints": {
+            "evaluate": "/api/v1/quality/evaluate",
+            "review_code": "/api/v1/quality/review-code",
+            "batch_evaluate": "/api/v1/quality/batch-evaluate",
+        },
+    }
+
+
 @router.get("/health")
 async def quality_engine_health():
     """Check if the AI quality engine is operational."""

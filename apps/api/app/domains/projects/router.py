@@ -180,7 +180,7 @@ async def create_project(
 
 
 @router.get("/task-offers")
-async def list_my_task_offers(current_user: User = Depends(require_role(UserRole.ENGINEER)), db: AsyncSession = Depends(get_db)):
+async def list_task_offers(current_user: User = Depends(require_role(UserRole.ENGINEER)), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(TaskAssignmentOffer, ProjectTask, Project)
         .join(ProjectTask, TaskAssignmentOffer.task_id == ProjectTask.id)
@@ -189,6 +189,73 @@ async def list_my_task_offers(current_user: User = Depends(require_role(UserRole
         .order_by(TaskAssignmentOffer.created_at.desc())
     )
     return [{"offer": offer, "task": task, "project": project} for offer, task, project in result.all()]
+
+
+@router.get("/my-offers")
+async def list_my_task_offers(
+    current_user: User = Depends(require_role(UserRole.ENGINEER)),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all task assignment offers received by the current engineer."""
+    result = await db.execute(
+        select(TaskAssignmentOffer, ProjectTask, Project)
+        .join(ProjectTask, TaskAssignmentOffer.task_id == ProjectTask.id)
+        .join(Project, ProjectTask.project_id == Project.id)
+        .where(TaskAssignmentOffer.candidate_user_id == current_user.id)
+        .order_by(TaskAssignmentOffer.created_at.desc())
+    )
+    items = []
+    for offer, task, project in result.all():
+        items.append({
+            "offer": offer,
+            "task": task,
+            "project_id": str(project.id),
+            "project_title": project.title,
+        })
+    return items
+
+
+@router.get("/my-tasks")
+async def list_my_assigned_tasks(
+    current_user: User = Depends(require_role(UserRole.ENGINEER)),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all tasks assigned to the current engineer across all projects."""
+    result = await db.execute(
+        select(ProjectTask, Project)
+        .join(Project, ProjectTask.project_id == Project.id)
+        .where(ProjectTask.assigned_user_id == current_user.id)
+        .order_by(ProjectTask.created_at.desc())
+    )
+    items = []
+    for task, project in result.all():
+        # Get latest submission if any
+        submission = await db.scalar(
+            select(WorkSubmission)
+            .where(WorkSubmission.task_id == task.id)
+            .order_by(WorkSubmission.version.desc())
+        )
+        items.append({
+            "task": task,
+            "project_id": str(project.id),
+            "project_title": project.title,
+            "latest_submission": submission,
+        })
+    return items
+
+
+@router.get("/reputation/{user_id}")
+async def get_reputation(user_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    reviews = (await db.execute(select(ProjectReview).where(ProjectReview.reviewee_id == user_id).order_by(ProjectReview.created_at.desc()))).scalars().all()
+    tasks = (await db.execute(select(ProjectTask).where(ProjectTask.assigned_user_id == user_id))).scalars().all()
+    completed = sum(task.status == "COMPLETED" for task in tasks)
+    average = round(sum(review.rating for review in reviews) / len(reviews), 2) if reviews else None
+    factors = []
+    if average is not None:
+        factors.append(f"Average rating {average}/5 from {len(reviews)} project review(s)")
+    if tasks:
+        factors.append(f"Completed {completed} of {len(tasks)} assigned task(s)")
+    return {"user_id": user_id, "average_rating": average, "rating_count": len(reviews), "trust_score": round(average * 20, 1) if average is not None else None, "completion_rate": round(completed / len(tasks) * 100, 1) if tasks else None, "factors": factors, "reviews": reviews}
 
 
 @router.get("/{project_id}")
@@ -300,20 +367,6 @@ async def list_project_payments(project_id: uuid.UUID, current_user: User = Depe
     project = await require_project_access(project_id, current_user, db)
     payments = (await db.execute(select(PaymentTransaction).where(PaymentTransaction.project_id == project.id).order_by(PaymentTransaction.created_at.desc()))).scalars().all()
     return payments
-
-
-@router.get("/reputation/{user_id}")
-async def get_reputation(user_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    reviews = (await db.execute(select(ProjectReview).where(ProjectReview.reviewee_id == user_id).order_by(ProjectReview.created_at.desc()))).scalars().all()
-    tasks = (await db.execute(select(ProjectTask).where(ProjectTask.assigned_user_id == user_id))).scalars().all()
-    completed = sum(task.status == "COMPLETED" for task in tasks)
-    average = round(sum(review.rating for review in reviews) / len(reviews), 2) if reviews else None
-    factors = []
-    if average is not None:
-        factors.append(f"Average rating {average}/5 from {len(reviews)} project review(s)")
-    if tasks:
-        factors.append(f"Completed {completed} of {len(tasks)} assigned task(s)")
-    return {"user_id": user_id, "average_rating": average, "rating_count": len(reviews), "trust_score": round(average * 20, 1) if average is not None else None, "completion_rate": round(completed / len(tasks) * 100, 1) if tasks else None, "factors": factors, "reviews": reviews}
 
 
 @router.post("/{project_id}/reviews", status_code=status.HTTP_201_CREATED)
@@ -467,59 +520,6 @@ async def respond_to_task_offer(offer_id: uuid.UUID, data: TaskOfferResponse, cu
         await record_activity(db, project.id, current_user.id, "TASK_OFFER_DECLINED", {"task_id": str(task.id), "offer_id": str(offer.id)})
     await db.flush()
     return offer
-
-
-@router.get("/my-offers")
-async def list_my_task_offers(
-    current_user: User = Depends(require_role(UserRole.ENGINEER)),
-    db: AsyncSession = Depends(get_db),
-):
-    """List all task assignment offers received by the current engineer."""
-    result = await db.execute(
-        select(TaskAssignmentOffer, ProjectTask, Project)
-        .join(ProjectTask, TaskAssignmentOffer.task_id == ProjectTask.id)
-        .join(Project, ProjectTask.project_id == Project.id)
-        .where(TaskAssignmentOffer.candidate_user_id == current_user.id)
-        .order_by(TaskAssignmentOffer.created_at.desc())
-    )
-    items = []
-    for offer, task, project in result.all():
-        items.append({
-            "offer": offer,
-            "task": task,
-            "project_id": str(project.id),
-            "project_title": project.title,
-        })
-    return items
-
-
-@router.get("/my-tasks")
-async def list_my_assigned_tasks(
-    current_user: User = Depends(require_role(UserRole.ENGINEER)),
-    db: AsyncSession = Depends(get_db),
-):
-    """List all tasks assigned to the current engineer across all projects."""
-    result = await db.execute(
-        select(ProjectTask, Project)
-        .join(Project, ProjectTask.project_id == Project.id)
-        .where(ProjectTask.assigned_user_id == current_user.id)
-        .order_by(ProjectTask.created_at.desc())
-    )
-    items = []
-    for task, project in result.all():
-        # Get latest submission if any
-        submission = await db.scalar(
-            select(WorkSubmission)
-            .where(WorkSubmission.task_id == task.id)
-            .order_by(WorkSubmission.version.desc())
-        )
-        items.append({
-            "task": task,
-            "project_id": str(project.id),
-            "project_title": project.title,
-            "latest_submission": submission,
-        })
-    return items
 
 
 @router.patch("/task-offers/{offer_id}/cancel")

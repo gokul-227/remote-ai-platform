@@ -36,6 +36,20 @@ async def get_admin_service(db: AsyncSession = Depends(get_db)) -> AdminService:
     return AdminService(db)
 
 
+@router.get("/dashboard")
+async def get_admin_dashboard(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    service: AdminService = Depends(get_admin_service),
+):
+    """Combined admin dashboard with stats, health, and recent activity."""
+    stats = await service.get_platform_stats()
+    return {
+        "stats": stats,
+        "status": "operational",
+        "message": "Admin dashboard operational",
+    }
+
+
 @router.get("/stats", response_model=PlatformStatsResponse)
 async def get_platform_stats(
     current_user: User = Depends(require_role(UserRole.ADMIN)),

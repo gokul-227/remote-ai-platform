@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         environment=settings.APP_ENV,
     )
 
-    # Startup: verify DB connectivity
+    # Startup: verify DB connectivity, run migrations, seed data
     try:
         async with engine.begin() as conn:
             await conn.run_sync(lambda c: c.execute(
@@ -64,6 +64,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error("Database connection failed", error=str(e))
         raise
+
+    # Auto-run alembic migrations on startup (safe: idempotent)
+    try:
+        import subprocess, sys as _sys
+        result = subprocess.run(
+            [_sys.executable, "-m", "alembic", "upgrade", "head"],
+            capture_output=True, text=True, timeout=120,
+        )
+        if result.returncode == 0:
+            logger.info("Alembic migrations applied", output=result.stdout.strip().split("\n")[-1])
+        else:
+            logger.warning("Alembic migration warning", stderr=result.stderr.strip())
+    except Exception as e:
+        logger.warning("Alembic migration skipped", error=str(e))
+
+    # Auto-seed demo data on first startup
+    try:
+        from app.scripts.seed_data import seed_demo_data
+        await seed_demo_data()
+    except Exception as e:
+        logger.warning("Seed data skipped", error=str(e))
 
     yield
 
