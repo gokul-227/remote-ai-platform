@@ -27,7 +27,8 @@ async def get_current_user(
 ) -> User:
     """
     Validates bearer token and returns authenticated DB user.
-    In development mode without valid token, creates/returns a dev mock user if DEBUG=True.
+    Raises 401 unconditionally if the token is missing or invalid — there is no
+    DEBUG-mode fallback/mock user, regardless of settings.DEBUG.
     """
     repo = UserRepository(db)
     service = AuthService(repo)

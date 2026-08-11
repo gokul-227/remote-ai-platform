@@ -65,12 +65,41 @@ class MatchingService:
         else:
             role_score = 60.0
 
-        timezone_score = 100.0 if not job.remote_preference or not engineer.timezone else 80.0
+        # 4. Timezone Score (0-100): compares the job's stated timezone/region
+        # constraint against the engineer's timezone, both free-text fields.
+        job_tz_pref = (job.remote_preference or "").lower()
+        eng_tz = (engineer.timezone or "").lower()
+        if not job_tz_pref:
+            timezone_score = 100.0  # job has no timezone constraint
+        elif not eng_tz:
+            timezone_score = 60.0  # constraint exists but engineer's timezone is unknown
+        elif eng_tz in job_tz_pref or job_tz_pref in eng_tz:
+            timezone_score = 100.0
+        else:
+            timezone_score = 50.0
+
         availability_score = 100.0 if engineer.is_open_to_work else 40.0
         compensation_score = 100.0
         if job.budget_max and engineer.hourly_rate and job.budget_max < engineer.hourly_rate:
             compensation_score = 60.0
-        remote_score = 100.0 if job.is_remote and (engineer.remote_preference or "").lower() else 80.0
+
+        # 5. Remote Score (0-100): compares job remote status against the
+        # engineer's actual remote-work preference, not just its presence.
+        eng_remote_pref = (engineer.remote_preference or "").lower()
+        if job.is_remote:
+            if not eng_remote_pref or "remote" in eng_remote_pref:
+                remote_score = 100.0
+            elif "hybrid" in eng_remote_pref:
+                remote_score = 70.0
+            else:
+                remote_score = 50.0
+        else:
+            if "onsite" in eng_remote_pref or "on-site" in eng_remote_pref or "in-office" in eng_remote_pref:
+                remote_score = 100.0
+            elif "hybrid" in eng_remote_pref:
+                remote_score = 70.0
+            else:
+                remote_score = 40.0
 
         # Weighted Overall Score
         overall_score = round(

@@ -1,5 +1,12 @@
 """
-Auth Service — Keycloak OIDC integration, token validation, user sync.
+Auth Service — self-issued JWT validation and Keycloak user sync.
+
+NOTE: verify_token() validates tokens this app issues itself (signed with the
+app's local JWT_SECRET_KEY, HS256), not tokens signed by a Keycloak realm's own
+RS256 key. There is no JWKS fetch or RS256 verification anywhere in this file —
+a real Keycloak-issued token would fail here. Keycloak is used for identity
+provisioning/sync (see get_or_create_user_from_token, sync_keycloak_user), not
+for cryptographic token verification.
 """
 
 from typing import Optional, Dict, Any
@@ -22,8 +29,9 @@ class AuthService:
 
     async def verify_token(self, token: str) -> TokenPayload:
         """
-        Verify incoming Keycloak / JWT bearer token.
-        In dev mode or if Keycloak fails, decodes token or creates fallback payload.
+        Decode and validate a bearer token issued by this app's own /auth/login
+        or /auth/register endpoints (HS256, signed with JWT_SECRET_KEY). Does
+        NOT verify Keycloak-signed tokens — no JWKS/RS256 check is performed.
         """
         try:
             claims = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])

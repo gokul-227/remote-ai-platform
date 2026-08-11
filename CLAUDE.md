@@ -50,7 +50,12 @@ ruff check .                                                # lint
 mypy app                                                    # type check
 ```
 There is no seed script at `scripts/seed_demo_jobs.py` or `apps/api/scripts/seed.py` despite references
-in README/package.json — both are missing from the repo. To seed demo jobs, call the running API instead:
+in README/package.json — both are missing from the repo. Demo data seeding lives instead at
+`apps/api/app/scripts/seed_data.py` (users, engineer/company profiles, jobs, projects, groups):
+```bash
+python -m app.scripts.seed_data      # from apps/api, with venv active
+```
+Alternatively, seed demo jobs only by calling the running API:
 ```bash
 curl -X POST "http://localhost:8000/api/v1/jobs/seed_demo"
 ```
@@ -63,9 +68,9 @@ celery -A app.workers.celery_app flower
 ```
 
 **Python version caveat**: `pyproject.toml` requires `>=3.11` and the Dockerfile uses `python:3.11-slim`,
-but the committed `apps/api/.venv` and `.venv_local` are Python 3.14 and currently fail to import
-`pydantic_core` (binary wheel mismatch). Prefer running the backend/tests via `docker compose` or a
-freshly created 3.11 venv rather than the committed ones.
+but the committed venvs don't match: `apps/api/.venv_local` is Python 3.14 and `apps/api/.venv` is Python
+3.12 — neither is 3.11, and the 3.14 one fails to import `pydantic_core` (binary wheel mismatch). Prefer
+running the backend/tests via `docker compose` or a freshly created 3.11 venv rather than the committed ones.
 
 ### Frontend (apps/web)
 ```bash
@@ -90,8 +95,8 @@ npm run test
 
 ### Backend: domain-driven modular monolith
 
-`apps/api/app/domains/` holds one subpackage per bounded context. The five mature domains (`auth`,
-`engineers`, `companies`, `jobs`, `matching`) follow a consistent layered pattern:
+`apps/api/app/domains/` holds one subpackage per bounded context (21 total). The mature domains (`auth`,
+`engineers`, `companies`, `jobs`, `matching`, `admin`, `trust`) follow a consistent layered pattern:
 
 ```
 domains/<name>/
@@ -102,13 +107,14 @@ domains/<name>/
   router.py       # FastAPI APIRouter; endpoints get the service via a get_X_service dependency
 ```
 
-Newer/thinner domains (`saved_jobs`, `applications`, `projects`, `notifications`, `network`,
-`marketplace`, `search`, `admin`) may only have `models.py` + `router.py` so far, or vary in how much
-of the layering is filled in — check each domain's actual files rather than assuming full layering.
+Newer/thinner domains (`saved_jobs`, `applications`, `projects`, `notifications`, `network`, `search`,
+`social`, `contracts`, `payments`, `groups`, `quality`) may only have `models.py` + `router.py` so far, or
+vary in how much of the layering is filled in; `marketplace` has only `models.py` and isn't wired into
+`main.py` at all. Check each domain's actual files rather than assuming full layering.
 
 All domain routers are registered in `apps/api/app/main.py` under `create_app()`, mounted with a shared
 `prefix = "/api/v1"`. When adding a new domain or endpoint, wire the router into `main.py` the same way
-the existing 12 routers are.
+the existing 20 routers are.
 
 `app/core/` holds cross-cutting concerns, not a domain itself:
 - `config.py` — single `Settings(BaseSettings)`, cached via `get_settings()`, exported as `settings`
@@ -117,8 +123,9 @@ the existing 12 routers are.
   `ForbiddenException`, `ConflictException`) + `register_exception_handlers(app)`
 - `storage.py` — MinIO client helpers (`get_minio_client`, `ensure_bucket_exists`,
   `generate_presigned_url`, `StorageService`)
-- `middleware.py` — `RequestIDMiddleware` (structlog request-id binding) and `RateLimitMiddleware`
-  (currently a passthrough stub, not yet implemented)
+- `middleware.py` — `RequestIDMiddleware` (structlog request-id binding) and `RateLimitMiddleware` (an
+  in-process sliding-window limiter guarding login/register/resume endpoints, 429 on limit; a shared
+  Redis-backed limiter is the stated production-scale follow-up)
 - `health.py`, `logging.py`, `schemas.py` (shared response envelopes)
 
 ### AI layer: provider-agnostic via LiteLLM
@@ -169,7 +176,16 @@ Styling is a hand-rolled Tailwind v4 "enterprise" design system in `globals.css`
 
 ## Documentation caveats
 
-`docs/current-status.md` and `docs/architecture/ARCHITECTURE.md` are stale relative to the actual code
-in multiple places (e.g. they describe Celery tasks as empty stubs, certain domain files as empty, and
-specific bugs that have already been fixed). Treat anything in `docs/` describing "current" implementation
-status as a hint to verify, not a source of truth — check the actual source before relying on it.
+`docs/CURRENT_STATE.md` and `docs/architecture.md` are stale relative to the actual code in multiple
+places — e.g. `CURRENT_STATE.md` still describes `RateLimitMiddleware` as an unimplemented passthrough
+stub, which is no longer true (see above), and both files describe some domain files as empty or
+Celery tasks as stubs when real implementations now exist. Treat anything in `docs/` describing "current"
+implementation status as a hint to verify, not a source of truth — check the actual source before relying
+on it.
+
+## Screenshot verification tooling
+
+`screenshot-pages/` (repo root, not yet committed) holds a Playwright-based screenshot capture tool
+(`tools/capture-screenshots.js`) that renders desktop/mobile viewports of app pages for manual visual
+verification — added alongside a "production-grade local deployment verification" pass. Not a test
+framework substitute; treat it as a manual QA aid, not something wired into CI.

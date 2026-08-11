@@ -6,21 +6,20 @@ import {
   Users,
   Briefcase,
   Sparkles,
-  Star,
   PlusCircle,
-  Bookmark,
+  FileText,
   Search,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useJobs } from "@/hooks/useJobs";
 import { useProjects } from "@/hooks/useProjects";
+import { useCompanyApplications } from "@/hooks/useApplications";
 import { RequireRole } from "@/components/RequireRole";
 
 interface EngineerMatch {
   id: string;
   headline?: string;
   skills?: string[];
-  match_score?: number;
   user?: { full_name: string; email: string };
 }
 
@@ -28,6 +27,7 @@ function CompanyDashboardPage() {
   const engineersQuery = useQuery<EngineerMatch[]>({ queryKey: ["engineers", { limit: 4 }], queryFn: async () => (await api.get("/engineers", { params: { limit: 4 } })).data });
   const jobsQuery = useJobs({ limit: 20 });
   const projectsQuery = useProjects();
+  const applicationsQuery = useCompanyApplications();
   const engineers = engineersQuery.data || [];
   const jobs = jobsQuery.data || [];
   const loadingEngineers = engineersQuery.isLoading;
@@ -56,7 +56,7 @@ function CompanyDashboardPage() {
           { label: "Active Positions", value: jobs.length, icon: Briefcase, color: "text-[#0A66C2]" },
           { label: "Candidates in Directory", value: engineers.length, icon: Users, color: "text-indigo-600" },
           { label: "Projects", value: projectsQuery.data?.length ?? 0, icon: Sparkles, color: "text-amber-600" },
-          { label: "Skill Matches", value: "—", icon: Bookmark, color: "text-emerald-600" },
+          { label: "Applications Received", value: applicationsQuery.data?.length ?? 0, icon: FileText, color: "text-emerald-600" },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -110,13 +110,12 @@ function CompanyDashboardPage() {
                 <p className="text-xs text-slate-500">Engineers who register will appear here as candidates.</p>
               </div>
             ) : (
+              <>
               <div className="space-y-3">
                 {engineers.map((eng) => {
-                  const matchScore = eng.match_score;
-                  const matchClass = matchScore == null ? "pill-match-low" : matchScore >= 85 ? "pill-match-high" : "pill-match-low";
                   const name = eng.user?.full_name || "Engineer profile";
                   return (
-                    <div key={eng.id} className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors">
+                    <Link key={eng.id} href={`/engineers/${eng.id}`} className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-[#0A66C2] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                           {name.charAt(0).toUpperCase()}
@@ -129,14 +128,16 @@ function CompanyDashboardPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`pill-match ${matchClass}`}>{matchScore == null ? "—" : `${matchScore}%`}</span>
-                        <button className="p-1 text-slate-400 hover:text-amber-500"><Star className="h-4 w-4" /></button>
-                      </div>
-                    </div>
+                      <span className="text-xs font-semibold text-[#0A66C2] flex-shrink-0">View profile</span>
+                    </Link>
                   );
                 })}
               </div>
+              <p className="text-xs text-slate-400">
+                For AI-ranked match scores against a specific role, use{" "}
+                <Link href="/company/candidates" className="text-[#0A66C2] hover:underline">Candidate Discovery</Link>.
+              </p>
+              </>
             )}
           </div>
         </div>
