@@ -77,3 +77,7 @@ apps/api/tmp/
 scripts/demo_jobs.json
 scripts/seed_demo_jobs.py
 apps/web/.vercel/
+
+# Playwright E2E
+tests/e2e/test-results/
+tests/e2e/playwright-report/

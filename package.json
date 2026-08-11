@@ -5,7 +5,8 @@
   "packageManager": "npm@10.8.0",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tests/*"
   ],
   "scripts": {
     "dev": "turbo dev",

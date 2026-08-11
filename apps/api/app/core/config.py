@@ -139,6 +139,8 @@ class Settings(BaseSettings):
             errors.append("KEYCLOAK_CLIENT_SECRET must be configured")
         if self.MINIO_SECRET_KEY in {"minioadmin", "minioadmin_dev_password", ""}:
             errors.append("MINIO_SECRET_KEY must be configured")
+        if "*" in self.CORS_ORIGINS:
+            errors.append("CORS_ORIGINS must not contain a wildcard in production (combined with allow_credentials=True, this permits credentialed cross-origin requests from any site)")
         if errors:
             raise RuntimeError("Invalid production configuration: " + "; ".join(errors))
 

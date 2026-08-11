@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
+from app.domains.companies.models import CompanyProfile
 from app.domains.marketplace.models import ProjectTask
 from app.domains.projects.models import PaymentTransaction, Project, ProjectMember
 from app.domains.payments.schemas import (
@@ -126,6 +127,11 @@ async def create_escrow_payment(
     project = await db.get(Project, data.project_id)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+    if current_user.role != UserRole.ADMIN:
+        company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+        if not company or company.id != project.company_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project access required")
 
     payee = await db.get(User, data.payee_id)
     if not payee:

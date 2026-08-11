@@ -82,6 +82,62 @@ and assumed correct:
    confirmed to pass: 93/93 backend tests, clean frontend lint/typecheck/build, and clean migrations from
    an empty database.
 
+## Security audit results (2026-08-11) — Phase 9
+
+Full audit of CORS, IDOR, file upload, SSRF, SQLi, XSS, WebSocket auth, debug-mode leakage, password
+handling, and admin endpoint gating, verified by reading code and hitting the live stack. Findings from
+the earlier auth/rate-limit pass (Keycloak RS256, rate-limit path coverage, no committed secrets) are not
+repeated here.
+
+**Fixed, and the exact cross-tenant reproduction re-run to confirm the fix:**
+
+1. **CRITICAL — broken access control on `POST /payments/escrow`** (`apps/api/app/domains/payments/router.py`).
+   The endpoint checked that `project_id` and `payee_id` existed but never checked the caller's company
+   actually owned the project — any authenticated company could create escrow transactions against *any*
+   project in the system. Reproduced live: Company B created a `201` escrow transaction against Company
+   A's project before the fix. Fixed by adding the same ownership check `projects/router.py` already uses
+   elsewhere. Re-verified live after the fix: the identical request now returns `403 {"detail":"Project
+   access required"}`; the legitimate same-owner case still returns `201`.
+2. **HIGH — same missing-ownership-check pattern on `POST /contracts`** (`apps/api/app/domains/contracts/router.py`).
+   `project_id` was accepted and attached to a new contract without validating it belonged to the caller's
+   company — not even a `db.get()` existence check. Reproduced live pre-fix (`201` for a cross-tenant
+   contract), fixed with the same ownership check, re-verified live post-fix (`403`).
+3. **LOW — registration password minimum was 6 characters** (`apps/api/app/domains/auth/schemas.py`),
+   inconsistent with the frontend's own zod validation which already required 8. Raised backend minimum to
+   8 to match.
+4. **LOW — no production-boot guard against a CORS wildcard** (`apps/api/app/core/config.py`). Current
+   `CORS_ORIGINS` default is a safe explicit allowlist, not a wildcard — this was not exploitable today,
+   but unlike `JWT_SECRET_KEY`/`KEYCLOAK_CLIENT_SECRET`/`MINIO_SECRET_KEY`, there was no check rejecting a
+   future `CORS_ORIGINS=*` misconfiguration at boot in production (which, combined with the existing
+   `allow_credentials=True`, would be a real credentialed-wildcard CORS hole). Added the same fail-fast
+   check pattern.
+
+All four fixes re-verified against the full 93-test backend suite (still 93/93 passing) after rebuilding
+the Docker images — not just diffed and assumed correct.
+
+**Confirmed clean, no action needed**: WebSocket auth on `/messages/ws/{conversation_id}` genuinely checks
+conversation membership, not just login status. IDOR checks on `applications`, `network`, `saved_jobs`,
+and `groups` routers are consistently correct — `projects/router.py`'s ownership-check pattern is in fact
+the *correct* reference implementation; findings #1 and #2 above were sibling endpoints in other domains
+that didn't reuse it. File upload validates by magic bytes (not just extension), enforces a server-side
+size cap, and randomizes stored object names — real protections, not test-mocked theater. No SSRF surface
+(no endpoint fetches a user-supplied URL). No raw SQL string interpolation anywhere. No
+`dangerouslySetInnerHTML`/`innerHTML` in the frontend. The generic exception handler never leaks stack
+traces regardless of `DEBUG`. All `/admin/*` and `/moderation/*` endpoints live-verified to return 403 for
+a non-admin token.
+
+## E2E test suite (Playwright) — Phase 10
+
+Added `tests/e2e/` (a new npm workspace, using the `playwright`/`@playwright/test` dependency that was
+already present in the root `package.json` but never wired up). Five real journeys, all run against the
+live Docker Compose stack (not mocked): engineer register→browse→search→open job→save→apply; engineer
+recommendations render real backend-driven data; company register→create profile→post a job→reach
+candidate discovery; admin login→dashboard with real stats; and an authorization-boundary check
+(non-admin token hitting `/admin/stats` gets 403). All 5 pass. Wired into `.github/workflows/ci.yml` as a
+new `e2e` job that boots the real stack, seeds demo data, and runs the suite — this is the CI job most
+likely to catch a regression that unit tests miss, since it exercises actual HTTP round-trips through the
+real frontend.
+
 ## Known debt intentionally left unfixed (out of scope for this pass)
 
 1. **962 pre-existing `ruff check` violations** in `apps/api`. Far too large to fix blindly in one pass
