@@ -81,3 +81,9 @@ apps/web/.vercel/
 # Playwright E2E
 tests/e2e/test-results/
 tests/e2e/playwright-report/
+
+# Local visual QA screenshots (regenerate with node screenshot-pages/tools/capture-screenshots.js)
+screenshot-pages/desktop/
+screenshot-pages/mobile/
+screenshot-pages/manifest.json
+screenshot-pages/README.md

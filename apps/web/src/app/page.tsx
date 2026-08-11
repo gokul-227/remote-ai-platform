@@ -34,7 +34,17 @@ export default function Home() {
         </div>
       </section>
       <section className="grid gap-4 md:grid-cols-3">
-        {["Search with useful filters", "Review evidence, not hype", "Keep hiring work organized"].map((title, index) => <div key={title} className="card-enterprise p-5"><div className="text-xs font-bold text-[#0A66C2]">0{index + 1}</div><h2 className="mt-3 font-semibold text-slate-900">{title}</h2><p className="mt-2 text-sm leading-6 text-slate-600">Remote AI Platform keeps the next step clear for professionals, companies, and platform administrators.</p></div>)}
+        {[
+          { title: "Search with useful filters", body: "Filter live roles from five aggregated job boards by skill, salary, remote region, and experience level — not just a keyword box." },
+          { title: "Review evidence, not hype", body: "Every match ships with a 6-factor score breakdown and an explanation of which skills matched and which are missing, not a single unexplained number." },
+          { title: "Keep hiring work organized", body: "Post a role, see AI-ranked candidates against it, and track applications through one pipeline instead of spreadsheets and email threads." },
+        ].map(({ title, body }, index) => (
+          <div key={title} className="card-enterprise p-5">
+            <div className="text-xs font-bold text-[#0A66C2]">0{index + 1}</div>
+            <h2 className="mt-3 font-semibold text-slate-900">{title}</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
+          </div>
+        ))}
       </section>
     </div>
   );

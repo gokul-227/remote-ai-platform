@@ -138,6 +138,33 @@ new `e2e` job that boots the real stack, seeds demo data, and runs the suite —
 likely to catch a regression that unit tests miss, since it exercises actual HTTP round-trips through the
 real frontend.
 
+## UI polish pass (2026-08-11) — Phase 8
+
+Reviewed all 27 screens visually (desktop + mobile, using the screenshot tool already present at
+`screenshot-pages/tools/capture-screenshots.js` but not previously run against a working build). The
+overall visual quality is genuinely good — consistent "enterprise" design system, clean cards, real
+loading/empty states throughout, no placeholder-text-left-in-production epidemic. Two concrete issues
+found and fixed:
+
+1. **`/network` page used a completely different, hand-rolled dark theme** (`#080e1c` background, purple
+   gradients, all inline styles) while every other screen in the app uses the consistent light
+   "enterprise" system (`card-enterprise`, `btn-primary-brand`, `badge-ent-*`). This was jarring —
+   navigating from any other page to Network felt like landing on a different product. Rewrote the page
+   using the same Tailwind utility classes as the rest of the app, preserving all functionality (tabs,
+   stats, send-request panel, accept/decline, search, empty/loading states) and DOM `id`s. Verified with
+   `tsc --noEmit`, `eslint`, and a rebuilt container + re-screenshotted comparison.
+2. **Homepage's three feature cards had identical placeholder body copy** — "Remote AI Platform keeps the
+   next step clear for professionals, companies, and platform administrators," repeated verbatim under
+   all three distinct headings ("Search with useful filters," "Review evidence, not hype," "Keep hiring
+   work organized"). Replaced with real, distinct copy describing what the platform actually does for
+   each of those three claims.
+
+**Lower-priority, logged but not fixed**: the mobile layout for `/jobs` (and other pages with a persistent
+left sidebar of career/hiring navigation links) puts that full navigation list above the actual page
+content in DOM order, so a mobile visitor scrolls past ~20 nav links before reaching jobs. Not broken —
+everything is reachable and functional — but a real ordering/UX improvement for a future pass (would need
+a responsive reorder, e.g. moving the sidebar into a collapsible drawer on small viewports).
+
 ## Known debt intentionally left unfixed (out of scope for this pass)
 
 1. **962 pre-existing `ruff check` violations** in `apps/api`. Far too large to fix blindly in one pass
