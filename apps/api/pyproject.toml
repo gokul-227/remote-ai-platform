@@ -39,7 +39,7 @@ dependencies = [
     "flower==2.0.1",
 
     # Object storage
-    "minio==7.2.11",
+    "boto3==1.35.75",
 
     # AI (litellm pulls in openai + aiohttp transitively)
     "litellm==1.55.2",

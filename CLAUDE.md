@@ -121,8 +121,10 @@ the existing 20 routers are.
 - `database.py` — async engine, `Base`, `AsyncSessionFactory`, `get_db()` FastAPI dependency
 - `exceptions.py` — `PlatformException` hierarchy (`NotFoundException`, `UnauthorizedException`,
   `ForbiddenException`, `ConflictException`) + `register_exception_handlers(app)`
-- `storage.py` — MinIO client helpers (`get_minio_client`, `ensure_bucket_exists`,
-  `generate_presigned_url`, `StorageService`)
+- `storage.py` — boto3-based S3-compatible storage helpers (`get_s3_client`, `ensure_bucket_exists`,
+  `generate_presigned_url`, `StorageService`). Uses boto3 rather than the minio SDK specifically because
+  boto3 supports S3 endpoints with a path component (needed for Supabase Storage in production — see
+  `docs/DEPLOYMENT_ZERO_COST.md`); works against local MinIO in dev the same way.
 - `middleware.py` — `RequestIDMiddleware` (structlog request-id binding) and `RateLimitMiddleware` (an
   in-process sliding-window limiter guarding login/register/resume endpoints, 429 on limit; a shared
   Redis-backed limiter is the stated production-scale follow-up)

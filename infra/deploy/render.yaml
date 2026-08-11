@@ -1,0 +1,58 @@
+# Render Blueprint for the FastAPI backend — $0/month deploy.
+#
+# Deploys apps/api's `production` Docker target as a single free web service.
+# No worker/beat/Redis service is defined here on purpose: Celery needs a
+# broker, and a paid/hosted Redis is exactly the kind of always-on cost this
+# deployment avoids. Instead:
+#   - the in-process RateLimitMiddleware and network chat's local-broadcast
+#     fallback both already work with zero Redis (see docs/ACTUAL_SYSTEM_AUDIT.md)
+#   - scheduled job-source sync runs via .github/workflows/scheduled-job-sync.yml
+#     (a GitHub Actions cron hitting POST /api/v1/jobs/sync) instead of Celery beat
+#
+# Render's free web service tier spins down after ~15 min idle and cold-starts
+# on the next request (10-60s). That's the tradeoff for $0 — see
+# docs/DEPLOYMENT_ZERO_COST.md for what this means in practice.
+#
+# Database is intentionally NOT defined here — use a Supabase free Postgres
+# project instead (Render's free Postgres is temporary/expires; see
+# docs/DEPLOYMENT_ZERO_COST.md). Set DATABASE_URL manually in the Render
+# dashboard once the Supabase project exists.
+
+# Note: apps/api/Dockerfile's stages are intentionally ordered so `production`
+# is the LAST stage — Render's Docker runtime has no target-selection field
+# (confirmed against Render's own docs/community forum), so it always builds
+# whatever stage is last when no --target is given.
+
+services:
+  - type: web
+    name: remote-ai-platform-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    region: oregon
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: PORT
+        value: "8000"
+      - key: WEB_CONCURRENCY
+        value: "1" # free tier has 512MB RAM; keep uvicorn to a single worker
+      # Set these manually in the Render dashboard (secrets, not committed):
+      #   DATABASE_URL        — Supabase connection string, asyncpg driver:
+      #                         postgresql+asyncpg://postgres:<password>@<host>:5432/postgres
+      #   JWT_SECRET_KEY      — high-entropy 32+ char secret (openssl rand -hex 32)
+      #   CORS_ORIGINS        — https://<your-vercel-app>.vercel.app
+      #   MINIO_ENDPOINT      — Supabase Storage S3-compatible endpoint (verify format — see deployment doc)
+      #   MINIO_ACCESS_KEY    — Supabase Storage S3 access key
+      #   MINIO_SECRET_KEY    — Supabase Storage S3 secret key
+      #   MINIO_BUCKET_RESUMES, MINIO_BUCKET_ASSETS — bucket names created in Supabase Storage
+      #   MINIO_SECURE        — "true"
+      #   AI_PROVIDER         — "groq" (free tier) or leave unset for deterministic-only fallback
+      #   AI_API_KEY          — free Groq API key, if using AI features
+      #   ADMIN_SYNC_EMAIL / ADMIN_SYNC_PASSWORD — used only by the GitHub Actions
+      #                         sync workflow to log in and call POST /jobs/sync;
+      #                         store the matching secrets in GitHub, not here.

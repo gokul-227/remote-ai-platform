@@ -37,7 +37,22 @@ EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
+# ─── Test ──────────────────────────────────────────────────────────────────────
+FROM deps AS test
+
+COPY . .
+
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
+
+CMD ["python", "-m", "pytest", "-v"]
+
 # ─── Production ───────────────────────────────────────────────────────────────
+# Intentionally the LAST stage in this file: platforms that build a
+# multi-stage Dockerfile without an explicit --target (e.g. Render's
+# render.yaml, which has no target-selection field) build whichever stage
+# is defined last. docker-compose.yml still targets each stage by name
+# explicitly, so local dev/test are unaffected by this ordering.
 FROM base AS production-deps
 
 COPY pyproject.toml ./
@@ -55,13 +70,3 @@ USER appuser
 EXPOSE 8000
 
 CMD ["sh", "start-production.sh"]
-
-# ─── Test ──────────────────────────────────────────────────────────────────────
-FROM deps AS test
-
-COPY . .
-
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
-
-CMD ["python", "-m", "pytest", "-v"]

@@ -1,0 +1,40 @@
+name: Scheduled job source sync (production)
+
+# Replaces Celery beat's job-source sync cron for the $0 deployment, which
+# intentionally has no hosted Redis/worker (see infra/deploy/render.yaml and
+# docs/DEPLOYMENT_ZERO_COST.md). Logs in as the seeded admin account and hits
+# the same POST /jobs/sync endpoint Celery beat calls locally every 6h.
+#
+# Requires two repository secrets (set in GitHub → Settings → Secrets →
+# Actions), matching whatever admin account exists on the deployed API:
+#   PROD_ADMIN_EMAIL
+#   PROD_ADMIN_PASSWORD
+# and one repository variable (Settings → Secrets → Actions → Variables):
+#   PROD_API_URL   e.g. https://remote-ai-platform-api.onrender.com/api/v1
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in and trigger job sync
+        run: |
+          set -euo pipefail
+          API_URL="${{ vars.PROD_API_URL }}"
+          if [ -z "$API_URL" ]; then
+            echo "PROD_API_URL repository variable is not set — skipping (deployment not configured yet)."
+            exit 0
+          fi
+
+          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"${{ secrets.PROD_ADMIN_EMAIL }}\",\"password\":\"${{ secrets.PROD_ADMIN_PASSWORD }}\"}" \
+            | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
+
+          curl -sf -X POST "$API_URL/jobs/sync" \
+            -H "Authorization: Bearer $TOKEN" \
+            -w "\nHTTP %{http_code}\n"
