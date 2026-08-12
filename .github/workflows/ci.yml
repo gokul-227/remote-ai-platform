@@ -41,9 +41,6 @@ jobs:
   frontend:
     name: Frontend (lint, typecheck, build)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
 
@@ -51,18 +48,26 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: package-lock.json
 
+      # npm ci must run from the repo root — this is an npm workspaces
+      # monorepo, the lockfile lives at the root, not in apps/web. Running
+      # it from apps/web fails with "npm ci can only install with an
+      # existing package-lock.json" (confirmed live against Vercel's build,
+      # same underlying cause — see docs/ACTUAL_SYSTEM_AUDIT.md).
       - name: Install dependencies
         run: npm ci
 
       - name: Lint
+        working-directory: apps/web
         run: npm run lint
 
       - name: Type check
+        working-directory: apps/web
         run: npx tsc --noEmit
 
       - name: Build
+        working-directory: apps/web
         run: npm run build
 
   e2e:
