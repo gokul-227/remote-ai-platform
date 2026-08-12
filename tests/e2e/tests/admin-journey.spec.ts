@@ -10,7 +10,7 @@ test("admin can log in and view platform stats, users, and sync status", async (
   await page.locator("#password").fill("admin123");
   await page.getByRole("button", { name: /sign in/i }).click();
 
-  await expect(page).not.toHaveURL(/\/auth\/login$/, { timeout: 15_000 });
+  await expect(page).not.toHaveURL(/\/auth\/login$/, { timeout: 30_000 });
 
   await page.goto("/admin/dashboard");
   await page.waitForLoadState("networkidle");

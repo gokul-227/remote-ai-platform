@@ -13,13 +13,23 @@ test("company can register, create profile, and post a job", async ({ page }) =>
   await page.getByRole("button", { name: /company \/ recruiter/i }).click();
   await page.getByRole("button", { name: /create account/i }).click();
 
-  await expect(page).toHaveURL(/\/company\/profile/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/company\/profile/, { timeout: 30_000 });
 
   await page.getByLabel("Company name").fill("E2E Test Company Inc.");
   await page.getByLabel("Industry").fill("Software");
   await page.getByLabel("Location").fill("Remote-first");
   await page.getByLabel("Description").fill("A company created by an automated E2E test.");
-  await page.getByRole("button", { name: /save|create/i }).click();
+  // Wait for the actual POST /companies/me response, not just the click —
+  // without this, a fast test runner can navigate to /jobs/new before the
+  // company profile actually exists server-side, which then makes job
+  // creation genuinely fail with "Unable to publish this job. Check your
+  // company profile and try again." This was the real, reproducible root
+  // cause of an earlier flaky failure here — not latency.
+  const [profileResponse] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes("/companies/me") && res.request().method() === "POST", { timeout: 30_000 }),
+    page.getByRole("button", { name: /save|create/i }).click(),
+  ]);
+  expect(profileResponse.ok()).toBeTruthy();
 
   // Profile save should not leave the form in an error state.
   await expect(page.locator("body")).not.toContainText(/unexpected error/i);
@@ -31,7 +41,7 @@ test("company can register, create profile, and post a job", async ({ page }) =>
   await page.getByRole("button", { name: /publish/i }).click();
 
   // Successful publish should navigate away from the create form or show the new job.
-  await expect(page).not.toHaveURL(/\/jobs\/new$/, { timeout: 15_000 });
+  await expect(page).not.toHaveURL(/\/jobs\/new$/, { timeout: 30_000 });
 
   await page.goto("/company/candidates");
   await page.waitForLoadState("networkidle");

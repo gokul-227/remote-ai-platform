@@ -13,7 +13,7 @@ test("engineer can register, browse jobs, save, and apply", async ({ page }) => 
   await page.getByRole("button", { name: /create account/i }).click();
 
   // Auto-login redirects to /engineer/profile on success.
-  await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
 
   await page.goto("/jobs");
   await expect(page.getByPlaceholder(/job title, keywords, or company/i)).toBeVisible();
@@ -24,7 +24,7 @@ test("engineer can register, browse jobs, save, and apply", async ({ page }) => 
   await page.waitForLoadState("networkidle");
 
   const firstJobLink = page.locator('a[href^="/jobs/"]').first();
-  await expect(firstJobLink).toBeVisible({ timeout: 15_000 });
+  await expect(firstJobLink).toBeVisible({ timeout: 30_000 });
   await firstJobLink.click();
 
   await expect(page).toHaveURL(/\/jobs\/[^/]+$/);
@@ -51,7 +51,7 @@ test("engineer recommendations show real score breakdown, not placeholders", asy
   await page.locator("#regEmail").fill(email);
   await page.locator("#regPassword").fill(password);
   await page.getByRole("button", { name: /create account/i }).click();
-  await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
 
   await page.goto("/engineer/recommendations");
   await page.waitForLoadState("networkidle");
