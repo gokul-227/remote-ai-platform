@@ -29,10 +29,16 @@ safe to drop, verified against the actual code (not assumed):
 ### 1. Supabase project (database + storage)
 
 1. Create a free project at supabase.com (no card required for the free tier).
-2. **Database**: Project Settings → Database → copy the connection string. Use the **connection pooler**
-   URI (port 6543, `?pgbouncer=true`) if available — Render's free tier and Supabase's free tier both
-   have limited concurrent connections. Convert it to the asyncpg driver form:
-   `postgresql+asyncpg://postgres:<password>@<host>:6543/postgres`
+2. **Database**: Project Settings → Database → copy the connection string. Use the pooler's
+   **session-mode** port, **5432**, not transaction-mode port 6543 — confirmed live: transaction mode's
+   PgBouncer hands the same backend connection to different clients without deallocating asyncpg's prior
+   prepared statement, causing `DuplicatePreparedStatementError` that gets worse the more connections hit
+   it (see `docs/ACTUAL_SYSTEM_AUDIT.md`). Session mode gives each client a dedicated backend, avoiding
+   this entirely, and is fine at this app's low single-instance traffic. The pooler username is
+   `postgres.<project-ref>` (not just `postgres`), and if the password contains any URL-special character
+   (`@`, `:`, `/`, `%`, etc.) it must be percent-encoded (Python: `urllib.parse.quote(password, safe="")`)
+   before embedding it in the URL. Final form:
+   `postgresql+asyncpg://postgres.<project-ref>:<percent-encoded-password>@<pooler-host>:5432/postgres`
 3. **Storage**: Project Settings → Storage → S3 Connection. Create two buckets: `remote-ai-platform-resumes`
    (keep private) and `remote-ai-platform-assets` (can be public). Generate an S3 access key/secret pair
    from the storage settings page.

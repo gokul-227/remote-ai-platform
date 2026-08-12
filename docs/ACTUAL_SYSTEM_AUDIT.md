@@ -216,6 +216,48 @@ Two real problems were found and fixed while writing these, not just documented:
 - Job aggregation, dedup, and per-source failure isolation all work correctly.
 - No committed secrets, no direct paid-AI-SDK imports, dependencies are current and not EOL.
 
+## Phase 12: live deployment to Render + Vercel + Supabase (2026-08-12)
+
+Deployed for real via each platform's official CLI (`render`, `vercel`, `supabase`, all device-code or
+token authenticated — no dashboard clicking required beyond generating the two credentials Supabase's
+CLI/API don't expose: a DB password reset and Storage S3 access keys). Four distinct bugs surfaced only
+once real traffic hit the real deployed services — none of these were visible from code review or from
+local Docker Compose, because local dev never routes through a URL-embedded, percent-encoded credential
+or a PgBouncer pooler:
+
+1. **`CORS_ORIGINS` crashed the app on boot the moment it was set via a real env var.** `pydantic-settings`
+   2.6.1 JSON-decodes any env var mapped to a `List[str]` field before any validator runs; a plain URL
+   string isn't valid JSON. Fixed by storing it as a `str` field (not "complex" to pydantic-settings) with
+   a computed property that splits on commas. Never caught locally because `docker-compose.yml` never
+   overrides `CORS_ORIGINS`, always falling back to the Python-level default list.
+2. **Alembic's `env.py` crashed on a percent-encoded `DATABASE_URL`.** The DB password contained `@`,
+   requiring URL-encoding to `%40` — but `Config.set_main_option()` goes through `configparser`, which
+   treats a bare `%` as interpolation syntax. Fixed by escaping `%` as `%%` before calling
+   `set_main_option`.
+3. **`DuplicatePreparedStatementError` against Supabase's transaction-mode pooler (port 6543).** asyncpg
+   names prepared statements deterministically (`__asyncpg_stmt_1__`, ...) and doesn't deallocate them
+   before disconnecting; PgBouncer in transaction mode hands the same backend to different clients without
+   resetting that state, so unrelated connections collide. Got *worse* with each debugging attempt as more
+   backends accumulated a stale statement — `statement_cache_size=0` alone (the officially documented
+   asyncpg+PgBouncer fix) did not resolve it. Root fix: use Supabase's **session-mode pooler (port 5432)**
+   instead, which gives each client a dedicated backend like a normal Postgres connection. Verified
+   robust across 3 repeated full migration+seed runs against the real database, not just once.
+4. **Render's Docker runtime has no build-target-selection field** (confirmed against Render's own
+   docs/community forum) — already fixed in Phase 11 by reordering `Dockerfile` stages; re-confirmed live
+   here since this was the first real Render build.
+
+All four fixes verified two ways: locally against the real live Supabase database/pooler (not local
+Postgres, which can't reproduce pooler-specific bugs) before pushing, and then by the deploy actually
+succeeding on Render afterward. All 93 backend tests continued passing throughout.
+
+**Also found**: `vercel deploy` from a subdirectory of an npm-workspaces monorepo only uploads that
+subdirectory — `cd ../.. && npm ci` (this app's install command, needed for workspace hoisting) then
+fails with no lockfile in scope. Fixed by linking the Vercel project with `root-directory` set via
+`vercel project update`, deploying from the repo root instead, and adding `.vercelignore` (a CLI-only
+deploy doesn't reliably respect nested `.gitignore` the way a git-integrated import does — an initial
+attempt tried to upload 803MB including `node_modules`, `.next` cache, and `.turbo` cache before that was
+in place).
+
 ## Environment notes for future sessions
 
 - This machine has no `python3.11`; use the Docker `api` container for anything requiring the exact

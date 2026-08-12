@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
@@ -19,22 +20,24 @@ class Base(DeclarativeBase):
     pass
 
 
-# statement_cache_size=0 disables asyncpg's prepared-statement cache. Required
-# when DATABASE_URL points at a PgBouncer pooler in transaction/statement mode
-# (e.g. Supabase's connection pooler) — such poolers rotate the underlying
-# server connection per transaction, so a prepared statement from one
-# transaction can collide with another ("DuplicatePreparedStatementError"),
-# found live against a real deployment (docs/ACTUAL_SYSTEM_AUDIT.md). Harmless
-# against a direct, unpooled Postgres connection (local dev), just skips an
-# optimization there.
+# NullPool + statement_cache_size=0. If DATABASE_URL ever points at a
+# PgBouncer pooler in transaction/statement mode, asyncpg's deterministic
+# per-connection statement naming ("__asyncpg_stmt_1__", not deallocated
+# before disconnect) can collide across different pooled clients sharing a
+# backend — confirmed live: Supabase's *transaction*-mode pooler (port 6543)
+# reproduced DuplicatePreparedStatementError repeatedly and worsened with
+# each attempt as more backends accumulated a stale statement, even with
+# statement_cache_size=0 set. Supabase's *session*-mode pooler (same host,
+# port 5432 — see docs/DEPLOYMENT_ZERO_COST.md) gives each client a dedicated
+# backend for the connection's lifetime like a normal Postgres connection,
+# which doesn't have this failure mode; that's what production actually uses.
+# NullPool + statement_cache_size=0 are kept anyway as cheap defensive
+# insurance in case the pooler mode ever changes. Harmless against a direct,
+# unpooled Postgres connection (local dev) either way.
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.is_development,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    pool_timeout=settings.DATABASE_POOL_TIMEOUT,
-    pool_recycle=settings.DATABASE_POOL_RECYCLE,
-    pool_pre_ping=True,
+    poolclass=NullPool,
     connect_args={"statement_cache_size": 0},
 )
 
