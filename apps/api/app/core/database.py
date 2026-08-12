@@ -19,7 +19,14 @@ class Base(DeclarativeBase):
     pass
 
 
-# Create async engine
+# statement_cache_size=0 disables asyncpg's prepared-statement cache. Required
+# when DATABASE_URL points at a PgBouncer pooler in transaction/statement mode
+# (e.g. Supabase's connection pooler) — such poolers rotate the underlying
+# server connection per transaction, so a prepared statement from one
+# transaction can collide with another ("DuplicatePreparedStatementError"),
+# found live against a real deployment (docs/ACTUAL_SYSTEM_AUDIT.md). Harmless
+# against a direct, unpooled Postgres connection (local dev), just skips an
+# optimization there.
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.is_development,
@@ -28,6 +35,7 @@ engine = create_async_engine(
     pool_timeout=settings.DATABASE_POOL_TIMEOUT,
     pool_recycle=settings.DATABASE_POOL_RECYCLE,
     pool_pre_ping=True,
+    connect_args={"statement_cache_size": 0},
 )
 
 # Session factory

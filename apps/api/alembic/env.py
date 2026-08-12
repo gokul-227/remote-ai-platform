@@ -72,6 +72,9 @@ async def run_async_migrations() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        # See app/core/database.py — required for PgBouncer transaction-mode
+        # poolers (e.g. Supabase), harmless against a direct connection.
+        connect_args={"statement_cache_size": 0},
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
