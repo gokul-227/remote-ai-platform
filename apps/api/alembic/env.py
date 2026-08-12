@@ -29,8 +29,12 @@ import app.domains.saved_jobs.models  # noqa: F401
 
 config = context.config
 
-# Override sqlalchemy.url from settings (respects env vars)
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Override sqlalchemy.url from settings (respects env vars). "%" is escaped
+# as "%%" because Config.set_main_option() goes through configparser, which
+# treats a bare "%" as interpolation syntax and raises on a percent-encoded
+# URL (e.g. a password containing "%40" for "@") — found live against a
+# real deployment, see docs/ACTUAL_SYSTEM_AUDIT.md.
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
