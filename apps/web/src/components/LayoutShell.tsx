@@ -52,9 +52,14 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             <span>© 2026 Remote AI Platform. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-4 text-slate-600">
-            <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="hover:text-[#0A66C2]">API Swagger Docs</a>
-            <a href="http://localhost:8080" target="_blank" rel="noreferrer" className="hover:text-[#0A66C2]">Identity Admin</a>
-            <a href="http://localhost:9001" target="_blank" rel="noreferrer" className="hover:text-[#0A66C2]">Object Storage</a>
+            <a
+              href={`${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/api\/v1\/?$/, "")}/docs`}
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-[#0A66C2]"
+            >
+              API Swagger Docs
+            </a>
           </div>
         </div>
       </footer>
