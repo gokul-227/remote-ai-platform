@@ -6,7 +6,7 @@ All configuration is loaded from environment variables or .env file.
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,18 +27,19 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://localhost:8080",
-    ]
+    # Stored as a raw comma-separated string, not List[str]: pydantic-settings
+    # (2.6.1, pinned) treats List-typed fields as "complex" and tries to
+    # JSON-decode any env var value for them before any validator runs,
+    # raising SettingsError on a plain string like "https://example.com".
+    # A str field skips that entirely; CORS_ORIGINS below parses it on read.
+    CORS_ORIGINS_RAW: str = Field(
+        default="http://localhost:3000,http://localhost:8000,http://localhost:8080",
+        validation_alias="CORS_ORIGINS",
+    )
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ORIGINS_RAW.split(",") if origin.strip()]
 
     # ── Database ───────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost:5432/remote_ai_platform"

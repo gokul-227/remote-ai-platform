@@ -87,3 +87,6 @@ screenshot-pages/desktop/
 screenshot-pages/mobile/
 screenshot-pages/manifest.json
 screenshot-pages/README.md
+
+# Vercel CLI project link (repo-root, for monorepo deploys)
+.vercel
