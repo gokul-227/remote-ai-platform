@@ -83,9 +83,15 @@ safe to drop, verified against the actual code (not assumed):
 1. Create a free account at vercel.com (no card required for Hobby tier).
 2. Import this repo, set **Root Directory** to `apps/web` in project settings (monorepo — `apps/web/vercel.json`
    handles installing from the repo root so npm workspaces resolve correctly).
-3. Set env var `NEXT_PUBLIC_API_URL` = your Render API URL + `/api/v1`, e.g.
-   `https://remote-ai-platform-api.onrender.com/api/v1`.
-4. Deploy. Do not add a custom domain — use the free `*.vercel.app` subdomain.
+3. Set env var `NEXT_PUBLIC_API_URL` = your **bare** Render API URL, with **no** `/api/v1` suffix — e.g.
+   `https://remote-ai-platform-api.onrender.com`. Both `apps/web/src/lib/api.ts` and
+   `apps/web/src/hooks/useMessages.ts` append `/api/v1` themselves; setting it with the suffix already
+   included causes every request to hit a doubled `/api/v1/api/v1/...` path and 404 (confirmed live —
+   see `docs/ACTUAL_SYSTEM_AUDIT.md`).
+4. `turbo.json`'s `build` task already declares `"env": ["NEXT_PUBLIC_*"]` — this is required, not optional:
+   without it Turborepo's cache doesn't know an env var affects the build, and silently keeps serving an
+   old cached build even after you change the value in Vercel's dashboard (confirmed live).
+5. Deploy. Do not add a custom domain — use the free `*.vercel.app` subdomain.
 
 ### 4. GitHub Actions secrets (for the scheduled job sync)
 
