@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { useJobs } from "@/hooks/useJobs";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
+import { useAuth } from "@/lib/auth";
 import type { JobPost } from "@/types";
 
 const SKILLS_OPTIONS = [
@@ -33,8 +34,9 @@ function JobsContent() {
 
   const limit = 10;
 
+  const { user } = useAuth();
   const jobsQuery = useJobs({ limit, skip: page * limit, query: searchQuery || undefined, company_id: companyId || undefined, job_type: jobType || undefined, experience_level: experience || undefined, min_salary: minSalary || undefined, max_salary: maxSalary || undefined, skills: selectedSkills.length ? selectedSkills : undefined });
-  const savedJobs = useSavedJobs(true);
+  const savedJobs = useSavedJobs(!!user);
   const jobs: JobPost[] = jobsQuery.data || [];
   const loading = jobsQuery.isLoading;
   const error = jobsQuery.error ? "Unable to load jobs. Please retry." : null;

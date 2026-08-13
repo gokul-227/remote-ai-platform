@@ -16,6 +16,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const CATEGORIES = [
   { id: "all", label: "All Groups", icon: Layers },
@@ -232,6 +233,14 @@ function CreateGroupModal({ open, onClose }: { open: boolean; onClose: () => voi
 }
 
 export default function GroupsPage() {
+  return (
+    <RequireAuth>
+      <GroupsContent />
+    </RequireAuth>
+  );
+}
+
+function GroupsContent() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);

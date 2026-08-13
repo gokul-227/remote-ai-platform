@@ -7,6 +7,7 @@ import {
 import { useConnections } from "@/hooks/useConnections";
 import { useFreelancers } from "@/hooks/useFreelancers";
 import { useAuth } from "@/lib/auth";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge, type StatusTone } from "@/components/ui/Badge";
@@ -114,6 +115,14 @@ function SendRequestPanel({ onSend, isPending }: { onSend: (id: string) => void;
 }
 
 export default function NetworkPage() {
+  return (
+    <RequireAuth>
+      <NetworkContent />
+    </RequireAuth>
+  );
+}
+
+function NetworkContent() {
   const { user } = useAuth();
   const connections = useConnections(true);
   const suggestions = useFreelancers({ openOnly: true });

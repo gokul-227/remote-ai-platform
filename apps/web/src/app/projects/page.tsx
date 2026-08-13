@@ -9,6 +9,7 @@ import {
 import { useProjects, useCreateProject } from "@/hooks/useProjects";
 import type { ProjectRecord } from "@/hooks/useProject";
 import { useAuth } from "@/lib/auth";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Textarea, SearchInput } from "@/components/ui/Input";
@@ -98,6 +99,14 @@ function ProjectRow({ project }: { project: ProjectRecord }) {
 }
 
 export default function ProjectsPage() {
+  return (
+    <RequireAuth>
+      <ProjectsContent />
+    </RequireAuth>
+  );
+}
+
+function ProjectsContent() {
   const projects = useProjects();
   const router = useRouter();
   const { user } = useAuth();

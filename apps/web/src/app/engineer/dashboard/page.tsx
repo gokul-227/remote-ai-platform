@@ -15,6 +15,7 @@ import { useJobs } from "@/hooks/useJobs";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useApplications } from "@/hooks/useApplications";
 import { useRecommendations } from "@/hooks/useRecommendations";
+import { RequireAuth } from "@/components/RequireAuth";
 import type { JobPost } from "@/types";
 
 function timeOfDayGreeting() {
@@ -25,6 +26,14 @@ function timeOfDayGreeting() {
 }
 
 export default function EngineerDashboard() {
+  return (
+    <RequireAuth>
+      <EngineerDashboardContent />
+    </RequireAuth>
+  );
+}
+
+function EngineerDashboardContent() {
   const { user } = useAuth();
   const profile = useEngineerProfile(!!user);
   const jobs = useJobs({ limit: 5 });

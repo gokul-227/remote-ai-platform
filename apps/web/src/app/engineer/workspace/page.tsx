@@ -13,12 +13,21 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { RequireRole } from "@/components/RequireRole";
 
 const OFFER_TONE: Record<string, StatusTone> = { OFFERED: "warning", ACCEPTED: "success" };
 const TASK_TONE: Record<string, StatusTone> = { COMPLETED: "success", REVIEW: "info" };
 const SUBMISSION_TONE: Record<string, StatusTone> = { APPROVED: "success", CHANGES_REQUESTED: "warning" };
 
 export default function WorkerWorkspacePage() {
+  return (
+    <RequireRole roles={["ENGINEER"]}>
+      <WorkerWorkspaceContent />
+    </RequireRole>
+  );
+}
+
+function WorkerWorkspaceContent() {
   const { user } = useAuth();
   const { offersQuery, tasksQuery, respondOffer, submitWork, recordWorkLedger } = useWorkerWorkspace(!!user);
 

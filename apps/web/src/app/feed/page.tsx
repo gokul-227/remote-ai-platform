@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Send, Trash2, Image as ImageIcon, Link as LinkIcon, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { RequireAuth } from "@/components/RequireAuth";
 import { useFeed, usePostComments, Post, Comment } from "@/hooks/useFeed";
 import { PostCard } from "@/components/PostCard";
 import { Avatar } from "@/components/ui/Avatar";
@@ -94,6 +95,14 @@ function FeedPost({ post, currentUserId, onLike, onDelete }: {
 }
 
 export default function SocialFeedPage() {
+  return (
+    <RequireAuth>
+      <SocialFeedContent />
+    </RequireAuth>
+  );
+}
+
+function SocialFeedContent() {
   const { user } = useAuth();
   const [page] = useState(1);
   const { data: feedData, isLoading, createPost, likePost, deletePost } = useFeed(page);

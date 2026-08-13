@@ -10,6 +10,7 @@ import { StatusBadge, type StatusTone } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Tabs } from "@/components/ui/Tabs";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { RequireAuth } from "@/components/RequireAuth";
 
 interface ApplicationItem {
   application: { id: string; status: string; created_at: string };
@@ -41,6 +42,14 @@ const STATUS_LABEL: Record<string, string> = {
 const WITHDRAWABLE = new Set(["SUBMITTED", "APPLIED", "REVIEWING", "SHORTLISTED", "INVITED"]);
 
 export default function ApplicationsPage() {
+  return (
+    <RequireAuth>
+      <ApplicationsContent />
+    </RequireAuth>
+  );
+}
+
+function ApplicationsContent() {
   const applications = useApplications(true);
   const offers = useTaskOffers(true);
   const items: ApplicationItem[] = applications.data ?? [];

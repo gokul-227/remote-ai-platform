@@ -8,8 +8,17 @@ import { Button } from "@/components/ui/Button";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { RequireAuth } from "@/components/RequireAuth";
 
 export default function NotificationsPage() {
+  return (
+    <RequireAuth>
+      <NotificationsContent />
+    </RequireAuth>
+  );
+}
+
+function NotificationsContent() {
   const notifications = useNotifications(true);
   const [tab, setTab] = useState<"all" | "unread">("all");
 

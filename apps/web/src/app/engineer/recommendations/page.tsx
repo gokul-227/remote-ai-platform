@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Tabs } from "@/components/ui/Tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { RequireRole } from "@/components/RequireRole";
 
 function fmtSalary(min?: number | null, max?: number | null, currency?: string | null) {
   if (!min && !max) return null;
@@ -150,6 +151,14 @@ function MatchCard({ match, onSave, onDismiss, updating }: { match: JobMatch; on
 }
 
 export default function RecommendationsPage() {
+  return (
+    <RequireRole roles={["ENGINEER"]}>
+      <RecommendationsContent />
+    </RequireRole>
+  );
+}
+
+function RecommendationsContent() {
   const { data: matches, isLoading, isError, refetch, isFetching } = useRecommendations(30);
   const updateStatus = useUpdateMatchStatus();
   const [filter, setFilter] = useState<"all" | "active" | "saved">("all");

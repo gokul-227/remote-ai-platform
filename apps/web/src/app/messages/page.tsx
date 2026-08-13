@@ -5,6 +5,7 @@ import { Search, Plus, Send, Wifi, WifiOff, MessageSquarePlus, ArrowLeft, Sparkl
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/lib/auth";
+import { RequireAuth } from "@/components/RequireAuth";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
@@ -76,6 +77,14 @@ function ConversationItem({ conv, isSelected, onClick }: { conv: { id: string; u
 }
 
 export default function MessagesPage() {
+  return (
+    <RequireAuth>
+      <MessagesContent />
+    </RequireAuth>
+  );
+}
+
+function MessagesContent() {
   const { user } = useAuth();
   const conversations = useConversations(true);
   const [selected, setSelected] = useState<string | null>(null);

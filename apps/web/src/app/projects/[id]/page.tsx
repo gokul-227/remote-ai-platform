@@ -24,6 +24,7 @@ import { StatusBadge, type StatusTone } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/cn";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const TASK_STATUS: Record<string, { label: string; tone: StatusTone; icon: React.ElementType; iconClass: string }> = {
   TODO: { label: "To Do", tone: "neutral", icon: Circle, iconClass: "text-slate-400" },
@@ -116,6 +117,14 @@ function SubmissionCard({ sub, onReview, onAIReview, updating }: {
 }
 
 export default function ProjectDetailPage() {
+  return (
+    <RequireAuth>
+      <ProjectDetailContent />
+    </RequireAuth>
+  );
+}
+
+function ProjectDetailContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
