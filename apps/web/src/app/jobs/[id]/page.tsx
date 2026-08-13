@@ -8,6 +8,8 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useApplications } from "@/hooks/useApplications";
+import { JobMatch } from "@/hooks/useRecommendations";
+import { AIMatchPanel } from "@/components/ai/MatchScore";
 
 interface JobPost {
   id: string;
@@ -33,6 +35,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const jobQuery = useQuery<JobPost>({ queryKey: ["job", id], queryFn: async () => (await api.get(`/jobs/${id}`)).data });
   const savedJobs = useSavedJobs(!!user);
   const applications = useApplications(!!user && user.role === "ENGINEER");
+  const isEngineer = user?.role === "ENGINEER";
+  const matchQuery = useQuery<JobMatch>({
+    queryKey: ["job-match", id],
+    queryFn: async () => (await api.get(`/matching/jobs/${id}`)).data,
+    enabled: isEngineer,
+    retry: false,
+  });
   const job = jobQuery.data || null;
   const loading = jobQuery.isLoading;
   const saved = !!savedJobs.data?.some((item: JobPost) => item.id === id);
@@ -66,11 +75,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-5">
       <Link href="/jobs" className="inline-flex items-center gap-2 text-xs font-semibold text-[#0A66C2] hover:underline">
         <ArrowLeft className="h-4 w-4" /> Back to Jobs
       </Link>
 
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="lg:col-span-2 space-y-5">
       {/* Job Header Card */}
       <div className="card-enterprise p-6 space-y-5">
         <div className="flex flex-col md:flex-row justify-between items-start gap-4 pb-5 border-b border-slate-200">
@@ -107,7 +118,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             >
               <Bookmark className={`h-5 w-5 ${saved ? "fill-[#0A66C2]" : ""}`} />
             </button>
-            <button className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50">
+            <button
+              onClick={() => navigator.clipboard?.writeText(window.location.href)}
+              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50"
+              title="Copy link to this job"
+            >
               <Share2 className="h-5 w-5" />
             </button>
             {job.external_url ? (
@@ -182,6 +197,25 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             {job.description}
           </div>
         </div>
+      </div>
+      </div>
+
+      {/* Right rail: AI match */}
+      <div className="lg:col-span-1">
+        {isEngineer ? (
+          <AIMatchPanel
+            match={matchQuery.data}
+            loading={matchQuery.isLoading}
+            emptyHint="Complete your engineer profile to see your AI match score for this role."
+          />
+        ) : !user ? (
+          <div className="card-enterprise p-5 text-center space-y-2">
+            <p className="text-xs text-slate-500">
+              <Link href="/auth/login" className="text-[#0A66C2] font-semibold hover:underline">Sign in</Link> as an engineer to see your AI match score for this role.
+            </p>
+          </div>
+        ) : null}
+      </div>
       </div>
     </div>
   );

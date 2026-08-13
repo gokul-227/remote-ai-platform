@@ -21,8 +21,10 @@ class MatchingRepository:
         return result.scalar_one_or_none()
 
     async def get_match(self, engineer_id: uuid.UUID, job_id: uuid.UUID) -> Optional[JobMatch]:
-        stmt = select(JobMatch).where(
-            JobMatch.engineer_id == engineer_id, JobMatch.job_id == job_id
+        stmt = (
+            select(JobMatch)
+            .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer))
+            .where(JobMatch.engineer_id == engineer_id, JobMatch.job_id == job_id)
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()

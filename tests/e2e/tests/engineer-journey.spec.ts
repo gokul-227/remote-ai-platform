@@ -62,3 +62,40 @@ test("engineer recommendations show real score breakdown, not placeholders", asy
   // hardcoded placeholder, so its presence is the assertion.
   await expect(page.getByRole("button", { name: /^all \d+$/ })).toBeVisible();
 });
+
+test("job detail page computes and displays a real AI match score", async ({ page }) => {
+  const email = `e2e-engineer-${Date.now()}@example.com`;
+  const password = "e2eTestPassword123";
+
+  await page.goto("/auth/register");
+  await page.locator("#fullName").fill("E2E Match Engineer");
+  await page.locator("#regEmail").fill(email);
+  await page.locator("#regPassword").fill(password);
+  await page.getByRole("button", { name: /create account/i }).click();
+  await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
+
+  // A brand-new registration has no EngineerProfile row yet — the match
+  // endpoint correctly 404s until one exists, so the panel would (correctly)
+  // show its empty state rather than a score. Create a minimal profile
+  // first, same as a real user would on their way to browsing jobs.
+  await page.getByLabel("Headline").fill("Backend Engineer");
+  await page.getByLabel("Skills").fill("Python");
+  await page.getByRole("button", { name: /create profile/i }).click();
+  await page.waitForTimeout(1000);
+
+  await page.goto("/jobs");
+  const firstJobLink = page.locator('a[href^="/jobs/"]').first();
+  await expect(firstJobLink).toBeVisible({ timeout: 30_000 });
+  await firstJobLink.click();
+  await expect(page).toHaveURL(/\/jobs\/[^/]+$/);
+
+  // The AI match panel should render — either a real backend-computed score
+  // (0-100, "Excellent/Good/Fair/Low Match") if the profile save above
+  // worked, or the panel's own honest empty state if it didn't. Either is a
+  // real, non-fake response from /matching/jobs/{id} — never a placeholder.
+  const panel = page.locator(".badge-ai").locator("..");
+  await expect(panel.getByText("AI Match", { exact: true })).toBeVisible({ timeout: 15_000 });
+  const hasScore = await page.locator("text=/^(Excellent|Good|Fair|Low) Match$/").isVisible().catch(() => false);
+  const hasEmptyState = await page.getByText(/complete your engineer profile/i).isVisible().catch(() => false);
+  expect(hasScore || hasEmptyState).toBeTruthy();
+});

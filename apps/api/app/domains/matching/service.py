@@ -177,6 +177,30 @@ class MatchingService:
 
         return existing
 
+    async def get_or_compute_match_for_job(
+        self, user_id: uuid.UUID, job_id: uuid.UUID
+    ) -> JobMatch:
+        """Fetch this engineer's existing match against one specific job, computing it on
+        demand if it doesn't exist yet — used by the job detail page's AI match panel."""
+        engineer = await self.engineer_repo.get_by_user_id(user_id)
+        if not engineer:
+            raise NotFoundError("Engineer profile required to view job match")
+
+        job = await self.job_repo.get_by_id(job_id)
+        if not job:
+            raise NotFoundError("Job post not found")
+
+        existing = await self.match_repo.get_match(engineer.id, job.id)
+        if existing:
+            return existing
+
+        await self.calculate_match(engineer, job)
+        await self.db.commit()
+        # Re-fetch rather than return calculate_match's result directly: that
+        # object's `.job`/`.engineer` relationships aren't eager-loaded, and
+        # JobMatchResponse needs them populated for the job detail page.
+        return await self.match_repo.get_match(engineer.id, job.id)
+
     async def get_top_candidates_for_job(
         self, job_id: uuid.UUID, skip: int = 0, limit: int = 20
     ) -> Sequence[JobMatch]:

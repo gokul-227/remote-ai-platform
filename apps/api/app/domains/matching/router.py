@@ -37,6 +37,18 @@ async def get_my_job_recommendations(
     return [JobMatchResponse.model_validate(m) for m in matches]
 
 
+@router.get("/jobs/{job_id}", response_model=JobMatchResponse)
+async def get_my_match_for_job(
+    job_id: uuid.UUID,
+    current_user: User = Depends(require_role(UserRole.ENGINEER)),
+    service: MatchingService = Depends(get_matching_service),
+) -> JobMatchResponse:
+    """Get (or compute) the current engineer's AI match breakdown against one specific job —
+    powers the "AI Match" panel on the job detail page."""
+    match = await service.get_or_compute_match_for_job(current_user.id, job_id)
+    return JobMatchResponse.model_validate(match)
+
+
 @router.get("/candidates/{job_id}", response_model=List[JobMatchResponse])
 async def get_candidates_for_job(
     job_id: uuid.UUID,
