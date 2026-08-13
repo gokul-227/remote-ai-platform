@@ -1,29 +1,27 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import {
-  Briefcase,
-  Sparkles,
-  CheckCircle2,
-  Clock,
-} from "lucide-react";
-import api from "@/lib/api";
+import { Briefcase, Sparkles, CheckCircle2, Clock, ArrowRight } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { RightSidebar } from "@/components/RightSidebar";
+import { JobCard } from "@/components/JobCard";
+import { AIMatchPanel } from "@/components/ai/MatchScore";
+import { Button } from "@/components/ui/Button";
+import { JobCardSkeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useAuth } from "@/lib/auth";
 import { useEngineerProfile } from "@/hooks/useEngineerProfile";
 import { useJobs } from "@/hooks/useJobs";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useApplications } from "@/hooks/useApplications";
+import { useRecommendations } from "@/hooks/useRecommendations";
+import type { JobPost } from "@/types";
 
-interface JobPost {
-  id: string;
-  title: string;
-  company_name: string;
-  salary_min?: number;
-  salary_max?: number;
-  skills: string[];
+function timeOfDayGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 export default function EngineerDashboard() {
@@ -32,7 +30,7 @@ export default function EngineerDashboard() {
   const jobs = useJobs({ limit: 5 });
   const savedJobs = useSavedJobs(!!user);
   const applications = useApplications(!!user);
-  const matches = useQuery({ queryKey: ["recommendations", user?.id], queryFn: async () => (await api.get("/matching/recommendations", { params: { limit: 20 } })).data, enabled: !!user });
+  const matches = useRecommendations(20);
   const recommendedJobs: JobPost[] = jobs.data || [];
   const loadingJobs = jobs.isLoading;
   const profileData = profile.data as { headline?: string; bio?: string; primary_role?: string; skills?: string[]; resume_url?: string; github_url?: string; experience?: unknown[] } | undefined;
@@ -44,7 +42,7 @@ export default function EngineerDashboard() {
     { label: "Work experience added", done: !!profileData?.experience?.length },
   ];
   const completionPercent = Math.round((completionItems.filter((s) => s.done).length / completionItems.length) * 100);
-  const matchScore = matches.data?.[0]?.overall_score;
+  const topMatch = matches.data?.[0];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -59,20 +57,20 @@ export default function EngineerDashboard() {
         <div className="card-enterprise p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-slate-900">
-              Welcome back, {user?.full_name?.split(" ")[0] || "Engineer"} 👋
+              {timeOfDayGreeting()}, {user?.full_name?.split(" ")[0] || "Engineer"}
             </h1>
-            <p className="text-xs text-slate-500 mt-1">Your career activity and job recommendations today.</p>
+            <p className="text-xs text-slate-500 mt-1">Here&rsquo;s what&rsquo;s happening with your career.</p>
           </div>
-          <Link href="/engineer/profile" className="btn-primary-brand text-xs">
-            My Profile
+          <Link href="/engineer/profile">
+            <Button size="sm">My Profile</Button>
           </Link>
         </div>
 
         {/* Key Metrics Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Match Rating", value: matchScore == null ? "—" : `${matchScore}/100`, color: "text-[#0A66C2]" },
-            { label: "Matched Roles", value: matches.data?.length ?? 0, color: "text-slate-900" },
+            { label: "Profile Strength", value: `${completionPercent}%`, color: "text-[#0A66C2]" },
+            { label: "AI Matches", value: matches.data?.length ?? 0, color: "text-slate-900" },
             { label: "Applications", value: applications.data?.length ?? 0, color: "text-emerald-700" },
             { label: "Saved Jobs", value: savedJobs.data?.length ?? 0, color: "text-amber-700" },
           ].map((s) => (
@@ -82,6 +80,36 @@ export default function EngineerDashboard() {
             </div>
           ))}
         </div>
+
+        {/* Top AI Match Hero */}
+        {matches.data && matches.data.length > 0 ? (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-slate-900 text-sm">Your AI career match</h2>
+              <Link href="/engineer/matches" className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1">
+                View all matches <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <Link href={`/jobs/${topMatch?.job_id}`} className="block">
+              <AIMatchPanel match={topMatch ?? null} loading={matches.isLoading} />
+            </Link>
+            {topMatch?.job && (
+              <p className="text-xs text-slate-500 mt-2 px-1">
+                Top match: <span className="font-semibold text-slate-700">{topMatch.job.title}</span> at {topMatch.job.company_name}
+              </p>
+            )}
+          </div>
+        ) : !matches.isLoading ? (
+          <div className="card-enterprise">
+            <EmptyState
+              icon={Sparkles}
+              title="No AI matches yet"
+              description="Complete your engineer profile so we can compute explainable matches against open roles."
+              actionLabel="Complete your profile"
+              actionHref="/engineer/profile"
+            />
+          </div>
+        ) : null}
 
         {/* Recommended Jobs */}
         <div className="card-enterprise p-5 space-y-4">
@@ -100,53 +128,17 @@ export default function EngineerDashboard() {
 
           <div className="space-y-2.5">
             {loadingJobs ? (
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex gap-3 p-3 rounded-lg bg-slate-50 animate-pulse">
-                  <div className="skeleton-box h-10 w-10 rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <div className="skeleton-box h-4 w-2/3" />
-                    <div className="skeleton-box h-3 w-1/3" />
-                  </div>
-                </div>
-              ))
+              Array.from({ length: 3 }).map((_, i) => <JobCardSkeleton key={i} />)
             ) : recommendedJobs.length === 0 ? (
-              <div className="text-center py-6 space-y-2">
-                <Briefcase className="h-8 w-8 text-slate-300 mx-auto" />
-                <p className="text-xs text-slate-500">No positions loaded yet.</p>
-                <Link href="/jobs" className="btn-primary-brand py-1.5 px-4 text-xs inline-flex">
-                  Browse Jobs
-                </Link>
-              </div>
+              <EmptyState
+                icon={Briefcase}
+                title="No positions loaded yet"
+                description="Browse the marketplace to discover open remote engineering roles."
+                actionLabel="Browse Jobs"
+                actionHref="/jobs"
+              />
             ) : (
-              recommendedJobs.map((job) => {
-                return (
-                  <Link
-                    key={job.id}
-                    href={`/jobs/${job.id}`}
-                    className="flex items-start justify-between gap-3 p-3 rounded-lg border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors group"
-                  >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 flex-shrink-0 text-xs">
-                        {job.company_name?.charAt(0).toUpperCase() || "C"}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-slate-900 text-xs group-hover:text-[#0A66C2] truncate">
-                          {job.title}
-                        </h3>
-                        <p className="text-[11px] text-slate-500 mt-0.5">{job.company_name}</p>
-                        <div className="flex gap-1 mt-1.5 flex-wrap">
-                          {job.skills?.slice(0, 3).map((s) => (
-                            <span key={s} className="badge-ent badge-ent-neutral text-[10px]">{s}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="pill-match pill-match-high text-[10px] flex-shrink-0">
-                      —
-                    </span>
-                  </Link>
-                );
-              })
+              recommendedJobs.map((job) => <JobCard key={job.id} job={job} compact />)
             )}
           </div>
         </div>
@@ -185,8 +177,8 @@ export default function EngineerDashboard() {
               </div>
             ))}
           </div>
-          <Link href="/engineer/profile" className="btn-secondary-brand text-xs w-full block text-center mt-2">
-            Complete Profile
+          <Link href="/engineer/profile">
+            <Button variant="secondary" size="sm" fullWidth className="mt-2">Complete Profile</Button>
           </Link>
         </div>
 

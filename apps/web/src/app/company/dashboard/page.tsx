@@ -15,6 +15,10 @@ import { useJobs } from "@/hooks/useJobs";
 import { useProjects } from "@/hooks/useProjects";
 import { useCompanyApplications } from "@/hooks/useApplications";
 import { RequireRole } from "@/components/RequireRole";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface EngineerMatch {
   id: string;
@@ -41,12 +45,8 @@ function CompanyDashboardPage() {
           <p className="text-sm text-slate-500 mt-1">Manage your talent pipeline and active positions</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/jobs/new" className="btn-secondary-brand text-sm">
-            <PlusCircle className="h-4 w-4" /> Post Position
-          </Link>
-          <Link href="/company/profile" className="btn-primary-brand text-sm">
-            Company Page
-          </Link>
+          <Link href="/jobs/new"><Button variant="secondary" icon={<PlusCircle className="h-4 w-4" />}>Post Position</Button></Link>
+          <Link href="/company/profile"><Button>Company Page</Button></Link>
         </div>
       </div>
 
@@ -104,11 +104,7 @@ function CompanyDashboardPage() {
                 ))}
               </div>
             ) : engineers.length === 0 ? (
-              <div className="text-center py-8 space-y-2">
-                <Users className="h-8 w-8 text-slate-300 mx-auto" />
-                <p className="text-sm text-slate-600 font-medium">No candidates in the talent pool yet</p>
-                <p className="text-xs text-slate-500">Engineers who register will appear here as candidates.</p>
-              </div>
+              <EmptyState icon={Users} title="No candidates in the talent pool yet" description="Engineers who register will appear here as candidates." />
             ) : (
               <>
               <div className="space-y-3">
@@ -117,14 +113,12 @@ function CompanyDashboardPage() {
                   return (
                     <Link key={eng.id} href={`/engineers/${eng.id}`} className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-[#0A66C2] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-                          {name.charAt(0).toUpperCase()}
-                        </div>
+                        <Avatar name={name} />
                         <div>
                           <p className="font-semibold text-slate-900 text-sm">{name}</p>
                           <p className="text-xs text-slate-500">{eng.headline || "Software Engineer"}</p>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {eng.skills?.slice(0, 3).map((s) => <span key={s} className="badge-ent badge-ent-neutral text-[10px]">{s}</span>)}
+                            {eng.skills?.slice(0, 3).map((s) => <Badge key={s} tone="neutral">{s}</Badge>)}
                           </div>
                         </div>
                       </div>

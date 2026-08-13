@@ -10,6 +10,14 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { TrustBadge } from "@/components/TrustBadge";
+import { useAuth } from "@/lib/auth";
+import { useConnections } from "@/hooks/useConnections";
+import { useConversations } from "@/hooks/useConversations";
+import { useToast } from "@/components/ui/Toast";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { useRouter } from "next/navigation";
+import { UserPlus, MessageSquare } from "lucide-react";
 
 type ExperienceItem = {
   title: string;
@@ -39,6 +47,7 @@ type EducationItem = {
 
 type EngineerProfile = {
   id: string;
+  user_id?: string;
   headline?: string;
   bio?: string;
   ai_summary?: string;
@@ -118,7 +127,7 @@ function ExperienceTimeline({ items }: { items: ExperienceItem[] }) {
             {item.technologies && item.technologies.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {item.technologies.map((tech) => (
-                  <span key={tech} className="badge-ent badge-ent-neutral">{tech}</span>
+                  <Badge key={tech} tone="neutral">{tech}</Badge>
                 ))}
               </div>
             )}
@@ -169,6 +178,34 @@ export default function PublicEngineerProfilePage({
     .split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   const score = Math.round(profile.profile_score ?? 0);
 
+  return <ProfileHero profile={profile} id={id} initials={initials} score={score} />;
+}
+
+function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfile; id: string; initials: string; score: number }) {
+  const { user } = useAuth();
+  const router = useRouter();
+  const toast = useToast();
+  const connections = useConnections(!!user);
+  const conversations = useConversations(!!user);
+  const isOwnProfile = user?.id === profile.user_id;
+
+  const handleConnect = () => {
+    if (!user) return router.push("/auth/login");
+    if (!profile.user_id) return;
+    connections.request.mutate(profile.user_id, {
+      onSuccess: () => toast.show("Connection request sent", "success"),
+      onError: () => toast.show("Unable to send connection request", "error"),
+    });
+  };
+
+  const handleMessage = () => {
+    if (!user) return router.push("/auth/login");
+    if (!profile.user_id) return;
+    conversations.create.mutate(profile.user_id, {
+      onSuccess: (data: { id: string }) => router.push(`/messages?id=${data.id}`),
+    });
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
       {/* Breadcrumb */}
@@ -209,6 +246,16 @@ export default function PublicEngineerProfilePage({
             </div>
             {/* CTA */}
             <div className="flex flex-wrap gap-2 pb-1">
+              {!isOwnProfile && profile.user_id && (
+                <>
+                  <Button size="sm" variant="secondary" icon={<UserPlus className="h-3.5 w-3.5" />} loading={connections.request.isPending} onClick={handleConnect}>
+                    Connect
+                  </Button>
+                  <Button size="sm" icon={<MessageSquare className="h-3.5 w-3.5" />} loading={conversations.create.isPending} onClick={handleMessage}>
+                    Message
+                  </Button>
+                </>
+              )}
               {profile.github_url && (
                 <a
                   href={profile.github_url}
@@ -263,9 +310,7 @@ export default function PublicEngineerProfilePage({
               </span>
             )}
             {profile.is_open_to_work && (
-              <span className="badge-ent badge-ent-success flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3" /> Open to work
-              </span>
+              <Badge tone="success"><CheckCircle2 className="h-3 w-3" /> Open to work</Badge>
             )}
           </div>
         </div>
@@ -303,7 +348,7 @@ export default function PublicEngineerProfilePage({
             {profile.skills.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {profile.skills.map((skill) => (
-                  <span key={skill} className="badge-ent badge-ent-neutral">{skill}</span>
+                  <Badge key={skill} tone="neutral">{skill}</Badge>
                 ))}
               </div>
             ) : (
@@ -316,7 +361,7 @@ export default function PublicEngineerProfilePage({
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {profile.matching_keywords.map((kw) => (
-                    <span key={kw} className="badge-ent badge-ent-brand">{kw}</span>
+                    <Badge key={kw} tone="brand">{kw}</Badge>
                   ))}
                 </div>
               </div>
@@ -386,7 +431,7 @@ export default function PublicEngineerProfilePage({
                     {project.technologies && project.technologies.length > 0 && (
                       <div className="mt-2.5 flex flex-wrap gap-1">
                         {project.technologies.slice(0, 4).map((tech) => (
-                          <span key={tech} className="badge-ent badge-ent-neutral">{tech}</span>
+                          <Badge key={tech} tone="neutral">{tech}</Badge>
                         ))}
                       </div>
                     )}

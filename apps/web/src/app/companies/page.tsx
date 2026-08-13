@@ -8,6 +8,9 @@ import {
   ArrowRight, Loader2, SlidersHorizontal, ChevronDown, ShieldCheck,
 } from "lucide-react";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Company = {
   id: string;
@@ -97,10 +100,10 @@ function CompanyCard({ company }: { company: Company }) {
         {company.tech_stack.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {company.tech_stack.slice(0, 5).map((tech) => (
-              <span key={tech} className="badge-ent badge-ent-neutral">{tech}</span>
+              <Badge key={tech} tone="neutral">{tech}</Badge>
             ))}
             {company.tech_stack.length > 5 && (
-              <span className="badge-ent badge-ent-neutral">+{company.tech_stack.length - 5}</span>
+              <Badge tone="neutral">+{company.tech_stack.length - 5}</Badge>
             )}
           </div>
         )}
@@ -108,9 +111,9 @@ function CompanyCard({ company }: { company: Company }) {
         {/* Footer */}
         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
           {company.hiring_status && (
-            <span className={`badge-ent ${company.hiring_status === "actively_hiring" ? "badge-ent-success" : "badge-ent-neutral"}`}>
+            <Badge tone={company.hiring_status === "actively_hiring" ? "success" : "neutral"}>
               {company.hiring_status.replace(/_/g, " ")}
-            </span>
+            </Badge>
           )}
           <span className="flex items-center gap-1 text-xs font-semibold text-[#0A66C2] opacity-0 transition-opacity group-hover:opacity-100 ml-auto">
             View company <ArrowRight className="h-3 w-3" />
@@ -208,15 +211,16 @@ export default function CompaniesDiscoveryPage() {
             onChange={(e) => handleSearchChange(e.target.value)}
             className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
           />
-          <button
+          <Button
             id="companies-filter-toggle"
+            variant="ghost"
+            size="sm"
             onClick={() => setFiltersOpen((v) => !v)}
-            className="btn-subtle flex items-center gap-1.5 text-xs"
+            icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
             Filters
             <ChevronDown className={`h-3 w-3 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
-          </button>
+          </Button>
         </div>
 
         {filtersOpen && (
@@ -271,10 +275,8 @@ export default function CompaniesDiscoveryPage() {
             {Array.from({ length: 6 }).map((_, i) => <CompanyCardSkeleton key={i} />)}
           </div>
         ) : companies.length === 0 ? (
-          <div className="card-enterprise py-16 text-center">
-            <Building2 className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-            <p className="font-semibold text-slate-700">No companies found</p>
-            <p className="mt-1 text-sm text-slate-500">Try broadening your search or filters.</p>
+          <div className="card-enterprise">
+            <EmptyState icon={Building2} title="No companies found" description="Try broadening your search or filters." />
           </div>
         ) : (
           <>
@@ -283,9 +285,7 @@ export default function CompaniesDiscoveryPage() {
                 {companies.length} compan{companies.length !== 1 ? "ies" : "y"} found
               </p>
               {verifiedOnly && (
-                <span className="badge-ent badge-ent-brand flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" /> Verified only
-                </span>
+                <Badge tone="brand"><ShieldCheck className="h-3 w-3" /> Verified only</Badge>
               )}
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

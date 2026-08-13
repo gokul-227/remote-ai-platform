@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { RequireRole } from "@/components/RequireRole";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface PlatformStats {
   total_engineers?: number;
@@ -163,32 +166,30 @@ function AdminDashboardPage() {
         {/* System Health */}
         <div className="lg:col-span-2 space-y-5">
           {/* AI Usage & Cost Monitoring */}
-          <div className="card-enterprise p-6 space-y-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white">
+          <div className="card-enterprise p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold text-sm flex items-center gap-2 text-indigo-300">
-                <Server className="h-4 w-4 text-indigo-400" /> AI Provider & Token Cost Monitoring
+              <h2 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                <Server className="h-4 w-4 text-slate-400" /> AI Provider & Token Cost Monitoring
               </h2>
-              <span className="text-[10px] font-bold bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded">
-                LiteLLM Gateway
-              </span>
+              <Badge tone="ai">LiteLLM Gateway</Badge>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-white/10 p-3 rounded-lg">
-                <span className="text-slate-300 text-[11px] block">LLM API Calls</span>
-                <span className="text-lg font-bold text-white">{aiUsage?.total_calls ?? 0}</span>
+              <div className="bg-[var(--bg-subtle)] p-3 rounded-lg">
+                <span className="text-slate-500 text-[11px] block">LLM API Calls</span>
+                <span className="text-lg font-bold text-slate-900">{aiUsage?.total_calls ?? 0}</span>
               </div>
-              <div className="bg-white/10 p-3 rounded-lg">
-                <span className="text-slate-300 text-[11px] block">Total Tokens</span>
-                <span className="text-lg font-bold text-sky-300">{(aiUsage?.total_tokens ?? 0).toLocaleString()}</span>
+              <div className="bg-[var(--bg-subtle)] p-3 rounded-lg">
+                <span className="text-slate-500 text-[11px] block">Total Tokens</span>
+                <span className="text-lg font-bold text-slate-900">{(aiUsage?.total_tokens ?? 0).toLocaleString()}</span>
               </div>
-              <div className="bg-white/10 p-3 rounded-lg">
-                <span className="text-slate-300 text-[11px] block">Prompt Tokens</span>
-                <span className="text-lg font-bold text-emerald-300">{(aiUsage?.total_prompt_tokens ?? 0).toLocaleString()}</span>
+              <div className="bg-[var(--bg-subtle)] p-3 rounded-lg">
+                <span className="text-slate-500 text-[11px] block">Prompt Tokens</span>
+                <span className="text-lg font-bold text-slate-900">{(aiUsage?.total_prompt_tokens ?? 0).toLocaleString()}</span>
               </div>
-              <div className="bg-white/10 p-3 rounded-lg">
-                <span className="text-slate-300 text-[11px] block">Estimated Cost</span>
-                <span className="text-lg font-bold text-amber-300">${aiUsage?.estimated_cost_usd ?? 0} USD</span>
+              <div className="bg-[var(--bg-subtle)] p-3 rounded-lg">
+                <span className="text-slate-500 text-[11px] block">Estimated Cost</span>
+                <span className="text-lg font-bold text-emerald-700">${aiUsage?.estimated_cost_usd ?? 0} USD</span>
               </div>
             </div>
           </div>
@@ -218,7 +219,22 @@ function AdminDashboardPage() {
 
           <div className="card-enterprise p-6 space-y-4">
             <h2 className="font-semibold text-slate-900 flex items-center gap-2"><Shield className="h-4 w-4 text-slate-400" /> Moderation Queue</h2>
-            {reports.filter((report) => report.status === "OPEN").length === 0 ? <p className="text-sm text-slate-500">No open moderation reports.</p> : <div className="space-y-3">{reports.filter((report) => report.status === "OPEN").map((report) => <div key={report.id} className="rounded-lg border border-slate-200 p-3"><p className="text-xs font-semibold text-slate-700">{report.target_type} · {report.target_id}</p><p className="mt-1 text-sm text-slate-600">{report.reason}</p><div className="mt-3 flex flex-wrap gap-2"><button onClick={() => void resolveReport(report, report.target_type === "JOB" ? "HIDE_JOB" : "SUSPEND_USER")} className="btn-primary-brand px-3 py-1.5 text-xs">Take action</button><button onClick={() => void resolveReport(report, "NO_ACTION")} className="btn-secondary-brand px-3 py-1.5 text-xs">Dismiss</button></div></div>)}</div>}
+            {reports.filter((report) => report.status === "OPEN").length === 0 ? (
+              <EmptyState icon={Shield} title="No open moderation reports" />
+            ) : (
+              <div className="space-y-3">
+                {reports.filter((report) => report.status === "OPEN").map((report) => (
+                  <div key={report.id} className="rounded-lg border border-[var(--border-color)] p-3.5">
+                    <p className="text-xs font-semibold text-slate-500">{report.target_type} · {report.target_id}</p>
+                    <p className="mt-1 text-sm text-slate-700">{report.reason}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button size="sm" onClick={() => void resolveReport(report, report.target_type === "JOB" ? "HIDE_JOB" : "SUSPEND_USER")}>Take action</Button>
+                      <Button size="sm" variant="secondary" onClick={() => void resolveReport(report, "NO_ACTION")}>Dismiss</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Job Source Sync Status */}
@@ -273,7 +289,8 @@ function AdminDashboardPage() {
             </h2>
             <div className="grid sm:grid-cols-2 gap-3">
               {[
-                { label: "View Job Listings", desc: "Browse and moderate active job positions", href: "/jobs" },
+                { label: "User Management", desc: "Search, filter, and suspend platform accounts", href: "/admin/users" },
+                { label: "Job Listings", desc: "Browse and moderate active job positions by source", href: "/admin/jobs" },
                 { label: "Sync Status", desc: "Job aggregator source health, jump to table above", href: "#sync-status" },
               ].map((action) => (
                 <a
@@ -293,7 +310,23 @@ function AdminDashboardPage() {
 
           <div className="card-enterprise p-6 space-y-4">
             <h2 className="font-semibold text-slate-900 flex items-center gap-2"><Users className="h-4 w-4 text-slate-400" /> User Controls</h2>
-            {users.length === 0 ? <p className="text-sm text-slate-500">No users available.</p> : <div className="space-y-2">{users.slice(0, 8).map((target) => <div key={target.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 p-3"><div><p className="text-sm font-semibold text-slate-800">{target.full_name}</p><p className="text-xs text-slate-500">{target.email} · {target.role}</p></div><button onClick={() => void toggleUser(target)} disabled={target.id === ""} className={`px-3 py-1.5 text-xs ${target.is_active ? "btn-secondary-brand" : "btn-primary-brand"}`}>{target.is_active ? "Suspend" : "Activate"}</button></div>)}</div>}
+            {users.length === 0 ? (
+              <EmptyState icon={Users} title="No users available" />
+            ) : (
+              <div className="space-y-2">
+                {users.slice(0, 8).map((target) => (
+                  <div key={target.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-color)] p-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{target.full_name}</p>
+                      <p className="text-xs text-slate-500">{target.email} · {target.role}</p>
+                    </div>
+                    <Button size="sm" variant={target.is_active ? "secondary" : "primary"} onClick={() => void toggleUser(target)}>
+                      {target.is_active ? "Suspend" : "Activate"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -321,7 +354,18 @@ function AdminDashboardPage() {
 
           <div className="card-enterprise p-5 space-y-3">
             <h3 className="font-semibold text-slate-900 text-sm">Recent Audit Activity</h3>
-            <div className="space-y-2 text-xs">{activityLogs.length === 0 ? <p className="text-slate-500">No administrative activity recorded.</p> : activityLogs.slice(0, 6).map((entry) => <div key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5"><p className="font-semibold text-slate-700">{entry.action}</p><p className="mt-0.5 text-slate-500">{entry.entity_type || "platform"} · {new Date(entry.created_at).toLocaleString()}</p></div>)}</div>
+            <div className="space-y-2 text-xs">
+              {activityLogs.length === 0 ? (
+                <p className="text-slate-500">No administrative activity recorded.</p>
+              ) : (
+                activityLogs.slice(0, 6).map((entry) => (
+                  <div key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
+                    <p className="font-semibold text-slate-700">{entry.action}</p>
+                    <p className="mt-0.5 text-slate-500">{entry.entity_type || "platform"} · {new Date(entry.created_at).toLocaleString()}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
           <div className="card-enterprise p-5 space-y-3">

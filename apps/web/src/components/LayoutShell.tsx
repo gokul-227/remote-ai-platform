@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { TopNavbar } from "@/components/TopNavbar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { CommandPalette } from "@/components/CommandPalette";
 import { X } from "lucide-react";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const pathname = usePathname();
+  const isAuthRoute = pathname?.startsWith("/auth/");
 
   useEffect(() => {
     const handler = () => { if (window.innerWidth >= 768) setMobileOpen(false); };
@@ -14,9 +20,25 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  if (isAuthRoute) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-[#F3F2EF] text-slate-900 flex flex-col">
-      <TopNavbar onMenuClick={() => setMobileOpen(!mobileOpen)} />
+      <TopNavbar onMenuClick={() => setMobileOpen(!mobileOpen)} onSearchClick={() => setPaletteOpen(true)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* Mobile Sidebar Drawer */}
       {mobileOpen && (
@@ -40,12 +62,14 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Container */}
-      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+      <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 pb-20 md:pb-6">
         {children}
       </div>
 
+      <MobileBottomNav />
+
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 px-4 text-xs text-slate-500 mt-auto">
+      <footer className="hidden md:block bg-white border-t border-slate-200 py-6 px-4 text-xs text-slate-500 mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800">Remote AI Platform</span>

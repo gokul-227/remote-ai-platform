@@ -13,6 +13,7 @@ import {
   Shield,
   ChevronDown,
   LogOut,
+  Settings,
   Home,
   Users,
   MessageSquare,
@@ -24,26 +25,39 @@ import {
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useSearch } from "@/hooks/useSearch";
+import { Avatar } from "@/components/ui/Avatar";
 
 interface TopNavbarProps {
   onMenuClick?: () => void;
+  onSearchClick?: () => void;
 }
 
-export function TopNavbar({ onMenuClick }: TopNavbarProps) {
+export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
   const { user, logout } = useAuth();
   const notifications = useNotifications(!!user);
   const router = useRouter();
   const pathname = usePathname();
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const search = useSearch(searchVal, searchOpen);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchVal.trim()) {
+      setSearchOpen(false);
       router.push(`/jobs?query=${encodeURIComponent(searchVal.trim())}`);
     }
   };
+
+  const searchResults = search.data
+    ? [
+        ...search.data.jobs.slice(0, 4).map((j) => ({ id: j.id, kind: "Job" as const, title: j.title, subtitle: j.company_name, href: `/jobs/${j.id}` })),
+        ...search.data.engineers.slice(0, 4).map((e) => ({ id: e.id, kind: "Person" as const, title: e.full_name, subtitle: e.headline, href: `/engineers/${e.id}` })),
+      ]
+    : [];
 
   const handleLogout = async () => {
     try {
@@ -54,8 +68,13 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
     router.push("/");
   };
 
-  const navItems =
-    user?.role === "COMPANY"
+  const navItems = !user
+    ? [
+        { name: "Jobs", href: "/jobs", icon: Briefcase },
+        { name: "Engineers", href: "/engineers", icon: Users },
+        { name: "Companies", href: "/companies", icon: Globe },
+      ]
+    : user?.role === "COMPANY"
       ? [
           { name: "Home", href: "/", icon: Home },
           { name: "Feed", href: "/feed", icon: MessageSquare },
@@ -71,7 +90,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           { name: "Home", href: "/", icon: Home },
           { name: "Feed", href: "/feed", icon: MessageSquare },
           { name: "Jobs", href: "/jobs", icon: Briefcase },
-          { name: "Freelancers", href: "/freelancers", icon: Users },
+          { name: "Engineers", href: "/engineers", icon: Users },
           { name: "Contracts", href: "/contracts", icon: FileText },
           { name: "Communities", href: "/groups", icon: Globe },
           ...(user?.role === "ENGINEER"
@@ -105,17 +124,61 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
           </Link>
 
           {/* Global Search Bar */}
-          <form onSubmit={handleSearch} className="flex-1 hidden md:block">
+          <form onSubmit={handleSearch} className="flex-1 hidden md:block relative">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
-                placeholder="Search jobs, skills, companies..."
-                className="input-enterprise pl-9 py-1.5 text-xs bg-slate-100 focus:bg-white border-transparent focus:border-[#0A66C2]"
+                onFocus={() => setSearchOpen(true)}
+                onBlur={() => setTimeout(() => setSearchOpen(false), 120)}
+                placeholder="Search jobs, people, companies, skills..."
+                className="input-enterprise pl-10 pr-12 py-1.5 text-xs bg-slate-100 focus:bg-white border-transparent focus:border-[#0A66C2]"
               />
+              <button
+                type="button"
+                onClick={onSearchClick}
+                title="Open command palette"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 border border-slate-300 rounded px-1.5 py-0.5 hover:border-slate-400 hover:text-slate-600"
+              >
+                ⌘K
+              </button>
             </div>
+
+            {searchOpen && searchVal.trim().length > 1 && (
+              <div className="absolute left-0 right-0 mt-1.5 surface-elevated overflow-hidden animate-fade-in z-50">
+                {search.isLoading ? (
+                  <p className="px-4 py-3 text-xs text-slate-500">Searching…</p>
+                ) : searchResults.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-slate-500">No results for &ldquo;{searchVal}&rdquo;.</p>
+                ) : (
+                  <div className="py-1">
+                    {searchResults.map((r) => (
+                      <Link
+                        key={`${r.kind}-${r.id}`}
+                        href={r.href}
+                        onMouseDown={() => setSearchOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 hover:bg-slate-50"
+                      >
+                        <span className="badge-ent badge-ent-neutral text-[10px]">{r.kind}</span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-slate-900 truncate">{r.title}</p>
+                          {r.subtitle && <p className="text-[11px] text-slate-500 truncate">{r.subtitle}</p>}
+                        </div>
+                      </Link>
+                    ))}
+                    <button
+                      type="submit"
+                      onMouseDown={() => setSearchOpen(false)}
+                      className="w-full text-left px-4 py-2 text-xs font-semibold text-[#0A66C2] hover:bg-slate-50 border-t border-slate-100"
+                    >
+                      See all results for &ldquo;{searchVal}&rdquo;
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </form>
         </div>
 
@@ -143,7 +206,15 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={onSearchClick}
+            aria-label="Search"
+            className="md:hidden p-2 rounded-full text-slate-600 hover:bg-slate-100"
+          >
+            <Search className="h-5 w-5" />
+          </button>
           {/* Notifications */}
+          {user && (
           <div className="relative">
             <button
               onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
@@ -170,9 +241,17 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
                     </button>
                   )) : <p className="text-xs text-slate-500">No new notifications.</p>}
                 </div>
+                <Link
+                  href="/notifications"
+                  onClick={() => setNotifOpen(false)}
+                  className="block text-center text-xs font-semibold text-[#0A66C2] hover:underline mt-3 pt-3 border-t border-slate-100"
+                >
+                  View all notifications
+                </Link>
               </div>
             )}
           </div>
+          )}
 
           {/* User profile dropdown or Sign in button */}
           {user ? (
@@ -181,9 +260,7 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
                 onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
                 className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-100 transition-colors"
               >
-                <div className="h-8 w-8 rounded-full bg-[#0A66C2] text-white flex items-center justify-center font-bold text-xs">
-                  {user.full_name?.charAt(0).toUpperCase() || "U"}
-                </div>
+                <Avatar name={user.full_name || "User"} size="sm" />
                 <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
               </button>
 
@@ -245,6 +322,14 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
                     )}
                   </div>
                   <div className="border-t border-slate-100 pt-1">
+                    <Link
+                      href="/settings"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 text-xs"
+                    >
+                      <Settings className="h-4 w-4 text-slate-500" />
+                      Settings
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-600 hover:bg-red-50"

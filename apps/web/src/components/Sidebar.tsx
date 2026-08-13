@@ -41,6 +41,8 @@ function useNavItems(): NavItem[] {
   if (user?.role === "ADMIN") {
     return [
       { name: "Admin Console", href: "/admin/dashboard", icon: Shield },
+      { name: "User Management", href: "/admin/users", icon: Users },
+      { name: "Job Listings", href: "/admin/jobs", icon: Briefcase },
       { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
     ];
   }
@@ -64,6 +66,20 @@ export function Sidebar() {
   const navItems = useNavItems();
   const sectionLabel = user?.role === "COMPANY" ? "Hiring" : user?.role === "ADMIN" ? "Administration" : "Career Navigation";
 
+  if (!user) {
+    return (
+      <div className="w-full">
+        <div className="card-enterprise p-5 text-center space-y-2.5">
+          <h3 className="font-semibold text-slate-900 text-sm">Unlock your career dashboard</h3>
+          <p className="text-xs text-slate-500">Sign in to track applications, save jobs, and see AI-matched roles.</p>
+          <Link href="/auth/login" className="btn-primary-brand w-full block text-center text-xs mt-2">
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full space-y-4">
       {/* Profile Card Widget */}
@@ -71,16 +87,16 @@ export function Sidebar() {
         <div className="h-14 bg-slate-200" />
         <div className="px-4 pb-4 -mt-7">
           <div className="h-14 w-14 rounded-full bg-[#0A66C2] text-white flex items-center justify-center font-bold text-lg ring-4 ring-white mx-auto shadow-xs">
-            {user?.full_name?.charAt(0).toUpperCase() || "U"}
+            {user.full_name?.charAt(0).toUpperCase() || "U"}
           </div>
           <h3 className="font-semibold text-slate-900 text-sm mt-2 truncate">
-            {user?.full_name || "Engineering Professional"}
+            {user.full_name}
           </h3>
           <p className="text-xs text-slate-500 truncate mt-0.5">
-            {user?.email || "Software Developer"}
+            {user.email}
           </p>
 
-          {user?.role === "ENGINEER" && (
+          {user.role === "ENGINEER" && (
             <div className="border-t border-slate-100 mt-3 pt-3 text-left text-xs">
               <div className="flex justify-between text-slate-600">
                 <span>Applications</span>

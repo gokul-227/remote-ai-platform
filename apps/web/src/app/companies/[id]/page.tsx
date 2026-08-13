@@ -8,6 +8,7 @@ import {
   ChevronLeft, Loader2, ShieldCheck, ExternalLink, Code2,
 } from "lucide-react";
 import api from "@/lib/api";
+import { Badge } from "@/components/ui/Badge";
 
 type Job = {
   id: string;
@@ -115,9 +116,7 @@ export default function PublicCompanyProfilePage({
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold text-slate-900">{company.name}</h1>
                   {company.is_verified && (
-                    <span className="badge-ent badge-ent-brand flex items-center gap-1">
-                      <ShieldCheck className="h-3 w-3" /> Verified
-                    </span>
+                    <Badge tone="brand"><ShieldCheck className="h-3 w-3" /> Verified</Badge>
                   )}
                 </div>
                 <p className="mt-0.5 text-sm text-slate-600">
@@ -172,9 +171,9 @@ export default function PublicCompanyProfilePage({
           {/* Status badges */}
           <div className="mt-3 flex flex-wrap gap-2">
             {company.hiring_status && (
-              <span className={`badge-ent ${isActivelyHiring ? "badge-ent-success" : "badge-ent-neutral"}`}>
+              <Badge tone={isActivelyHiring ? "success" : "neutral"}>
                 {company.hiring_status.replace(/_/g, " ")}
-              </span>
+              </Badge>
             )}
           </div>
         </div>
@@ -203,7 +202,7 @@ export default function PublicCompanyProfilePage({
               </h2>
               <div className="flex flex-wrap gap-2">
                 {company.tech_stack.map((tech) => (
-                  <span key={tech} className="badge-ent badge-ent-neutral">{tech}</span>
+                  <Badge key={tech} tone="neutral">{tech}</Badge>
                 ))}
               </div>
             </section>
@@ -237,7 +236,7 @@ export default function PublicCompanyProfilePage({
                         {job.title}
                       </p>
                       <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                        {job.job_type && <span className="badge-ent badge-ent-neutral">{job.job_type}</span>}
+                        {job.job_type && <Badge tone="neutral">{job.job_type}</Badge>}
                         {job.location && <span>{job.location}</span>}
                       </div>
                     </div>
@@ -280,7 +279,7 @@ export default function PublicCompanyProfilePage({
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Verified Company</p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    Identity and business details confirmed by WorkMesh AI.
+                    Identity and business details confirmed by Remote AI Platform.
                   </p>
                 </div>
               </div>

@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { LayoutShell } from "@/components/LayoutShell";
 import { QueryProvider } from "@/components/QueryProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
   title: "Remote AI Platform — Remote Work Marketplace",
@@ -24,7 +25,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased min-h-screen">
-        <QueryProvider><AuthProvider><LayoutShell>{children}</LayoutShell></AuthProvider></QueryProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <LayoutShell>{children}</LayoutShell>
+            </ToastProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

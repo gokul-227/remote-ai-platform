@@ -8,6 +8,9 @@ import {
   ChevronDown, SlidersHorizontal, User, ArrowRight, Loader2,
 } from "lucide-react";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Engineer = {
   id: string;
@@ -120,10 +123,10 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
         {engineer.skills.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {engineer.skills.slice(0, 5).map((skill) => (
-              <span key={skill} className="badge-ent badge-ent-neutral">{skill}</span>
+              <Badge key={skill} tone="neutral">{skill}</Badge>
             ))}
             {engineer.skills.length > 5 && (
-              <span className="badge-ent badge-ent-neutral">+{engineer.skills.length - 5}</span>
+              <Badge tone="neutral">+{engineer.skills.length - 5}</Badge>
             )}
           </div>
         )}
@@ -131,9 +134,9 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
         {/* Footer */}
         <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
           {engineer.is_open_to_work ? (
-            <span className="badge-ent badge-ent-success">Open to work</span>
+            <Badge tone="success">Open to work</Badge>
           ) : (
-            <span className="badge-ent badge-ent-neutral">{engineer.availability || "Not available"}</span>
+            <Badge tone="neutral">{engineer.availability || "Not available"}</Badge>
           )}
           <span className="flex items-center gap-1 text-xs font-semibold text-[#0A66C2] opacity-0 transition-opacity group-hover:opacity-100">
             View profile <ArrowRight className="h-3 w-3" />
@@ -223,15 +226,16 @@ export default function EngineersDiscoveryPage() {
             onChange={(e) => handleSearchChange(e.target.value)}
             className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
           />
-          <button
+          <Button
             id="engineers-filter-toggle"
+            variant="ghost"
+            size="sm"
             onClick={() => setFiltersOpen((v) => !v)}
-            className="btn-subtle flex items-center gap-1.5 text-xs"
+            icon={<SlidersHorizontal className="h-3.5 w-3.5" />}
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
             Filters
             <ChevronDown className={`h-3 w-3 transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
-          </button>
+          </Button>
         </div>
 
         {/* Expandable filters */}
@@ -287,10 +291,8 @@ export default function EngineersDiscoveryPage() {
             {Array.from({ length: 6 }).map((_, i) => <EngineerCardSkeleton key={i} />)}
           </div>
         ) : engineers.length === 0 ? (
-          <div className="card-enterprise py-16 text-center">
-            <User className="mx-auto mb-3 h-10 w-10 text-slate-300" />
-            <p className="font-semibold text-slate-700">No engineers found</p>
-            <p className="mt-1 text-sm text-slate-500">Try broadening your search filters.</p>
+          <div className="card-enterprise">
+            <EmptyState icon={User} title="No engineers found" description="Try broadening your search filters." />
           </div>
         ) : (
           <>
@@ -299,9 +301,7 @@ export default function EngineersDiscoveryPage() {
                 {engineers.length} engineer{engineers.length !== 1 ? "s" : ""} found
               </p>
               {openOnly && (
-                <span className="badge-ent badge-ent-success flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" /> Open to work
-                </span>
+                <Badge tone="success"><Sparkles className="h-3 w-3" /> Open to work</Badge>
               )}
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -11,11 +11,14 @@ import {
   Briefcase,
   ExternalLink,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useCompanyProfile } from "@/hooks/useCompanyProfile";
 import { useCompanyJobs } from "@/hooks/useCompanyJobs";
 import { RequireRole } from "@/components/RequireRole";
+import { Button } from "@/components/ui/Button";
+import { EditCompanyProfileDrawer } from "./EditCompanyProfileDrawer";
 
 type CompanyProfile = {
   name: string;
@@ -78,6 +81,7 @@ function CompanyProfileContent() {
   const jobsQuery = useCompanyJobs();
   const profile = profileQuery.data as CompanyProfile | undefined;
   const jobs = (jobsQuery.data as CompanyJob[] | undefined) ?? [];
+  const [editOpen, setEditOpen] = useState(false);
 
   if (profileQuery.isLoading) {
     return (
@@ -94,6 +98,8 @@ function CompanyProfileContent() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+      <EditCompanyProfileDrawer open={editOpen} onClose={() => setEditOpen(false)} profile={profile} />
+
       {/* Header Card */}
       <div className="card-enterprise overflow-hidden">
         <div className="h-32 bg-slate-200 border-b border-slate-200" />
@@ -115,6 +121,7 @@ function CompanyProfileContent() {
                 </p>
               </div>
             </div>
+            <Button size="sm" icon={<Pencil className="h-3.5 w-3.5" />} onClick={() => setEditOpen(true)}>Edit profile</Button>
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm text-slate-500 mb-4">

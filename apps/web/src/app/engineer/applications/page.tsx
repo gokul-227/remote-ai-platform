@@ -1,11 +1,169 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import { Briefcase, FileText } from "lucide-react";
 import { useApplications } from "@/hooks/useApplications";
 import { useTaskOffers } from "@/hooks/useProject";
+import { Button } from "@/components/ui/Button";
+import { StatusBadge, type StatusTone } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Tabs } from "@/components/ui/Tabs";
+import { Skeleton } from "@/components/ui/Skeleton";
+
+interface ApplicationItem {
+  application: { id: string; status: string; created_at: string };
+  job: { id: string; title: string; company_name: string };
+}
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  SUBMITTED: "info",
+  APPLIED: "info",
+  REVIEWING: "warning",
+  SHORTLISTED: "info",
+  INVITED: "info",
+  ACCEPTED: "success",
+  REJECTED: "danger",
+  WITHDRAWN: "neutral",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  SUBMITTED: "Applied",
+  APPLIED: "Applied",
+  REVIEWING: "In Review",
+  SHORTLISTED: "Shortlisted",
+  INVITED: "Invited",
+  ACCEPTED: "Offer",
+  REJECTED: "Rejected",
+  WITHDRAWN: "Withdrawn",
+};
+
+const WITHDRAWABLE = new Set(["SUBMITTED", "APPLIED", "REVIEWING", "SHORTLISTED", "INVITED"]);
 
 export default function ApplicationsPage() {
   const applications = useApplications(true);
-  const items = applications.data ?? [];
   const offers = useTaskOffers(true);
-  return <main className="mx-auto max-w-5xl px-4 py-8"><h1 className="text-3xl font-bold text-slate-900">Applications</h1><p className="mt-2 text-slate-600">Track applications and task offers from project teams.</p><section className="card-enterprise mt-6 p-6"><h2 className="text-lg font-semibold text-slate-900">Task offers</h2>{offers.isLoading ? <p className="mt-3 text-sm text-slate-500">Loading offers…</p> : offers.isError ? <p className="mt-3 text-sm text-red-700">Unable to load task offers.</p> : (offers.data ?? []).length === 0 ? <p className="mt-3 text-sm text-slate-500">No task offers yet.</p> : <div className="mt-4 space-y-3">{offers.data?.map((item) => <article key={item.offer.id} className="rounded-xl border border-slate-200 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold text-slate-900">{item.task.title}</p><p className="text-sm text-slate-500">{item.project.title} · {item.offer.match_score}% skill match</p></div><span className="badge-enterprise">{item.offer.status}</span></div>{item.offer.status === "OFFERED" && <div className="mt-3 flex gap-2"><button onClick={() => offers.respond.mutate({ offerId: item.offer.id, status: "ACCEPTED" })} disabled={offers.respond.isPending} className="btn-primary-brand px-3 py-2 text-xs">Accept</button><button onClick={() => offers.respond.mutate({ offerId: item.offer.id, status: "DECLINED" })} disabled={offers.respond.isPending} className="btn-secondary-brand px-3 py-2 text-xs">Decline</button></div>}</article>)}</div>}</section><h2 className="mt-8 text-xl font-semibold text-slate-900">Applications</h2>{applications.isLoading ? <div className="card-enterprise mt-6 p-8 text-slate-500">Loading applications…</div> : applications.isError ? <div className="card-enterprise mt-6 p-8 text-red-700">Unable to load applications. <button onClick={() => applications.refetch()} className="font-semibold text-[#0A66C2]">Retry</button></div> : items.length === 0 ? <div className="card-enterprise mt-6 p-8 text-slate-500">You have not applied to any opportunities yet.</div> : <div className="mt-6 space-y-4">{items.map((item: { application: { id: string; status: string }; job: { title: string; company_name: string } }) => { const canWithdraw = ["SUBMITTED", "APPLIED", "REVIEWING", "SHORTLISTED", "INVITED"].includes(item.application.status); return <article key={item.application.id} className="card-enterprise flex items-center justify-between gap-4 p-5"><div><h2 className="font-semibold text-slate-900">{item.job.title}</h2><p className="mt-1 text-sm text-slate-500">{item.job.company_name}</p><span className="badge-enterprise mt-3 inline-flex">{item.application.status}</span></div>{canWithdraw && <button onClick={() => applications.withdraw.mutate(item.application.id)} disabled={applications.withdraw.isPending} className="btn-secondary-brand shrink-0 px-3 py-2 text-xs">{applications.withdraw.isPending ? "Withdrawing…" : "Withdraw"}</button>}</article>; })}</div>}</main>;
+  const items: ApplicationItem[] = applications.data ?? [];
+  const [filter, setFilter] = useState<"all" | "active" | "closed">("all");
+
+  const filtered = items.filter((item) => {
+    if (filter === "active") return WITHDRAWABLE.has(item.application.status);
+    if (filter === "closed") return !WITHDRAWABLE.has(item.application.status);
+    return true;
+  });
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">My Applications</h1>
+        <p className="text-xs text-slate-500 mt-1">Track your job applications and task offers from project teams.</p>
+      </div>
+
+      {/* Task offers */}
+      <div className="card-enterprise p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-slate-900">Task Offers</h2>
+        {offers.isLoading ? (
+          <div className="space-y-2">{Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+        ) : offers.isError ? (
+          <p className="text-xs text-red-700">Unable to load task offers.</p>
+        ) : (offers.data ?? []).length === 0 ? (
+          <p className="text-xs text-slate-500">No task offers yet. These appear when a project team offers you a task.</p>
+        ) : (
+          <div className="space-y-2.5">
+            {offers.data?.map((item) => (
+              <div key={item.offer.id} className="rounded-lg border border-[var(--border-color)] p-3.5 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{item.task.title}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{item.project.title} · {item.offer.match_score}% skill match</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <StatusBadge label={item.offer.status} tone={item.offer.status === "OFFERED" ? "info" : "neutral"} />
+                  {item.offer.status === "OFFERED" && (
+                    <>
+                      <Button size="sm" onClick={() => offers.respond.mutate({ offerId: item.offer.id, status: "ACCEPTED" })} loading={offers.respond.isPending}>
+                        Accept
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => offers.respond.mutate({ offerId: item.offer.id, status: "DECLINED" })} disabled={offers.respond.isPending}>
+                        Decline
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Applications */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-900">Job Applications</h2>
+        </div>
+        <Tabs
+          items={[
+            { key: "all", label: "All", count: items.length },
+            { key: "active", label: "Active", count: items.filter((i) => WITHDRAWABLE.has(i.application.status)).length },
+            { key: "closed", label: "Closed", count: items.filter((i) => !WITHDRAWABLE.has(i.application.status)).length },
+          ]}
+          active={filter}
+          onChange={(k) => setFilter(k as typeof filter)}
+        />
+
+        {applications.isLoading ? (
+          <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+        ) : applications.isError ? (
+          <div className="card-enterprise p-6 text-center space-y-2">
+            <p className="text-sm text-red-700">Unable to load applications.</p>
+            <Button size="sm" variant="secondary" onClick={() => applications.refetch()}>Retry</Button>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="card-enterprise">
+            <EmptyState
+              icon={FileText}
+              title="No applications yet"
+              description="You haven't applied to any opportunities yet. Explore the marketplace to find your next remote role."
+              actionLabel="Browse Jobs"
+              actionHref="/jobs"
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((item) => {
+              const canWithdraw = WITHDRAWABLE.has(item.application.status);
+              return (
+                <div key={item.application.id} className="card-enterprise flex items-center justify-between gap-4 p-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                      <Briefcase className="h-4 w-4 text-slate-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <Link href={`/jobs/${item.job.id}`} className="font-semibold text-slate-900 text-sm hover:text-[#0A66C2] truncate block">
+                        {item.job.title}
+                      </Link>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.job.company_name}</p>
+                      <div className="mt-1.5">
+                        <StatusBadge label={STATUS_LABEL[item.application.status] ?? item.application.status} tone={STATUS_TONE[item.application.status] ?? "neutral"} />
+                      </div>
+                    </div>
+                  </div>
+                  {canWithdraw && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="shrink-0"
+                      loading={applications.withdraw.isPending}
+                      onClick={() => applications.withdraw.mutate(item.application.id)}
+                    >
+                      Withdraw
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

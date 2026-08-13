@@ -6,15 +6,20 @@ import {
   ArrowLeft,
   CheckCircle2,
   FileSignature,
-  ShieldCheck,
   Clock,
   Plus,
   AlertTriangle,
-  FileText,
-  DollarSign,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useContract, useContracts } from "@/hooks/useContracts";
+import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
+import { Input } from "@/components/ui/Input";
+import { StatusBadge, type StatusTone } from "@/components/ui/Badge";
+
+const STATUS_TONE: Record<string, StatusTone> = {
+  ACTIVE: "success", SIGNED: "info", OFFERED: "warning", COMPLETED: "info", TERMINATED: "danger",
+};
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -81,23 +86,15 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
         <div className="flex items-center gap-2">
           {!mySigned && contract.status !== "COMPLETED" && contract.status !== "TERMINATED" && (
-            <button
-              onClick={() => signContract.mutate(contract.id)}
-              disabled={signContract.isPending}
-              className="btn-primary-brand text-xs py-1.5 px-4 flex items-center gap-1.5"
-            >
-              <FileSignature className="h-4 w-4" /> Sign Contract
-            </button>
+            <Button size="sm" loading={signContract.isPending} icon={<FileSignature className="h-4 w-4" />} onClick={() => signContract.mutate(contract.id)}>
+              Sign Contract
+            </Button>
           )}
 
           {contract.status !== "TERMINATED" && contract.status !== "COMPLETED" && (
-            <button
-              onClick={() => terminateContract.mutate(contract.id)}
-              disabled={terminateContract.isPending}
-              className="btn-secondary-brand text-xs py-1.5 px-3 text-red-600 hover:bg-red-50 border-red-200"
-            >
+            <Button size="sm" variant="danger" loading={terminateContract.isPending} onClick={() => terminateContract.mutate(contract.id)}>
               Terminate
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -105,10 +102,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       {/* Main Contract Card */}
       <div className="card-enterprise p-8 space-y-6">
         <div className="border-b border-slate-100 pb-4 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#0A66C2]">
-              Official Work Agreement · {contract.status}
-            </span>
+          <div className="space-y-1.5">
+            <StatusBadge label={contract.status} tone={STATUS_TONE[contract.status] ?? "neutral"} />
             <h1 className="text-2xl font-bold text-slate-900 mt-1">{contract.title}</h1>
             <p className="text-xs text-slate-400 mt-0.5">Contract ID: {contract.id}</p>
           </div>
@@ -175,12 +170,9 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-slate-900 text-sm">Payment Milestones</h3>
-            <button
-              onClick={() => setShowMilestoneModal(true)}
-              className="btn-secondary-brand text-xs py-1 px-3 flex items-center gap-1"
-            >
-              <Plus className="h-3.5 w-3.5" /> Add Milestone
-            </button>
+            <Button size="sm" variant="secondary" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => setShowMilestoneModal(true)}>
+              Add Milestone
+            </Button>
           </div>
 
           {contract.milestones && contract.milestones.length > 0 ? (
@@ -214,62 +206,16 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
-      {/* ADD MILESTONE MODAL */}
-      {showMilestoneModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="card-enterprise max-w-md w-full p-6 space-y-4 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-base">Add Contract Milestone</h3>
-              <button onClick={() => setShowMilestoneModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleAddMilestone} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Milestone Title</label>
-                <input
-                  type="text"
-                  value={milestoneTitle}
-                  onChange={(e) => setMilestoneTitle(e.target.value)}
-                  placeholder="e.g. Milestone 1: API Core Implementation"
-                  required
-                  className="input-enterprise text-xs py-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Amount ($)</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={milestoneAmount}
-                  onChange={(e) => setMilestoneAmount(Number(e.target.value))}
-                  required
-                  className="input-enterprise text-xs py-2"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowMilestoneModal(false)}
-                  className="btn-secondary-brand text-xs py-2 px-4"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={addMilestone.isPending || !milestoneTitle.trim()}
-                  className="btn-primary-brand text-xs py-2 px-5 disabled:opacity-50"
-                >
-                  {addMilestone.isPending ? "Adding..." : "Add Milestone"}
-                </button>
-              </div>
-            </form>
+      <Modal open={showMilestoneModal} onClose={() => setShowMilestoneModal(false)} title="Add Contract Milestone">
+        <form onSubmit={handleAddMilestone} className="space-y-4">
+          <Input label="Milestone Title" value={milestoneTitle} onChange={(e) => setMilestoneTitle(e.target.value)} placeholder="e.g. Milestone 1: API Core Implementation" required />
+          <Input label="Amount ($)" type="number" min={1} value={milestoneAmount} onChange={(e) => setMilestoneAmount(Number(e.target.value))} required />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowMilestoneModal(false)}>Cancel</Button>
+            <Button type="submit" loading={addMilestone.isPending} disabled={!milestoneTitle.trim()}>Add Milestone</Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   );
 }

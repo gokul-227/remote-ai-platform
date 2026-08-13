@@ -7,10 +7,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useJobs } from "@/hooks/useJobs";
+import type { JobPost } from "@/types";
 
 export function RightSidebar() {
   const jobsQuery = useJobs({ limit: 3 });
-  const jobs = jobsQuery.data || [];
+  const jobs: JobPost[] = jobsQuery.data || [];
   return (
     <div className="space-y-4">
       {/* Suggested Jobs */}
@@ -25,7 +26,7 @@ export function RightSidebar() {
           </Link>
         </div>
         <div className="space-y-2.5 text-xs">
-          {jobs.length ? jobs.map((job: { id: string; title: string; company_name: string; location?: string }) => (
+          {jobs.length ? jobs.map((job) => (
             <Link
               key={job.id}
               href={`/jobs/${job.id}`}
