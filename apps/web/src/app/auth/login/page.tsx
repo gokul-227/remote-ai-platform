@@ -44,8 +44,17 @@ export default function LoginPage() {
       const { access_token, refresh_token, user: userData } = res.data;
       login(access_token, userData, refresh_token);
       router.push("/");
-    } catch {
-      setError("Invalid email or password. Please try again.");
+    } catch (err: unknown) {
+      const response = (err as { response?: { status?: number; data?: { detail?: string } } }).response;
+      if (!response) {
+        setError("Can't reach the server right now. Check your connection and try again.");
+      } else if (response.status === 429) {
+        setError("Too many attempts. Please wait a moment and try again.");
+      } else if (response.status === 401 || response.status === 422) {
+        setError(response.data?.detail || "Invalid email or password. Please try again.");
+      } else {
+        setError(response.data?.detail || "Something went wrong signing you in. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

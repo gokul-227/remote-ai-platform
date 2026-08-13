@@ -55,7 +55,7 @@ export function RightSidebar() {
       <div className="card-enterprise p-4 space-y-3">
         <div className="font-semibold text-slate-900 text-xs flex items-center justify-between border-b border-slate-100 pb-2">
           <span className="flex items-center gap-1.5"><Building2 className="h-4 w-4 text-[#0A66C2]" /> Recommended Companies</span>
-          <Link href="/company/profile" className="text-[11px] text-[#0A66C2] hover:underline">Explore</Link>
+          <Link href="/companies" className="text-[11px] text-[#0A66C2] hover:underline">Explore</Link>
         </div>
         <p className="text-xs text-slate-500">Browse verified companies through the company directory.</p>
       </div>

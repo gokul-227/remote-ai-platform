@@ -11,44 +11,58 @@ import {
   Building2,
   Shield,
   FolderKanban,
-  Settings,
   Users,
-  MessageSquare,
-  Globe,
   BrainCircuit,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useApplications } from "@/hooks/useApplications";
 
+type NavItem = { name: string; href: string; icon: typeof User; count?: number };
+
+// Role-scoped, profile-centric links. Routes already reachable from the
+// global top nav (Jobs, Freelancers, Network, Messages, Communities,
+// Contracts, Projects) are deliberately not repeated here — this rail is
+// "your identity and work," not a second copy of primary navigation.
+function useNavItems(): NavItem[] {
+  const { user } = useAuth();
+  const savedJobs = useSavedJobs(user?.role === "ENGINEER");
+  const applications = useApplications(user?.role === "ENGINEER");
+
+  if (user?.role === "COMPANY") {
+    return [
+      { name: "Company Profile", href: "/company/profile", icon: Building2 },
+      { name: "Hiring Dashboard", href: "/company/dashboard", icon: LayoutDashboard },
+      { name: "My Job Postings", href: "/company/jobs", icon: Briefcase },
+      { name: "Candidate Discovery", href: "/company/candidates", icon: Users },
+    ];
+  }
+
+  if (user?.role === "ADMIN") {
+    return [
+      { name: "Admin Console", href: "/admin/dashboard", icon: Shield },
+      { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
+    ];
+  }
+
+  // ENGINEER (default for logged-out visitors previewing the shell)
+  return [
+    { name: "My Profile", href: "/engineer/profile", icon: User },
+    { name: "Career Dashboard", href: "/engineer/dashboard", icon: LayoutDashboard },
+    { name: "Recommendations", href: "/engineer/recommendations", icon: LayoutDashboard },
+    { name: "Saved Jobs", href: "/jobs?saved=true", icon: Bookmark, count: savedJobs.data?.length },
+    { name: "My Applications", href: "/engineer/applications", icon: FileText, count: applications.data?.length },
+    { name: "Execution Workspace", href: "/engineer/workspace", icon: FolderKanban },
+    { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
+  ];
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const savedJobs = useSavedJobs(!!user);
-  const applications = useApplications(!!user);
-
-  const navItems = [
-    { name: "My Profile", href: "/engineer/profile", icon: User },
-    { name: "Execution Workspace", href: "/engineer/workspace", icon: FolderKanban },
-    { name: "Contracts", href: "/contracts", icon: FileText },
-    { name: "Wallet & Payments", href: "/payments", icon: Bookmark },
-    { name: "Social Feed", href: "/feed", icon: MessageSquare },
-    { name: "Communities", href: "/groups", icon: Globe },
-    { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
-    { name: "Saved Jobs", href: "/jobs?saved=true", icon: Bookmark, count: savedJobs.data?.length },
-    { name: "My Applications", href: "/engineer/applications", icon: FileText, count: applications.data?.length },
-    { name: "Recommendations", href: "/engineer/recommendations", icon: LayoutDashboard },
-    { name: "Browse Engineers", href: "/engineers", icon: Users },
-    { name: "Browse Companies", href: "/companies", icon: Building2 },
-    { name: "Freelancer Directory", href: "/freelancers", icon: Briefcase },
-    { name: "Network", href: "/network", icon: Users },
-    { name: "Messages", href: "/messages", icon: MessageSquare },
-    { name: "Career Dashboard", href: "/engineer/dashboard", icon: LayoutDashboard },
-    { name: "Hiring Dashboard", href: "/company/dashboard", icon: Building2 },
-    { name: "Admin Console", href: "/admin/dashboard", icon: Shield },
-    { name: "Projects", href: "/projects", icon: FolderKanban },
-    { name: "Settings", href: "#", icon: Settings },
-  ];
+  const applications = useApplications(!!user && user.role === "ENGINEER");
+  const navItems = useNavItems();
+  const sectionLabel = user?.role === "COMPANY" ? "Hiring" : user?.role === "ADMIN" ? "Administration" : "Career Navigation";
 
   return (
     <div className="w-full space-y-4">
@@ -66,19 +80,21 @@ export function Sidebar() {
             {user?.email || "Software Developer"}
           </p>
 
-          <div className="border-t border-slate-100 mt-3 pt-3 text-left text-xs">
-            <div className="flex justify-between text-slate-600">
-              <span>Applications</span>
-              <span className="font-semibold text-[#0A66C2]">{applications.data?.length ?? 0}</span>
+          {user?.role === "ENGINEER" && (
+            <div className="border-t border-slate-100 mt-3 pt-3 text-left text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Applications</span>
+                <span className="font-semibold text-[#0A66C2]">{applications.data?.length ?? 0}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Navigation Card */}
       <div className="card-enterprise p-2">
         <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          Career Navigation
+          {sectionLabel}
         </div>
         <nav className="space-y-0.5">
           {navItems.map((item) => {

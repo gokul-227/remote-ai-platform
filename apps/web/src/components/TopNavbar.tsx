@@ -194,38 +194,55 @@ export function TopNavbar({ onMenuClick }: TopNavbarProps) {
                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                   </div>
                   <div className="py-1 text-xs">
-                    <Link
-                      href="/engineer/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
-                    >
-                      <User className="h-4 w-4 text-slate-500" />
-                      My Profile
-                    </Link>
-                    <Link
-                      href="/engineer/dashboard"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
-                    >
-                      <Briefcase className="h-4 w-4 text-slate-500" />
-                      Career Dashboard
-                    </Link>
-                    <Link
-                      href="/company/dashboard"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
-                    >
-                      <Building2 className="h-4 w-4 text-slate-500" />
-                      Hiring Dashboard
-                    </Link>
-                    <Link
-                      href="/admin/dashboard"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
-                    >
-                      <Shield className="h-4 w-4 text-slate-500" />
-                      Admin Console
-                    </Link>
+                    {user?.role === "COMPANY" ? (
+                      <>
+                        <Link
+                          href="/company/profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                        >
+                          <Building2 className="h-4 w-4 text-slate-500" />
+                          Company Profile
+                        </Link>
+                        <Link
+                          href="/company/dashboard"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                        >
+                          <Briefcase className="h-4 w-4 text-slate-500" />
+                          Hiring Dashboard
+                        </Link>
+                      </>
+                    ) : user?.role !== "ADMIN" ? (
+                      <>
+                        <Link
+                          href="/engineer/profile"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                        >
+                          <User className="h-4 w-4 text-slate-500" />
+                          My Profile
+                        </Link>
+                        <Link
+                          href="/engineer/dashboard"
+                          onClick={() => setProfileOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                        >
+                          <Briefcase className="h-4 w-4 text-slate-500" />
+                          Career Dashboard
+                        </Link>
+                      </>
+                    ) : null}
+                    {user?.role === "ADMIN" && (
+                      <Link
+                        href="/admin/dashboard"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                      >
+                        <Shield className="h-4 w-4 text-slate-500" />
+                        Admin Console
+                      </Link>
+                    )}
                   </div>
                   <div className="border-t border-slate-100 pt-1">
                     <button

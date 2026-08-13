@@ -1,25 +1,71 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens. One source of truth for color/radius/shadow — components
+ * should reference these variables (or the card/button/badge primitives
+ * built on them below), not hardcode hex values.
+ *
+ * Typography and spacing intentionally reuse Tailwind's own default scale
+ * rather than a parallel token set: Tailwind's text-xs/sm/base/lg/xl/2xl/3xl
+ * (12/14/16/18/20/24/30px) and spacing steps (4/8/12/16/20/24/32/40/48/64px)
+ * already are the coherent scale — duplicating them here would just be two
+ * systems to keep in sync for no benefit.
+ */
 :root {
+  /* Surfaces */
   --bg-page: #F3F2EF;
   --bg-surface: #FFFFFF;
   --bg-subtle: #F8FAFC;
+  --surface-muted: var(--bg-subtle);
+  --surface-elevated: #FFFFFF; /* dropdowns/dialogs/popovers — paired with --shadow-md */
+
+  /* Borders */
   --border-color: #E5E7EB;
   --border-hover: #D1D5DB;
+  --border-strong: #CBD5E1;
+
+  /* Brand / primary */
   --color-brand: #0A66C2;
   --color-brand-hover: #004182;
   --color-brand-light: #E8F3FF;
+  --primary-soft: var(--color-brand-light);
+
+  /* Status */
   --color-accent: #0284C7;
+  --color-info: var(--color-accent);
+  --color-info-soft: #E0F2FE;
   --color-success: #059669;
+  --color-success-soft: #D1FAE5;
   --color-warning: #D97706;
+  --color-warning-soft: #FEF3C7;
   --color-error: #DC2626;
+  --color-danger: var(--color-error);
+  --color-danger-soft: #FEE2E2;
+
+  /* AI — restrained indigo, distinct from brand blue, never the dominant color */
+  --color-ai: #6366F1;
+  --color-ai-soft: #EEF2FF;
+
+  /* Text */
   --text-main: #0F172A;
   --text-muted: #475569;
   --text-light: #64748B;
-  --radius-card: 12px;
+
+  /* Radius: 6-8px controls, 10-12px cards, 12-16px dialogs */
   --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-card: 12px;
+  --radius-lg: 16px;
+
+  /* Shadow: border-based separation by default; elevation reserved for
+     dropdowns/popovers/dialogs/floating actions (see section 19 of the
+     product spec — the app should not look like floating cards everywhere) */
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.12), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+
+  /* Focus ring — always pair with a visible outline, never color alone */
+  --focus-ring: 0 0 0 3px rgba(10, 102, 194, 0.35);
 }
 
 *, *::before, *::after {
@@ -49,6 +95,23 @@ h1, h2, h3, h4, h5, h6 {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Visible keyboard focus everywhere — never rely on a browser default that
+   disappears on some elements, and never rely on color alone (WCAG 2.2 AA). */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Enterprise Card Primitive */
@@ -213,6 +276,30 @@ a {
 .pill-match-high { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 .pill-match-mid  { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
 .pill-match-low  { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+
+/* AI badge — the one consistent visual marker for "AI Match / AI Insight /
+   AI Recommendation" labels across the product. Restrained: text + a soft
+   indigo background, no gradients or sparkle icons required to read as AI. */
+.badge-ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.725rem;
+  font-weight: 600;
+  background-color: var(--color-ai-soft);
+  color: var(--color-ai);
+}
+
+/* Elevated surface — dropdowns, popovers, dialogs, floating actions only.
+   Everything else uses .card-enterprise's border-based separation. */
+.surface-elevated {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
 
 /* Skeleton */
 .skeleton-box {
