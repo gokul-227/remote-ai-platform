@@ -47,10 +47,19 @@ test("company can register, create profile, and post a job", async ({ page }) =>
   // Compensation step — leave budget fields blank, advance to review.
   await page.getByRole("button", { name: /^next$/i }).click();
 
-  await page.getByRole("button", { name: /publish job/i }).click();
-
-  // Successful publish should navigate away from the create form or show the new job.
-  await expect(page).not.toHaveURL(/\/jobs\/new$/, { timeout: 30_000 });
+  // Clicking "Publish Job" fires the create-job mutation and an immediate
+  // client-side router.push to the new job's detail page. Confirmed via
+  // repeated local repro (screenshots) that the job is created and the page
+  // has already reached /jobs/[id] in every case this raises — the failure
+  // is Playwright's own action-tracking racing the navigation (it keeps
+  // waiting to re-resolve the now-gone "Publish Job" button on the new page),
+  // not a real app bug. Without an explicit timeout, click() inherits the
+  // *whole test's* 90s budget internally, so a swallowed click error alone
+  // still starves the real assertion below of any time to run. Give it a
+  // short explicit timeout so it fails fast and leaves the URL assertion
+  // (the outcome we actually care about) the rest of the budget.
+  await page.getByRole("button", { name: /publish job/i }).click({ timeout: 5_000 }).catch(() => {});
+  await expect(page).not.toHaveURL(/\/jobs\/new$/, { timeout: 60_000 });
 
   await page.goto("/company/candidates");
   await page.waitForLoadState("networkidle");
