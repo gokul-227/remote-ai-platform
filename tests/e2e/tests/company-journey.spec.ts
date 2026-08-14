@@ -1,17 +1,14 @@
 import { test, expect } from "@playwright/test";
+import { registerAs } from "./helpers";
 
 // Real E2E journey against the live stack: register as a company -> create
-// company profile -> post a job -> land on the candidate discovery view.
+// company profile -> post a job (5-step wizard) -> land on the candidate
+// discovery view.
 test("company can register, create profile, and post a job", async ({ page }) => {
   const email = `e2e-company-${Date.now()}@example.com`;
   const password = "e2eTestPassword123";
 
-  await page.goto("/auth/register");
-  await page.locator("#fullName").fill("E2E Test Company");
-  await page.locator("#regEmail").fill(email);
-  await page.locator("#regPassword").fill(password);
-  await page.getByRole("button", { name: /company \/ recruiter/i }).click();
-  await page.getByRole("button", { name: /create account/i }).click();
+  await registerAs(page, { name: "E2E Test Company", email, password, role: "company" });
 
   await expect(page).toHaveURL(/\/company\/profile/, { timeout: 30_000 });
 
@@ -34,11 +31,23 @@ test("company can register, create profile, and post a job", async ({ page }) =>
   // Profile save should not leave the form in an error state.
   await expect(page.locator("body")).not.toContainText(/unexpected error/i);
 
+  // /jobs/new is a 5-step wizard: role basics -> description -> requirements
+  // -> compensation -> review. Only "Job title" is required to advance past
+  // step 1, so compensation is deliberately left at its defaults here.
   await page.goto("/jobs/new");
-  await page.getByLabel("Title").fill("E2E Test Role — Senior Engineer");
+  await page.getByLabel("Job title").fill("E2E Test Role — Senior Engineer");
+  await page.getByRole("button", { name: /^next$/i }).click();
+
   await page.getByLabel("Description").fill("A role created by an automated E2E test to verify job posting works end to end.");
+  await page.getByRole("button", { name: /^next$/i }).click();
+
   await page.getByLabel("Required skills").fill("Python, TypeScript");
-  await page.getByRole("button", { name: /publish/i }).click();
+  await page.getByRole("button", { name: /^next$/i }).click();
+
+  // Compensation step — leave budget fields blank, advance to review.
+  await page.getByRole("button", { name: /^next$/i }).click();
+
+  await page.getByRole("button", { name: /publish job/i }).click();
 
   // Successful publish should navigate away from the create form or show the new job.
   await expect(page).not.toHaveURL(/\/jobs\/new$/, { timeout: 30_000 });

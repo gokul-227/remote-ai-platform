@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { registerAs } from "./helpers";
 
 // Real E2E journey against the live stack: register -> login -> complete
 // profile -> browse jobs -> search -> open a job -> save it -> apply.
@@ -6,11 +7,7 @@ test("engineer can register, browse jobs, save, and apply", async ({ page }) => 
   const email = `e2e-engineer-${Date.now()}@example.com`;
   const password = "e2eTestPassword123";
 
-  await page.goto("/auth/register");
-  await page.locator("#fullName").fill("E2E Test Engineer");
-  await page.locator("#regEmail").fill(email);
-  await page.locator("#regPassword").fill(password);
-  await page.getByRole("button", { name: /create account/i }).click();
+  await registerAs(page, { name: "E2E Test Engineer", email, password, role: "engineer" });
 
   // Auto-login redirects to /engineer/profile on success.
   await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
@@ -46,32 +43,26 @@ test("engineer recommendations show real score breakdown, not placeholders", asy
   const email = `e2e-engineer-${Date.now()}@example.com`;
   const password = "e2eTestPassword123";
 
-  await page.goto("/auth/register");
-  await page.locator("#fullName").fill("E2E Recommendations Engineer");
-  await page.locator("#regEmail").fill(email);
-  await page.locator("#regPassword").fill(password);
-  await page.getByRole("button", { name: /create account/i }).click();
+  await registerAs(page, { name: "E2E Recommendations Engineer", email, password, role: "engineer" });
   await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
 
   await page.goto("/engineer/recommendations");
   await page.waitForLoadState("networkidle");
 
-  // The page always shows a real backend-driven count in the "all" filter tab
-  // (e.g. "all 0" for a brand-new profile with no computed matches yet, or
-  // "all 12" once matches exist) — either way, this is live data, not a
-  // hardcoded placeholder, so its presence is the assertion.
-  await expect(page.getByRole("button", { name: /^all \d+$/ })).toBeVisible();
+  // The page always shows a real backend-driven count in the "All" filter tab
+  // (e.g. "All0" for a brand-new profile with no computed matches yet, or
+  // "All12" once matches exist) — either way, this is live data, not a
+  // hardcoded placeholder, so its presence is the assertion. The shared Tabs
+  // component renders these as role="tab" (correct ARIA tablist semantics),
+  // not role="button".
+  await expect(page.getByRole("tab", { name: /^all\s*\d+$/i })).toBeVisible();
 });
 
 test("job detail page computes and displays a real AI match score", async ({ page }) => {
   const email = `e2e-engineer-${Date.now()}@example.com`;
   const password = "e2eTestPassword123";
 
-  await page.goto("/auth/register");
-  await page.locator("#fullName").fill("E2E Match Engineer");
-  await page.locator("#regEmail").fill(email);
-  await page.locator("#regPassword").fill(password);
-  await page.getByRole("button", { name: /create account/i }).click();
+  await registerAs(page, { name: "E2E Match Engineer", email, password, role: "engineer" });
   await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
 
   // A brand-new registration has no EngineerProfile row yet — the match
