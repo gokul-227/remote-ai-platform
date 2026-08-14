@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, forwardRef } from "react";
+import { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, forwardRef, useId } from "react";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -41,47 +41,59 @@ function FieldWrapper({
 type InputProps = InputHTMLAttributes<HTMLInputElement> & FieldWrapperProps;
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, hint, error, required, className, id, ...props }, ref) => (
-    <FieldWrapper label={label} hint={hint} error={error} required={required} id={id}>
-      <input
-        ref={ref}
-        id={id}
-        aria-invalid={!!error}
-        className={cn("input-enterprise", error && "border-[var(--color-error)] focus:shadow-none", className)}
-        {...props}
-      />
-    </FieldWrapper>
-  )
+  ({ label, hint, error, required, className, id, ...props }, ref) => {
+    const generatedId = useId();
+    const fieldId = id ?? generatedId;
+    return (
+      <FieldWrapper label={label} hint={hint} error={error} required={required} id={fieldId}>
+        <input
+          ref={ref}
+          id={fieldId}
+          aria-invalid={!!error}
+          className={cn("input-enterprise", error && "border-[var(--color-error)] focus:shadow-none", className)}
+          {...props}
+        />
+      </FieldWrapper>
+    );
+  }
 );
 Input.displayName = "Input";
 
 type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & FieldWrapperProps;
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, hint, error, required, className, id, ...props }, ref) => (
-    <FieldWrapper label={label} hint={hint} error={error} required={required} id={id}>
-      <textarea
-        ref={ref}
-        id={id}
-        aria-invalid={!!error}
-        className={cn("input-enterprise min-h-[96px] resize-y", error && "border-[var(--color-error)]", className)}
-        {...props}
-      />
-    </FieldWrapper>
-  )
+  ({ label, hint, error, required, className, id, ...props }, ref) => {
+    const generatedId = useId();
+    const fieldId = id ?? generatedId;
+    return (
+      <FieldWrapper label={label} hint={hint} error={error} required={required} id={fieldId}>
+        <textarea
+          ref={ref}
+          id={fieldId}
+          aria-invalid={!!error}
+          className={cn("input-enterprise min-h-[96px] resize-y", error && "border-[var(--color-error)]", className)}
+          {...props}
+        />
+      </FieldWrapper>
+    );
+  }
 );
 Textarea.displayName = "Textarea";
 
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & FieldWrapperProps;
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, hint, error, required, className, id, children, ...props }, ref) => (
-    <FieldWrapper label={label} hint={hint} error={error} required={required} id={id}>
-      <select ref={ref} id={id} className={cn("input-enterprise cursor-pointer", className)} {...props}>
-        {children}
-      </select>
-    </FieldWrapper>
-  )
+  ({ label, hint, error, required, className, id, children, ...props }, ref) => {
+    const generatedId = useId();
+    const fieldId = id ?? generatedId;
+    return (
+      <FieldWrapper label={label} hint={hint} error={error} required={required} id={fieldId}>
+        <select ref={ref} id={fieldId} className={cn("input-enterprise cursor-pointer", className)} {...props}>
+          {children}
+        </select>
+      </FieldWrapper>
+    );
+  }
 );
 Select.displayName = "Select";
 
