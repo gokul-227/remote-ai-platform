@@ -1,0 +1,1272 @@
+[
+  {
+    "name": "00-public-home",
+    "url": "/",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now REMOTE AI PLATFORM · REMOTE WORK ECOSYSTEM The professional network for remote engineering work. Find roles that fit your skills, b",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/00-public-home.png",
+    "status": "CAPTURED",
+    "durationMs": 2199
+  },
+  {
+    "name": "00-public-home-tablet",
+    "url": "/",
+    "viewport": "tablet",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now REMOTE AI PLATFORM · REMOTE WORK ECOSYSTEM The professional network for remote engineering work. Find roles that fit your skills, b",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/00-public-home-tablet.png",
+    "status": "CAPTURED",
+    "durationMs": 2142
+  },
+  {
+    "name": "00-public-home-mobile",
+    "url": "/",
+    "viewport": "mobile",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Sign In Join Now REMOTE AI PLATFORM · REMOTE WORK ECOSYSTEM The professional network for remote engineering work. Find roles that fit your skills, build a credible engineering profile, and help t",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/00-public-home-mobile.png",
+    "status": "CAPTURED",
+    "durationMs": 2155
+  },
+  {
+    "name": "01-public-jobs",
+    "url": "/jobs",
+    "viewport": "desktop",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    ],
+    "networkErrors": [
+      "ABORTED GET https://logo.clearbit.com/openai.com (net::ERR_NAME_NOT_RESOLVED)",
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)"
+    ],
+    "pageErrors": [],
+    "finalUrl": "/jobs",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Unlock your career dashboard Sign in to track applications, save jobs, and see AI-matched roles. Sign In Filter Jobs Reset Job Type ",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/01-public-jobs.png",
+    "status": "CAPTURED",
+    "durationMs": 2321
+  },
+  {
+    "name": "01-public-jobs-mobile",
+    "url": "/jobs",
+    "viewport": "mobile",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    ],
+    "networkErrors": [
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)",
+      "ABORTED GET https://logo.clearbit.com/openai.com (net::ERR_NAME_NOT_RESOLVED)"
+    ],
+    "pageErrors": [],
+    "finalUrl": "/jobs",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Sign In Join Now Unlock your career dashboard Sign in to track applications, save jobs, and see AI-matched roles. Sign In Filter Jobs Reset Job Type All Types Full-time Contract Part-time Experien",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/01-public-jobs-mobile.png",
+    "status": "CAPTURED",
+    "durationMs": 2484
+  },
+  {
+    "name": "02-public-job-detail",
+    "url": "/jobs/8879e52c-a096-474d-ae2b-1a42cbc27e68",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/jobs/8879e52c-a096-474d-ae2b-1a42cbc27e68",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Back to Jobs R ARBEITNOW 100% Remote Senior GraphQL API Architect (Apps) Retool US/Canada Remote $165k–$205k Apply Type Full-Time Lo",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/02-public-job-detail.png",
+    "status": "CAPTURED",
+    "durationMs": 2211
+  },
+  {
+    "name": "03-public-engineers",
+    "url": "/engineers",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/engineers",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Discover Engineers Browse verified remote engineers with structured profiles and AI-matched skills. Filters 6 engineers found BE B",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/03-public-engineers.png",
+    "status": "CAPTURED",
+    "durationMs": 2226
+  },
+  {
+    "name": "03-public-engineers-mobile",
+    "url": "/engineers",
+    "viewport": "mobile",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/engineers",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Sign In Join Now Discover Engineers Browse verified remote engineers with structured profiles and AI-matched skills. Filters 6 engineers found BE Backend Engineer Software Engineer 18 0y exp P",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/03-public-engineers-mobile.png",
+    "status": "CAPTURED",
+    "durationMs": 2206
+  },
+  {
+    "name": "04-public-engineer-profile",
+    "url": "/engineers/2dc59a87-0a9e-4286-a71c-8ab80ef0042e",
+    "viewport": "desktop",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "networkErrors": [
+      "404 GET http://localhost:8000/api/v1/engineers/2dc59a87-0a9e-4286-a71c-8ab80ef0042e",
+      "404 GET http://localhost:8000/api/v1/engineers/2dc59a87-0a9e-4286-a71c-8ab80ef0042e"
+    ],
+    "pageErrors": [],
+    "finalUrl": "/engineers/2dc59a87-0a9e-4286-a71c-8ab80ef0042e",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Profile not found This engineer profile is unavailable or has been removed. Back to discovery Remote AI Platform © 2026 Remote AI Pl",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/04-public-engineer-profile.png",
+    "status": "CAPTURED",
+    "durationMs": 2201
+  },
+  {
+    "name": "05-public-companies",
+    "url": "/companies",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/companies",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Discover Companies Explore remote-first companies and startups actively hiring remote engineers. Filters 24 companies found A Acme",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/05-public-companies.png",
+    "status": "CAPTURED",
+    "durationMs": 2250
+  },
+  {
+    "name": "05-public-companies-mobile",
+    "url": "/companies",
+    "viewport": "mobile",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/companies",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Sign In Join Now Discover Companies Explore remote-first companies and startups actively hiring remote engineers. Filters 24 companies found A Acme A Tech · 1-10 employees 1-10 people desc a",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/05-public-companies-mobile.png",
+    "status": "CAPTURED",
+    "durationMs": 2212
+  },
+  {
+    "name": "06-public-freelancers",
+    "url": "/freelancers",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/engineers",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Discover Engineers Browse verified remote engineers with structured profiles and AI-matched skills. Filters 6 engineers found BE B",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/06-public-freelancers.png",
+    "status": "CAPTURED",
+    "durationMs": 2256
+  },
+  {
+    "name": "07-public-404",
+    "url": "/this-route-does-not-exist-xyz",
+    "viewport": "desktop",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "networkErrors": [
+      "404 GET http://localhost:3000/this-route-does-not-exist-xyz"
+    ],
+    "pageErrors": [],
+    "finalUrl": "/this-route-does-not-exist-xyz",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now 404 This page could not be found. Remote AI Platform © 2026 Remote AI Platform. All rights reserved. API Swagger Docs",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/07-public-404.png",
+    "status": "CAPTURED",
+    "durationMs": 2416
+  },
+  {
+    "name": "08-guard-feed",
+    "url": "/feed",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login?redirect=%2Ffeed",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/08-guard-feed.png",
+    "status": "CAPTURED",
+    "durationMs": 1755
+  },
+  {
+    "name": "09-guard-network",
+    "url": "/network",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login?redirect=%2Fnetwork",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/09-guard-network.png",
+    "status": "CAPTURED",
+    "durationMs": 1718
+  },
+  {
+    "name": "10-guard-messages",
+    "url": "/messages",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login?redirect=%2Fmessages",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/10-guard-messages.png",
+    "status": "CAPTURED",
+    "durationMs": 1719
+  },
+  {
+    "name": "11-guard-notifications",
+    "url": "/notifications",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login?redirect=%2Fnotifications",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/11-guard-notifications.png",
+    "status": "CAPTURED",
+    "durationMs": 1717
+  },
+  {
+    "name": "12-guard-groups",
+    "url": "/groups",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login?redirect=%2Fgroups",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/12-guard-groups.png",
+    "status": "CAPTURED",
+    "durationMs": 1703
+  },
+  {
+    "name": "13-guard-projects",
+    "url": "/projects",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login?redirect=%2Fprojects",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/13-guard-projects.png",
+    "status": "CAPTURED",
+    "durationMs": 1720
+  },
+  {
+    "name": "14-guard-settings",
+    "url": "/settings",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/settings",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Settings Manage your account, privacy, and notification preferences. Account Privacy Notifications Security Account US Full name E",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/14-guard-settings.png",
+    "status": "CAPTURED",
+    "durationMs": 1642
+  },
+  {
+    "name": "15-guard-engineer-dashboard",
+    "url": "/engineer/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login?redirect=%2Fengineer%2Fdashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/15-guard-engineer-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 1711
+  },
+  {
+    "name": "16-guard-company-dashboard",
+    "url": "/company/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/16-guard-company-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 1709
+  },
+  {
+    "name": "17-guard-admin-dashboard",
+    "url": "/admin/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/17-guard-admin-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 1712
+  },
+  {
+    "name": "18-guard-workspace",
+    "url": "/workspace",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/18-guard-workspace.png",
+    "status": "CAPTURED",
+    "durationMs": 1762
+  },
+  {
+    "name": "19-guard-payments",
+    "url": "/payments",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/payments",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Sign in to view your wallet Balances, escrow holdings, and transaction history are only visible to signed-in accounts. Sign In Remo",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/19-guard-payments.png",
+    "status": "CAPTURED",
+    "durationMs": 1644
+  },
+  {
+    "name": "20-guard-quality",
+    "url": "/quality",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/quality",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now AI Quality Engine AI-powered work evaluation and code review for remote engineering teams. Score & Grade 0–100 score with letter gra",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/20-guard-quality.png",
+    "status": "CAPTURED",
+    "durationMs": 1667
+  },
+  {
+    "name": "21-guard-contracts",
+    "url": "/contracts",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/contracts",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Jobs Engineers Companies Sign In Join Now Contracts Digital contracts, scope agreements, milestone escrow terms, and signing records. ALL0 OFFERED0 SIGNED0 ACTIVE0 COMPLETED0",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/21-guard-contracts.png",
+    "status": "CAPTURED",
+    "durationMs": 1647
+  },
+  {
+    "name": "30-auth-login-empty",
+    "url": "/auth/login",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/login",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Where remote engineering work meets intelligent hiring. Explainable AI matching — see exactly why a role fits you. A professional network built for remote engineers. Verified profil",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/30-auth-login-empty.png",
+    "status": "CAPTURED",
+    "durationMs": 1155
+  },
+  {
+    "name": "31-auth-register-step1",
+    "url": "/auth/register",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/register",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Create your account Join the remote engineering marketplace 1 2 Full name Email address Password I agree to the Terms of Service and Privacy Policy. Continue Already have an acco",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/31-auth-register-step1.png",
+    "status": "CAPTURED",
+    "durationMs": 1143
+  },
+  {
+    "name": "32-auth-forgot-password",
+    "url": "/auth/forgot-password",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "finalUrl": "/auth/forgot-password",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "Remote AI Platform Password reset isn’t available yet Self-service password reset isn’t supported on this platform yet. If you’re locked out of your account, contact support and we’ll help you regain",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/32-auth-forgot-password.png",
+    "status": "CAPTURED",
+    "durationMs": 2342
+  },
+  {
+    "name": "33-auth-login-invalid-creds",
+    "url": "/auth/login",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ],
+    "networkErrors": [
+      "401 POST http://localhost:8000/api/v1/auth/login"
+    ],
+    "pageErrors": [],
+    "screenshot": "screenshots/33-auth-login-invalid-creds.png",
+    "status": "CAPTURED",
+    "bodyTextSnippet": "Remote AI Platform\nWhere remote engineering work meets intelligent hiring.\nExplainable AI matching — see exactly why a role fits you.\nA professional network built for remote engineers.\nVerified profil"
+  },
+  {
+    "name": "34-auth-register-step2-role",
+    "url": "/auth/register",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [],
+    "screenshot": "screenshots/34-auth-register-step2-role.png",
+    "status": "CAPTURED"
+  },
+  {
+    "name": "40-engineer-dashboard",
+    "url": "/engineer/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    ],
+    "networkErrors": [
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)"
+    ],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR A Alex Rivera engineer@workmesh.ai Applications 0 CAREER NAVIGATION My Profile Career Dash",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/40-engineer-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 4815
+  },
+  {
+    "name": "40-engineer-dashboard-tablet",
+    "url": "/engineer/dashboard",
+    "viewport": "tablet",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    ],
+    "networkErrors": [
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)"
+    ],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR A Alex Rivera engineer@workmesh.ai Applications 0 CAREER NAVIGATION My Profile Career Dash",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/40-engineer-dashboard-tablet.png",
+    "status": "CAPTURED",
+    "durationMs": 4790
+  },
+  {
+    "name": "40-engineer-dashboard-mobile",
+    "url": "/engineer/dashboard",
+    "viewport": "mobile",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    ],
+    "networkErrors": [
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)"
+    ],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W AR A Alex Rivera engineer@workmesh.ai Applications 0 CAREER NAVIGATION My Profile Career Dashboard Recommendations Saved Jobs 0 My Applications 0 Execution Workspace AI Quality Engine Good morning",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/40-engineer-dashboard-mobile.png",
+    "status": "CAPTURED",
+    "durationMs": 4800
+  },
+  {
+    "name": "41-engineer-profile",
+    "url": "/engineer/profile",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/profile",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR AR Alex Rivera Open to work Senior Full-Stack AI Engineer · 100% Remote Share Edit profile",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/41-engineer-profile.png",
+    "status": "CAPTURED",
+    "durationMs": 3917
+  },
+  {
+    "name": "42-engineer-recommendations",
+    "url": "/engineer/recommendations",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/recommendations",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR AI Matches Personalized matches scored across 6 compatibility factors. Refresh 30 Total Ma",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/42-engineer-recommendations.png",
+    "status": "CAPTURED",
+    "durationMs": 3870
+  },
+  {
+    "name": "43-engineer-applications",
+    "url": "/engineer/applications",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/applications",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR My Applications Track your job applications and task offers from project teams. Task Offer",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/43-engineer-applications.png",
+    "status": "CAPTURED",
+    "durationMs": 3756
+  },
+  {
+    "name": "44-engineer-workspace",
+    "url": "/engineer/workspace",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/workspace",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR EXECUTION WORKSPACE Engineer Execution Hub Accept incoming task offers, manage assigned wor",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/44-engineer-workspace.png",
+    "status": "CAPTURED",
+    "durationMs": 3756
+  },
+  {
+    "name": "45-engineer-jobs-authed",
+    "url": "/jobs",
+    "viewport": "desktop",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED"
+    ],
+    "networkErrors": [
+      "ABORTED GET https://logo.clearbit.com/openai.com (net::ERR_NAME_NOT_RESOLVED)",
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)"
+    ],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/jobs",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR A Alex Rivera engineer@workmesh.ai Applications 0 CAREER NAVIGATION My Profile Career Dash",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/45-engineer-jobs-authed.png",
+    "status": "CAPTURED",
+    "durationMs": 3824
+  },
+  {
+    "name": "46-engineer-job-detail-authed",
+    "url": "/jobs/8879e52c-a096-474d-ae2b-1a42cbc27e68",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/jobs/8879e52c-a096-474d-ae2b-1a42cbc27e68",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Back to Jobs R ARBEITNOW 100% Remote Senior GraphQL API Architect (Apps) Retool US/Canada ",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/46-engineer-job-detail-authed.png",
+    "status": "CAPTURED",
+    "durationMs": 3765
+  },
+  {
+    "name": "47-engineer-feed",
+    "url": "/feed",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/feed",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Social Feed Connect with remote software engineering professionals, share work updates, and",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/47-engineer-feed.png",
+    "status": "CAPTURED",
+    "durationMs": 3730
+  },
+  {
+    "name": "48-engineer-network",
+    "url": "/network",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random",
+      "Cannot read properties of undefined (reading 'trim')"
+    ],
+    "finalUrl": "/network",
+    "title": "",
+    "bodyTextSnippet": "This page couldn’t load Reload to try again, or go back. Reload Back",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/48-engineer-network.png",
+    "status": "CAPTURED",
+    "durationMs": 3794
+  },
+  {
+    "name": "49-engineer-messages",
+    "url": "/messages",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/messages",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Messages No conversations yet Click + to start a new chat. Select a conversation Choose ",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/49-engineer-messages.png",
+    "status": "CAPTURED",
+    "durationMs": 3737
+  },
+  {
+    "name": "50-engineer-notifications",
+    "url": "/notifications",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/notifications",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Notifications Connection requests, matches, messages, and platform updates. All0 Unread0 ",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/50-engineer-notifications.png",
+    "status": "CAPTURED",
+    "durationMs": 3727
+  },
+  {
+    "name": "51-engineer-groups",
+    "url": "/groups",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/groups",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Communities Connect with engineers, share knowledge, and grow together. Create Community D",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/51-engineer-groups.png",
+    "status": "CAPTURED",
+    "durationMs": 3746
+  },
+  {
+    "name": "52-engineer-projects",
+    "url": "/projects",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/projects",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Projects AI-planned delivery briefs with milestone tracking and work dispatch. All No pro",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/52-engineer-projects.png",
+    "status": "CAPTURED",
+    "durationMs": 3737
+  },
+  {
+    "name": "53-engineer-settings",
+    "url": "/settings",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/settings",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Settings Manage your account, privacy, and notification preferences. Account Privacy Notif",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/53-engineer-settings.png",
+    "status": "CAPTURED",
+    "durationMs": 2726
+  },
+  {
+    "name": "54-engineer-contracts",
+    "url": "/contracts",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/contracts",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Contracts Digital contracts, scope agreements, milestone escrow terms, and signing records.",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/54-engineer-contracts.png",
+    "status": "CAPTURED",
+    "durationMs": 2727
+  },
+  {
+    "name": "55-engineer-workspace-root",
+    "url": "/workspace",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/workspace",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR EXECUTION WORKSPACE Engineer Execution Hub Accept incoming task offers, manage assigned wor",
+    "redirectedAwayFromRequestedRoute": true,
+    "screenshot": "screenshots/55-engineer-workspace-root.png",
+    "status": "CAPTURED",
+    "durationMs": 2755
+  },
+  {
+    "name": "56-engineer-payments",
+    "url": "/payments",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/payments",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Wallet & Payments Balances, escrow holdings, milestone settlements, and transaction history",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/56-engineer-payments.png",
+    "status": "CAPTURED",
+    "durationMs": 2727
+  },
+  {
+    "name": "57-engineer-quality",
+    "url": "/quality",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/quality",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR AI Quality Engine AI-powered work evaluation and code review for remote engineering teams. ",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/57-engineer-quality.png",
+    "status": "CAPTURED",
+    "durationMs": 2734
+  },
+  {
+    "name": "58-engineer-tries-admin",
+    "url": "/admin/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/admin/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Access restricted This page is only available to admin accounts. Remote AI Platform © 2026",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/58-engineer-tries-admin.png",
+    "status": "CAPTURED",
+    "durationMs": 2209
+  },
+  {
+    "name": "59-engineer-tries-company",
+    "url": "/company/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities For You Network Projects Messages AR Access restricted This page is only available to company or admin accounts. Remote AI Plat",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/59-engineer-tries-company.png",
+    "status": "CAPTURED",
+    "durationMs": 2216
+  },
+  {
+    "name": "60-company-dashboard",
+    "url": "/company/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Hiring Dashboard Manage your talent pipeline and active positions Post Position Company Page 2",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/60-company-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 4771
+  },
+  {
+    "name": "60-company-dashboard-tablet",
+    "url": "/company/dashboard",
+    "viewport": "tablet",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Hiring Dashboard Manage your talent pipeline and active positions Post Position Company Page 2",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/60-company-dashboard-tablet.png",
+    "status": "CAPTURED",
+    "durationMs": 4764
+  },
+  {
+    "name": "60-company-dashboard-mobile",
+    "url": "/company/dashboard",
+    "viewport": "mobile",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W AT Hiring Dashboard Manage your talent pipeline and active positions Post Position Company Page 20 Active Positions 4 Candidates in Directory 0 Projects 1 Applications Received Hiring Pipeline Pi",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/60-company-dashboard-mobile.png",
+    "status": "CAPTURED",
+    "durationMs": 4753
+  },
+  {
+    "name": "61-company-profile",
+    "url": "/company/profile",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/profile",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT A Acme AI Technologies Artificial Intelligence · 50-200 Edit profile New York, NY 50-200 emplo",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/61-company-profile.png",
+    "status": "CAPTURED",
+    "durationMs": 3748
+  },
+  {
+    "name": "62-company-candidates",
+    "url": "/company/candidates",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/candidates",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Candidate Discovery Search public professionals, invite candidates, and manage applications. F",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/62-company-candidates.png",
+    "status": "CAPTURED",
+    "durationMs": 3778
+  },
+  {
+    "name": "63-company-jobs",
+    "url": "/company/jobs",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/jobs",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Job postings Manage roles and projects published by your company. Post a job Hiring Dashboard ",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/63-company-jobs.png",
+    "status": "CAPTURED",
+    "durationMs": 3751
+  },
+  {
+    "name": "64-company-job-wizard-step1",
+    "url": "/jobs/new",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "status": "CAPTURED",
+    "screenshot": "screenshots/64-company-job-wizard-step1.png"
+  },
+  {
+    "name": "65-company-job-wizard-step2",
+    "url": "/jobs/new",
+    "status": "CAPTURED",
+    "screenshot": "screenshots/65-company-job-wizard-step2.png"
+  },
+  {
+    "name": "66-company-job-wizard-step3",
+    "url": "/jobs/new",
+    "status": "CAPTURED",
+    "screenshot": "screenshots/66-company-job-wizard-step3.png"
+  },
+  {
+    "name": "67-company-job-wizard-step4-compensation",
+    "url": "/jobs/new",
+    "status": "CAPTURED",
+    "screenshot": "screenshots/67-company-job-wizard-step4-compensation.png"
+  },
+  {
+    "name": "68-company-job-wizard-step5-review",
+    "url": "/jobs/new",
+    "status": "CAPTURED",
+    "screenshot": "screenshots/68-company-job-wizard-step5-review.png"
+  },
+  {
+    "name": "69-company-contracts",
+    "url": "/contracts",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/contracts",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Contracts Digital contracts, scope agreements, milestone escrow terms, and signing records. Is",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/69-company-contracts.png",
+    "status": "CAPTURED",
+    "durationMs": 2749
+  },
+  {
+    "name": "70-company-projects",
+    "url": "/projects",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/projects",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Projects AI-planned delivery briefs with milestone tracking and work dispatch. New Project All",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/70-company-projects.png",
+    "status": "CAPTURED",
+    "durationMs": 2739
+  },
+  {
+    "name": "71-company-notifications",
+    "url": "/notifications",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/notifications",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Notifications Connection requests, matches, messages, and platform updates. All0 Unread0 No n",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/71-company-notifications.png",
+    "status": "CAPTURED",
+    "durationMs": 2726
+  },
+  {
+    "name": "72-company-settings",
+    "url": "/settings",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/settings",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Settings Manage your account, privacy, and notification preferences. Account Privacy Notificat",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/72-company-settings.png",
+    "status": "CAPTURED",
+    "durationMs": 2724
+  },
+  {
+    "name": "73-company-tries-admin",
+    "url": "/admin/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/admin/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT Access restricted This page is only available to admin accounts. Remote AI Platform © 2026 Rem",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/73-company-tries-admin.png",
+    "status": "CAPTURED",
+    "durationMs": 2211
+  },
+  {
+    "name": "74-company-tries-engineer-dashboard",
+    "url": "/engineer/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "networkErrors": [
+      "404 GET http://localhost:8000/api/v1/engineers/me",
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)",
+      "404 GET http://localhost:8000/api/v1/matching/recommendations?limit=20",
+      "404 GET http://localhost:8000/api/v1/engineers/me",
+      "404 GET http://localhost:8000/api/v1/matching/recommendations?limit=20"
+    ],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed My Jobs Candidates Contracts Communities Network Projects Messages AT A Acme AI Technologies company@workmesh.ai HIRING Company Profile Hiring Dashboard My Job Post",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/74-company-tries-engineer-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 2311
+  },
+  {
+    "name": "80-admin-dashboard",
+    "url": "/admin/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/admin/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities Network Projects Messages PA Admin Console Platform administration and system health 6 Registered Engineers 41 Companies 793 Ac",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/80-admin-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 4899
+  },
+  {
+    "name": "80-admin-dashboard-tablet",
+    "url": "/admin/dashboard",
+    "viewport": "tablet",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/admin/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities Network Projects Messages PA Admin Console Platform administration and system health 6 Registered Engineers 41 Companies 793 Ac",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/80-admin-dashboard-tablet.png",
+    "status": "CAPTURED",
+    "durationMs": 4894
+  },
+  {
+    "name": "80-admin-dashboard-mobile",
+    "url": "/admin/dashboard",
+    "viewport": "mobile",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/admin/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W PA Admin Console Platform administration and system health 6 Registered Engineers 41 Companies 793 Active Positions 90 Total Users AI Provider & Token Cost Monitoring LiteLLM Gateway LLM API Calls",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/80-admin-dashboard-mobile.png",
+    "status": "CAPTURED",
+    "durationMs": 4868
+  },
+  {
+    "name": "81-admin-users",
+    "url": "/admin/users",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/admin/users",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities Network Projects Messages PA User Management Search, filter, and moderate platform accounts. All roles Engineer Company Admin U",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/81-admin-users.png",
+    "status": "CAPTURED",
+    "durationMs": 3805
+  },
+  {
+    "name": "82-admin-jobs",
+    "url": "/admin/jobs",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/admin/jobs",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities Network Projects Messages PA Job Listings Manage aggregated job postings across sources. Paused jobs are removed from public lis",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/82-admin-jobs.png",
+    "status": "CAPTURED",
+    "durationMs": 3805
+  },
+  {
+    "name": "83-admin-tries-engineer-dashboard",
+    "url": "/engineer/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_NAME_NOT_RESOLVED",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "networkErrors": [
+      "ABORTED GET https://logo.clearbit.com/retool.com (net::ERR_NAME_NOT_RESOLVED)",
+      "404 GET http://localhost:8000/api/v1/engineers/me",
+      "404 GET http://localhost:8000/api/v1/matching/recommendations?limit=20",
+      "404 GET http://localhost:8000/api/v1/engineers/me",
+      "404 GET http://localhost:8000/api/v1/matching/recommendations?limit=20"
+    ],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/engineer/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities Network Projects Messages PA P Platform Admin admin@workmesh.ai ADMINISTRATION Admin Console User Management Job Listings AI Qu",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/83-admin-tries-engineer-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 2294
+  },
+  {
+    "name": "84-admin-tries-company-dashboard",
+    "url": "/company/dashboard",
+    "viewport": "desktop",
+    "consoleErrors": [],
+    "networkErrors": [],
+    "pageErrors": [
+      "Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+    ],
+    "finalUrl": "/company/dashboard",
+    "title": "Remote AI Platform — Remote Work Marketplace",
+    "bodyTextSnippet": "W Remote AI Platform ⌘K Home Feed Jobs Engineers Contracts Communities Network Projects Messages PA Hiring Dashboard Manage your talent pipeline and active positions Post Position Company Page 20 Ac",
+    "redirectedAwayFromRequestedRoute": false,
+    "screenshot": "screenshots/84-admin-tries-company-dashboard.png",
+    "status": "CAPTURED",
+    "durationMs": 2281
+  }
+]
