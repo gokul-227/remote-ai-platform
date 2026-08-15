@@ -84,7 +84,12 @@ function AdminDashboardPage() {
       api.get("/admin/activity-logs", { params: { limit: 20 } }).then((r) => r.data).catch(() => []),
       api.get("/moderation/reports").then((r) => r.data).catch(() => []),
       api.get("/admin/ai-usage").then((r) => r.data).catch(() => null),
-      api.get("/admin/health/details").then((r) => r.data).catch(() => null),
+      // Longer timeout than the default client — this call does real,
+      // network-bound checks (Postgres, Redis, S3, Keycloak) rather than a
+      // single fast query, and Render's network path to Supabase Storage in
+      // particular can genuinely take a couple of seconds; the default 5s
+      // client timeout was cutting this off before it could finish.
+      api.get("/admin/health/details", { timeout: 12000 }).then((r) => r.data).catch(() => null),
     ]).then(([statsData, logsData, usersData, activityData, reportsData, aiData, healthData]) => {
       if (!isMounted) return;
       setStats(statsData);
