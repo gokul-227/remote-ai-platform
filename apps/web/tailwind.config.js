@@ -1,4 +1,11 @@
 /** @type {import('tailwindcss').Config} */
+// The real design tokens live in src/app/globals.css as CSS custom
+// properties (--color-brand, --bg-page, etc.), consumed via arbitrary-value
+// classes (bg-[var(--bg-page)]) or the .card-enterprise/.btn-*/.badge-*
+// primitives — not via Tailwind's theme.extend. A parallel color palette
+// used to live here with different hex values than globals.css and zero
+// real usage anywhere in the codebase (confirmed by grep); removed rather
+// than left as a second, drifting source of truth.
 module.exports = {
   content: [
     './src/**/*.{js,ts,jsx,tsx}',
@@ -6,18 +13,7 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
-    extend: {
-      colors: {
-        primary: {
-          DEFAULT: '#0a66c2',
-          foreground: '#ffffff'
-        },
-        secondary: '#4f46e5',
-        accent: '#0284c7',
-        background: '#f3f4f6',
-        foreground: '#0f172a'
-      }
-    }
+    extend: {}
   },
   plugins: []
 };
