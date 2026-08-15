@@ -11,12 +11,13 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy import func, select, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import boto3
 import httpx
+from botocore.client import Config as BotoConfig
 from redis.asyncio import Redis
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.storage import get_s3_client
 from app.domains.admin.models import ActivityLog
 from app.domains.admin.schemas import (
     ActivityLogResponse,
@@ -187,11 +188,37 @@ async def _check_redis() -> ServiceHealthStatus:
         await client.aclose()
 
 
+def _list_buckets_short_timeout():
+    # A dedicated, short-lived client with an explicit connect/read timeout —
+    # get_s3_client() is a cached, shared client with no timeout configured
+    # (fine for real uploads/downloads), so wrapping IT in asyncio.wait_for
+    # only abandons *waiting* on the thread; the underlying boto3 call keeps
+    # running against botocore's default (tens of seconds) timeout, which is
+    # what made this health check occasionally take 4-6s in production.
+    scheme = "https" if settings.MINIO_SECURE else "http"
+    endpoint = settings.MINIO_ENDPOINT
+    endpoint_url = endpoint if endpoint.startswith(("http://", "https://")) else f"{scheme}://{endpoint}"
+    client = boto3.client(
+        "s3",
+        endpoint_url=endpoint_url,
+        aws_access_key_id=settings.MINIO_ACCESS_KEY,
+        aws_secret_access_key=settings.MINIO_SECRET_KEY,
+        config=BotoConfig(
+            signature_version="s3v4",
+            s3={"addressing_style": "path"},
+            connect_timeout=1.5,
+            read_timeout=1.5,
+            retries={"max_attempts": 0},
+        ),
+    )
+    client.list_buckets()
+
+
 async def _check_minio() -> ServiceHealthStatus:
     started = time.monotonic()
     try:
         # boto3 is sync — run in a thread so it doesn't block the event loop.
-        await asyncio.wait_for(asyncio.to_thread(get_s3_client().list_buckets), timeout=2.0)
+        await asyncio.wait_for(asyncio.to_thread(_list_buckets_short_timeout), timeout=2.0)
         return ServiceHealthStatus(service="MinIO Object Storage S3", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
     except Exception:
         return ServiceHealthStatus(service="MinIO Object Storage S3", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
@@ -203,7 +230,7 @@ async def _check_keycloak() -> ServiceHealthStatus:
         return ServiceHealthStatus(service="Keycloak Identity Provider", status="UNKNOWN", latency_ms=0.0)
     try:
         realm_url = f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}"
-        async with httpx.AsyncClient(timeout=2.0) as client:
+        async with httpx.AsyncClient(timeout=1.5) as client:
             resp = await client.get(realm_url)
         status_str = "OPERATIONAL" if resp.status_code == 200 else "DOWN"
         return ServiceHealthStatus(service="Keycloak Identity Provider", status=status_str, latency_ms=round((time.monotonic() - started) * 1000, 1))
@@ -233,10 +260,25 @@ async def get_system_health_details(
     as a static value — a prior version of this endpoint hardcoded every non-Postgres
     row to "OPERATIONAL", which meant it could never reflect a real outage.
     """
-    postgres, redis_status, minio, keycloak, celery = await asyncio.gather(
-        _check_postgres(db), _check_redis(), _check_minio(), _check_keycloak(), _check_celery_queues()
+    checks = [
+        ("PostgreSQL Database Pool", _check_postgres(db)),
+        ("Redis Cache & Session Broker", _check_redis()),
+        ("MinIO Object Storage S3", _check_minio()),
+        ("Keycloak Identity Provider", _check_keycloak()),
+        ("Celery Background Task Queue", _check_celery_queues()),
+    ]
+    # Belt-and-suspenders cap on top of each check's own internal timeout —
+    # a slow/misbehaving dependency should never be able to push this
+    # admin-only diagnostics endpoint anywhere near the frontend's request
+    # timeout, regardless of what any individual check does internally.
+    results = await asyncio.gather(
+        *(asyncio.wait_for(coro, timeout=3.0) for _, coro in checks),
+        return_exceptions=True,
     )
-    services = [postgres, redis_status, minio, keycloak, celery]
+    services = [
+        r if isinstance(r, ServiceHealthStatus) else ServiceHealthStatus(service=name, status="DOWN", latency_ms=3000.0)
+        for (name, _), r in zip(checks, results)
+    ]
     overall_status = "OPERATIONAL" if all(s.status in ("OPERATIONAL", "UNKNOWN") for s in services) else "DEGRADED"
 
     return SystemHealthDetailResponse(
