@@ -53,7 +53,7 @@ export function Drawer({
         {title && (
           <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-color)] sticky top-0 bg-[var(--surface-elevated)] z-10">
             <h2 className="text-sm font-semibold text-[var(--text-main)]">{title}</h2>
-            <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+            <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-md text-[var(--text-light)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-main)]">
               <X className="h-4 w-4" />
             </button>
           </div>

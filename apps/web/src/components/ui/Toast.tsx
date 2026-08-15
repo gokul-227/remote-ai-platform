@@ -43,7 +43,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div key={t.id} className="surface-elevated flex items-start gap-2.5 px-4 py-3 animate-fade-in">
             {icons[t.tone]}
             <p className="flex-1 text-sm text-[var(--text-main)]">{t.message}</p>
-            <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className="text-slate-400 hover:text-slate-700">
+            <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className="text-[var(--text-light)] hover:text-[var(--text-main)]">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>

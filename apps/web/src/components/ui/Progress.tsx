@@ -4,7 +4,7 @@ export function Progress({ value, className, tone = "brand" }: { value: number; 
   const clamped = Math.max(0, Math.min(100, value));
   const color = tone === "success" ? "var(--color-success)" : tone === "warning" ? "var(--color-warning)" : "var(--color-brand)";
   return (
-    <div className={cn("h-1.5 w-full rounded-full bg-slate-100 overflow-hidden", className)}>
+    <div className={cn("h-1.5 w-full rounded-full bg-[var(--bg-subtle)] overflow-hidden", className)}>
       <div className="h-full rounded-full transition-all duration-300" style={{ width: `${clamped}%`, backgroundColor: color }} />
     </div>
   );
