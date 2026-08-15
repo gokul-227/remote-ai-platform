@@ -11,7 +11,8 @@ import {
   Search,
 } from "lucide-react";
 import api from "@/lib/api";
-import { useJobs } from "@/hooks/useJobs";
+import { useCompanyJobs } from "@/hooks/useCompanyJobs";
+import { useCompanyProfile } from "@/hooks/useCompanyProfile";
 import { useProjects } from "@/hooks/useProjects";
 import { useCompanyApplications } from "@/hooks/useApplications";
 import { RequireRole } from "@/components/RequireRole";
@@ -19,6 +20,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Building2 } from "lucide-react";
 
 interface EngineerMatch {
   id: string;
@@ -28,13 +30,46 @@ interface EngineerMatch {
 }
 
 function CompanyDashboardPage() {
+  const companyProfileQuery = useCompanyProfile();
   const engineersQuery = useQuery<EngineerMatch[]>({ queryKey: ["engineers", { limit: 4 }], queryFn: async () => (await api.get("/engineers", { params: { limit: 4 } })).data });
-  const jobsQuery = useJobs({ limit: 20 });
+  const jobsQuery = useCompanyJobs();
   const projectsQuery = useProjects();
   const applicationsQuery = useCompanyApplications();
   const engineers = engineersQuery.data || [];
   const jobs = jobsQuery.data || [];
   const loadingEngineers = engineersQuery.isLoading;
+
+  // A COMPANY-role account with no completed company profile yet (reachable
+  // via the workspace switcher without ever visiting /company/profile first)
+  // previously fell through to this whole dashboard anyway, showing global
+  // platform-wide job/engineer counts mislabeled as "your" positions and
+  // candidates. Gate on the profile actually existing instead.
+  if (companyProfileQuery.isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="skeleton-box h-8 w-64 mb-6" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-box h-24 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (companyProfileQuery.isError) {
+    return (
+      <div className="max-w-lg mx-auto py-16">
+        <div className="card-enterprise">
+          <EmptyState
+            icon={Building2}
+            title="Set up your company profile to get started"
+            description="Add your company name, industry, and description so candidates and the hiring dashboard have something real to show."
+            actionLabel="Create Company Profile"
+            actionHref="/company/profile"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">

@@ -17,6 +17,7 @@ interface AuthContextType {
   loading: boolean;
   login: (token: string, user: User, refreshToken?: string | null) => void;
   logout: () => void;
+  updateUser: (patch: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -26,6 +27,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: false,
   login: () => {},
   logout: () => {},
+  updateUser: () => {},
 });
 
 const TOKEN_KEY = "remote_ai_platform_token";
@@ -136,8 +138,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     notifyListeners();
   };
 
+  // For updates to the current session's user object that don't warrant a
+  // full re-login — e.g. the workspace switcher's PATCH /auth/role, which
+  // changes the account's active role without issuing a new token.
+  const updateUser = (patch: Partial<User>) => {
+    const current = readStoredSession().user;
+    if (!current) return;
+    const merged = { ...current, ...patch };
+    localStorage.setItem(USER_KEY, JSON.stringify(merged));
+    notifyListeners();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, refreshToken, loading: !hasMounted, login, logout }}>
+    <AuthContext.Provider value={{ user, token, refreshToken, loading: !hasMounted, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

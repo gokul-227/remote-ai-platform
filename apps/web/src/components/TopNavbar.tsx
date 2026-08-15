@@ -27,6 +27,7 @@ import api from "@/lib/api";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useSearch } from "@/hooks/useSearch";
 import { Avatar } from "@/components/ui/Avatar";
+import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
 
 interface TopNavbarProps {
   onMenuClick?: () => void;
@@ -122,6 +123,13 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
               Remote <span className="text-[#0A66C2]">AI Platform</span>
             </span>
           </Link>
+
+          {user && (user.role === "ENGINEER" || user.role === "COMPANY") && (
+            <>
+              <div className="hidden lg:block h-6 w-px bg-[var(--border-color)]" aria-hidden="true" />
+              <WorkspaceSwitcher />
+            </>
+          )}
 
           {/* Global Search Bar */}
           <form onSubmit={handleSearch} className="flex-1 hidden md:block relative">
