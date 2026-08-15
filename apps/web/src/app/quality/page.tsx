@@ -15,6 +15,7 @@ import { Badge, StatusBadge, type StatusTone, type BadgeTone } from "@/component
 import { ProgressRing, Progress } from "@/components/ui/Progress";
 import { Tabs } from "@/components/ui/Tabs";
 import { cn } from "@/lib/cn";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const VERDICT_TONE: Record<string, StatusTone> = {
   approved: "success",
@@ -248,7 +249,7 @@ function CodeReviewer() {
   );
 }
 
-export default function QualityEnginePage() {
+function QualityEngineContent() {
   const [activeTab, setActiveTab] = useState<"submission" | "code">("submission");
 
   return (
@@ -293,5 +294,13 @@ export default function QualityEnginePage() {
 
       {activeTab === "submission" ? <SubmissionEvaluator /> : <CodeReviewer />}
     </div>
+  );
+}
+
+export default function QualityEnginePage() {
+  return (
+    <RequireAuth>
+      <QualityEngineContent />
+    </RequireAuth>
   );
 }

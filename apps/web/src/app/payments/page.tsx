@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const STATUS_TONE: Record<string, StatusTone> = {
   RELEASED: "success",
@@ -19,7 +20,7 @@ const STATUS_TONE: Record<string, StatusTone> = {
   REFUNDED: "neutral",
 };
 
-export default function PaymentsWalletPage() {
+function PaymentsWalletContent() {
   const { user } = useAuth();
   const { data: wallet, isLoading: walletLoading } = useWallet(!!user);
   const { data: transactions, isLoading: txsLoading } = useTransactions(!!user);
@@ -40,22 +41,6 @@ export default function PaymentsWalletPage() {
       { onSuccess: () => { setShowFundModal(false); setProjectId(""); setPayeeId(""); setAmount(1500); } }
     );
   };
-
-  if (!user) {
-    return (
-      <div className="max-w-lg mx-auto py-16">
-        <div className="card-enterprise">
-          <EmptyState
-            icon={Wallet}
-            title="Sign in to view your wallet"
-            description="Balances, escrow holdings, and transaction history are only visible to signed-in accounts."
-            actionLabel="Sign In"
-            actionHref="/auth/login"
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-6xl mx-auto py-6 space-y-6">
@@ -180,5 +165,13 @@ export default function PaymentsWalletPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+export default function PaymentsWalletPage() {
+  return (
+    <RequireAuth>
+      <PaymentsWalletContent />
+    </RequireAuth>
   );
 }

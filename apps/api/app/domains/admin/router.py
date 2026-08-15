@@ -2,6 +2,8 @@
 API Router for Admin domain.
 """
 
+import asyncio
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -9,7 +11,12 @@ from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy import func, select, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import httpx
+from redis.asyncio import Redis
+
+from app.core.config import settings
 from app.core.database import get_db
+from app.core.storage import get_s3_client
 from app.domains.admin.models import ActivityLog
 from app.domains.admin.schemas import (
     ActivityLogResponse,
@@ -159,29 +166,81 @@ async def get_ai_usage_stats(
     )
 
 
+async def _check_postgres(db: AsyncSession) -> ServiceHealthStatus:
+    started = time.monotonic()
+    try:
+        await db.execute(select(1))
+        return ServiceHealthStatus(service="PostgreSQL Database Pool", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+    except Exception:
+        return ServiceHealthStatus(service="PostgreSQL Database Pool", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+
+
+async def _check_redis() -> ServiceHealthStatus:
+    started = time.monotonic()
+    client: Redis = Redis.from_url(settings.CELERY_BROKER_URL, socket_connect_timeout=1, socket_timeout=1)
+    try:
+        await client.ping()
+        return ServiceHealthStatus(service="Redis Cache & Session Broker", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+    except Exception:
+        return ServiceHealthStatus(service="Redis Cache & Session Broker", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+    finally:
+        await client.aclose()
+
+
+async def _check_minio() -> ServiceHealthStatus:
+    started = time.monotonic()
+    try:
+        # boto3 is sync — run in a thread so it doesn't block the event loop.
+        await asyncio.wait_for(asyncio.to_thread(get_s3_client().list_buckets), timeout=2.0)
+        return ServiceHealthStatus(service="MinIO Object Storage S3", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+    except Exception:
+        return ServiceHealthStatus(service="MinIO Object Storage S3", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+
+
+async def _check_keycloak() -> ServiceHealthStatus:
+    started = time.monotonic()
+    if not settings.FEATURE_KEYCLOAK_AUTH:
+        return ServiceHealthStatus(service="Keycloak Identity Provider", status="UNKNOWN", latency_ms=0.0)
+    try:
+        realm_url = f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}"
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            resp = await client.get(realm_url)
+        status_str = "OPERATIONAL" if resp.status_code == 200 else "DOWN"
+        return ServiceHealthStatus(service="Keycloak Identity Provider", status=status_str, latency_ms=round((time.monotonic() - started) * 1000, 1))
+    except Exception:
+        return ServiceHealthStatus(service="Keycloak Identity Provider", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+
+
+async def _check_celery_queues() -> ServiceHealthStatus:
+    started = time.monotonic()
+    try:
+        from app.core.queue_monitor import get_queue_depths
+        await get_queue_depths()
+        return ServiceHealthStatus(service="Celery Background Task Queue", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+    except Exception:
+        return ServiceHealthStatus(service="Celery Background Task Queue", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+
+
 @router.get("/health/details", response_model=SystemHealthDetailResponse)
 async def get_system_health_details(
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> SystemHealthDetailResponse:
-    """Detailed health check for all core platform subsystems (Postgres, Redis, MinIO, Keycloak)."""
-    # Check DB
-    db_ok = True
-    try:
-        await db.execute(select(1))
-    except Exception:
-        db_ok = False
+    """Detailed health check for all core platform subsystems (Postgres, Redis, MinIO, Keycloak).
 
-    services = [
-        ServiceHealthStatus(service="PostgreSQL Database Pool", status="OPERATIONAL" if db_ok else "DOWN", latency_ms=1.2),
-        ServiceHealthStatus(service="Redis Cache & Session Broker", status="OPERATIONAL", latency_ms=0.8),
-        ServiceHealthStatus(service="MinIO Object Storage S3", status="OPERATIONAL", latency_ms=4.5),
-        ServiceHealthStatus(service="Keycloak Identity Provider", status="OPERATIONAL", latency_ms=8.1),
-        ServiceHealthStatus(service="Celery Background Task Queue", status="OPERATIONAL", latency_ms=2.0),
-    ]
+    Each subsystem is checked directly (a real Postgres query, a real Redis PING,
+    a real S3 list-buckets call, a real Keycloak realm fetch) rather than reported
+    as a static value — a prior version of this endpoint hardcoded every non-Postgres
+    row to "OPERATIONAL", which meant it could never reflect a real outage.
+    """
+    postgres, redis_status, minio, keycloak, celery = await asyncio.gather(
+        _check_postgres(db), _check_redis(), _check_minio(), _check_keycloak(), _check_celery_queues()
+    )
+    services = [postgres, redis_status, minio, keycloak, celery]
+    overall_status = "OPERATIONAL" if all(s.status in ("OPERATIONAL", "UNKNOWN") for s in services) else "DEGRADED"
 
     return SystemHealthDetailResponse(
-        overall_status="OPERATIONAL" if db_ok else "DEGRADED",
+        overall_status=overall_status,
         services=services,
         timestamp=datetime.now(timezone.utc),
     )

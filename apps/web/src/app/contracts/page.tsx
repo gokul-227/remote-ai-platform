@@ -14,6 +14,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input, Textarea, Select } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const STATUS_TONE: Record<string, StatusTone> = {
   ACTIVE: "success",
@@ -23,7 +24,7 @@ const STATUS_TONE: Record<string, StatusTone> = {
   TERMINATED: "danger",
 };
 
-export default function ContractsPage() {
+function ContractsPageContent() {
   const { user } = useAuth();
   const { data: contracts, isLoading, createContract, signContract } = useContracts(!!user);
 
@@ -176,5 +177,13 @@ export default function ContractsPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+export default function ContractsPage() {
+  return (
+    <RequireAuth>
+      <ContractsPageContent />
+    </RequireAuth>
   );
 }

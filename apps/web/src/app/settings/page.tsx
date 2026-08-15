@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { SectionCard } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
+import { RequireAuth } from "@/components/RequireAuth";
 
 type SettingsTab = "account" | "privacy" | "notifications" | "security";
 
@@ -156,7 +157,7 @@ function SecuritySection() {
   );
 }
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   const [tab, setTab] = useState<SettingsTab>("account");
 
   const tabs: Array<{ key: SettingsTab; label: string; icon: React.ElementType }> = [
@@ -180,5 +181,13 @@ export default function SettingsPage() {
       {tab === "notifications" && <NotificationsSection />}
       {tab === "security" && <SecuritySection />}
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <RequireAuth>
+      <SettingsPageContent />
+    </RequireAuth>
   );
 }

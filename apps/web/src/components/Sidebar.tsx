@@ -13,6 +13,7 @@ import {
   FolderKanban,
   Users,
   BrainCircuit,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
@@ -35,6 +36,7 @@ function useNavItems(): NavItem[] {
       { name: "Hiring Dashboard", href: "/company/dashboard", icon: LayoutDashboard },
       { name: "My Job Postings", href: "/company/jobs", icon: Briefcase },
       { name: "Candidate Discovery", href: "/company/candidates", icon: Users },
+      { name: "Wallet & Payments", href: "/payments", icon: Wallet },
     ];
   }
 
@@ -55,6 +57,7 @@ function useNavItems(): NavItem[] {
     { name: "Saved Jobs", href: "/jobs?saved=true", icon: Bookmark, count: savedJobs.data?.length },
     { name: "My Applications", href: "/engineer/applications", icon: FileText, count: applications.data?.length },
     { name: "Execution Workspace", href: "/engineer/workspace", icon: FolderKanban },
+    { name: "Wallet & Payments", href: "/payments", icon: Wallet },
     { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
   ];
 }

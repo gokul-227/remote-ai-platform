@@ -124,12 +124,14 @@ function AdminDashboardPage() {
     { label: "Total Users", value: stats?.total_users ?? "—", icon: Shield, color: "text-amber-600" },
   ];
 
+  // Only used if the /admin/health/details request itself fails — genuinely
+  // unknown, not a claim that these services are healthy.
   const systemHealth: ServiceHealthStatus[] = [
-    { service: "Auth Service (Keycloak)", status: "operational" },
-    { service: "Jobs API", status: "operational" },
-    { service: "Engineers API", status: "operational" },
-    { service: "PostgreSQL Database", status: "operational" },
-    { service: "Redis Cache", status: "operational" },
+    { service: "Auth Service (Keycloak)", status: "UNKNOWN" },
+    { service: "Jobs API", status: "UNKNOWN" },
+    { service: "Engineers API", status: "UNKNOWN" },
+    { service: "PostgreSQL Database", status: "UNKNOWN" },
+    { service: "Redis Cache", status: "UNKNOWN" },
   ];
 
   return (
@@ -199,21 +201,28 @@ function AdminDashboardPage() {
               <Activity className="h-4 w-4 text-slate-400" /> System Subsystem Health
             </h2>
             <div className="space-y-2.5">
-              {(healthDetails?.services || systemHealth).map((service) => (
-                <div key={service.service} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <Server className="h-4 w-4 text-slate-400" />
-                    <div>
-                      <span className="text-sm text-slate-700 font-medium block">{service.service}</span>
-                      {service.latency_ms && <span className="text-[10px] text-slate-400">{service.latency_ms}ms latency</span>}
+              {(healthDetails?.services || systemHealth).map((service) => {
+                const statusUpper = service.status.toUpperCase();
+                const isOperational = statusUpper === "OPERATIONAL";
+                const isUnknown = statusUpper === "UNKNOWN";
+                const toneClass = isOperational ? "text-emerald-700" : isUnknown ? "text-slate-500" : "text-red-700";
+                const iconClass = isOperational ? "text-emerald-600" : isUnknown ? "text-slate-400" : "text-red-600";
+                return (
+                  <div key={service.service} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Server className="h-4 w-4 text-slate-400" />
+                      <div>
+                        <span className="text-sm text-slate-700 font-medium block">{service.service}</span>
+                        {service.latency_ms ? <span className="text-[10px] text-slate-400">{service.latency_ms}ms latency</span> : null}
+                      </div>
                     </div>
+                    <span className={`flex items-center gap-1.5 text-xs font-semibold ${toneClass}`}>
+                      {isOperational ? <CheckCircle2 className={`h-4 w-4 ${iconClass}`} /> : <XCircle className={`h-4 w-4 ${iconClass}`} />}
+                      {service.status}
+                    </span>
                   </div>
-                  <span className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    {service.status}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

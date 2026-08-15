@@ -16,12 +16,13 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { StatusBadge, type StatusTone } from "@/components/ui/Badge";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const STATUS_TONE: Record<string, StatusTone> = {
   ACTIVE: "success", SIGNED: "info", OFFERED: "warning", COMPLETED: "info", TERMINATED: "danger",
 };
 
-export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function ContractDetailContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user } = useAuth();
   const { data: contract, isLoading, addMilestone } = useContract(id, !!user);
@@ -217,5 +218,13 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         </form>
       </Modal>
     </div>
+  );
+}
+
+export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <RequireAuth>
+      <ContractDetailContent params={params} />
+    </RequireAuth>
   );
 }

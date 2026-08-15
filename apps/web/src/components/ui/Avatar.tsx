@@ -8,8 +8,8 @@ function colorFor(seed: string) {
   return PALETTE[hash % PALETTE.length];
 }
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+function initials(name: string | null | undefined) {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -29,7 +29,7 @@ export function Avatar({
   size = "md",
   className,
 }: {
-  name: string;
+  name: string | null | undefined;
   src?: string | null;
   size?: keyof typeof sizeClasses;
   className?: string;
@@ -39,7 +39,7 @@ export function Avatar({
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
-        alt={name}
+        alt={name || "Avatar"}
         className={cn("rounded-full object-cover shrink-0 border border-[var(--border-color)]", sizeClasses[size], className)}
       />
     );

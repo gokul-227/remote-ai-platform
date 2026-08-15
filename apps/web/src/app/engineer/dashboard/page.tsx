@@ -15,7 +15,7 @@ import { useJobs } from "@/hooks/useJobs";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useApplications } from "@/hooks/useApplications";
 import { useRecommendations } from "@/hooks/useRecommendations";
-import { RequireAuth } from "@/components/RequireAuth";
+import { RequireRole } from "@/components/RequireRole";
 import type { JobPost } from "@/types";
 
 function timeOfDayGreeting() {
@@ -27,9 +27,9 @@ function timeOfDayGreeting() {
 
 export default function EngineerDashboard() {
   return (
-    <RequireAuth>
+    <RequireRole roles={["ENGINEER"]}>
       <EngineerDashboardContent />
-    </RequireAuth>
+    </RequireRole>
   );
 }
 

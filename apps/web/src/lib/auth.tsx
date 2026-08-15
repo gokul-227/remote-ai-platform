@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useSyncExternalStore } from "react";
 
 interface User {
   id: string;
@@ -28,59 +28,116 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
+const TOKEN_KEY = "remote_ai_platform_token";
+const USER_KEY = "remote_ai_platform_user";
+const REFRESH_TOKEN_KEY = "remote_ai_platform_refresh_token";
+
+interface StoredSession {
+  token: string | null;
+  user: User | null;
+  refreshToken: string | null;
+}
+
+const SERVER_SNAPSHOT: StoredSession = { token: null, user: null, refreshToken: null };
+
+// Module-scoped so every AuthProvider instance (and login/logout call) shares
+// one source of truth, matching useSyncExternalStore's contract that
+// getSnapshot returns a referentially-stable value until something actually
+// changes it.
+let cachedRaw = "";
+let cachedSnapshot: StoredSession = SERVER_SNAPSHOT;
+const listeners = new Set<() => void>();
+
+function readStoredSession(): StoredSession {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  const rawUser = localStorage.getItem(USER_KEY);
+  let user: User | null = null;
+  if (rawUser) {
+    try {
+      user = JSON.parse(rawUser);
+    } catch {
+      // ignore corrupt stored session
+    }
+  }
+  return { token, user, refreshToken };
+}
+
+// getSnapshot is called on every render, so it must not allocate a new object
+// unless the underlying storage actually changed — otherwise useSyncExternalStore
+// would see a "changed" reference every time and re-render in a loop.
+function getClientSnapshot(): StoredSession {
+  const next = readStoredSession();
+  const nextRaw = JSON.stringify(next);
+  if (nextRaw !== cachedRaw) {
+    cachedRaw = nextRaw;
+    cachedSnapshot = next;
+  }
+  return cachedSnapshot;
+}
+
+function getServerSnapshot(): StoredSession {
+  return SERVER_SNAPSHOT;
+}
+
+function subscribe(callback: () => void) {
+  listeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    listeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+// Our own writes don't fire the native "storage" event (that only fires in
+// *other* tabs/windows), so login()/logout() call this explicitly.
+function notifyListeners() {
+  listeners.forEach((callback) => callback());
+}
+
+// Standard useSyncExternalStore-based replacement for the classic
+// `useEffect(() => setHasMounted(true), [])` idiom — gives RequireAuth/
+// RequireRole a real "still hydrating" signal (loading: true until the
+// client snapshot lands) without a setState-in-effect. Without this, the
+// guards' redirect-on-no-user effect fires on the very first (server-
+// snapshot) render of a full page load and sends a genuinely logged-in user
+// back to /auth/login a beat before the real session is read.
+function subscribeNoop() {
+  return () => {};
+}
+function getHasMountedServerSnapshot() {
+  return false;
+}
+function getHasMountedClientSnapshot() {
+  return true;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("remote_ai_platform_token");
-    }
-    return null;
-  });
-
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== "undefined") {
-      const savedUser = localStorage.getItem("remote_ai_platform_user");
-      if (savedUser) {
-        try {
-          return JSON.parse(savedUser);
-        } catch {
-          return null;
-        }
-      }
-    }
-    return null;
-  });
-
-  const [refreshToken, setRefreshToken] = useState<string | null>(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("remote_ai_platform_refresh_token");
-    return null;
-  });
-
-  const [loading] = useState(false);
+  // useSyncExternalStore is the React-supplied tool for exactly this problem:
+  // reading a client-only external store (localStorage) without the server's
+  // render and the client's first render diverging. It renders
+  // getServerSnapshot() during SSR and hydration, then synchronously
+  // re-renders with getClientSnapshot() right after mount — no separate
+  // effect + setState cascade, and no hydration-mismatch warning.
+  const { token, user, refreshToken } = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
+  const hasMounted = useSyncExternalStore(subscribeNoop, getHasMountedClientSnapshot, getHasMountedServerSnapshot);
 
   const login = (newToken: string, newUser: User, newRefreshToken?: string | null) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("remote_ai_platform_token", newToken);
-      localStorage.setItem("remote_ai_platform_user", JSON.stringify(newUser));
-      if (newRefreshToken) localStorage.setItem("remote_ai_platform_refresh_token", newRefreshToken);
-    }
-    setToken(newToken);
-    setUser(newUser);
-    setRefreshToken(newRefreshToken || null);
+    localStorage.setItem(TOKEN_KEY, newToken);
+    localStorage.setItem(USER_KEY, JSON.stringify(newUser));
+    if (newRefreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+    notifyListeners();
   };
 
   const logout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("remote_ai_platform_token");
-      localStorage.removeItem("remote_ai_platform_user");
-      localStorage.removeItem("remote_ai_platform_refresh_token");
-    }
-    setToken(null);
-    setUser(null);
-    setRefreshToken(null);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    notifyListeners();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, refreshToken, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, refreshToken, loading: !hasMounted, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
