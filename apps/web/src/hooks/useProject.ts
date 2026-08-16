@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 
-export interface ProjectRecord { id: string; title: string; description: string; status: string; timeline?: string | null; }
+export interface ProjectRecord { id: string; title: string; description: string; status: string; timeline?: string | null; budget?: number | null; technologies?: string[] | null; }
 export interface MilestoneRecord { id: string; title: string; description?: string | null; }
 export interface TaskRecord { id: string; title: string; milestone?: string | null; status: string; assigned_user_id?: string | null; priority?: string; }
 export interface TaskDependencyRecord { id: string; task_id: string; depends_on_task_id: string; }

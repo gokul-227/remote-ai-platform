@@ -68,32 +68,43 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 function EngineerCard({ engineer }: { engineer: Engineer }) {
-  const initials = (engineer.headline || engineer.primary_role || "E")
+  const initials = (engineer.primary_role || engineer.headline || "E")
     .split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
+  const avatarGradients = [
+    "from-blue-500 to-indigo-600",
+    "from-violet-500 to-purple-700",
+    "from-emerald-500 to-teal-600",
+    "from-rose-500 to-pink-600",
+    "from-amber-500 to-orange-600",
+  ];
+  const gradientIdx = engineer.id.charCodeAt(0) % avatarGradients.length;
+
   return (
-    <Link
-      href={`/engineers/${engineer.id}`}
-      className="card-enterprise group block overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
-    >
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-sm font-bold text-white shadow-sm">
-              {initials}
-            </div>
-            <div className="min-w-0">
-              <h2 className="truncate text-sm font-semibold text-slate-900 group-hover:text-[#0A66C2]">
-                {engineer.headline || engineer.primary_role || "Engineer"}
-              </h2>
-              <p className="truncate text-xs text-slate-500">{engineer.primary_role || "Software Engineer"}</p>
-            </div>
+    <div className="card-enterprise group flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+      {/* Card top bar gradient line */}
+      <div className={`h-1 w-full bg-gradient-to-r ${avatarGradients[gradientIdx]} opacity-80`} />
+
+      <div className="p-5 flex-1 flex flex-col gap-3">
+        {/* Header row */}
+        <div className="flex items-start gap-3">
+          <div className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradients[gradientIdx]} text-sm font-bold text-white shadow-sm`}>
+            {initials}
+            {engineer.is_open_to_work && (
+              <span className="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" title="Open to work" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-sm font-bold text-slate-900 group-hover:text-[#0A66C2] transition-colors">
+              {engineer.headline || engineer.primary_role || "Engineer"}
+            </h2>
+            <p className="truncate text-xs text-slate-500 mt-0.5">{engineer.primary_role || "Software Engineer"}</p>
           </div>
           {engineer.profile_score != null && <ScoreRing score={Math.round(engineer.profile_score)} />}
         </div>
 
         {/* Meta row */}
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
           {engineer.location && (
             <span className="flex items-center gap-1">
               <MapPin className="h-3 w-3 shrink-0" />
@@ -116,12 +127,12 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
 
         {/* Bio */}
         {engineer.bio && (
-          <p className="mt-2.5 line-clamp-2 text-xs leading-relaxed text-slate-600">{engineer.bio}</p>
+          <p className="line-clamp-2 text-xs leading-relaxed text-slate-600">{engineer.bio}</p>
         )}
 
         {/* Skills */}
         {engineer.skills.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {engineer.skills.slice(0, 5).map((skill) => (
               <Badge key={skill} tone="neutral">{skill}</Badge>
             ))}
@@ -131,23 +142,38 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-          {engineer.is_open_to_work ? (
-            <Badge tone="success">Open to work</Badge>
-          ) : (
-            <Badge tone="neutral">{engineer.availability || "Not available"}</Badge>
-          )}
-          <span className="flex items-center gap-1 text-xs font-semibold text-[#0A66C2] opacity-0 transition-opacity group-hover:opacity-100">
-            View profile <ArrowRight className="h-3 w-3" />
-          </span>
-        </div>
+        {/* Keyword matches */}
+        {engineer.matching_keywords && engineer.matching_keywords.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {engineer.matching_keywords.slice(0, 3).map((kw) => (
+              <span key={kw} className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[var(--color-brand-light)] text-[#0A66C2]">
+                ✓ {kw}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
-    </Link>
+
+      {/* Footer */}
+      <div className="mt-auto flex items-center justify-between border-t border-slate-100 px-5 py-3 bg-slate-50/60">
+        {engineer.is_open_to_work ? (
+          <Badge tone="success">Open to work</Badge>
+        ) : (
+          <Badge tone="neutral">{engineer.availability || "Not available"}</Badge>
+        )}
+        <Link
+          href={`/engineers/${engineer.id}`}
+          className="text-xs font-semibold text-[#0A66C2] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          View profile <ArrowRight className="h-3 w-3" />
+        </Link>
+      </div>
+    </div>
   );
 }
 
 function EngineerCardSkeleton() {
+
   return (
     <div className="card-enterprise p-5">
       <div className="flex items-start gap-3">
@@ -206,12 +232,37 @@ export default function EngineersDiscoveryPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-slate-900">Discover Engineers</h1>
-        <p className="text-sm text-slate-500">
-          Browse verified remote engineers with structured profiles and AI-matched skills.
-        </p>
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-[#0A3A6E] to-[#0A66C2] px-8 py-10 text-white shadow-xl">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 30% 50%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold backdrop-blur-sm border border-white/20">
+                🌐 Remote Talent Network
+              </span>
+              <span className="rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 text-[11px] font-semibold">
+                ● Live
+              </span>
+            </div>
+            <h1 className="text-3xl font-black tracking-tight">Discover Engineers</h1>
+            <p className="mt-2 text-sm text-blue-100/80 max-w-md">
+              Browse verified remote engineers with structured profiles, AI-matched skills, and real availability signals.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-4 shrink-0">
+            {[
+              { label: "Verified Engineers", value: "2,400+" },
+              { label: "Open to Work", value: "38%" },
+              { label: "Avg Response", value: "< 48h" },
+            ].map(({ label, value }) => (
+              <div key={label} className="text-center">
+                <div className="text-2xl font-black text-white">{value}</div>
+                <div className="text-[10px] text-blue-200/70 font-medium mt-0.5">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Search bar */}

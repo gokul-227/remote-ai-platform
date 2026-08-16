@@ -254,33 +254,41 @@ function QualityEngineContent() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="h-11 w-11 rounded-xl bg-[var(--color-ai-soft)] flex items-center justify-center shrink-0">
-          <Sparkles className="h-5 w-5 text-[var(--color-ai)]" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">AI Quality Engine</h1>
-          <p className="text-xs text-slate-500 mt-0.5">AI-powered work evaluation and code review for remote engineering teams.</p>
-        </div>
-      </div>
-
-      <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-        {[
-          { icon: BarChart3, label: "Score & Grade", desc: "0–100 score with letter grade" },
-          { icon: Shield, label: "Security Scan", desc: "Flags security vulnerabilities" },
-          { icon: Activity, label: "Multi-Dimensional", desc: "6 quality dimensions analyzed" },
-          { icon: Zap, label: "Actionable Feedback", desc: "Specific improvement actions" },
-        ].map(({ icon: Icon, label, desc }) => (
-          <div key={label} className="card-enterprise p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-[var(--color-ai-soft)] flex items-center justify-center shrink-0">
-              <Icon className="h-4 w-4 text-[var(--color-ai)]" />
+      {/* AI Quality Engine Hero */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a0533] via-[#3b0764] to-[#6d28d9] px-8 py-10 text-white shadow-xl">
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(ellipse at top left, #a855f7 0%, transparent 60%), radial-gradient(ellipse at bottom right, #7c3aed 0%, transparent 60%)" }} />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-10 w-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-violet-200" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-300">AI Quality Engine</p>
+              </div>
             </div>
-            <div>
-              <div className="text-xs font-semibold text-slate-900">{label}</div>
-              <div className="text-[11px] text-slate-400">{desc}</div>
-            </div>
+            <h1 className="text-3xl font-black tracking-tight">Code &amp; Work Evaluation</h1>
+            <p className="mt-2 text-sm text-violet-100/70 max-w-md">
+              AI-powered work evaluation and code review for remote engineering teams. Get structured feedback, security scans, and quality scores.
+            </p>
           </div>
-        ))}
+          <div className="grid grid-cols-2 gap-3 shrink-0">
+            {[
+              { icon: BarChart3, label: "Score & Grade", desc: "0–100 with letter" },
+              { icon: Shield, label: "Security Scan", desc: "Vulnerability flags" },
+              { icon: Activity, label: "6 Dimensions", desc: "Multi-factor analysis" },
+              { icon: Zap, label: "Actionable", desc: "Specific improvements" },
+            ].map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="flex items-center gap-2.5 rounded-xl bg-white/8 backdrop-blur-sm border border-white/10 px-3 py-2.5">
+                <Icon className="h-4 w-4 text-violet-300 shrink-0" />
+                <div>
+                  <div className="text-xs font-semibold text-white">{label}</div>
+                  <div className="text-[10px] text-violet-300/70">{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <Tabs

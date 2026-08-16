@@ -10,6 +10,9 @@ import {
   MapPin,
   SlidersHorizontal,
   X,
+  ArrowUpDown,
+  Globe,
+  Zap,
 } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { RightSidebar } from "@/components/RightSidebar";
@@ -22,6 +25,31 @@ import { useJobs } from "@/hooks/useJobs";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/lib/auth";
 import type { JobPost } from "@/types";
+
+const SORT_OPTIONS = [
+  { value: "relevance", label: "Most Relevant" },
+  { value: "date", label: "Newest First" },
+  { value: "salary_high", label: "Salary: High → Low" },
+  { value: "salary_low", label: "Salary: Low → High" },
+] as const;
+
+type SortKey = typeof SORT_OPTIONS[number]["value"];
+
+const REMOTE_PILLS = [
+  { label: "🌐 Remote", location: "Remote" },
+  { label: "🌍 EU Remote", location: "EU" },
+  { label: "🗽 US Remote", location: "United States" },
+  { label: "🇬🇧 UK Remote", location: "United Kingdom" },
+] as const;
+
+function sortJobs(jobs: JobPost[], sort: SortKey): JobPost[] {
+  return [...jobs].sort((a, b) => {
+    if (sort === "date") return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime();
+    if (sort === "salary_high") return (b.salary_max ?? b.salary_min ?? 0) - (a.salary_max ?? a.salary_min ?? 0);
+    if (sort === "salary_low") return (a.salary_min ?? a.salary_max ?? 0) - (b.salary_min ?? b.salary_max ?? 0);
+    return 0; // relevance = API order
+  });
+}
 
 const POPULAR_SKILLS = [
   "React",
@@ -73,6 +101,7 @@ function JobsContent() {
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [page, setPage] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey>("relevance");
 
   const limit = 10;
 
@@ -89,7 +118,15 @@ function JobsContent() {
     skills: selectedSkills.length ? selectedSkills : undefined,
   });
   const savedJobs = useSavedJobs(!!user);
-  const jobs: JobPost[] = jobsQuery.data || [];
+  const rawJobs: JobPost[] = jobsQuery.data || [];
+  const jobs = sortJobs(
+    locationQuery
+      ? rawJobs.filter((j) =>
+          (j.location ?? "").toLowerCase().includes(locationQuery.toLowerCase())
+        )
+      : rawJobs,
+    sortKey
+  );
   const loading = jobsQuery.isLoading;
 
   const toggleSkill = (skill: string) => {
@@ -308,21 +345,56 @@ function JobsContent() {
 
         {/* Center Results Stream */}
         <div className="lg:col-span-6 space-y-4">
+          {/* Remote Quick Pills */}
+          <div className="flex flex-wrap gap-1.5">
+            {REMOTE_PILLS.map((pill) => {
+              const active = locationQuery === pill.location;
+              return (
+                <button
+                  key={pill.label}
+                  onClick={() => {
+                    setLocationQuery(active ? "" : pill.location);
+                    setPage(0);
+                  }}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all ${
+                    active
+                      ? "bg-[#0A66C2] text-white border-[#0A66C2] shadow-xs"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-[#0A66C2]/40"
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Results Summary Header */}
-          <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+          <div className="flex items-center justify-between gap-3 text-xs text-slate-500 px-1">
             <span>
               {loading ? (
-                "Searching verified opportunities..."
+                <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-amber-400 animate-pulse" />Searching verified opportunities...</span>
               ) : (
                 <>
-                  Showing <strong className="text-slate-900 dark:text-white">{jobs.length}</strong> remote engineering opportunities
+                  <strong className="text-slate-900 dark:text-white">{jobs.length}</strong> remote engineering {jobs.length === 1 ? "role" : "roles"}
                   {searchQuery && <> for &quot;<strong>{searchQuery}</strong>&quot;</>}
                 </>
               )}
             </span>
-            <div className="flex items-center gap-2">
-              <span className="badge-ent badge-ent-brand text-[10px] hidden sm:inline-flex">
-                Aggregated Live Engine
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1">
+                <ArrowUpDown className="h-3 w-3 text-slate-400" />
+                <select
+                  value={sortKey}
+                  onChange={(e) => { setSortKey(e.target.value as SortKey); setPage(0); }}
+                  className="text-[11px] font-medium text-slate-700 dark:text-slate-300 bg-transparent focus:outline-none cursor-pointer"
+                  aria-label="Sort jobs"
+                >
+                  {SORT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <span className="badge-ent badge-ent-brand text-[10px] hidden sm:inline-flex"><Globe className="h-3 w-3" />Live
               </span>
             </div>
           </div>
