@@ -56,16 +56,19 @@ function NewConversationModal({
 
   return (
     <Modal open={open} onClose={onClose} title="New Conversation">
-      <p className="text-sm text-[var(--text-muted)] mb-4">
-        Enter the user ID of the person you want to message.
+      <p className="text-sm text-[var(--text-muted)] mb-2">
+        Enter the recipient&apos;s <strong>user ID</strong> to start a conversation.
+      </p>
+      <p className="text-xs text-[var(--text-light)] mb-4">
+        Tip: You can find someone&apos;s ID from their engineer or company profile page URL.
       </p>
       <input
         autoFocus
         value={participantId}
         onChange={(e) => setParticipantId(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && submit()}
-        placeholder="User ID (UUID)…"
-        className="input-enterprise w-full"
+        placeholder="Paste recipient user ID…"
+        className="input-enterprise w-full font-mono text-sm"
       />
       <div className="flex gap-2 mt-4">
         <Button variant="secondary" fullWidth onClick={onClose}>Cancel</Button>
@@ -77,16 +80,32 @@ function NewConversationModal({
   );
 }
 
+interface ConvData {
+  id: string;
+  updated_at?: string;
+  last_message?: string;
+  participants?: Array<{ id: string; full_name?: string; email?: string; avatar_url?: string }>;
+  other_participant?: { id: string; full_name?: string; email?: string; avatar_url?: string };
+}
+
 function ConversationItem({
   conv,
   isSelected,
   onClick,
+  currentUserId,
 }: {
-  conv: { id: string; updated_at?: string };
+  conv: ConvData;
   isSelected: boolean;
   onClick: () => void;
+  currentUserId?: string;
 }) {
-  const label = `Conversation ${conv.id.slice(0, 8).toUpperCase()}`;
+  // Try to find the other participant's name, fall back to truncated ID
+  const other = conv.other_participant ||
+    conv.participants?.find((p) => p.id !== currentUserId) ||
+    null;
+  const label = other?.full_name || other?.email || `Conversation ${conv.id.slice(0, 8).toUpperCase()}`;
+  const avatarSeed = other?.full_name || other?.email || label;
+
   return (
     <button
       onClick={onClick}
@@ -98,7 +117,7 @@ function ConversationItem({
       )}
     >
       <div className="relative shrink-0">
-        <Avatar name={label} size="md" />
+        <Avatar name={avatarSeed} src={other?.avatar_url} size="md" />
         <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-[var(--bg-surface)]" />
       </div>
       <div className="flex-1 min-w-0">
@@ -113,7 +132,9 @@ function ConversationItem({
             <span className="text-[11px] text-[var(--text-light)] shrink-0">{timeAgo(conv.updated_at)}</span>
           )}
         </div>
-        <span className="text-xs text-[var(--text-muted)] block truncate mt-0.5">Click to open conversation</span>
+        <span className="text-xs text-[var(--text-muted)] block truncate mt-0.5">
+          {conv.last_message || "Click to open conversation"}
+        </span>
       </div>
     </button>
   );
@@ -170,8 +191,18 @@ function MessagesContent() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.messages]);
 
-  const convList = (conversations.data ?? []) as Array<{ id: string; updated_at?: string }>;
-  const filtered = search ? convList.filter((c) => c.id.toLowerCase().includes(search.toLowerCase())) : convList;
+  const convList = (conversations.data ?? []) as ConvData[];
+  const filtered = search
+    ? convList.filter((c) => {
+        const other = c.other_participant || c.participants?.find((p) => p.id !== user?.id);
+        const name = other?.full_name || other?.email || c.id;
+        return name.toLowerCase().includes(search.toLowerCase());
+      })
+    : convList;
+
+  const selectedConv = convList.find((c) => c.id === selected);
+  const selectedOther = selectedConv?.other_participant || selectedConv?.participants?.find((p) => p.id !== user?.id);
+  const selectedConvLabel = selectedOther?.full_name || selectedOther?.email || (selected ? `Conversation ${selected.slice(0, 8).toUpperCase()}` : "");
 
   function handleSend() {
     if (!draft.trim() || !selected) return;
@@ -184,8 +215,6 @@ function MessagesContent() {
     setSelected(id);
     setMobileView("chat");
   }
-
-  const selectedConvLabel = selected ? `Conversation ${selected.slice(0, 8).toUpperCase()}` : "";
 
   return (
     <>
@@ -243,6 +272,7 @@ function MessagesContent() {
                   conv={conv}
                   isSelected={selected === conv.id}
                   onClick={() => handleSelectConv(conv.id)}
+                  currentUserId={user?.id}
                 />
               ))
             )}
