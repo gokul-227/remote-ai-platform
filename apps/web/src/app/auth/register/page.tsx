@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Mail, Lock, User, Eye, EyeOff, Building2, AlertCircle, ArrowRight, ArrowLeft, Check } from "lucide-react";
 import api from "@/lib/api";
@@ -47,13 +47,13 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     getValues,
     trigger,
     setError: setFieldError,
     formState: { errors },
   } = useForm<RegisterForm>();
-  const password = watch("password") ?? "";
+  const password = useWatch({ control, name: "password" }) ?? "";
   const strength = passwordStrength(password);
 
   const goToStep2 = async () => {
