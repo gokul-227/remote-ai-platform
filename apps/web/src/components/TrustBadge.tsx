@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, Star, CheckCircle2, Info, ChevronDown, ChevronUp, Award, Sparkles } from "lucide-react";
+import { ShieldCheck, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useTrustScore, useAddVerification, ScoreFactor } from "@/hooks/useTrust";
 
 export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: string; showBreakdownToggle?: boolean }) {

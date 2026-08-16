@@ -46,7 +46,6 @@ interface SyncLog {
   created_at: string;
 }
 
-interface AdminUser { id: string; full_name: string; email: string; role: string; is_active: boolean; }
 interface ActivityLog { id: string; action: string; entity_type?: string; entity_id?: string; created_at: string; }
 interface ModerationReport { id: string; target_type: string; target_id: string; reason: string; status: string; decision?: string; created_at: string; }
 
@@ -166,12 +165,11 @@ function AdminDashboardPage() {
     Promise.all([
       api.get("/admin/stats").then((r) => r.data).catch(() => null),
       api.get("/admin/sync-logs", { params: { limit: 50 } }).then((r) => r.data).catch(() => null),
-      api.get("/admin/users", { params: { limit: 20 } }).then((r) => r.data).catch(() => []),
       api.get("/admin/activity-logs", { params: { limit: 20 } }).then((r) => r.data).catch(() => []),
       api.get("/moderation/reports").then((r) => r.data).catch(() => []),
       api.get("/admin/ai-usage").then((r) => r.data).catch(() => null),
       api.get("/admin/health/details", { timeout: 12000 }).then((r) => r.data).catch(() => null),
-    ]).then(([statsData, logsData, _usersData, activityData, reportsData, aiData, healthData]) => {
+    ]).then(([statsData, logsData, activityData, reportsData, aiData, healthData]) => {
       if (!isMounted) return;
       setStats(statsData);
       setSyncLogs(logsData);
