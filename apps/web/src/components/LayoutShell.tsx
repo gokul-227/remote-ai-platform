@@ -36,7 +36,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F2EF] text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] flex flex-col">
       <TopNavbar onMenuClick={() => setMobileOpen(!mobileOpen)} onSearchClick={() => setPaletteOpen(true)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
