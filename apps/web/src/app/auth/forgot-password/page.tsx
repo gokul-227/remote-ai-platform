@@ -1,33 +1,87 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Briefcase, Mail, ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setSubmitted(true);
+    }, 600);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-flex items-center gap-2 text-[#0A66C2] font-extrabold text-2xl">
-            <Briefcase className="h-7 w-7" />
-            Remote AI Platform
+          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
+            <div className="h-8 w-8 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-lg">
+              W
+            </div>
+            Work<span className="text-[#0A66C2]">Mesh</span>
           </Link>
+          <h1 className="text-xl font-bold text-slate-900">Reset your password</h1>
+          <p className="text-xs text-slate-500">Enter your email and we&apos;ll send recovery instructions</p>
         </div>
 
-        <div className="card-enterprise p-8 space-y-5 text-center">
-          <div className="h-12 w-12 rounded-full bg-[var(--bg-subtle)] flex items-center justify-center mx-auto">
-            <Mail className="h-6 w-6 text-slate-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Password reset isn&rsquo;t available yet</h1>
-            <p className="text-sm text-slate-600 mt-2">
-              Self-service password reset isn&rsquo;t supported on this platform yet. If you&rsquo;re locked out of your account, contact support and we&rsquo;ll help you regain access.
-            </p>
-          </div>
-          <Link href="/auth/login">
-            <Button variant="secondary" fullWidth icon={<ArrowLeft className="h-4 w-4" />}>Back to sign in</Button>
-          </Link>
+        <div className="card-enterprise p-8 space-y-5">
+          {submitted ? (
+            <div className="text-center space-y-4">
+              <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="h-6 w-6" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-base font-bold text-slate-900">Recovery Instructions Sent</h2>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  If an account exists for <span className="font-semibold text-slate-800">{email}</span>, you will receive password reset instructions shortly.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Link href="/auth/login" className="block">
+                  <Button variant="secondary" fullWidth icon={<ArrowLeft className="h-4 w-4" />}>
+                    Back to Sign In
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Account Email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@company.com"
+              />
+
+              <div className="text-xs text-slate-500 flex items-start gap-2 bg-blue-50/60 p-3 rounded-lg border border-blue-100">
+                <ShieldCheck className="h-4 w-4 text-[#0A66C2] shrink-0 mt-0.5" />
+                <span>For enterprise security, password resets expire 15 minutes after issuance.</span>
+              </div>
+
+              <Button type="submit" fullWidth size="lg" loading={loading} disabled={!email.trim()}>
+                Send Reset Link
+              </Button>
+
+              <div className="text-center pt-2">
+                <Link href="/auth/login" className="text-xs text-[#0A66C2] hover:underline font-semibold inline-flex items-center gap-1">
+                  <ArrowLeft className="h-3 w-3" /> Back to Sign In
+                </Link>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

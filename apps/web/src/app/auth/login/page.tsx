@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Lock, Mail, Eye, EyeOff, Briefcase, Sparkles, Network, ShieldCheck } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff, Sparkles, Network, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -76,31 +76,35 @@ export default function LoginPage() {
         {/* Left: brand / value */}
         <div className="hidden lg:flex flex-col justify-between bg-[#0A1F3D] text-white p-10">
           <div>
-            <Link href="/" className="inline-flex items-center gap-2 font-extrabold text-xl">
-              <Briefcase className="h-6 w-6" />
-              Remote AI Platform
+            <Link href="/" className="inline-flex items-center gap-2 font-black text-2xl tracking-tight text-white">
+              <div className="h-9 w-9 rounded-xl bg-[#0A66C2] flex items-center justify-center text-white font-black text-xl shadow-xs">
+                W
+              </div>
+              Work<span className="text-blue-400">Mesh</span>
             </Link>
             <h2 className="text-2xl font-bold mt-10 leading-snug text-white">
-              Where remote engineering work meets intelligent hiring.
+              The professional network for remote engineering work.
             </h2>
           </div>
           <ul className="space-y-4">
             {VALUE_POINTS.map((p, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-white/80">
-                <p.icon className="h-4 w-4 mt-0.5 text-white/60 shrink-0" />
+                <p.icon className="h-4 w-4 mt-0.5 text-blue-400 shrink-0" />
                 {p.text}
               </li>
             ))}
           </ul>
-          <p className="text-xs text-white/40">© 2026 Remote AI Platform. All rights reserved.</p>
+          <p className="text-xs text-white/40">© 2026 WorkMesh Inc. All rights reserved.</p>
         </div>
 
         {/* Right: form */}
         <div className="p-8 sm:p-10 space-y-6">
           <div className="lg:hidden text-center">
-            <Link href="/" className="inline-flex items-center gap-2 text-[#0A66C2] font-extrabold text-xl">
-              <Briefcase className="h-6 w-6" />
-              Remote AI Platform
+            <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
+              <div className="h-8 w-8 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-lg">
+                W
+              </div>
+              Work<span className="text-[#0A66C2]">Mesh</span>
             </Link>
           </div>
           <div>

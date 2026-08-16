@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Mail, Lock, User, Eye, EyeOff, Building2, AlertCircle, Briefcase, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Building2, AlertCircle, ArrowRight, ArrowLeft, Check } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
@@ -100,12 +100,14 @@ export default function RegisterPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-flex items-center gap-2 text-[#0A66C2] font-extrabold text-2xl">
-            <Briefcase className="h-7 w-7" />
-            Remote AI Platform
+          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
+            <div className="h-8 w-8 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-lg">
+              W
+            </div>
+            Work<span className="text-[#0A66C2]">Mesh</span>
           </Link>
           <h1 className="text-xl font-bold text-slate-900">Create your account</h1>
-          <p className="text-sm text-slate-600">Join the remote engineering marketplace</p>
+          <p className="text-sm text-slate-600">Join the professional remote engineering network</p>
         </div>
 
         {/* Step indicator */}
