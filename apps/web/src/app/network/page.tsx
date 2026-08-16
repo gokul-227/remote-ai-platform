@@ -135,7 +135,7 @@ function NetworkContent() {
   const filtered = allConns.filter((c) => {
     const matchesTab = tab === "all" || (tab === "connected" && c.status === "accepted") || (tab === "pending" && c.status === "pending");
     const otherId = c.receiver_id === user?.id ? c.sender_id : c.receiver_id;
-    const matchesSearch = !search || otherId.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = !search || (otherId || "").toLowerCase().includes(search.toLowerCase());
     return matchesTab && matchesSearch;
   });
 
