@@ -14,7 +14,7 @@ const WORKSPACES = [
 // separate console (not a "workspace" in this sense) and logged-out visitors
 // have nothing to switch between.
 export function WorkspaceSwitcher() {
-  const { currentWorkspace, switchTo } = useSwitchWorkspace();
+  const { currentWorkspace, switchTo, hasEngineerProfile, hasCompanyProfile } = useSwitchWorkspace();
   const [open, setOpen] = useState(false);
 
   if (!currentWorkspace) return null;
@@ -46,6 +46,8 @@ export function WorkspaceSwitcher() {
               const Icon = ws.icon;
               const isActive = ws.role === currentWorkspace;
               const isPending = switchTo.isPending && switchTo.variables === ws.role;
+              const hasProfile = ws.role === "ENGINEER" ? hasEngineerProfile : hasCompanyProfile;
+
               return (
                 <button
                   key={ws.role}
@@ -62,7 +64,14 @@ export function WorkspaceSwitcher() {
                     <Icon className="h-4 w-4 text-[var(--color-brand)]" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[var(--text-main)]">{ws.label}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-[var(--text-main)]">{ws.label}</p>
+                      {!hasProfile && !isActive && (
+                        <span className="text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded">
+                          Set up &rarr;
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-[var(--text-light)]">{ws.description}</p>
                   </div>
                   {isPending ? (

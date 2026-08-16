@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Briefcase, Sparkles, CheckCircle2, Clock, ArrowRight } from "lucide-react";
+import { Briefcase, Sparkles, CheckCircle2, Clock, ArrowRight, User } from "lucide-react";
 import { Sidebar } from "@/components/Sidebar";
 import { RightSidebar } from "@/components/RightSidebar";
 import { JobCard } from "@/components/JobCard";
@@ -52,6 +52,38 @@ function EngineerDashboardContent() {
   ];
   const completionPercent = Math.round((completionItems.filter((s) => s.done).length / completionItems.length) * 100);
   const topMatch = matches.data?.[0];
+
+  // Still loading the profile — show a minimal skeleton so the page doesn't
+  // flash content that depends on profileData being present.
+  if (profile.isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="skeleton-box h-8 w-64 mb-6" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-box h-20 rounded-xl" />)}
+        </div>
+      </div>
+    );
+  }
+
+  // No engineer profile exists yet (GET /engineers/me → 404). This is
+  // reachable via the workspace switcher — an account that signed up as COMPANY
+  // and switched to Personal Workspace before creating an engineer profile.
+  if (profile.isError) {
+    return (
+      <div className="max-w-lg mx-auto py-16">
+        <div className="card-enterprise">
+          <EmptyState
+            icon={User}
+            title="Set up your engineer profile to get started"
+            description="Add your headline, skills, and experience so you can receive AI-powered job matches and apply to remote engineering roles."
+            actionLabel="Create Engineer Profile"
+            actionHref="/engineer/profile"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
