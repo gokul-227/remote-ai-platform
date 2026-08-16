@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Clock, Bookmark, BookmarkCheck } from "lucide-react";
+import { Clock, Bookmark, BookmarkCheck, Globe2 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { Badge, MatchPill } from "@/components/ui/Badge";
+import { MatchPill } from "@/components/ui/Badge";
 import type { JobPost } from "@/types";
 import { cn } from "@/lib/cn";
 
@@ -11,7 +11,8 @@ function formatSalary(job: JobPost) {
   const min = job.salary_min ?? job.budget_min;
   const max = job.salary_max ?? job.budget_max;
   if (!min && !max) return null;
-  const fmt = (n: number) => `${job.currency === "USD" ? "$" : job.currency + " "}${Math.round(n / 1000)}k`;
+  const sym = job.currency === "EUR" ? "€" : job.currency === "GBP" ? "£" : "$";
+  const fmt = (n: number) => (n >= 1000 ? `${sym}${Math.round(n / 1000)}k` : `${sym}${n}`);
   if (min && max) return `${fmt(min)} – ${fmt(max)}`;
   return fmt((min ?? max) as number);
 }
@@ -20,8 +21,8 @@ function timeAgo(dateStr: string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
   const days = Math.floor(diffMs / 86400000);
   if (days <= 0) return "Today";
-  if (days === 1) return "1 day ago";
-  if (days < 30) return `${days} days ago`;
+  if (days === 1) return "1d ago";
+  if (days < 30) return `${days}d ago`;
   return `${Math.floor(days / 30)}mo ago`;
 }
 
@@ -44,19 +45,31 @@ export function JobCard({
     <Link
       href={href ?? `/jobs/${job.id}`}
       className={cn(
-        "card-enterprise flex gap-3 p-4 group transition-shadow hover:shadow-[var(--shadow-sm)]",
+        "card-enterprise flex gap-3.5 p-4 group transition-all duration-150 hover:border-[var(--color-brand)]/40 hover:shadow-[var(--shadow-sm)]",
         compact && "p-3"
       )}
     >
-      <Avatar name={job.company_name || "Company"} src={job.company_logo} size={compact ? "sm" : "md"} className="rounded-lg" />
+      <Avatar
+        name={job.company_name || "Company"}
+        src={job.company_logo}
+        size={compact ? "sm" : "md"}
+        className="rounded-xl ring-1 ring-[var(--border-color)] shrink-0"
+      />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-[var(--text-main)] truncate group-hover:text-[var(--color-brand)]">
+            <h3 className="text-sm font-semibold text-[var(--text-main)] truncate group-hover:text-[var(--color-brand)] transition-colors">
               {job.title}
             </h3>
-            <p className="text-xs text-[var(--text-light)] mt-0.5 truncate">{job.company_name}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs font-medium text-[var(--text-muted)] truncate">{job.company_name}</span>
+              {job.source && job.source !== "DIRECT" && (
+                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded">
+                  {job.source}
+                </span>
+              )}
+            </div>
           </div>
           {onToggleSave && (
             <button
@@ -66,32 +79,44 @@ export function JobCard({
                 onToggleSave(job);
               }}
               aria-label={saved ? "Remove from saved jobs" : "Save job"}
-              className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-[var(--color-brand)] shrink-0"
+              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[var(--color-brand)] shrink-0 transition-colors"
             >
               {saved ? <BookmarkCheck className="h-4 w-4 text-[var(--color-brand)]" /> : <Bookmark className="h-4 w-4" />}
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-light)] flex-wrap">
+        <div className="flex items-center gap-3 mt-2 text-xs text-[var(--text-muted)] flex-wrap">
           <span className="inline-flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
+            <Globe2 className="h-3 w-3 text-slate-400" />
             {job.is_remote ? "Remote" : job.location || "Remote"}
           </span>
-          {salary && <span className="font-medium text-[var(--text-main)]">{salary}</span>}
-          <span className="inline-flex items-center gap-1">
+          {salary && (
+            <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded text-[11px]">
+              {salary}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1 text-[var(--text-light)]">
             <Clock className="h-3 w-3" />
             {timeAgo(job.posted_at)}
           </span>
         </div>
 
-        {!compact && job.skills?.length > 0 && (
+        {!compact && job.skills && job.skills.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2.5">
             {job.skills.slice(0, 4).map((skill) => (
-              <Badge key={skill} tone="neutral">
+              <span
+                key={skill}
+                className="text-[10px] font-medium bg-[var(--bg-subtle)] text-[var(--text-muted)] border border-[var(--border-color)] px-2 py-0.5 rounded-md"
+              >
                 {skill}
-              </Badge>
+              </span>
             ))}
+            {job.skills.length > 4 && (
+              <span className="text-[10px] text-[var(--text-light)] self-center font-medium">
+                +{job.skills.length - 4} more
+              </span>
+            )}
           </div>
         )}
 
