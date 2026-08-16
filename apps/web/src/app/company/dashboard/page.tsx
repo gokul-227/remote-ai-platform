@@ -9,6 +9,9 @@ import {
   PlusCircle,
   FileText,
   Search,
+  Building2,
+  ArrowRight,
+  ChevronRight,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useCompanyJobs } from "@/hooks/useCompanyJobs";
@@ -18,38 +21,46 @@ import { useCompanyApplications } from "@/hooks/useApplications";
 import { RequireRole } from "@/components/RequireRole";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Building2 } from "lucide-react";
+import { StatusBadge } from "@/components/ui/Badge";
+import { Sidebar } from "@/components/Sidebar";
 
 interface EngineerMatch {
   id: string;
   headline?: string;
+  primary_role?: string;
   skills?: string[];
   user?: { full_name: string; email: string };
 }
 
-function CompanyDashboardPage() {
+export default function CompanyDashboard() {
+  return (
+    <RequireRole roles={["COMPANY", "ADMIN"]}>
+      <CompanyDashboardContent />
+    </RequireRole>
+  );
+}
+
+function CompanyDashboardContent() {
   const companyProfileQuery = useCompanyProfile();
-  const engineersQuery = useQuery<EngineerMatch[]>({ queryKey: ["engineers", { limit: 4 }], queryFn: async () => (await api.get("/engineers", { params: { limit: 4 } })).data });
+  const engineersQuery = useQuery<EngineerMatch[]>({
+    queryKey: ["engineers", { limit: 6 }],
+    queryFn: async () => (await api.get("/engineers", { params: { limit: 6 } })).data,
+  });
   const jobsQuery = useCompanyJobs();
   const projectsQuery = useProjects();
   const applicationsQuery = useCompanyApplications();
   const engineers = engineersQuery.data || [];
   const jobs = jobsQuery.data || [];
-  const loadingEngineers = engineersQuery.isLoading;
+  const applications = applicationsQuery.data || [];
 
-  // A COMPANY-role account with no completed company profile yet (reachable
-  // via the workspace switcher without ever visiting /company/profile first)
-  // previously fell through to this whole dashboard anyway, showing global
-  // platform-wide job/engineer counts mislabeled as "your" positions and
-  // candidates. Gate on the profile actually existing instead.
   if (companyProfileQuery.isLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="skeleton-box h-8 w-64 mb-6" />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton-box h-24 rounded-xl" />)}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton-box h-24 rounded-xl" />
+          ))}
         </div>
       </div>
     );
@@ -58,154 +69,229 @@ function CompanyDashboardPage() {
   if (companyProfileQuery.isError) {
     return (
       <div className="max-w-lg mx-auto py-16">
-        <div className="card-enterprise">
-          <EmptyState
-            icon={Building2}
-            title="Set up your company profile to get started"
-            description="Add your company name, industry, and description so candidates and the hiring dashboard have something real to show."
-            actionLabel="Create Company Profile"
-            actionHref="/company/profile"
-          />
+        <div className="card-enterprise p-8 text-center space-y-4">
+          <div className="h-12 w-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+            <Building2 className="h-6 w-6" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">Set Up Your Company Profile</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Create your organization profile to post open positions, discover AI-matched engineering talent, and manage your hiring pipeline.
+          </p>
+          <div className="pt-2">
+            <Link href="/company/profile">
+              <Button size="lg" fullWidth icon={<ArrowRight className="h-4 w-4" />}>
+                Create Company Profile
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Hiring Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage your talent pipeline and active positions</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/jobs/new"><Button variant="secondary" icon={<PlusCircle className="h-4 w-4" />}>Post Position</Button></Link>
-          <Link href="/company/profile"><Button>Company Page</Button></Link>
-        </div>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 py-2">
+      {/* Left Sidebar */}
+      <div className="lg:col-span-3 space-y-4">
+        <Sidebar />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Active Positions", value: jobs.length, icon: Briefcase, color: "text-[#0A66C2]" },
-          { label: "Candidates in Directory", value: engineers.length, icon: Users, color: "text-indigo-600" },
-          { label: "Projects", value: projectsQuery.data?.length ?? 0, icon: Sparkles, color: "text-amber-600" },
-          { label: "Applications Received", value: applicationsQuery.data?.length ?? 0, icon: FileText, color: "text-emerald-600" },
-        ].map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.label} className="card-enterprise p-5 space-y-2">
-              <div className={`${stat.color}`}><Icon className="h-5 w-5" /></div>
-              <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-              <div className="text-xs text-slate-500 font-medium">{stat.label}</div>
+      {/* Main Center Column */}
+      <div className="lg:col-span-9 space-y-6">
+        {/* Recruiting Command Header */}
+        <div className="card-enterprise p-6 bg-gradient-to-r from-white via-indigo-50/20 to-white dark:from-slate-900 dark:to-slate-900 border-l-4 border-l-indigo-600 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="badge-ent badge-ent-brand text-[10px]">Hiring Command Center</span>
+              <span className="badge-ent badge-ent-success text-[10px]">Verified Organization</span>
             </div>
-          );
-        })}
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left: Pipeline + Activity */}
-        <div className="lg:col-span-2 space-y-5">
-          {/* Hiring Pipeline */}
-          <div className="card-enterprise p-6 space-y-4">
-            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-              <Briefcase className="h-4 w-4 text-slate-400" /> Hiring Pipeline
-            </h2>
-            <p className="text-sm text-slate-500">Pipeline activity will appear after candidates apply to your positions.</p>
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              Recruiting Command Center
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Manage your open roles, review candidates through the hiring pipeline, and coordinate projects.
+            </p>
           </div>
+          <div className="flex items-center gap-2">
+            <Link href="/jobs/new">
+              <Button size="sm" icon={<PlusCircle className="h-3.5 w-3.5" />}>
+                Post Position
+              </Button>
+            </Link>
+            <Link href="/company/candidates">
+              <Button variant="secondary" size="sm" icon={<Search className="h-3.5 w-3.5" />}>
+                Search Talent
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-          {/* Recommended Talent */}
-          <div className="card-enterprise p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-[#0A66C2]" /> Recommended Talent
-              </h2>
-              <button className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1">
-                <Search className="h-3.5 w-3.5" /> Search Talent
-              </button>
+        {/* 4-Tile High-Density Metric Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {[
+            { label: "Active Roles", value: jobs.length, tone: "text-[#0A66C2]", icon: Briefcase },
+            { label: "Candidates in Network", value: engineers.length, tone: "text-indigo-600", icon: Users },
+            { label: "Active Projects", value: projectsQuery.data?.length ?? 0, tone: "text-amber-600", icon: Sparkles },
+            { label: "Applications Received", value: applications.length, tone: "text-emerald-600", icon: FileText },
+          ].map((m) => (
+            <div key={m.label} className="card-enterprise p-4 space-y-1.5 hover:border-slate-300 transition-colors">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>{m.label}</span>
+                <m.icon className={`h-4 w-4 ${m.tone}`} />
+              </div>
+              <div className={`text-2xl font-black ${m.tone}`}>{m.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Two-Column Section: Active Roles & Recent Applications */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Active Job Postings */}
+          <div className="card-enterprise p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-[#0A66C2]" />
+                  Active Job Postings ({jobs.length})
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Your currently open engineering positions</p>
+              </div>
+              <Link href="/company/jobs" className="text-xs font-semibold text-[#0A66C2] hover:underline">
+                Manage
+              </Link>
             </div>
 
-            {loadingEngineers ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex gap-3 p-3 rounded-lg bg-slate-50 animate-pulse">
-                    <div className="skeleton-box h-10 w-10 rounded-full flex-shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="skeleton-box h-4 w-1/2" />
-                      <div className="skeleton-box h-3 w-3/4" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : engineers.length === 0 ? (
-              <EmptyState icon={Users} title="No candidates in the talent pool yet" description="Engineers who register will appear here as candidates." />
-            ) : (
-              <>
-              <div className="space-y-3">
-                {engineers.map((eng) => {
-                  const name = eng.user?.full_name || "Engineer profile";
-                  return (
-                    <Link key={eng.id} href={`/engineers/${eng.id}`} className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={name} />
-                        <div>
-                          <p className="font-semibold text-slate-900 text-sm">{name}</p>
-                          <p className="text-xs text-slate-500">{eng.headline || "Software Engineer"}</p>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {eng.skills?.slice(0, 3).map((s) => <Badge key={s} tone="neutral">{s}</Badge>)}
-                          </div>
-                        </div>
+            <div className="space-y-2.5">
+              {jobs.length === 0 ? (
+                <div className="py-4 text-center space-y-2">
+                  <p className="text-xs text-slate-500">No active positions posted yet.</p>
+                  <Link href="/jobs/new">
+                    <Button size="sm" icon={<PlusCircle className="h-3 w-3" />}>
+                      Create First Job
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                jobs.slice(0, 4).map((job: { id: string; title: string; location?: string; is_remote?: boolean }) => (
+                  <Link
+                    key={job.id}
+                    href={`/jobs/${job.id}`}
+                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:border-[#0A66C2] hover:bg-blue-50/20 transition-all group"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-900 group-hover:text-[#0A66C2] text-xs truncate">
+                        {job.title}
                       </div>
-                      <span className="text-xs font-semibold text-[#0A66C2] flex-shrink-0">View profile</span>
-                    </Link>
-                  );
-                })}
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {job.is_remote ? "100% Remote" : job.location || "Remote"}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-[#0A66C2] shrink-0" />
+                  </Link>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Recent Applications Received */}
+          <div className="card-enterprise p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-emerald-600" />
+                  Hiring Pipeline ({applications.length})
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">Applicants moving through review</p>
               </div>
-              <p className="text-xs text-slate-400">
-                For AI-ranked match scores against a specific role, use{" "}
-                <Link href="/company/candidates" className="text-[#0A66C2] hover:underline">Candidate Discovery</Link>.
-              </p>
-              </>
-            )}
+              <Link href="/company/candidates" className="text-xs font-semibold text-[#0A66C2] hover:underline">
+                View Pipeline
+              </Link>
+            </div>
+
+            <div className="space-y-2.5">
+              {applications.length === 0 ? (
+                <div className="py-4 text-center space-y-2">
+                  <p className="text-xs text-slate-500">No applicants in review right now.</p>
+                  <Link href="/company/candidates">
+                    <Button variant="secondary" size="sm">
+                      Discover Candidates
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                applications.slice(0, 4).map((app: { application: { id: string; status: string }; job: { title: string }; candidate: { full_name: string } }) => (
+                  <div
+                    key={app.application.id}
+                    className="flex items-center justify-between p-3 rounded-lg border border-slate-100 text-xs"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={app.candidate.full_name} size="sm" />
+                      <div>
+                        <span className="font-semibold text-slate-900 block">{app.candidate.full_name}</span>
+                        <span className="text-[11px] text-slate-500">{app.job.title}</span>
+                      </div>
+                    </div>
+                    <StatusBadge label={app.application.status} tone="info" />
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Right sidebar */}
-        <div className="space-y-5">
-          {/* Active Positions */}
-          <div className="card-enterprise p-5 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="font-semibold text-slate-900 text-sm">Active Positions</h3>
-              <Link href="/jobs/new" className="text-xs text-[#0A66C2] hover:underline">+ Post</Link>
+        {/* Featured Candidates in Directory */}
+        <div className="card-enterprise p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+              <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#7F56D9]" />
+                Top Engineering Candidates
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">Verified public talent ready for remote engineering positions</p>
             </div>
-            <div className="space-y-2 text-xs">
-              {jobs.length ? jobs.slice(0, 3).map((role: { id: string; title: string; company_name: string }) => (
-                <Link key={role.id} href={`/jobs/${role.id}`} className="block rounded-lg border border-slate-100 bg-slate-50 p-2.5 hover:border-slate-300">
-                  <p className="font-semibold text-slate-800 leading-snug">{role.title}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">{role.company_name}</p>
-                </Link>
-              )) : <p className="text-slate-500">No active positions.</p>}
-            </div>
+            <Link href="/company/candidates" className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1">
+              Search All Talent <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
 
-          {/* Recent Activity */}
-          <div className="card-enterprise p-5 space-y-3">
-            <h3 className="font-semibold text-slate-900 text-sm border-b border-slate-100 pb-2">Recent Activity</h3>
-            <div className="space-y-2.5 text-xs">
-              <p className="text-slate-500">No recent activity.</p>
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {engineers.slice(0, 6).map((eng) => (
+              <div key={eng.id} className="p-4 rounded-xl border border-slate-100 hover:border-[#0A66C2] transition-colors space-y-3">
+                <div className="flex items-center gap-3">
+                  <Avatar name={eng.user?.full_name || eng.headline || "Engineer"} size="md" />
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-900 text-xs truncate">
+                      {eng.user?.full_name || "Engineer"}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 truncate">{eng.headline || eng.primary_role || "Remote Developer"}</p>
+                  </div>
+                </div>
+
+                {eng.skills && eng.skills.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {eng.skills.slice(0, 3).map((s) => (
+                      <span key={s} className="badge-ent badge-ent-neutral text-[10px]">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
+                  <Link href={`/engineers/${eng.id}`} className="text-[11px] font-semibold text-[#0A66C2] hover:underline">
+                    View Profile &rarr;
+                  </Link>
+                  <Link href="/company/candidates">
+                    <Button size="sm" variant="ghost" className="text-[11px] h-7 px-2">
+                      Invite
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-export default function CompanyDashboard() {
-  return (
-    <RequireRole roles={["COMPANY", "ADMIN"]}>
-      <CompanyDashboardPage />
-    </RequireRole>
   );
 }
