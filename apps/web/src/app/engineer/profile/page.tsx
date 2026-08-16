@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import {
   Award, Briefcase, Code2, ExternalLink, Github, GraduationCap, Languages as LanguagesIcon,
   Linkedin, Loader2, MapPin, Pencil, Share2, Sparkles, Upload, User,
+  CheckCircle2, Clock, TrendingUp, Target, Globe,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -84,6 +85,31 @@ function CreateProfileForm() {
   );
 }
 
+/* Score logic: 0-100 across bio, skills, exp, projects, resume, rate */
+function computeProfileScore(profile: Profile): number {
+  let score = 0;
+  if (profile.bio) score += 20;
+  if (profile.skills.length >= 3) score += 20;
+  else if (profile.skills.length > 0) score += 10;
+  if (profile.experience.length >= 2) score += 25;
+  else if (profile.experience.length === 1) score += 15;
+  if (profile.projects.length >= 1) score += 15;
+  if (profile.resume_url) score += 10;
+  if (profile.hourly_rate) score += 10;
+  return Math.min(score, 100);
+}
+
+function completionItems(profile: Profile) {
+  return [
+    { label: "Bio written", done: !!profile.bio, weight: 20 },
+    { label: "3+ skills listed", done: profile.skills.length >= 3, weight: 20 },
+    { label: "Work experience", done: profile.experience.length > 0, weight: 25 },
+    { label: "Project portfolio", done: profile.projects.length > 0, weight: 15 },
+    { label: "Resume uploaded", done: !!profile.resume_url, weight: 10 },
+    { label: "Rate set", done: !!profile.hourly_rate, weight: 10 },
+  ];
+}
+
 function EngineerProfileContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -100,7 +126,8 @@ function EngineerProfileContent() {
   const profileQuery = viewingOther ? otherProfileQuery : ownProfileQuery;
 
   const [profileOverride, setProfileOverride] = useState<Profile | null>(null);
-  const [score, setScore] = useState<number | null>(null);
+  const [topMatchScore, setTopMatchScore] = useState<number | null>(null);
+  const [topMatchTitle, setTopMatchTitle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -110,8 +137,14 @@ function EngineerProfileContent() {
   useEffect(() => {
     if (!user || viewingOther) return;
     api.get("/matching/recommendations", { params: { limit: 1 } })
-      .then((response) => setScore(response.data?.[0]?.overall_score ?? null))
-      .catch(() => setScore(null));
+      .then((response) => {
+        const match = response.data?.[0];
+        setTopMatchScore(match?.overall_score ?? null);
+        setTopMatchTitle(match?.job_title ?? null);
+      })
+      .catch(() => {
+        setTopMatchScore(null);
+      });
   }, [user, viewingOther]);
 
   const profile = (viewingOther ? null : profileOverride) || profileQuery.data;
@@ -140,7 +173,9 @@ function EngineerProfileContent() {
   if ((!viewingOther && !user) || !profile) return <div className="card-enterprise mx-auto max-w-2xl p-8 text-center"><User className="mx-auto mb-3 h-8 w-8 text-slate-400" /><h1 className="text-xl font-bold text-slate-900">Engineer profile</h1><p className="mt-2 text-sm text-slate-600">{error || (viewingOther ? "This profile could not be found." : "Sign in to view your profile.")}</p></div>;
 
   const displayName = viewingOther ? (profile.headline || "Engineer profile") : (user!.full_name || user!.email);
-  const profileScore = Math.round((profile.skills.length > 0 ? 50 : 0) + (profile.experience.length > 0 ? 25 : 0) + (profile.bio ? 15 : 0) + (profile.resume_url ? 10 : 0));
+  const profileScore = computeProfileScore(profile);
+  const items = completionItems(profile);
+  const remainingItems = items.filter((it) => !it.done);
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
@@ -160,18 +195,35 @@ function EngineerProfileContent() {
 
       {error && <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{error}</div>}
 
+      {/* Profile Hero */}
       <section className="card-enterprise overflow-hidden">
-        <div className="h-28 bg-gradient-to-r from-slate-200 to-slate-100" />
+        {/* Dynamic banner — gradient based on role identity */}
+        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-[#0A66C2] via-[#1d4ed8] to-[#7c3aed]">
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+          <div className="absolute bottom-4 left-6 flex items-center gap-2">
+            {profile.primary_role && (
+              <span className="text-xs font-bold text-white/80 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1">
+                {profile.primary_role}
+              </span>
+            )}
+            {profile.is_open_to_work && (
+              <span className="text-xs font-bold text-emerald-300 bg-emerald-900/40 backdrop-blur-sm border border-emerald-400/30 rounded-full px-3 py-1 flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Open to Work
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="px-6 pb-6">
-          <div className="-mt-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="-mt-12 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             <div className="flex items-end gap-4">
-              <Avatar name={displayName} size="xl" className="border-4 border-white shadow-sm" />
-              <div>
-                <div className="flex items-center gap-2">
+              <Avatar name={displayName} size="xl" className="border-4 border-white shadow-md ring-2 ring-[var(--color-brand)]/20" />
+              <div className="mb-1">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl font-bold text-slate-900">{displayName}</h1>
                   {profile.is_open_to_work && <Badge tone="success">Open to work</Badge>}
                 </div>
-                <p className="text-sm text-slate-600">{profile.headline || profile.primary_role || "Engineer"} · {profile.remote_preference || "Remote"}</p>
+                <p className="text-sm text-slate-600 mt-0.5">{profile.headline || profile.primary_role || "Engineer"} · {profile.remote_preference || "Remote"}</p>
               </div>
             </div>
             {!viewingOther && (
@@ -181,23 +233,25 @@ function EngineerProfileContent() {
               </div>
             )}
           </div>
+
           <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
             {profile.location && <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{profile.location}</span>}
-            {profile.timezone && <span>{profile.timezone}</span>}
-            {profile.hourly_rate ? <span className="font-medium text-emerald-700">${profile.hourly_rate}/hr</span> : null}
-            {profile.github_url && <a className="flex items-center gap-1.5 hover:text-[#0A66C2]" href={profile.github_url} target="_blank" rel="noreferrer"><Github className="h-4 w-4" />GitHub</a>}
-            {profile.linkedin_url && <a className="flex items-center gap-1.5 hover:text-[#0A66C2]" href={profile.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-4 w-4" />LinkedIn</a>}
-            {profile.portfolio_url && <a className="flex items-center gap-1.5 hover:text-[#0A66C2]" href={profile.portfolio_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" />Portfolio</a>}
+            {profile.timezone && <span className="flex items-center gap-1.5"><Globe className="h-4 w-4" />{profile.timezone}</span>}
+            {profile.hourly_rate ? <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-0.5 text-xs">${profile.hourly_rate}/hr</span> : null}
+            {profile.github_url && <a className="flex items-center gap-1.5 hover:text-[#0A66C2] transition-colors" href={profile.github_url} target="_blank" rel="noreferrer"><Github className="h-4 w-4" />GitHub</a>}
+            {profile.linkedin_url && <a className="flex items-center gap-1.5 hover:text-[#0A66C2] transition-colors" href={profile.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-4 w-4" />LinkedIn</a>}
+            {profile.portfolio_url && <a className="flex items-center gap-1.5 hover:text-[#0A66C2] transition-colors" href={profile.portfolio_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" />Portfolio</a>}
           </div>
-          <p className="mt-3 text-xs font-medium text-slate-600">Availability: {profile.availability || (profile.is_open_to_work ? "Open to work" : "Not available")}</p>
+          <p className="mt-2 text-xs font-medium text-slate-500">Availability: {profile.availability || (profile.is_open_to_work ? "Open to work" : "Not specified")}</p>
         </div>
       </section>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <main className="space-y-5 lg:col-span-2">
+          {/* About */}
           <section className="card-enterprise p-6">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-semibold"><User className="h-4 w-4 text-slate-400" />About</h2>
+              <h2 className="flex items-center gap-2 font-semibold text-slate-900"><User className="h-4 w-4 text-slate-400" />About</h2>
               {!viewingOther && (
                 <Button variant="ghost" size="sm" icon={<Sparkles className="h-3.5 w-3.5" />} loading={profileAssistant.isPending} onClick={() => profileAssistant.mutate()}>
                   Enhance with AI
@@ -205,46 +259,118 @@ function EngineerProfileContent() {
               )}
             </div>
             <p className="text-sm leading-relaxed text-slate-600">{profile.bio || "No biography added yet."}</p>
-            {profile.ai_summary && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600">{profile.ai_summary}</p>}
+            {profile.ai_summary && (
+              <div className="mt-4 p-3 rounded-xl bg-[var(--color-ai-soft)] border border-[var(--color-ai)]/20">
+                <p className="text-xs font-semibold text-[var(--color-ai)] mb-1 flex items-center gap-1"><Sparkles className="h-3 w-3" />AI-Enhanced Summary</p>
+                <p className="text-sm text-slate-700 leading-relaxed">{profile.ai_summary}</p>
+              </div>
+            )}
             {profileAssistant.isError && <p className="mt-2 text-xs text-red-600">AI enhancement failed. Please try again.</p>}
           </section>
 
+          {/* Skills */}
           <section className="card-enterprise p-6">
-            <h2 className="mb-4 flex items-center gap-2 font-semibold"><Code2 className="h-4 w-4 text-slate-400" />Skills</h2>
-            <div className="flex flex-wrap gap-2">
-              {profile.skills.length ? profile.skills.map((skill) => <Badge key={skill} tone="neutral">{skill}</Badge>) : <span className="text-sm text-slate-500">No skills added yet.</span>}
-            </div>
+            <h2 className="mb-4 flex items-center gap-2 font-semibold text-slate-900"><Code2 className="h-4 w-4 text-slate-400" />Skills</h2>
+            {profile.skills.length ? (
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((skill) => (
+                  <span key={skill} className="text-xs font-medium bg-[var(--bg-subtle)] border border-[var(--border-color)] text-slate-700 rounded-md px-2.5 py-1 hover:border-[var(--color-brand)] hover:text-[var(--color-brand)] hover:bg-[var(--color-brand-light)] transition-colors cursor-default">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No skills added yet.</p>
+            )}
+            {profile.matching_keywords?.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1"><Target className="h-3 w-3" />AI Keywords</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.matching_keywords.slice(0, 8).map((kw) => (
+                    <span key={kw} className="text-[10px] font-medium text-[var(--color-ai)] bg-[var(--color-ai-soft)] border border-[var(--color-ai)]/20 rounded px-1.5 py-0.5">{kw}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
+          {/* Experience */}
           <section className="card-enterprise p-6">
-            <h2 className="mb-4 flex items-center gap-2 font-semibold"><Briefcase className="h-4 w-4 text-slate-400" />Experience</h2>
-            {profile.experience.length ? profile.experience.map((item, index) => (
-              <article key={`${item.company}-${index}`} className="mb-4 border-b border-slate-100 pb-4 last:mb-0 last:border-0 last:pb-0">
-                <h3 className="text-sm font-semibold">{item.title}</h3>
-                <p className="text-xs text-slate-500">{item.company} · {item.start_date} – {item.end_date || "Present"}</p>
-                {item.description && <p className="mt-2 text-sm text-slate-600">{item.description}</p>}
-              </article>
-            )) : <p className="text-sm text-slate-500">No experience added yet.</p>}
+            <h2 className="mb-4 flex items-center gap-2 font-semibold text-slate-900"><Briefcase className="h-4 w-4 text-slate-400" />Experience</h2>
+            {profile.experience.length ? (
+              <div className="space-y-5">
+                {profile.experience.map((item, index) => (
+                  <article key={`${item.company}-${index}`} className={`relative pl-4 ${index < profile.experience.length - 1 ? "pb-5 border-b border-slate-100" : ""}`}>
+                    <div className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-[var(--color-brand)]" />
+                    <h3 className="text-sm font-semibold text-slate-900">{item.title}</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{item.company} · {item.start_date} – {item.end_date || "Present"}</p>
+                    {item.description && <p className="mt-2 text-sm text-slate-600 leading-relaxed">{item.description}</p>}
+                    {item.technologies && item.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {item.technologies.map((tech) => (
+                          <span key={tech} className="text-[10px] font-medium bg-slate-100 text-slate-600 rounded px-1.5 py-0.5">{tech}</span>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : <p className="text-sm text-slate-500">No experience added yet.</p>}
           </section>
 
+          {/* Projects */}
+          {profile.projects.length > 0 && (
+            <section className="card-enterprise p-6">
+              <h2 className="mb-4 flex items-center gap-2 font-semibold text-slate-900"><Award className="h-4 w-4 text-slate-400" />Projects</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {profile.projects.map((project) => (
+                  <a
+                    key={project.title}
+                    href={project.url || project.github_url || "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block p-4 rounded-xl border border-[var(--border-color)] hover:border-[var(--color-brand)] hover:shadow-[var(--shadow-sm)] transition-all group"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="text-sm font-semibold text-slate-900 group-hover:text-[var(--color-brand)] transition-colors">{project.title}</h3>
+                      {project.github_url && <Github className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{project.description}</p>
+                    {project.technologies && project.technologies.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {project.technologies.slice(0, 4).map((tech) => (
+                          <span key={tech} className="text-[10px] font-medium bg-slate-100 text-slate-600 rounded px-1.5 py-0.5">{tech}</span>
+                        ))}
+                      </div>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Education */}
           <section className="card-enterprise p-6">
-            <h2 className="mb-4 flex items-center gap-2 font-semibold"><GraduationCap className="h-4 w-4 text-slate-400" />Education</h2>
+            <h2 className="mb-4 flex items-center gap-2 font-semibold text-slate-900"><GraduationCap className="h-4 w-4 text-slate-400" />Education</h2>
             {profile.education?.length ? profile.education.map((edu, i) => (
               <article key={`${edu.institution}-${i}`} className="mb-3 last:mb-0">
-                <h3 className="text-sm font-semibold">{edu.degree}{edu.field_of_study ? `, ${edu.field_of_study}` : ""}</h3>
+                <h3 className="text-sm font-semibold text-slate-900">{edu.degree}{edu.field_of_study ? `, ${edu.field_of_study}` : ""}</h3>
                 <p className="text-xs text-slate-500">{edu.institution} {edu.start_year ? `· ${edu.start_year}–${edu.end_year || "Present"}` : ""}</p>
               </article>
             )) : <p className="text-sm text-slate-500">No education added yet.</p>}
           </section>
 
+          {/* Resume */}
           {!viewingOther && (
             <section className="card-enterprise p-6">
-              <h2 className="mb-4 flex items-center gap-2 font-semibold"><Award className="h-4 w-4 text-slate-400" />Resume</h2>
+              <h2 className="mb-4 flex items-center gap-2 font-semibold text-slate-900"><Upload className="h-4 w-4 text-slate-400" />Resume</h2>
               <input ref={fileInput} hidden type="file" accept=".pdf,.docx" onChange={(event) => uploadResume(event.target.files?.[0])} />
-              <Button variant="secondary" size="sm" icon={<Upload className="h-4 w-4" />} loading={uploading} onClick={() => fileInput.current?.click()}>
-                {profile.resume_url ? "Replace resume" : "Upload resume"}
-              </Button>
-              {profile.resume_url && <a className="ml-3 text-sm text-[#0A66C2] hover:underline" href={profile.resume_url} target="_blank" rel="noreferrer">View resume</a>}
+              <div className="flex items-center gap-3">
+                <Button variant="secondary" size="sm" icon={<Upload className="h-4 w-4" />} loading={uploading} onClick={() => fileInput.current?.click()}>
+                  {profile.resume_url ? "Replace resume" : "Upload resume"}
+                </Button>
+                {profile.resume_url && <a className="text-sm text-[#0A66C2] hover:underline flex items-center gap-1" href={profile.resume_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3.5 w-3.5" />View resume</a>}
+              </div>
             </section>
           )}
         </main>
@@ -252,37 +378,78 @@ function EngineerProfileContent() {
         <aside className="space-y-5">
           {!viewingOther && (
             <>
-              <section className="card-enterprise p-6 flex items-center gap-4">
-                <ProgressRing value={profileScore} size={64} />
-                <div>
-                  <h2 className="font-semibold text-sm">Profile readiness</h2>
-                  <p className="mt-1 text-xs text-slate-500">Based on profile completeness</p>
+              {/* Profile Score Card */}
+              <section className="card-enterprise p-5">
+                <div className="flex items-center gap-4">
+                  <ProgressRing value={profileScore} size={64} />
+                  <div>
+                    <h2 className="font-semibold text-sm text-slate-900">Profile Readiness</h2>
+                    <p className="mt-0.5 text-xs text-slate-500">{profileScore < 60 ? "Complete more sections" : profileScore < 90 ? "Looking strong!" : "Outstanding profile"}</p>
+                  </div>
                 </div>
+                {remainingItems.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">To improve</p>
+                    {remainingItems.map((item) => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        <span className="text-xs text-slate-600">{item.label}</span>
+                        <span className="text-[10px] text-slate-400 ml-auto">+{item.weight}%</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {remainingItems.length === 0 && (
+                  <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Profile fully complete!
+                  </div>
+                )}
               </section>
-              <section className="card-enterprise p-6">
-                <h2 className="mb-4 font-semibold">Top job match</h2>
-                <div className="text-4xl font-bold text-emerald-600">{score ?? "—"}<span className="text-base text-slate-500">/100</span></div>
-                <p className="mt-1 text-xs text-slate-500">From current recommendations</p>
+
+              {/* Top AI Match */}
+              <section className="card-ai">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-7 w-7 rounded-lg bg-[var(--color-ai)]/10 flex items-center justify-center">
+                    <Sparkles className="h-3.5 w-3.5 text-[var(--color-ai)]" />
+                  </div>
+                  <h2 className="font-semibold text-sm text-slate-900">AI Match Score</h2>
+                </div>
+                {topMatchScore !== null ? (
+                  <>
+                    <div className="flex items-end gap-1">
+                      <span className="text-4xl font-black text-[var(--color-ai)]">{Math.round(topMatchScore)}</span>
+                      <span className="text-base text-slate-400 mb-1">/100</span>
+                    </div>
+                    {topMatchTitle && <p className="text-xs text-slate-600 mt-1">Best match: <span className="font-semibold">{topMatchTitle}</span></p>}
+                    <div className="mt-3">
+                      <div className="w-full bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full bg-gradient-to-r from-[var(--color-ai)] to-[var(--color-brand)] transition-all duration-700" style={{ width: `${topMatchScore}%` }} />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-2">
+                      {topMatchScore >= 80 ? "🎯 Excellent match — apply now" : topMatchScore >= 60 ? "✅ Good match — apply with confidence" : "📈 Building match — improve your profile"}
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-sm text-slate-500 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-slate-400" />
+                    <span>Complete your profile to get AI match scores.</span>
+                  </div>
+                )}
               </section>
             </>
           )}
+
+          {/* Languages */}
           {profile.languages && profile.languages.length > 0 && (
-            <section className="card-enterprise p-6">
-              <h2 className="mb-3 flex items-center gap-2 font-semibold"><LanguagesIcon className="h-4 w-4 text-slate-400" />Languages</h2>
+            <section className="card-enterprise p-5">
+              <h2 className="mb-3 flex items-center gap-2 font-semibold text-sm text-slate-900"><LanguagesIcon className="h-4 w-4 text-slate-400" />Languages</h2>
               <div className="flex flex-wrap gap-2">
                 {profile.languages.map((lang) => <Badge key={lang} tone="neutral">{lang}</Badge>)}
               </div>
             </section>
           )}
-          <section className="card-enterprise p-6">
-            <h2 className="mb-3 font-semibold">Projects</h2>
-            {profile.projects.length ? profile.projects.map((project) => (
-              <a key={project.title} href={project.url || project.github_url || "#"} className="mb-3 block text-sm hover:text-[#0A66C2]">
-                <span className="font-medium">{project.title}</span>
-                <span className="mt-1 block text-xs text-slate-500">{project.description}</span>
-              </a>
-            )) : <p className="text-sm text-slate-500">No projects added yet.</p>}
-          </section>
         </aside>
       </div>
     </div>

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import {
-  Users, UserPlus, UserCheck, Clock, XCircle, Search, Send,
+  Users, UserPlus, UserCheck, Clock, XCircle, Search,
   Globe, ArrowRight, Shield, MessageSquare, Sparkles, MapPin,
+  Send, CheckCircle2,
 } from "lucide-react";
 import { useConnections } from "@/hooks/useConnections";
 import { useFreelancers } from "@/hooks/useFreelancers";
@@ -14,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge, type StatusTone } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
+import Link from "next/link";
 
 import type { EngineerProfile } from "@/types";
 import { cn } from "@/lib/cn";
@@ -24,6 +26,8 @@ interface Connection {
   receiver_id: string;
   status: string;
   created_at?: string;
+  sender?: { full_name?: string; email?: string; headline?: string; avatar_url?: string };
+  receiver?: { full_name?: string; email?: string; headline?: string; avatar_url?: string };
 }
 
 function timeAgo(dateStr?: string) {
@@ -52,19 +56,22 @@ function ConnectionCard({
   accepting?: boolean; rejecting?: boolean;
 }) {
   const isIncoming = connection.receiver_id === currentUserId;
-  const otherId = isIncoming ? connection.sender_id : connection.receiver_id;
+  const otherUser = isIncoming ? connection.sender : connection.receiver;
+  const displayName = otherUser?.full_name || otherUser?.email || "WorkMesh Member";
+  const headline = otherUser?.headline || "Professional";
   const statusConf = STATUS_CONFIG[connection.status] ?? STATUS_CONFIG.pending;
   const isPending = connection.status === "pending";
   const isAccepted = connection.status === "accepted";
 
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4 flex items-start gap-3 hover:shadow-[var(--shadow-sm)] transition-shadow">
-      <Avatar name={otherId} size="lg" />
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4 flex items-start gap-3 hover:shadow-[var(--shadow-sm)] hover:border-[var(--border-hover)] transition-all">
+      <Avatar name={displayName} src={otherUser?.avatar_url} size="lg" />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[var(--text-main)] truncate">{otherId.slice(0, 14)}…</p>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+            <p className="text-sm font-semibold text-[var(--text-main)] truncate">{displayName}</p>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{headline}</p>
+            <p className="text-[11px] text-[var(--text-light)] mt-0.5">
               {isIncoming ? "Wants to connect" : "Request sent"}
               {connection.created_at && ` · ${timeAgo(connection.created_at)}`}
             </p>
@@ -79,42 +86,11 @@ function ConnectionCard({
           </div>
         ) : isAccepted ? (
           <div className="flex gap-2 mt-3">
-            <Button size="sm" variant="secondary" icon={<MessageSquare className="h-3 w-3" />}>Message</Button>
+            <Link href="/messages">
+              <Button size="sm" variant="secondary" icon={<MessageSquare className="h-3 w-3" />}>Message</Button>
+            </Link>
           </div>
         ) : null}
-      </div>
-    </div>
-  );
-}
-
-function SendRequestPanel({ onSend, isPending }: { onSend: (id: string) => void; isPending: boolean }) {
-  const [receiverId, setReceiverId] = useState("");
-  const submit = () => {
-    if (receiverId.trim()) { onSend(receiverId.trim()); setReceiverId(""); }
-  };
-
-  return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="h-9 w-9 rounded-lg bg-[var(--color-brand-light)] flex items-center justify-center">
-          <UserPlus className="h-4 w-4 text-[var(--color-brand)]" />
-        </div>
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--text-main)]">Connect with someone</h3>
-          <p className="text-xs text-[var(--text-muted)]">Enter their user ID to send a connection request</p>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <input
-          value={receiverId}
-          onChange={(e) => setReceiverId(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Paste user ID…"
-          className="input-enterprise flex-1 text-sm"
-        />
-        <Button onClick={submit} disabled={!receiverId.trim()} loading={isPending} icon={<Send className="h-3.5 w-3.5" />}>
-          Send
-        </Button>
       </div>
     </div>
   );
@@ -127,7 +103,7 @@ function SuggestionCard({ person, onConnect, connecting }: {
 }) {
   const skills = (person.skills || []).slice(0, 3);
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl overflow-hidden hover:shadow-[var(--shadow-md)] transition-shadow group">
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl overflow-hidden hover:shadow-[var(--shadow-md)] hover:border-[var(--border-hover)] transition-all group">
       <div className="h-12 bg-gradient-to-br from-[#0A66C2]/20 via-[#7F56D9]/10 to-emerald-500/10" />
       <div className="px-4 pb-4">
         <div className="-mt-5 mb-2">
@@ -137,11 +113,16 @@ function SuggestionCard({ person, onConnect, connecting }: {
         {person.headline && (
           <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-1">{person.headline}</p>
         )}
-        {person.location && (
-          <p className="text-[10px] text-[var(--text-light)] flex items-center gap-1 mt-1">
-            <MapPin className="h-3 w-3" /> {person.location}
-          </p>
-        )}
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {person.location && (
+            <p className="text-[10px] text-[var(--text-light)] flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> {person.location}
+            </p>
+          )}
+          {person.is_open_to_work && (
+            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5">Open to work</span>
+          )}
+        </div>
         {skills.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {skills.map((s) => (
@@ -153,12 +134,9 @@ function SuggestionCard({ person, onConnect, connecting }: {
           <Button size="sm" fullWidth onClick={onConnect} loading={connecting} icon={<UserPlus className="h-3.5 w-3.5" />}>
             Connect
           </Button>
-          <a
-            href={`/engineers/${person.id}`}
-            className="flex-none h-7 px-2.5 flex items-center text-xs font-medium border border-[var(--border-color)] rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors"
-          >
+          <Link href={`/engineers/${person.id}`} className="flex-none h-7 px-2.5 flex items-center text-xs font-medium border border-[var(--border-color)] rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors">
             View
-          </a>
+          </Link>
         </div>
       </div>
     </div>
@@ -179,6 +157,7 @@ function NetworkContent() {
   const suggestions = useFreelancers({ openOnly: true });
   const [tab, setTab] = useState<"suggestions" | "all" | "connected" | "pending">("suggestions");
   const [search, setSearch] = useState("");
+  const [directId, setDirectId] = useState("");
 
   const allConns = (connections.data ?? []) as Connection[];
   const suggestedPeople: EngineerProfile[] = (suggestions.data ?? []).slice(0, 12);
@@ -189,8 +168,9 @@ function NetworkContent() {
 
   const filtered = allConns.filter((c) => {
     const matchTab = tab === "all" || (tab === "connected" && c.status === "accepted") || (tab === "pending" && c.status === "pending");
-    const otherId = c.receiver_id === user?.id ? c.sender_id : c.receiver_id;
-    const matchSearch = !search || otherId.toLowerCase().includes(search.toLowerCase());
+    const otherUser = c.receiver_id === user?.id ? c.sender : c.receiver;
+    const otherName = otherUser?.full_name || otherUser?.email || "";
+    const matchSearch = !search || otherName.toLowerCase().includes(search.toLowerCase());
     return matchTab && matchSearch;
   });
 
@@ -202,11 +182,11 @@ function NetworkContent() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto py-8 space-y-6">
+    <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-main)]">My Network</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-main)]">Professional Network</h1>
           <p className="text-sm text-[var(--text-muted)] mt-0.5">
             {acceptedCount === 0
               ? "Start building your professional network"
@@ -221,13 +201,13 @@ function NetworkContent() {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Connections", value: acceptedCount, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
-          { label: "Invitations", value: pendingCount, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Connections", value: acceptedCount, icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+          { label: "Invitations", value: pendingCount, icon: Clock, color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-950/30" },
           { label: "Discovered", value: suggestedPeople.length, icon: Sparkles, color: "text-[var(--color-ai)]", bg: "bg-[var(--color-ai-soft)]" },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4 flex items-center gap-3">
-            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", bg)}>
-              <Icon className={cn("h-4.5 w-4.5", color)} />
+            <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", bg)}>
+              <Icon className={cn("h-4 w-4", color)} />
             </div>
             <div>
               <p className="text-xl font-bold text-[var(--text-main)] leading-none">{value}</p>
@@ -301,18 +281,45 @@ function NetworkContent() {
         )
       ) : (
         <div className="space-y-4">
-          <SendRequestPanel onSend={(id) => connections.request.mutate(id)} isPending={connections.request.isPending} />
-
-          {connections.request.isError && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-              Could not send connection request. The user may already be connected or the ID is invalid.
+          {/* Direct Connect Panel */}
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-9 w-9 rounded-lg bg-[var(--color-brand-light)] flex items-center justify-center">
+                <UserPlus className="h-4 w-4 text-[var(--color-brand)]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-[var(--text-main)]">Connect with someone</h3>
+                <p className="text-xs text-[var(--text-muted)]">Enter their user ID to send a connection request</p>
+              </div>
             </div>
-          )}
-          {connections.request.isSuccess && (
-            <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg px-4 py-3">
-              ✓ Connection request sent successfully.
+            <div className="flex gap-2">
+              <input
+                value={directId}
+                onChange={(e) => setDirectId(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && directId.trim() && connections.request.mutate(directId.trim())}
+                placeholder="Paste user ID…"
+                className="input-enterprise flex-1 text-sm"
+              />
+              <Button
+                onClick={() => { connections.request.mutate(directId.trim()); setDirectId(""); }}
+                disabled={!directId.trim()}
+                loading={connections.request.isPending}
+                icon={<Send className="h-3.5 w-3.5" />}
+              >
+                Send
+              </Button>
             </div>
-          )}
+            {connections.request.isError && (
+              <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                Could not send request. The user may already be connected or the ID is invalid.
+              </div>
+            )}
+            {connections.request.isSuccess && (
+              <div className="mt-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Connection request sent successfully.
+              </div>
+            )}
+          </div>
 
           {/* Search */}
           <div className="relative max-w-sm">
