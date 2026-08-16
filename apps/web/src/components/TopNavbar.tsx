@@ -120,7 +120,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
               W
             </div>
             <span className="hidden sm:inline font-bold text-lg text-slate-900 tracking-tight">
-              Remote <span className="text-[#0A66C2]">AI Platform</span>
+              Work<span className="text-[#0A66C2]">Mesh</span>
             </span>
           </Link>
 

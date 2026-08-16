@@ -1,399 +1,336 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. One source of truth for color/radius/shadow — components
- * should reference these variables (or the card/button/badge primitives
- * built on them below), not hardcode hex values.
- *
- * Typography and spacing intentionally reuse Tailwind's own default scale
- * rather than a parallel token set: Tailwind's text-xs/sm/base/lg/xl/2xl/3xl
- * (12/14/16/18/20/24/30px) and spacing steps (4/8/12/16/20/24/32/40/48/64px)
- * already are the coherent scale — duplicating them here would just be two
- * systems to keep in sync for no benefit.
+ * WorkMesh Design Tokens & Foundations
+ * One source of truth for color, surfaces, elevation, radius, typography, and card types.
  */
 :root {
   /* Surfaces */
-  --bg-page: #F3F2EF;
+  --bg-page: #F7F9FC;
   --bg-surface: #FFFFFF;
-  --bg-subtle: #F8FAFC;
-  --surface-muted: var(--bg-subtle);
-  --surface-elevated: #FFFFFF; /* dropdowns/dialogs/popovers — paired with --shadow-md */
+  --bg-subtle: #F4F6F9;
+  --surface-muted: #F8FAFC;
+  --surface-elevated: #FFFFFF;
 
   /* Borders */
-  --border-color: #E5E7EB;
-  --border-hover: #D1D5DB;
-  --border-strong: #CBD5E1;
+  --border-color: #E4E7EC;
+  --border-hover: #D0D5DD;
+  --border-strong: #98A2B3;
 
   /* Brand / primary */
   --color-brand: #0A66C2;
   --color-brand-hover: #004182;
-  --color-brand-light: #E8F3FF;
+  --color-brand-light: #EBF4FE;
   --primary-soft: var(--color-brand-light);
 
   /* Status */
-  --color-accent: #0284C7;
-  --color-info: var(--color-accent);
+  --color-accent: #0A66C2;
+  --color-info: #0284C7;
   --color-info-soft: #E0F2FE;
-  --color-success: #059669;
-  --color-success-soft: #D1FAE5;
-  --color-warning: #D97706;
-  --color-warning-soft: #FEF3C7;
-  --color-error: #DC2626;
+  --color-success: #12B76A;
+  --color-success-soft: #D1FADF;
+  --color-warning: #F79009;
+  --color-warning-soft: #FEF0C7;
+  --color-error: #F04438;
   --color-danger: var(--color-error);
-  --color-danger-soft: #FEE2E2;
+  --color-danger-soft: #FEE4E2;
 
-  /* AI — restrained indigo, distinct from brand blue, never the dominant color */
-  --color-ai: #6366F1;
-  --color-ai-soft: #EEF2FF;
+  /* AI / Intelligence */
+  --color-ai: #7F56D9;
+  --color-ai-soft: #F4EBFF;
 
   /* Text */
-  --text-main: #0F172A;
-  --text-muted: #475569;
-  --text-light: #64748B;
+  --text-main: #172B4D;
+  --text-muted: #667085;
+  --text-light: #98A2B3;
 
-  /* Radius: 6-8px controls, 10-12px cards, 12-16px dialogs */
+  /* Radius: 6-8px controls, 12px cards, 16px modals/drawers */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-card: 12px;
   --radius-lg: 16px;
 
-  /* Shadow: border-based separation by default; elevation reserved for
-     dropdowns/popovers/dialogs/floating actions (see section 19 of the
-     product spec — the app should not look like floating cards everywhere) */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.12), 0 2px 4px -2px rgba(15, 23, 42, 0.06);
+  /* Elevation */
+  --shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.08), 0 1px 2px -1px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 14px -2px rgba(16, 24, 40, 0.1), 0 2px 6px -2px rgba(16, 24, 40, 0.05);
+  --shadow-lg: 0 12px 24px -4px rgba(16, 24, 40, 0.12), 0 4px 8px -2px rgba(16, 24, 40, 0.06);
 
-  /* Focus ring — always pair with a visible outline, never color alone */
-  --focus-ring: 0 0 0 3px rgba(10, 102, 194, 0.35);
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px rgba(10, 102, 194, 0.25);
 
   /* Skeleton loading placeholder */
-  --skeleton-bg: #e5e7eb;
+  --skeleton-bg: #E4E7EC;
 
-  /* Badge/pill soft-background + text pairs — deliberately distinct shades
-     from the core status tokens above (darker text for contrast on a pastel
-     background), so given their own names rather than reused verbatim. */
-  --badge-info-bg: #e0f2fe;   --badge-info-text: #0369a1;
-  --badge-success-bg: #d1fae5; --badge-success-text: #047857;
-  --badge-warning-bg: #fef3c7; --badge-warning-text: #b45309;
-  --badge-neutral-bg: #f1f5f9; --badge-neutral-text: #475569; --badge-neutral-border: #e2e8f0;
+  /* Badges */
+  --badge-info-bg: #E0F2FE;   --badge-info-text: #0284C7;
+  --badge-success-bg: #D1FADF; --badge-success-text: #027A48;
+  --badge-warning-bg: #FEF0C7; --badge-warning-text: #B54708;
+  --badge-danger-bg: #FEE4E2;  --badge-danger-text: #B42318;
+  --badge-neutral-bg: #F2F4F7; --badge-neutral-text: #344054; --badge-neutral-border: #D0D5DD;
 }
 
-/*
- * Dark mode — OPT-IN ONLY via `<html data-theme="dark">` for now, not the
- * OS-level `prefers-color-scheme` media query. Verified during this pass:
- * many pages/components still hardcode raw Tailwind text colors
- * (`text-slate-900` etc.) instead of `text-[var(--text-main)]`, so those
- * headings/labels render as invisible dark-on-dark text once the dark
- * tokens are live. Auto-activating via `prefers-color-scheme` would silently
- * break the app for every visitor with OS dark mode enabled today. The
- * tokens below are real and ready for a future in-app toggle (Phase C: app
- * shell) once the remaining raw-color call sites are audited and converted
- * — until then, gating behind an explicit opt-in (which no toggle UI
- * exists to trigger yet) is the non-breaking choice.
- */
 :root[data-theme="dark"] {
   --bg-page: #0B0F17;
   --bg-surface: #131826;
   --bg-subtle: #0F1420;
   --surface-elevated: #1A2030;
 
-  --border-color: #232B3D;
-  --border-hover: #2E3850;
-  --border-strong: #3A4560;
+  --border-color: #1F2937;
+  --border-hover: #374151;
+  --border-strong: #4B5563;
 
-  --color-brand: #3B82F6;
-  --color-brand-hover: #60A5FA;
-  --color-brand-light: #152238;
+  --color-brand: #388BFD;
+  --color-brand-hover: #58A6FF;
+  --color-brand-light: #16243E;
 
-  --color-accent: #38BDF8;
-  --color-info-soft: #10243A;
+  --color-info: #38BDF8;
+  --color-info-soft: #0C2840;
   --color-success: #34D399;
-  --color-success-soft: #0F2A22;
+  --color-success-soft: #063826;
   --color-warning: #FBBF24;
-  --color-warning-soft: #2E2410;
+  --color-warning-soft: #382A08;
   --color-error: #F87171;
-  --color-danger-soft: #2E1616;
+  --color-danger-soft: #3D1214;
 
-  --color-ai: #818CF8;
-  --color-ai-soft: #1D2144;
+  --color-ai: #A78BFA;
+  --color-ai-soft: #231942;
 
   --text-main: #F1F5F9;
   --text-muted: #94A3B8;
   --text-light: #64748B;
 
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.7);
 
-  --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.45);
-  --skeleton-bg: #232B3D;
+  --focus-ring: 0 0 0 3px rgba(56, 139, 253, 0.35);
+  --skeleton-bg: #1F2937;
 
-  --badge-info-bg: #10243A;   --badge-info-text: #7DD3FC;
-  --badge-success-bg: #0F2A22; --badge-success-text: #6EE7B7;
-  --badge-warning-bg: #2E2410; --badge-warning-text: #FCD34D;
-  --badge-neutral-bg: #1A2030; --badge-neutral-text: #94A3B8; --badge-neutral-border: #2E3850;
-}
-
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
-html {
-  font-size: 16px;
-  scroll-behavior: smooth;
+  --badge-info-bg: #0C2840;   --badge-info-text: #7DD3FC;
+  --badge-success-bg: #063826; --badge-success-text: #6EE7B7;
+  --badge-warning-bg: #382A08; --badge-warning-text: #FDE047;
+  --badge-danger-bg: #3D1214;  --badge-danger-text: #FCA5A5;
+  --badge-neutral-bg: #1E293B; --badge-neutral-text: #CBD5E1; --badge-neutral-border: #334155;
 }
 
 body {
   background-color: var(--bg-page);
   color: var(--text-main);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  min-height: 100vh;
-  line-height: 1.5;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* @layer base so utility classes (e.g. text-white on a dark panel) can still
-   override the default heading color — unlayered CSS beats utilities
-   regardless of specificity under Tailwind v4's cascade layers. */
-@layer base {
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--text-main);
-    font-weight: 700;
-    letter-spacing: -0.015em;
-  }
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Visible keyboard focus everywhere — never rely on a browser default that
-   disappears on some elements, and never rely on color alone (WCAG 2.2 AA). */
-:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-  border-radius: var(--radius-sm);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Enterprise Card Primitive */
+/* ========================================================================= */
+/* CARD PRIMITIVES */
+/* ========================================================================= */
 .card-enterprise {
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-xs);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .card-enterprise:hover {
   border-color: var(--border-hover);
 }
 
-/* Primary Brand Button */
+.card-job {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.2s ease;
+}
+.card-job:hover {
+  border-color: var(--color-brand);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.card-profile {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+
+.card-metric {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-ai {
+  background: linear-gradient(135deg, rgba(127, 86, 217, 0.05) 0%, rgba(10, 102, 194, 0.04) 100%);
+  border: 1px solid rgba(127, 86, 217, 0.2);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-xs);
+}
+
+.card-project {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-xs);
+  transition: border-color 0.15s ease;
+}
+.card-project:hover {
+  border-color: var(--border-strong);
+}
+
+/* ========================================================================= */
+/* BUTTONS */
+/* ========================================================================= */
 .btn-primary-brand {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: 9999px;
   background-color: var(--color-brand);
-  color: #ffffff;
+  color: #FFFFFF;
   font-weight: 600;
   font-size: 0.875rem;
-  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
   cursor: pointer;
-  transition: background-color 0.15s ease;
-  white-space: nowrap;
+  text-decoration: none;
 }
-
 .btn-primary-brand:hover {
   background-color: var(--color-brand-hover);
 }
-
-/* Alias kept for call sites written as `button-primary` (e.g. Send, Connect, Publish job CTAs) */
-.button-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: 9999px;
-  background-color: var(--color-brand);
-  color: #ffffff;
-  font-weight: 600;
-  font-size: 0.875rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-  white-space: nowrap;
+.btn-primary-brand:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
-.button-primary:hover {
-  background-color: var(--color-brand-hover);
-}
-
-/* Secondary Brand Button */
 .btn-secondary-brand {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.5rem 1.25rem;
-  border-radius: 9999px;
-  background-color: transparent;
-  color: var(--color-brand);
+  background-color: var(--bg-surface);
+  color: var(--text-main);
   font-weight: 600;
   font-size: 0.875rem;
-  border: 1.5px solid var(--color-brand);
-  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
   transition: all 0.15s ease;
-  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
 }
-
 .btn-secondary-brand:hover {
-  background-color: var(--color-brand-light);
+  background-color: var(--bg-subtle);
+  border-color: var(--border-hover);
 }
 
-/* Subtle/Ghost Button */
 .btn-subtle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.4rem 1rem;
-  border-radius: 9999px;
-  background-color: transparent;
+  gap: 0.375rem;
   color: var(--text-muted);
   font-weight: 500;
-  font-size: 0.875rem;
-  border: none;
-  cursor: pointer;
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--radius-md);
   transition: all 0.15s ease;
-  white-space: nowrap;
+  cursor: pointer;
 }
-
 .btn-subtle:hover {
   background-color: var(--bg-subtle);
   color: var(--text-main);
 }
 
-/* Form Input */
+/* ========================================================================= */
+/* INPUTS & FORMS */
+/* ========================================================================= */
 .input-enterprise {
   width: 100%;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 0.5rem 0.875rem;
-  color: var(--text-main);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
-  outline: none;
+  color: var(--text-main);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .input-enterprise:focus {
+  outline: none;
   border-color: var(--color-brand);
-  box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.15);
+  box-shadow: var(--focus-ring);
+}
+.input-enterprise::placeholder {
+  color: var(--text-light);
 }
 
-/* Badges */
+/* ========================================================================= */
+/* BADGES */
+/* ========================================================================= */
 .badge-ent {
   display: inline-flex;
   align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.725rem;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  white-space: nowrap;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  line-height: 1.25;
 }
-
-.badge-ent-brand { background-color: var(--badge-info-bg); color: var(--badge-info-text); }
-.badge-ent-success { background-color: var(--badge-success-bg); color: var(--badge-success-text); }
-.badge-ent-warning { background-color: var(--badge-warning-bg); color: var(--badge-warning-text); }
-.badge-ent-neutral { background-color: var(--badge-neutral-bg); color: var(--badge-neutral-text); border: 1px solid var(--badge-neutral-border); }
-
-/* Standalone status-badge alias for call sites written as `badge-enterprise` (no .badge-ent pairing) */
-.badge-enterprise {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.725rem;
-  font-weight: 600;
-  white-space: nowrap;
+.badge-ent-brand {
+  background-color: var(--color-brand-light);
+  color: var(--color-brand);
+}
+.badge-ent-neutral {
   background-color: var(--badge-neutral-bg);
   color: var(--badge-neutral-text);
   border: 1px solid var(--badge-neutral-border);
 }
-
-/* Match Pills */
-.pill-match {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
+.badge-ent-success {
+  background-color: var(--badge-success-bg);
+  color: var(--badge-success-text);
 }
-
-/* Borders keep their original light-mode-tuned hex values in dark mode too
-   (a fixed, deliberately subtle scope cut) — only background/text adapt via
-   the badge tokens above, which is the part that actually broke contrast. */
-.pill-match-high { background-color: var(--badge-success-bg); color: var(--badge-success-text); border: 1px solid #a7f3d0; }
-.pill-match-mid  { background-color: var(--badge-warning-bg); color: var(--badge-warning-text); border: 1px solid #fde68a; }
-.pill-match-low  { background-color: var(--badge-neutral-bg); color: var(--badge-neutral-text); border: 1px solid #cbd5e1; }
-
-/* AI badge — the one consistent visual marker for "AI Match / AI Insight /
-   AI Recommendation" labels across the product. Restrained: text + a soft
-   indigo background, no gradients or sparkle icons required to read as AI. */
+.badge-ent-warning {
+  background-color: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
+}
+.badge-ent-danger {
+  background-color: var(--badge-danger-bg);
+  color: var(--badge-danger-text);
+}
+.badge-ent-info {
+  background-color: var(--badge-info-bg);
+  color: var(--badge-info-text);
+}
 .badge-ai {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.725rem;
-  font-weight: 600;
   background-color: var(--color-ai-soft);
   color: var(--color-ai);
+  font-weight: 600;
 }
 
-/* Elevated surface — dropdowns, popovers, dialogs, floating actions only.
-   Everything else uses .card-enterprise's border-based separation. */
-.surface-elevated {
-  background: var(--surface-elevated);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-}
-
-/* Skeleton */
+/* ========================================================================= */
+/* SKELETON LOADING */
+/* ========================================================================= */
 .skeleton-box {
-  background: var(--skeleton-bg);
-  animation: pulse 1.5s ease-in-out infinite;
-  border-radius: 6px;
+  background-color: var(--skeleton-bg);
+  border-radius: var(--radius-md);
+  animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
-
 @keyframes pulse {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
-}
-
-/* Dropdown / tooltip fade-in */
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.15s ease-out forwards;
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
