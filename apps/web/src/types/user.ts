@@ -19,6 +19,7 @@ export interface EngineerProfile {
   years_experience?: number | null;
   skills?: string[];
   is_open_to_work?: boolean;
+  is_verified?: boolean;
   avatar_url?: string | null;
   primary_role?: string | null;
   hourly_rate?: number | null;
@@ -35,4 +36,5 @@ export interface CompanyProfile {
   description?: string | null;
   location?: string | null;
   website?: string | null;
+  is_verified?: boolean;
 }
