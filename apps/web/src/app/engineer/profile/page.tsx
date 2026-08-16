@@ -48,10 +48,27 @@ function CreateProfileForm() {
   const update = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
   return (
-    <div className="card-enterprise mx-auto max-w-2xl p-8">
-      <h1 className="text-xl font-bold text-slate-900">Create your engineer profile</h1>
-      <p className="mt-1 text-sm text-slate-600">This is what companies and job matches will see.</p>
-      <form onSubmit={(event) => { event.preventDefault(); createProfile.mutate(); }} className="mt-5 space-y-4">
+    <div className="card-enterprise mx-auto max-w-2xl p-8 space-y-6">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 text-[#0A66C2]" /> Auto-build with AI Resume Import
+          </h2>
+          <p className="text-xs text-slate-600">
+            Upload your PDF resume to extract skills, experience, and headline automatically.
+          </p>
+        </div>
+        <Button size="sm" onClick={() => (window.location.href = "/onboarding")} icon={<Sparkles className="h-3.5 w-3.5" />}>
+          Start AI Setup
+        </Button>
+      </div>
+
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">Create your engineer profile</h1>
+        <p className="mt-1 text-sm text-slate-600">Or enter your professional details manually below.</p>
+      </div>
+
+      <form onSubmit={(event) => { event.preventDefault(); createProfile.mutate(); }} className="space-y-4">
         <label className="block text-sm font-semibold text-slate-700">Headline<input value={form.headline} onChange={(e) => update("headline", e.target.value)} className="input-enterprise mt-1.5" placeholder="Senior Full-Stack Engineer" /></label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm font-semibold text-slate-700">Primary role<input value={form.primary_role} onChange={(e) => update("primary_role", e.target.value)} className="input-enterprise mt-1.5" placeholder="Backend Engineer" /></label>

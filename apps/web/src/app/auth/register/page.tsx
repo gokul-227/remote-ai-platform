@@ -86,7 +86,7 @@ export default function RegisterPage() {
       const loginRes = await api.post("/auth/login", { email: parsed.data.email, password: parsed.data.password });
       const { access_token, refresh_token, user: userData } = loginRes.data;
       login(access_token, userData, refresh_token);
-      router.push(role === "ENGINEER" ? "/engineer/profile" : "/company/profile");
+      router.push("/onboarding");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       setError(msg || "Registration failed. Please try again.");
