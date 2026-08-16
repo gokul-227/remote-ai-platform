@@ -221,7 +221,7 @@ function ApplicationsContent() {
           <h1 className="text-2xl font-bold text-[var(--text-main)]">My Applications</h1>
           <p className="text-sm text-[var(--text-muted)] mt-0.5">
             {items.length === 0
-              ? "Track your job applications across companies"
+              ? "Track your job applications across organizations"
               : `${activeCount} active · ${offerCount} offer${offerCount !== 1 ? "s" : ""}`}
           </p>
         </div>

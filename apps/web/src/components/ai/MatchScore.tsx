@@ -98,7 +98,7 @@ export function AIMatchPanel({ match, loading, emptyHint }: { match: JobMatch | 
           <Sparkles className="h-3.5 w-3.5" /> Explainable AI Match
         </span>
         <p className="text-xs text-slate-500 pt-1 leading-relaxed">
-          {emptyHint || "Complete your engineer profile to see personalized compatibility explanations and skill gap analysis."}
+          {emptyHint || "Complete your professional profile to see personalized compatibility explanations and skill gap analysis."}
         </p>
         <Link href="/engineer/profile" className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A66C2] hover:underline">
           Complete Profile Setup <ArrowRight className="h-3 w-3" />

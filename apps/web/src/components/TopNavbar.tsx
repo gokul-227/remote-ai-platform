@@ -28,6 +28,7 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useSearch } from "@/hooks/useSearch";
 import { Avatar } from "@/components/ui/Avatar";
 import { WorkspaceSwitcher } from "@/components/WorkspaceSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface TopNavbarProps {
   onMenuClick?: () => void;
@@ -72,8 +73,8 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
   const navItems = !user
     ? [
         { name: "Jobs", href: "/jobs", icon: Briefcase },
-        { name: "Engineers", href: "/engineers", icon: Users },
-        { name: "Companies", href: "/companies", icon: Globe },
+        { name: "Professionals", href: "/engineers", icon: Users },
+        { name: "Organizations", href: "/companies", icon: Globe },
       ]
     : user?.role === "COMPANY"
       ? [
@@ -91,7 +92,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
           { name: "Home", href: "/", icon: Home },
           { name: "Feed", href: "/feed", icon: MessageSquare },
           { name: "Jobs", href: "/jobs", icon: Briefcase },
-          { name: "Engineers", href: "/engineers", icon: Users },
+          { name: "Professionals", href: "/engineers", icon: Users },
           { name: "Contracts", href: "/contracts", icon: FileText },
           { name: "Communities", href: "/groups", icon: Globe },
           ...(user?.role === "ENGINEER"
@@ -103,13 +104,13 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
         ];
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-1.5 shadow-xs">
+    <header className="sticky top-0 z-40 bg-white dark:bg-[var(--bg-surface)] border-b border-slate-200 dark:border-[var(--border-color)] px-4 py-1.5 shadow-xs">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Left: Logo + Search */}
         <div className="flex items-center gap-3 flex-1 max-w-xl">
           <button
             onClick={onMenuClick}
-            className="md:hidden p-1.5 rounded-md text-slate-600 hover:bg-slate-100"
+            className="md:hidden p-1.5 rounded-md text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
             aria-label="Toggle menu"
           >
             <Menu className="h-5 w-5" />
@@ -117,10 +118,10 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
 
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="h-9 w-9 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-xl shadow-xs">
-              W
+              R
             </div>
-            <span className="hidden sm:inline font-bold text-lg text-slate-900 tracking-tight">
-              Work<span className="text-[#0A66C2]">Mesh</span>
+            <span className="hidden sm:inline font-bold text-lg text-slate-900 dark:text-white tracking-tight">
+              Remote <span className="text-[#0A66C2]">AI Platform</span>
             </span>
           </Link>
 
@@ -141,14 +142,14 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                 onChange={(e) => setSearchVal(e.target.value)}
                 onFocus={() => setSearchOpen(true)}
                 onBlur={() => setTimeout(() => setSearchOpen(false), 120)}
-                placeholder="Search jobs, people, companies, skills..."
-                className="input-enterprise pl-10 pr-12 py-1.5 text-xs bg-slate-100 focus:bg-white border-transparent focus:border-[#0A66C2]"
+                placeholder="Search jobs, people, organizations, skills..."
+                className="input-enterprise pl-10 pr-12 py-1.5 text-xs bg-slate-100 dark:bg-[var(--bg-subtle)] focus:bg-white dark:focus:bg-[var(--bg-surface)] border-transparent focus:border-[#0A66C2]"
               />
               <button
                 type="button"
                 onClick={onSearchClick}
                 title="Open command palette"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 border border-slate-300 rounded px-1.5 py-0.5 hover:border-slate-400 hover:text-slate-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-0.5 hover:border-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
               >
                 ⌘K
               </button>
@@ -202,7 +203,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                 className={`flex flex-col items-center px-3 py-1 text-[11px] font-medium transition-colors relative ${
                   isActive
                     ? "text-[#0A66C2] border-b-2 border-[#0A66C2]"
-                    : "text-slate-500 hover:text-slate-900"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5 mb-0.5" />
@@ -217,33 +218,34 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
           <button
             onClick={onSearchClick}
             aria-label="Search"
-            className="md:hidden p-2 rounded-full text-slate-600 hover:bg-slate-100"
+            className="md:hidden p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <Search className="h-5 w-5" />
           </button>
+          <ThemeToggle />
           {/* Notifications */}
           {user && (
           <div className="relative">
             <button
               onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
-              className="p-2 rounded-full text-slate-600 hover:bg-slate-100 relative"
+              className="p-2 rounded-full text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 relative"
               title="Notifications"
             >
               <Bell className="h-5 w-5" />
               {(notifications.unread.data?.count ?? 0) > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#0A66C2]" />}
             </button>
             {notifOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 p-4 z-50 animate-fade-in">
-                <div className="flex justify-between items-center pb-2 border-b border-slate-100 mb-3">
-                  <h4 className="text-sm font-semibold text-slate-900">Notifications</h4>
+              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[var(--surface-elevated)] rounded-xl shadow-lg border border-slate-200 dark:border-[var(--border-color)] p-4 z-50 animate-fade-in">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-[var(--border-color)] mb-3">
+                  <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h4>
                   <button onClick={() => notifications.markAllRead.mutate()} className="text-xs text-[#0A66C2] cursor-pointer hover:underline">Mark all read</button>
                 </div>
                 <div className="space-y-2.5">
                   {notifications.data?.length ? notifications.data.map((n: { id: string; title: string; body: string; is_read?: boolean }) => (
-                    <button onClick={() => notifications.markRead.mutate(n.id)} key={n.id} className={`flex w-full items-start gap-2.5 p-2 rounded-lg text-left hover:bg-slate-50 cursor-pointer ${n.is_read ? "opacity-60" : ""}`}>
+                    <button onClick={() => notifications.markRead.mutate(n.id)} key={n.id} className={`flex w-full items-start gap-2.5 p-2 rounded-lg text-left hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)] cursor-pointer ${n.is_read ? "opacity-60" : ""}`}>
                       <div className="h-2 w-2 rounded-full bg-[#0A66C2] mt-1.5 flex-shrink-0" />
                       <div>
-                        <p className="text-xs text-slate-800 font-medium">{n.title}</p>
+                        <p className="text-xs text-slate-800 dark:text-slate-200 font-medium">{n.title}</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">{n.body}</p>
                       </div>
                     </button>
@@ -252,7 +254,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                 <Link
                   href="/notifications"
                   onClick={() => setNotifOpen(false)}
-                  className="block text-center text-xs font-semibold text-[#0A66C2] hover:underline mt-3 pt-3 border-t border-slate-100"
+                  className="block text-center text-xs font-semibold text-[#0A66C2] hover:underline mt-3 pt-3 border-t border-slate-100 dark:border-[var(--border-color)]"
                 >
                   View all notifications
                 </Link>
@@ -266,16 +268,16 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
             <div className="relative">
               <button
                 onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); }}
-                className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1.5 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <Avatar name={user.full_name || "User"} size="sm" />
                 <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{user.full_name}</p>
+                <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-[var(--surface-elevated)] rounded-xl shadow-lg border border-slate-200 dark:border-[var(--border-color)] py-2 z-50">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-[var(--border-color)]">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{user.full_name}</p>
                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                   </div>
                   <div className="py-1 text-xs">
@@ -284,15 +286,15 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                         <Link
                           href="/company/profile"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)]"
                         >
                           <Building2 className="h-4 w-4 text-slate-500" />
-                          Company Profile
+                          Organization Profile
                         </Link>
                         <Link
                           href="/company/dashboard"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)]"
                         >
                           <Briefcase className="h-4 w-4 text-slate-500" />
                           Hiring Dashboard
@@ -303,7 +305,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                         <Link
                           href="/engineer/profile"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)]"
                         >
                           <User className="h-4 w-4 text-slate-500" />
                           My Profile
@@ -311,7 +313,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                         <Link
                           href="/engineer/dashboard"
                           onClick={() => setProfileOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                          className="flex items-center gap-2.5 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)]"
                         >
                           <Briefcase className="h-4 w-4 text-slate-500" />
                           Career Dashboard
@@ -322,25 +324,25 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                       <Link
                         href="/admin/dashboard"
                         onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50"
+                        className="flex items-center gap-2.5 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)]"
                       >
                         <Shield className="h-4 w-4 text-slate-500" />
                         Admin Console
                       </Link>
                     )}
                   </div>
-                  <div className="border-t border-slate-100 pt-1">
+                  <div className="border-t border-slate-100 dark:border-[var(--border-color)] pt-1">
                     <Link
                       href="/settings"
                       onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 text-xs"
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)] text-xs"
                     >
                       <Settings className="h-4 w-4 text-slate-500" />
                       Settings
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-600 hover:bg-red-50"
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                     >
                       <LogOut className="h-4 w-4" />
                       Sign Out

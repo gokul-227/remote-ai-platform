@@ -47,12 +47,12 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
           onClick={() => setMobileOpen(false)}
         >
           <div
-            className="w-72 h-full bg-white p-4 shadow-xl overflow-y-auto"
+            className="w-72 h-full bg-[var(--bg-surface)] p-4 shadow-xl overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
-              <span className="font-bold text-slate-900 text-sm">Navigation</span>
-              <button onClick={() => setMobileOpen(false)} className="p-1 rounded text-slate-400 hover:bg-slate-100">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-[var(--border-color)]">
+              <span className="font-bold text-[var(--text-main)] text-sm">Navigation</span>
+              <button onClick={() => setMobileOpen(false)} className="p-1 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -69,13 +69,13 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       <MobileBottomNav />
 
       {/* Footer */}
-      <footer className="hidden md:block bg-white border-t border-slate-200 py-6 px-4 text-xs text-slate-500 mt-auto">
+      <footer className="hidden md:block bg-[var(--bg-surface)] border-t border-[var(--border-color)] py-6 px-4 text-xs text-[var(--text-muted)] mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-800">Remote AI Platform</span>
+            <span className="font-bold text-[var(--text-main)]">Remote AI Platform</span>
             <span>© 2026 Remote AI Platform. All rights reserved.</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-600">
+          <div className="flex items-center gap-4 text-[var(--text-muted)]">
             <a
               href={`${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/api\/v1\/?$/, "")}/docs`}
               target="_blank"

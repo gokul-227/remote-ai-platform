@@ -15,8 +15,8 @@ test("admin can log in and view platform stats, users, and sync status", async (
   await page.goto("/admin/dashboard");
   await page.waitForLoadState("networkidle");
 
-  await expect(page.getByText(/registered engineers/i)).toBeVisible();
-  await expect(page.getByText(/companies/i).first()).toBeVisible();
+  await expect(page.getByText(/registered professionals/i)).toBeVisible();
+  await expect(page.getByText(/organizations/i).first()).toBeVisible();
 
   // The dashboard should not be showing a hard failure state.
   await expect(page.locator("body")).not.toContainText(/unexpected error/i);

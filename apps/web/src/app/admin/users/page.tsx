@@ -59,8 +59,8 @@ function AdminUsersContent() {
         <SearchInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or email…" className="max-w-xs" />
         <Select value={role} onChange={(e) => { setRole(e.target.value); setPage(0); }} className="w-auto">
           <option value="">All roles</option>
-          <option value="ENGINEER">Engineer</option>
-          <option value="COMPANY">Company</option>
+          <option value="ENGINEER">Professional</option>
+          <option value="COMPANY">Organization</option>
           <option value="ADMIN">Admin</option>
         </Select>
       </div>
@@ -71,6 +71,7 @@ function AdminUsersContent() {
         ) : rows.length === 0 ? (
           <EmptyState icon={Search} title="No users found" description="Try a different search term or role filter." />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border-color)] bg-[var(--bg-subtle)] text-left text-xs uppercase tracking-wide text-slate-500">
@@ -110,6 +111,7 @@ function AdminUsersContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

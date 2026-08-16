@@ -120,11 +120,11 @@ function JobsContent() {
   const savedJobs = useSavedJobs(!!user);
   const rawJobs: JobPost[] = jobsQuery.data || [];
   const jobs = sortJobs(
-    locationQuery
-      ? rawJobs.filter((j) =>
-          (j.location ?? "").toLowerCase().includes(locationQuery.toLowerCase())
-        )
-      : rawJobs,
+    rawJobs
+      .filter((j) =>
+        locationQuery ? (j.location ?? "").toLowerCase().includes(locationQuery.toLowerCase()) : true
+      )
+      .filter((j) => (remoteOnly ? j.is_remote : true)),
     sortKey
   );
   const loading = jobsQuery.isLoading;
@@ -145,6 +145,7 @@ function JobsContent() {
     setMinSalary("");
     setMaxSalary("");
     setSelectedSkills([]);
+    setSortKey("relevance");
     setPage(0);
   };
 
@@ -414,13 +415,21 @@ function JobsContent() {
                 />
               </div>
             ) : (
-              jobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  saved={savedJobs.data?.some((s: JobPost) => s.id === job.id)}
-                />
-              ))
+              jobs.map((job) => {
+                const isSaved = !!savedJobs.data?.some((s: JobPost) => s.id === job.id);
+                return (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    saved={isSaved}
+                    onToggleSave={
+                      user
+                        ? () => (isSaved ? savedJobs.remove.mutate(job.id) : savedJobs.save.mutate(job.id))
+                        : undefined
+                    }
+                  />
+                );
+              })
             )}
           </div>
 

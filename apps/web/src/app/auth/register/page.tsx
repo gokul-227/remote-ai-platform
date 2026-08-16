@@ -23,8 +23,8 @@ const registerSchema = z.object({
 type RegisterForm = z.infer<typeof registerSchema>;
 
 const ROLE_OPTIONS: Array<{ value: Role; icon: typeof User; title: string; description: string }> = [
-  { value: "ENGINEER", icon: User, title: "I am an Engineer", description: "Build a profile, get AI-matched to remote roles, and apply." },
-  { value: "COMPANY", icon: Building2, title: "I am hiring / represent a company", description: "Post roles and discover qualified remote engineers." },
+  { value: "ENGINEER", icon: User, title: "I am a Professional", description: "Build a profile, get AI-matched to remote roles, and apply." },
+  { value: "COMPANY", icon: Building2, title: "I am hiring / represent an organization", description: "Post roles and discover qualified remote professionals." },
 ];
 
 function passwordStrength(pw: string): { label: string; color: string; width: string } {
@@ -102,9 +102,9 @@ export default function RegisterPage() {
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
             <div className="h-8 w-8 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-lg">
-              W
+              R
             </div>
-            Work<span className="text-[#0A66C2]">Mesh</span>
+            Remote <span className="text-[#0A66C2]">AI Platform</span>
           </Link>
           <h1 className="text-xl font-bold text-slate-900">Create your account</h1>
           <p className="text-sm text-slate-600">Join the professional remote engineering network</p>

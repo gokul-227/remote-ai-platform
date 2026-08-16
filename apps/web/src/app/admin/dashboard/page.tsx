@@ -199,7 +199,7 @@ function AdminDashboardPage() {
   const fallbackHealth: ServiceHealthStatus[] = [
     { service: "Auth Service (Keycloak)", status: "UNKNOWN" },
     { service: "Jobs API", status: "UNKNOWN" },
-    { service: "Engineers API", status: "UNKNOWN" },
+    { service: "Professionals API", status: "UNKNOWN" },
     { service: "PostgreSQL Database", status: "UNKNOWN" },
     { service: "Redis Cache", status: "UNKNOWN" },
   ];
@@ -219,7 +219,7 @@ function AdminDashboardPage() {
               <Shield className="h-4.5 w-4.5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">WorkMesh Admin Console</p>
+              <p className="text-sm font-bold text-white">Remote AI Platform Admin Console</p>
               <p className="text-[10px] text-slate-400">Platform Administration & Control Plane</p>
             </div>
           </div>
@@ -251,7 +251,7 @@ function AdminDashboardPage() {
           <h2 className="text-xs uppercase tracking-widest font-semibold text-[var(--text-muted)] mb-3">Platform Overview</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <MetricCard
-              label="Registered Engineers"
+              label="Registered Professionals"
               value={stats?.total_engineers ?? 0}
               icon={Users}
               color="text-[var(--color-brand)]"
@@ -259,7 +259,7 @@ function AdminDashboardPage() {
               loading={loading}
             />
             <MetricCard
-              label="Companies"
+              label="Organizations"
               value={stats?.total_companies ?? 0}
               icon={Building2}
               color="text-indigo-600"

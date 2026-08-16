@@ -65,7 +65,7 @@ export default function PublicCompanyProfilePage({
   if (isLoading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center gap-2 text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading company profile…
+        <Loader2 className="h-5 w-5 animate-spin" /> Loading organization profile…
       </div>
     );
   }
@@ -74,12 +74,12 @@ export default function PublicCompanyProfilePage({
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <Building2 className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-        <h1 className="text-xl font-bold text-slate-900">Company not found</h1>
+        <h1 className="text-xl font-bold text-slate-900">Organization not found</h1>
         <p className="mt-2 text-sm text-slate-500">
-          This company profile is unavailable or has been removed.
+          This organization profile is unavailable or has been removed.
         </p>
         <Link href="/companies" className="btn-primary-brand mt-6 inline-flex">
-          <ChevronLeft className="h-4 w-4" /> Back to companies
+          <ChevronLeft className="h-4 w-4" /> Back to organizations
         </Link>
       </div>
     );
@@ -93,7 +93,7 @@ export default function PublicCompanyProfilePage({
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-500">
-        <Link href="/companies" className="hover:text-[#0A66C2] hover:underline">Companies</Link>
+        <Link href="/companies" className="hover:text-[#0A66C2] hover:underline">Organizations</Link>
         <span>/</span>
         <span className="text-slate-700">{company.name}</span>
       </nav>
@@ -122,7 +122,7 @@ export default function PublicCompanyProfilePage({
                 <p className="mt-0.5 text-sm text-slate-600">
                   {[company.industry, company.company_size ? `${company.company_size} employees` : undefined]
                     .filter(Boolean)
-                    .join(" · ") || "Company"}
+                    .join(" · ") || "Organization"}
                 </p>
               </div>
             </div>
@@ -190,7 +190,7 @@ export default function PublicCompanyProfilePage({
             {company.description ? (
               <p className="text-sm leading-relaxed text-slate-600">{company.description}</p>
             ) : (
-              <p className="text-sm text-slate-500">No company description provided.</p>
+              <p className="text-sm text-slate-500">No organization description provided.</p>
             )}
           </section>
 
@@ -252,7 +252,7 @@ export default function PublicCompanyProfilePage({
         <aside className="space-y-5">
           {/* Company info */}
           <section className="card-enterprise p-5">
-            <h2 className="mb-3 text-sm font-semibold text-slate-700">Company Info</h2>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700">Organization Info</h2>
             <dl className="space-y-2.5 text-xs">
               {[
                 { label: "Industry", value: company.industry },
@@ -277,7 +277,7 @@ export default function PublicCompanyProfilePage({
               <div className="flex items-start gap-3">
                 <ShieldCheck className="h-8 w-8 shrink-0 text-[#0A66C2]" />
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">Verified Company</p>
+                  <p className="text-sm font-semibold text-slate-900">Verified Organization</p>
                   <p className="mt-0.5 text-xs text-slate-500">
                     Identity and business details confirmed by Remote AI Platform.
                   </p>

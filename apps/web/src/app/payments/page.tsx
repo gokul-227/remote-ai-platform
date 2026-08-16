@@ -128,16 +128,16 @@ function PaymentsWalletContent() {
         {/* Escrow Workflow Visual Guide */}
         <div className="card-enterprise p-5 space-y-3 bg-slate-50/50 dark:bg-slate-900/40">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-            <HelpCircle className="h-3.5 w-3.5 text-[#0A66C2]" /> WorkMesh Escrow Protection Lifecycle
+            <HelpCircle className="h-3.5 w-3.5 text-[#0A66C2]" /> Remote AI Platform Escrow Protection Lifecycle
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
             <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <span className="font-bold text-[#0A66C2] block mb-1">1. Fund Escrow</span>
-              <span className="text-slate-500 text-[11px]">Client deposits budget into sandbox escrow before task begins.</span>
+              <span className="text-slate-500 text-[11px]">Organization deposits budget into sandbox escrow before task begins.</span>
             </div>
             <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <span className="font-bold text-amber-600 block mb-1">2. Build & Log</span>
-              <span className="text-slate-500 text-[11px]">Engineer records work and submits verified deliverable PR.</span>
+              <span className="text-slate-500 text-[11px]">Professional records work and submits verified deliverable PR.</span>
             </div>
             <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <span className="font-bold text-purple-600 block mb-1">3. AI Review</span>
@@ -145,7 +145,7 @@ function PaymentsWalletContent() {
             </div>
             <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <span className="font-bold text-emerald-600 block mb-1">4. Instant Release</span>
-              <span className="text-slate-500 text-[11px]">Client confirms approval; funds transfer immediately.</span>
+              <span className="text-slate-500 text-[11px]">Organization confirms approval; funds transfer immediately.</span>
             </div>
           </div>
         </div>
@@ -172,7 +172,7 @@ function PaymentsWalletContent() {
                 <thead className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-700">
                   <tr>
                     <th className="p-3">Reference / ID</th>
-                    <th className="p-3">Payer (Client)</th>
+                    <th className="p-3">Payer (Organization)</th>
                     <th className="p-3">Payee (Worker)</th>
                     <th className="p-3">Amount</th>
                     <th className="p-3">Status</th>
@@ -186,8 +186,8 @@ function PaymentsWalletContent() {
                     return (
                       <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="p-3 font-mono text-[11px] text-slate-700 dark:text-slate-300">{tx.provider_reference}</td>
-                        <td className="p-3 font-medium text-slate-900 dark:text-white">{tx.payer?.full_name || "Client"}</td>
-                        <td className="p-3 font-medium text-slate-900 dark:text-white">{tx.payee?.full_name || "Engineer"}</td>
+                        <td className="p-3 font-medium text-slate-900 dark:text-white">{tx.payer?.full_name || "Organization"}</td>
+                        <td className="p-3 font-medium text-slate-900 dark:text-white">{tx.payee?.full_name || "Professional"}</td>
                         <td className="p-3 font-bold text-slate-900 dark:text-white">
                           ${tx.amount.toLocaleString()} <span className="text-[10px] font-normal text-slate-500">{tx.currency}</span>
                         </td>
@@ -264,24 +264,24 @@ function PaymentsWalletContent() {
 
           {freelancers.length > 0 ? (
             <Select
-              label="Select Payee Engineer"
+              label="Select Payee Professional"
               value={payeeId}
               onChange={(e) => setPayeeId(e.target.value)}
               required
             >
-              <option value="">Choose engineer...</option>
+              <option value="">Choose professional...</option>
               {freelancers.map((f: { id: string; user_id?: string; headline?: string; primary_role?: string }) => (
                 <option key={f.id} value={f.user_id || f.id}>
-                  {f.headline || f.primary_role || "Engineer"} ({f.user_id || f.id})
+                  {f.headline || f.primary_role || "Professional"} ({f.user_id || f.id})
                 </option>
               ))}
             </Select>
           ) : (
             <Input
-              label="Payee Engineer User ID"
+              label="Payee Professional User ID"
               value={payeeId}
               onChange={(e) => setPayeeId(e.target.value)}
-              placeholder="e.g. Engineer User UUID"
+              placeholder="e.g. Professional User UUID"
               required
             />
           )}

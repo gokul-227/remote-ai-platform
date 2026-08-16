@@ -259,7 +259,7 @@ function GroupsContent() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Communities</h1>
-          <p className="text-xs text-slate-500 mt-1">Connect with engineers, share knowledge, and grow together.</p>
+          <p className="text-xs text-slate-500 mt-1">Connect with professionals, share knowledge, and grow together.</p>
         </div>
         <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowCreate(true)}>Create Community</Button>
       </div>

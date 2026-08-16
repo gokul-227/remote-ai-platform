@@ -54,6 +54,7 @@ function AdminJobsContent() {
         ) : rows.length === 0 ? (
           <EmptyState icon={Briefcase} title="No active jobs found" description="Try a different search term or source filter." />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border-color)] bg-[var(--bg-subtle)] text-left text-xs uppercase tracking-wide text-slate-500">
@@ -81,6 +82,7 @@ function AdminJobsContent() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

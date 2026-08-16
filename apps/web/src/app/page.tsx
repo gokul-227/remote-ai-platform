@@ -31,7 +31,7 @@ export default function Home() {
             </h1>
 
             <p className="text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-300 max-w-2xl">
-              Connect with top remote companies, showcase your engineering identity, discover AI-matched roles with explainable scores, and collaborate on projects—all in one unified workspace.
+              Connect with top remote organizations, showcase your engineering identity, discover AI-matched roles with explainable scores, and collaborate on projects—all in one unified workspace.
             </p>
 
             {/* Dual Action Paths */}
@@ -40,7 +40,7 @@ export default function Home() {
                 <Search className="h-5 w-5" /> Find Your Next Role <ArrowRight className="h-5 w-5" />
               </Link>
               <Link href="/auth/register" className="btn-secondary-brand text-base py-3 px-6 flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-[#0A66C2]" /> Hire Exceptional Engineers
+                <Building2 className="h-5 w-5 text-[#0A66C2]" /> Hire Exceptional Professionals
               </Link>
             </div>
 
@@ -68,11 +68,11 @@ export default function Home() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-950 text-[#0A66C2] flex items-center justify-center font-bold text-lg">
-                    W
+                    R
                   </div>
                   <div>
                     <div className="text-sm font-bold text-slate-900 dark:text-white">Staff AI Engineer</div>
-                    <div className="text-xs text-slate-500">WorkMesh Labs · 100% Remote</div>
+                    <div className="text-xs text-slate-500">Remote AI Platform · 100% Remote</div>
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
@@ -111,13 +111,13 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-3">
               <Link href="/engineer/dashboard" className="card-enterprise p-4 hover:border-[#0A66C2] transition-colors block">
                 <Users className="h-5 w-5 text-[#0A66C2]" />
-                <h3 className="mt-2 text-xs font-bold text-slate-900 dark:text-white">Engineer Workspace</h3>
+                <h3 className="mt-2 text-xs font-bold text-slate-900 dark:text-white">Professional Workspace</h3>
                 <p className="mt-0.5 text-[11px] text-slate-500">Career dashboard, applications & AI matches.</p>
               </Link>
 
               <Link href="/company/dashboard" className="card-enterprise p-4 hover:border-[#0A66C2] transition-colors block">
                 <Building2 className="h-5 w-5 text-[#0A66C2]" />
-                <h3 className="mt-2 text-xs font-bold text-slate-900 dark:text-white">Company Workspace</h3>
+                <h3 className="mt-2 text-xs font-bold text-slate-900 dark:text-white">Organization Workspace</h3>
                 <p className="mt-0.5 text-[11px] text-slate-500">Candidate discovery & hiring pipeline.</p>
               </Link>
             </div>
@@ -133,7 +133,7 @@ export default function Home() {
           <span className="text-xs font-bold uppercase tracking-wider text-[#0A66C2]">Simple 3-Step Process</span>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">How Remote AI Platform Works</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            A seamless bridge connecting engineers and hiring organizations through verified identity and explainable AI matching.
+            A seamless bridge connecting professionals and hiring organizations through verified identity and explainable AI matching.
           </p>
         </div>
 
@@ -143,7 +143,7 @@ export default function Home() {
               step: "01",
               title: "Build Your Identity",
               icon: UserIcon,
-              body: "Create your engineer or company profile. Upload your resume to auto-parse skills, experience, and bio using AI.",
+              body: "Create your professional or organization profile. Upload your resume to auto-parse skills, experience, and bio using AI.",
             },
             {
               step: "02",
@@ -173,13 +173,13 @@ export default function Home() {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 2: DUAL PLATFORM PILLARS (FOR ENGINEERS & FOR COMPANIES) */}
+      {/* SECTION 2: DUAL PLATFORM PILLARS (FOR PROFESSIONALS & FOR ORGANIZATIONS) */}
       {/* ========================================================================= */}
       <section className="grid gap-8 lg:grid-cols-2">
-        {/* For Engineers Card */}
+        {/* For Professionals Card */}
         <div className="card-enterprise p-8 space-y-6 border-l-4 border-l-[#0A66C2]">
           <div className="space-y-2">
-            <span className="badge-ent badge-ent-brand">For Engineers & Developers</span>
+            <span className="badge-ent badge-ent-brand">For Professionals & Developers</span>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Accelerate Your Remote Career</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
               Build a credible professional profile, receive explainable AI job recommendations, and manage all your applications in one place.
@@ -205,11 +205,11 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* For Companies Card */}
+        {/* For Organizations Card */}
         <div className="card-enterprise p-8 space-y-6 border-l-4 border-l-indigo-600">
           <div className="space-y-2">
             <span className="badge-ent badge-ent-neutral bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-              For Companies & Employers
+              For Organizations & Employers
             </span>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Hire Top Engineering Talent</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -222,7 +222,7 @@ export default function Home() {
               "Multi-Step Job Creation Wizard — AI-assisted job description optimization",
               "Candidate Discovery Engine — Search candidates filtered by skills & experience",
               "AI Candidate Ranking — Match score breakdown for every applicant",
-              "Hiring Pipeline Kanban — Review, shortlist, and invite top engineers seamlessly",
+              "Hiring Pipeline Kanban — Review, shortlist, and invite top professionals seamlessly",
             ].map((feat) => (
               <div key={feat} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
                 <CheckCircle2 className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
@@ -240,7 +240,7 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* SECTION 3: EXPLAINABLE AI MATCHING ENGINE */}
       {/* ========================================================================= */}
-      <section className="card-enterprise p-8 sm:p-12 space-y-8 bg-slate-900 text-white border-none">
+      <section className="card-enterprise p-8 sm:p-12 space-y-8 !bg-slate-900 !text-white !border-none rounded-[var(--radius-card)] shadow-[var(--shadow-md)]">
         <div className="grid items-center gap-8 lg:grid-cols-12">
           <div className="lg:col-span-7 space-y-4">
             <div className="inline-flex items-center gap-2 text-indigo-400 font-semibold text-xs uppercase tracking-wider">
@@ -336,7 +336,7 @@ export default function Home() {
       <section className="card-enterprise p-8 sm:p-12 text-center space-y-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-none shadow-xl">
         <h2 className="text-3xl font-extrabold sm:text-4xl">Ready to join the remote engineering network?</h2>
         <p className="text-sm sm:text-base text-blue-100 max-w-xl mx-auto">
-          Create your account today, import your resume with AI, and start connecting with exceptional remote companies and engineers.
+          Create your account today, import your resume with AI, and start connecting with exceptional remote organizations and professionals.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <Link href="/auth/register" className="btn-primary-brand bg-white text-[#0A66C2] hover:bg-blue-50 py-3 px-8 text-sm font-bold shadow-md">

@@ -125,14 +125,14 @@ function CompanyDashboardContent() {
           <div className="h-12 w-12 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
             <Building2 className="h-6 w-6" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Set Up Your Company Profile</h2>
+          <h2 className="text-xl font-bold text-slate-900">Set Up Your Organization Profile</h2>
           <p className="text-xs text-slate-500 leading-relaxed">
             Create your organization profile to post open positions, discover AI-matched engineering talent, and manage your hiring pipeline.
           </p>
           <div className="pt-2">
             <Link href="/company/profile">
               <Button size="lg" fullWidth icon={<ArrowRight className="h-4 w-4" />}>
-                Create Company Profile
+                Create Organization Profile
               </Button>
             </Link>
           </div>
@@ -159,7 +159,7 @@ function CompanyDashboardContent() {
               )}
             </div>
             <h1 className="text-2xl font-black tracking-tight">
-              {company?.company_name || "Your Company"} — Recruiting Hub
+              {company?.company_name || "Your Organization"} — Recruiting Hub
             </h1>
             <p className="text-sm text-slate-300">
               {company?.industry && `${company.industry} · `}
@@ -327,9 +327,9 @@ function CompanyDashboardContent() {
             <div className="space-y-3">
               {engineers.slice(0, 5).map((eng) => (
                 <div key={eng.id} className="flex items-center gap-3 group">
-                  <Avatar name={eng.user?.full_name || eng.headline || "Engineer"} size="md" />
+                  <Avatar name={eng.user?.full_name || eng.headline || "Professional"} size="md" />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[var(--text-main)] text-xs truncate">{eng.user?.full_name || "Engineer"}</h3>
+                    <h3 className="font-semibold text-[var(--text-main)] text-xs truncate">{eng.user?.full_name || "Professional"}</h3>
                     <p className="text-[10px] text-[var(--text-muted)] truncate">{eng.headline || eng.primary_role || "Remote Developer"}</p>
                     {eng.skills && eng.skills.length > 0 && (
                       <div className="flex gap-1 mt-1">
@@ -352,7 +352,7 @@ function CompanyDashboardContent() {
 
             {engineers.length === 0 && (
               <div className="text-center py-4 text-xs text-[var(--text-muted)]">
-                No engineers found in directory yet.
+                No professionals found in directory yet.
               </div>
             )}
 
@@ -368,7 +368,7 @@ function CompanyDashboardContent() {
             <h2 className="font-bold text-[var(--text-main)] text-sm">Quick Actions</h2>
             <div className="space-y-2">
               {[
-                { label: "View Company Profile", href: "/company/profile", icon: Building2, desc: "Update your brand" },
+                { label: "View Organization Profile", href: "/company/profile", icon: Building2, desc: "Update your brand" },
                 { label: "Manage All Jobs", href: "/company/jobs", icon: Briefcase, desc: "Edit, pause, or close" },
                 { label: "Candidate Pipeline", href: "/company/candidates", icon: Users, desc: "Review applications" },
                 { label: "Active Projects", href: "/projects", icon: CheckCircle2, desc: "Track deliverables" },

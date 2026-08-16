@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
             <div className="h-8 w-8 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-lg">
               W
             </div>
-            Work<span className="text-[#0A66C2]">Mesh</span>
+            Remote <span className="text-[#0A66C2]">AI Platform</span>
           </Link>
           <h1 className="text-xl font-bold text-slate-900">Reset your password</h1>
           <p className="text-xs text-slate-500">Enter your email and we&apos;ll send recovery instructions</p>

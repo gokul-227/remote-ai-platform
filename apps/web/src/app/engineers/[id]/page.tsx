@@ -165,7 +165,7 @@ export default function PublicEngineerProfilePage({
         <User className="mx-auto mb-4 h-12 w-12 text-slate-300" />
         <h1 className="text-xl font-bold text-slate-900">Profile not found</h1>
         <p className="mt-2 text-sm text-slate-500">
-          This engineer profile is unavailable or has been removed.
+          This professional profile is unavailable or has been removed.
         </p>
         <Link href="/engineers" className="btn-primary-brand mt-6 inline-flex">
           <ChevronLeft className="h-4 w-4" /> Back to discovery
@@ -210,7 +210,7 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-500">
-        <Link href="/engineers" className="hover:text-[#0A66C2] hover:underline">Engineers</Link>
+        <Link href="/engineers" className="hover:text-[#0A66C2] hover:underline">Professionals</Link>
         <span>/</span>
         <span className="text-slate-700">{profile.headline || profile.primary_role || "Profile"}</span>
       </nav>
@@ -228,7 +228,7 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
               </div>
               <div className="pb-1">
                 <h1 className="text-2xl font-bold text-slate-900">
-                  {profile.headline || profile.primary_role || "Engineer"}
+                  {profile.headline || profile.primary_role || "Professional"}
                 </h1>
                 <p className="text-sm text-slate-600">
                   {profile.primary_role && <span>{profile.primary_role}</span>}

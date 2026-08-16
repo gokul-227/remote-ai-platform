@@ -232,7 +232,7 @@ function RecommendationsContent() {
           <EmptyState
             icon={XCircle}
             title="Unable to load recommendations"
-            description="Complete your engineer profile to unlock AI job matching."
+            description="Complete your professional profile to unlock AI job matching."
             actionLabel="Complete profile"
             actionHref="/engineer/profile"
           />
@@ -244,7 +244,7 @@ function RecommendationsContent() {
           <EmptyState
             icon={Sparkles}
             title={filter === "saved" ? "No saved matches yet" : "No recommendations found"}
-            description={filter === "saved" ? "Browse matches and save the ones you like." : "Complete your engineer profile to get personalized AI recommendations."}
+            description={filter === "saved" ? "Browse matches and save the ones you like." : "Complete your professional profile to get personalized AI recommendations."}
             actionLabel="Complete profile"
             actionHref="/engineer/profile"
           />

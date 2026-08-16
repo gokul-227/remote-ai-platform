@@ -52,7 +52,7 @@ function CreateProjectModal({ open, onClose, onCreated }: { open: boolean; onClo
           <Input label="Timeline" value={form.timeline} onChange={(e) => setForm((f) => ({ ...f, timeline: e.target.value }))} placeholder="6 weeks" />
           <Input label="Budget (USD)" type="number" min={0} value={form.budget} onChange={(e) => setForm((f) => ({ ...f, budget: e.target.value }))} placeholder="5000" />
         </div>
-        {createProject.isError && <p className="text-xs text-red-600">Unable to create project. Check your company profile and try again.</p>}
+        {createProject.isError && <p className="text-xs text-red-600">Unable to create project. Check your organization profile and try again.</p>}
         <Button type="submit" fullWidth size="lg" disabled={!canSubmit} loading={createProject.isPending} icon={<Sparkles className="h-4 w-4" />}>
           Create & Generate Plan
         </Button>

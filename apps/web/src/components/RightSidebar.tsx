@@ -26,8 +26,8 @@ export function RightSidebar() {
     <div className="space-y-4">
       {/* Suggested Jobs */}
       <div className="card-enterprise p-4 space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-          <h3 className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+          <h3 className="font-semibold text-slate-900 dark:text-white text-xs flex items-center gap-1.5">
             <Sparkles className="h-4 w-4 text-[#0A66C2]" />
             AI Matched Roles
           </h3>
@@ -41,9 +41,9 @@ export function RightSidebar() {
               <Link
                 key={job.id}
                 href={`/jobs/${job.id}`}
-                className="block p-2.5 rounded-lg bg-slate-50 border border-slate-100 hover:border-[#0A66C2] hover:bg-blue-50/30 transition-all group"
+                className="block p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-[#0A66C2] hover:bg-blue-50/30 transition-all group"
               >
-                <div className="flex items-center justify-between font-semibold text-slate-900 group-hover:text-[#0A66C2]">
+                <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-white group-hover:text-[#0A66C2]">
                   <span className="truncate">{job.title}</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
@@ -60,7 +60,7 @@ export function RightSidebar() {
 
       {/* Trending Market Skills */}
       <div className="card-enterprise p-4 space-y-3">
-        <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 border-b border-slate-100 pb-2">
+        <div className="font-semibold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
           <TrendingUp className="h-4 w-4 text-emerald-600" />
           High-Demand Skills
         </div>
@@ -80,7 +80,7 @@ export function RightSidebar() {
 
       {/* Verified Companies */}
       <div className="card-enterprise p-4 space-y-3">
-        <div className="font-semibold text-slate-900 text-xs flex items-center justify-between border-b border-slate-100 pb-2">
+        <div className="font-semibold text-slate-900 dark:text-white text-xs flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
           <span className="flex items-center gap-1.5">
             <Building2 className="h-4 w-4 text-[#0A66C2]" /> Verified Employers
           </span>
@@ -88,7 +88,7 @@ export function RightSidebar() {
             Browse
           </Link>
         </div>
-        <div className="text-xs text-slate-600 space-y-2">
+        <div className="text-xs text-slate-600 dark:text-slate-400 space-y-2">
           <p className="text-[11px] text-slate-500">
             Connect directly with verified remote-first engineering teams and start-ups.
           </p>

@@ -432,7 +432,7 @@ function NewJobWizard() {
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3 bg-[var(--bg-surface)]">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="badge-ent badge-ent-neutral uppercase font-mono text-[10px] mr-1.5">WorkMesh Direct</span>
+                    <span className="badge-ent badge-ent-neutral uppercase font-mono text-[10px] mr-1.5">Direct</span>
                     <span className="badge-ent badge-ent-brand font-semibold">100% Remote</span>
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm mt-1.5">{form.title || "Senior Software Engineer"}</h4>
                     <p className="text-xs text-[#0A66C2] font-semibold mt-0.5 flex items-center gap-1">

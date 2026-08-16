@@ -170,15 +170,15 @@ function OnboardingContent() {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 text-[#0A66C2] font-extrabold text-2xl">
             {isCompany ? <Building2 className="h-7 w-7" /> : <Sparkles className="h-7 w-7" />}
-            WorkMesh Onboarding
+            Remote AI Platform Onboarding
           </div>
           <h1 className="text-2xl font-bold text-slate-900">
             {isCompany ? "Set up your organization" : "Build your AI-matched profile"}
           </h1>
           <p className="text-sm text-slate-600">
             {isCompany
-              ? "Complete your company profile to start hiring top engineering talent."
-              : "Tell us about your skills to get matched with remote tech companies."}
+              ? "Complete your organization profile to start hiring top engineering talent."
+              : "Tell us about your skills to get matched with remote tech organizations."}
           </p>
         </div>
 
@@ -485,12 +485,12 @@ function OnboardingContent() {
                 <div className="space-y-4">
                   <div className="space-y-1 border-b border-slate-100 pb-3">
                     <h2 className="text-lg font-bold text-slate-900">Organization Identity</h2>
-                    <p className="text-xs text-slate-500">Provide basic information about your company.</p>
+                    <p className="text-xs text-slate-500">Provide basic information about your organization.</p>
                   </div>
 
                   <Input
                     id="compName"
-                    label="Company Name *"
+                    label="Organization Name *"
                     placeholder="e.g. Acme AI Innovations"
                     value={compForm.name}
                     onChange={(e) => updateComp("name", e.target.value)}
@@ -505,7 +505,7 @@ function OnboardingContent() {
                       onChange={(e) => updateComp("industry", e.target.value)}
                     />
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Company Size</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Organization Size</label>
                       <select
                         value={compForm.company_size}
                         onChange={(e) => updateComp("company_size", e.target.value)}
@@ -522,7 +522,7 @@ function OnboardingContent() {
 
                   <div className="flex justify-end pt-4">
                     <Button disabled={!compForm.name.trim()} onClick={() => setStep(2)} icon={undefined}>
-                      Next: Company Profile <ArrowRight className="h-4 w-4" />
+                      Next: Organization Profile <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -532,8 +532,8 @@ function OnboardingContent() {
               {step === 2 && (
                 <div className="space-y-4">
                   <div className="space-y-1 border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-900">Company Overview</h2>
-                    <p className="text-xs text-slate-500">Help remote talent understand your company&rsquo;s mission.</p>
+                    <h2 className="text-lg font-bold text-slate-900">Organization Overview</h2>
+                    <p className="text-xs text-slate-500">Help remote talent understand your organization&rsquo;s mission.</p>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -554,13 +554,13 @@ function OnboardingContent() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Company Description</label>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Organization Description</label>
                     <textarea
                       value={compForm.description}
                       onChange={(e) => updateComp("description", e.target.value)}
                       rows={4}
                       className="input-enterprise w-full"
-                      placeholder="What does your company build, and what technologies do you specialize in?"
+                      placeholder="What does your organization build, and what technologies do you specialize in?"
                     />
                   </div>
 
@@ -585,7 +585,7 @@ function OnboardingContent() {
 
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
                     <p>
-                      <strong className="text-slate-900">Company:</strong> {compForm.name}
+                      <strong className="text-slate-900">Organization:</strong> {compForm.name}
                     </p>
                     {compForm.industry && (
                       <p>

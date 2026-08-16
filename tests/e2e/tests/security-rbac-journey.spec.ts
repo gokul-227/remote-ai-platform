@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { registerAs } from "./helpers";
+import { registerAs, completeOnboarding } from "./helpers";
 
 test.describe("Security and RBAC Boundary Testing", () => {
   test("logged out visitor cannot access private dashboard and is redirected to login", async ({ page }) => {
@@ -26,8 +26,7 @@ test.describe("Security and RBAC Boundary Testing", () => {
       password: "TestPassword123!",
       role: "engineer",
     });
-
-    await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
+    await completeOnboarding(page, { role: "engineer", headline: "Security Tester Engineer", skills: "Python" });
 
     // Try navigating directly to admin dashboard
     await page.goto("/admin/dashboard");

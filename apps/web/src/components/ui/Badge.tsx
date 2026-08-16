@@ -9,7 +9,7 @@ const badgeVariants = cva("badge-ent gap-1", {
       brand: "badge-ent-brand",
       success: "badge-ent-success",
       warning: "badge-ent-warning",
-      danger: "bg-[var(--color-danger-soft)] text-[var(--color-error)]",
+      danger: "badge-ent-danger",
       neutral: "badge-ent-neutral",
       ai: "badge-ai",
     },
@@ -52,7 +52,7 @@ const statusBgVariants = cva("badge-ent inline-flex items-center gap-1.5", {
     tone: {
       success: "badge-ent-success",
       warning: "badge-ent-warning",
-      danger: "bg-[var(--color-danger-soft)] text-[var(--color-error)]",
+      danger: "badge-ent-danger",
       info: "bg-[var(--color-info-soft)] text-[var(--color-info)]",
       neutral: "badge-ent-neutral",
     },

@@ -119,8 +119,8 @@ function ContractDetailContent({ params }: { params: Promise<{ id: string }> }) 
         {/* Digital Signatures Box */}
         <div className="grid sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
           <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Client / Company</span>
-            <p className="font-semibold text-slate-900 text-sm">{contract.client?.full_name || "Client"}</p>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Organization</span>
+            <p className="font-semibold text-slate-900 text-sm">{contract.client?.full_name || "Organization"}</p>
             <p className="text-xs text-slate-500">{contract.client?.email}</p>
             {contract.client_signed_at ? (
               <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1 mt-2">
@@ -134,7 +134,7 @@ function ContractDetailContent({ params }: { params: Promise<{ id: string }> }) 
           </div>
 
           <div className="space-y-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Remote Engineer / Worker</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Remote Professional / Worker</span>
             <p className="font-semibold text-slate-900 text-sm">{contract.worker?.full_name || "Worker"}</p>
             <p className="text-xs text-slate-500">{contract.worker?.email}</p>
             {contract.worker_signed_at ? (

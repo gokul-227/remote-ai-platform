@@ -53,7 +53,7 @@ function CreateCompanyProfileForm() {
           <Building2 className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Create Company Profile</h1>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Create Organization Profile</h1>
           <p className="text-xs text-slate-500">Establish your organization brand to attract top remote engineering talent.</p>
         </div>
       </div>
@@ -83,7 +83,7 @@ function CreateCompanyProfileForm() {
             />
           </label>
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Company Size
+            Organization Size
             <input
               value={form.company_size}
               onChange={(e) => update("company_size", e.target.value)}
@@ -102,7 +102,7 @@ function CreateCompanyProfileForm() {
           />
         </label>
         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Company Overview & Mission
+          Organization Overview & Mission
           <textarea
             value={form.description}
             onChange={(e) => update("description", e.target.value)}
@@ -110,7 +110,7 @@ function CreateCompanyProfileForm() {
             placeholder="Describe what your engineering teams build, your culture, and technical challenges..."
           />
         </label>
-        {createProfile.isError && <p className="text-sm text-red-600">Unable to create company profile. Please try again.</p>}
+        {createProfile.isError && <p className="text-sm text-red-600">Unable to create organization profile. Please try again.</p>}
         <Button type="submit" loading={createProfile.isPending} disabled={!form.name.trim()} fullWidth>
           Create Organization Profile
         </Button>
@@ -149,7 +149,7 @@ function CompanyProfileContent() {
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
           <div className="absolute bottom-4 left-6 flex items-center gap-2">
             <span className="text-xs font-bold text-white/80 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 flex items-center gap-1">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Verified WorkMesh Employer
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Verified Employer
             </span>
           </div>
         </div>
@@ -235,7 +235,7 @@ function CompanyProfileContent() {
               <Building2 className="h-4 w-4 text-[#0A66C2]" /> About {profile.name}
             </h2>
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-              {profile.description || "No company description provided yet. Add an overview to showcase your engineering culture and goals to candidates."}
+              {profile.description || "No organization description provided yet. Add an overview to showcase your engineering culture and goals to candidates."}
             </p>
           </div>
 
@@ -246,7 +246,7 @@ function CompanyProfileContent() {
                 <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                   <Briefcase className="h-4 w-4 text-emerald-600" /> Active Job Postings ({jobs.length})
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">Live listings published on WorkMesh marketplace</p>
+                <p className="text-xs text-slate-500 mt-0.5">Live listings published on Remote AI Platform marketplace</p>
               </div>
               <Link href="/jobs/new" className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1">
                 Post Role <PlusCircle className="h-3.5 w-3.5" />

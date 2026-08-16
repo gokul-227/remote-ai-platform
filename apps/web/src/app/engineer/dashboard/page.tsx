@@ -99,7 +99,7 @@ function EngineerDashboardContent() {
           <div className="h-12 w-12 rounded-full bg-blue-50 text-[#0A66C2] flex items-center justify-center mx-auto">
             <User className="h-6 w-6" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900">Build Your Engineer Identity</h2>
+          <h2 className="text-xl font-bold text-slate-900">Build Your Professional Identity</h2>
           <p className="text-xs text-slate-500 leading-relaxed">
             Create your profile to unlock explainable AI job matching, application tracking, and verified remote opportunities.
           </p>
@@ -132,7 +132,7 @@ function EngineerDashboardContent() {
               <span className="badge-ent badge-ent-success text-[10px]">Active</span>
             </div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              {timeOfDayGreeting()}, {user?.full_name?.split(" ")[0] || "Engineer"}
+              {timeOfDayGreeting()}, {user?.full_name?.split(" ")[0] || "Professional"}
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Here&apos;s what&apos;s happening with your engineering career and opportunities today.
@@ -259,9 +259,17 @@ function EngineerDashboardContent() {
                 actionHref="/jobs"
               />
             ) : (
-              recommendedJobs.map((job) => (
-                <JobCard key={job.id} job={job} saved={savedJobs.data?.some((s: JobPost) => s.id === job.id)} />
-              ))
+              recommendedJobs.map((job) => {
+                const isSaved = !!savedJobs.data?.some((s: JobPost) => s.id === job.id);
+                return (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    saved={isSaved}
+                    onToggleSave={() => (isSaved ? savedJobs.remove.mutate(job.id) : savedJobs.save.mutate(job.id))}
+                  />
+                );
+              })
             )}
           </div>
         </div>

@@ -57,7 +57,7 @@ function ConnectionCard({
 }) {
   const isIncoming = connection.receiver_id === currentUserId;
   const otherUser = isIncoming ? connection.sender : connection.receiver;
-  const displayName = otherUser?.full_name || otherUser?.email || "WorkMesh Member";
+  const displayName = otherUser?.full_name || otherUser?.email || "Platform Member";
   const headline = otherUser?.headline || "Professional";
   const statusConf = STATUS_CONFIG[connection.status] ?? STATUS_CONFIG.pending;
   const isPending = connection.status === "pending";
@@ -107,9 +107,9 @@ function SuggestionCard({ person, onConnect, connecting }: {
       <div className="h-12 bg-gradient-to-br from-[#0A66C2]/20 via-[#7F56D9]/10 to-emerald-500/10" />
       <div className="px-4 pb-4">
         <div className="-mt-5 mb-2">
-          <Avatar name={person.full_name || "Engineer"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />
+          <Avatar name={person.full_name || "Professional"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />
         </div>
-        <p className="text-sm font-semibold text-[var(--text-main)] leading-tight">{person.full_name || "Engineer"}</p>
+        <p className="text-sm font-semibold text-[var(--text-main)] leading-tight">{person.full_name || "Professional"}</p>
         {person.headline && (
           <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-1">{person.headline}</p>
         )}
@@ -265,7 +265,7 @@ function NetworkContent() {
           </div>
         ) : suggestedPeople.length === 0 ? (
           <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl">
-            <EmptyState icon={Users} title="No suggestions right now" description="Check back soon as more engineers join the platform." />
+            <EmptyState icon={Users} title="No suggestions right now" description="Check back soon as more professionals join the platform." />
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

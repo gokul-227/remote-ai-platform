@@ -153,7 +153,7 @@ function ContractsPageContent() {
                     <span className="text-slate-300">·</span>
                     <div className="flex items-center gap-1 text-slate-500">
                       <User className="h-3.5 w-3.5 text-slate-400" />
-                      <span>{contract.worker?.full_name || "Engineer"}:</span>
+                      <span>{contract.worker?.full_name || "Professional"}:</span>
                       {contract.worker_signed_at ? (
                         <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                       ) : (
@@ -198,7 +198,7 @@ function ContractsPageContent() {
           <EmptyState
             icon={FileText}
             title="No contracts found"
-            description="Work agreements between companies and remote talent will appear here."
+            description="Work agreements between organizations and remote talent will appear here."
           />
         </div>
       )}
@@ -208,15 +208,15 @@ function ContractsPageContent() {
         <form onSubmit={handleCreateSubmit} className="space-y-4">
           {freelancers.length > 0 ? (
             <Select
-              label="Select Engineer / Contractor"
+              label="Select Professional / Contractor"
               value={workerId}
               onChange={(e) => setWorkerId(e.target.value)}
               required
             >
-              <option value="">Choose engineer...</option>
+              <option value="">Choose professional...</option>
               {freelancers.map((f: { id: string; user_id?: string; headline?: string; primary_role?: string }) => (
                 <option key={f.id} value={f.user_id || f.id}>
-                  {f.headline || f.primary_role || "Engineer"} ({f.user_id || f.id})
+                  {f.headline || f.primary_role || "Professional"} ({f.user_id || f.id})
                 </option>
               ))}
             </Select>

@@ -108,7 +108,7 @@ function AccountPanel() {
           <p className="text-xs text-[var(--text-muted)] flex items-center gap-1.5 mt-0.5">
             <Mail className="h-3 w-3" /> {user?.email}
           </p>
-          <p className="text-xs text-[var(--text-muted)] capitalize mt-0.5">{user?.role?.toLowerCase()} · WorkMesh</p>
+          <p className="text-xs text-[var(--text-muted)] capitalize mt-0.5">{user?.role?.toLowerCase()} · Remote AI Platform</p>
         </div>
         <Button variant="secondary" size="sm">Edit photo</Button>
       </div>
@@ -181,14 +181,14 @@ function PrivacyPanel() {
           <SettingRow
             icon={Globe}
             label="Public profile"
-            description="When enabled, companies and other members can find and view your engineer profile."
+            description="When enabled, organizations and other members can find and view your professional profile."
             status={isPublic ? "ok" : undefined}
             action={<ToggleSwitch enabled={isPublic} onChange={(v) => updateVisibility.mutate(v)} />}
           />
           <SettingRow
             icon={Building2}
             label="Open to work"
-            description="Let companies know you're actively looking for new opportunities."
+            description="Let organizations know you're actively looking for new opportunities."
             status={isOpenToWork ? "ok" : undefined}
             action={<ToggleSwitch enabled={isOpenToWork} onChange={(v) => updateOpenToWork.mutate(v)} />}
           />
@@ -197,13 +197,13 @@ function PrivacyPanel() {
       {isCompany && (
         <SettingRow
           icon={Globe}
-          label="Company visibility"
-          description="Your company profile is visible in the public directory."
+          label="Organization visibility"
+          description="Your organization profile is visible in the public directory."
           status="ok"
         />
       )}
       <div className="divide-y divide-[var(--border-color)]">
-        <SettingRow icon={User} label="Who can message you" description="Anyone on WorkMesh" action={<span className="text-xs text-[var(--text-muted)] italic">Coming soon</span>} />
+        <SettingRow icon={User} label="Who can message you" description="Anyone on Remote AI Platform" action={<span className="text-xs text-[var(--text-muted)] italic">Coming soon</span>} />
         <SettingRow icon={Eye} label="Activity visibility" description="Who can see your profile views and activity" action={<span className="text-xs text-[var(--text-muted)] italic">Coming soon</span>} />
       </div>
     </div>

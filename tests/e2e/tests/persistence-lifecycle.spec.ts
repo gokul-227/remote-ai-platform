@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { registerAs } from "./helpers";
+import { registerAs, completeOnboarding } from "./helpers";
 
 test.describe("Deep Functional Persistence Lifecycle", () => {
   test("engineer can edit profile, save changes, and verify persistence after page reload", async ({ page }) => {
@@ -12,17 +12,9 @@ test.describe("Deep Functional Persistence Lifecycle", () => {
       password: "TestPassword123!",
       role: "engineer",
     });
+    await completeOnboarding(page, { role: "engineer", headline: "Lead Cloud Engineer", skills: "Kubernetes, Go" });
 
-    await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
-
-    // If profile creation form is visible, complete it
-    const createBtn = page.getByRole("button", { name: /create profile/i });
-    if (await createBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await page.getByPlaceholder(/senior full-stack/i).fill("Lead Cloud Engineer");
-      await createBtn.click();
-      await page.waitForTimeout(1000);
-    }
-
+    await page.goto("/engineer/profile");
     // Verify profile page loaded
     await expect(page.locator("body")).toBeVisible({ timeout: 15_000 });
 
@@ -41,8 +33,7 @@ test.describe("Deep Functional Persistence Lifecycle", () => {
       password: "TestPassword123!",
       role: "engineer",
     });
-
-    await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
+    await completeOnboarding(page, { role: "engineer", headline: "Job Saver Engineer", skills: "Python" });
 
     // 1. Browse marketplace
     await page.goto("/jobs");
@@ -70,27 +61,26 @@ test.describe("Deep Functional Persistence Lifecycle", () => {
       password: "TestPassword123!",
       role: "company",
     });
+    await completeOnboarding(page, { role: "company", name: "Hiring Manager Inc." });
 
-    // Company gets directed to onboarding or company profile
-    await page.waitForTimeout(2000);
     await page.goto("/jobs/new");
-    await expect(page.getByRole("heading", { name: /post a job/i, level: 1 })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: /post engineering position/i, level: 1 })).toBeVisible({ timeout: 15_000 });
 
     // Step 1: Basics
-    await page.getByLabel(/job title/i).fill(`Senior Distributed Systems Engineer ${unique}`);
-    await page.getByRole("button", { name: /next/i }).click();
+    await page.getByLabel(/position title/i).fill(`Senior Distributed Systems Engineer ${unique}`);
+    await page.getByRole("button", { name: "Next Step" }).click();
 
     // Step 2: Description
     await page.getByLabel(/description/i).fill("We are seeking an experienced engineer to architect scalable remote microservices.");
-    await page.getByRole("button", { name: /next/i }).click();
+    await page.getByRole("button", { name: "Next Step" }).click();
 
     // Step 3: Requirements
-    await page.getByRole("button", { name: /next/i }).click();
+    await page.getByRole("button", { name: "Next Step" }).click();
 
     // Step 4: Compensation
-    await page.getByRole("button", { name: /next/i }).click();
+    await page.getByRole("button", { name: "Next Step" }).click();
 
     // Step 5: Review & Publish
-    await expect(page.getByRole("button", { name: /publish/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Publish Role to Marketplace" })).toBeVisible({ timeout: 5000 });
   });
 });

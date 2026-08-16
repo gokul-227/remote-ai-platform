@@ -72,9 +72,9 @@ function WorkerWorkspaceContent() {
             <div className="flex items-center gap-2 text-[var(--color-brand)] text-xs font-bold uppercase tracking-wider">
               <FolderKanban className="h-4 w-4" /> Execution Workspace
             </div>
-            <h1 className="text-xl font-bold text-slate-900">Engineer Execution Hub</h1>
+            <h1 className="text-xl font-bold text-slate-900">Professional Execution Hub</h1>
             <p className="text-xs text-slate-500 max-w-2xl">
-              Accept incoming task offers, manage assigned work units, submit deliverables for client approval, and record transparent work ledger entries.
+              Accept incoming task offers, manage assigned work units, submit deliverables for organization approval, and record transparent work ledger entries.
             </p>
           </div>
 
@@ -146,7 +146,7 @@ function WorkerWorkspaceContent() {
             ))
           ) : (
             <div className="card-enterprise">
-              <EmptyState icon={Sparkles} title="No task offers yet" description="When clients select you for tasks via the dispatch engine, invitations will appear here." />
+              <EmptyState icon={Sparkles} title="No task offers yet" description="When organizations select you for tasks via the dispatch engine, invitations will appear here." />
             </div>
           )}
         </div>

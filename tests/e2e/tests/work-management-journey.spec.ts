@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { registerAs } from "./helpers";
+import { registerAs, completeOnboarding } from "./helpers";
 
 test.describe("Work Management & Platform Journeys", () => {
   test("authenticated user can view projects, payments, quality, and settings", async ({ page }) => {
@@ -12,8 +12,7 @@ test.describe("Work Management & Platform Journeys", () => {
       password: "TestPassword123!",
       role: "engineer",
     });
-
-    await expect(page).toHaveURL(/\/engineer\/profile/, { timeout: 30_000 });
+    await completeOnboarding(page, { role: "engineer", headline: "Workspace Tester Engineer", skills: "Python" });
 
     // 1. Projects Workspace
     await page.goto("/projects");

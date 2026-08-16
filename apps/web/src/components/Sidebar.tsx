@@ -22,7 +22,7 @@ import { useApplications } from "@/hooks/useApplications";
 type NavItem = { name: string; href: string; icon: typeof User; count?: number };
 
 // Role-scoped, profile-centric links. Routes already reachable from the
-// global top nav (Jobs, Freelancers, Network, Messages, Communities,
+// global top nav (Jobs, Professionals, Network, Messages, Communities,
 // Contracts, Projects) are deliberately not repeated here — this rail is
 // "your identity and work," not a second copy of primary navigation.
 function useNavItems(): NavItem[] {
@@ -32,7 +32,7 @@ function useNavItems(): NavItem[] {
 
   if (user?.role === "COMPANY") {
     return [
-      { name: "Company Profile", href: "/company/profile", icon: Building2 },
+      { name: "Organization Profile", href: "/company/profile", icon: Building2 },
       { name: "Hiring Dashboard", href: "/company/dashboard", icon: LayoutDashboard },
       { name: "My Job Postings", href: "/company/jobs", icon: Briefcase },
       { name: "Candidate Discovery", href: "/company/candidates", icon: Users },
@@ -73,7 +73,7 @@ export function Sidebar() {
     return (
       <div className="w-full">
         <div className="card-enterprise p-5 text-center space-y-2.5">
-          <h3 className="font-semibold text-slate-900 text-sm">Unlock your career dashboard</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Unlock your career dashboard</h3>
           <p className="text-xs text-slate-500">Sign in to track applications, save jobs, and see AI-matched roles.</p>
           <Link href="/auth/login" className="btn-primary-brand w-full block text-center text-xs mt-2">
             Sign In
@@ -92,7 +92,7 @@ export function Sidebar() {
           <div className="h-14 w-14 rounded-full bg-[#0A66C2] text-white flex items-center justify-center font-bold text-lg ring-4 ring-white mx-auto shadow-xs">
             {user.full_name?.charAt(0).toUpperCase() || "U"}
           </div>
-          <h3 className="font-semibold text-slate-900 text-sm mt-2 truncate">
+          <h3 className="font-semibold text-slate-900 dark:text-white text-sm mt-2 truncate">
             {user.full_name}
           </h3>
           <p className="text-xs text-slate-500 truncate mt-0.5">
@@ -100,8 +100,8 @@ export function Sidebar() {
           </p>
 
           {user.role === "ENGINEER" && (
-            <div className="border-t border-slate-100 mt-3 pt-3 text-left text-xs">
-              <div className="flex justify-between text-slate-600">
+            <div className="border-t border-slate-100 dark:border-slate-800 mt-3 pt-3 text-left text-xs">
+              <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Applications</span>
                 <span className="font-semibold text-[#0A66C2]">{applications.data?.length ?? 0}</span>
               </div>
@@ -125,8 +125,8 @@ export function Sidebar() {
                 href={item.href}
                 className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                   isActive
-                    ? "bg-slate-100 text-[#0A66C2] font-semibold"
-                    : "text-slate-700 hover:bg-slate-50"
+                    ? "bg-slate-100 dark:bg-slate-800 text-[#0A66C2] font-semibold"
+                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 }`}
               >
                 <div className="flex items-center gap-2.5">

@@ -69,7 +69,7 @@ function CompanyCard({ company }: { company: Company }) {
             <p className="truncate text-xs text-slate-500">
               {[company.industry, company.company_size ? `${company.company_size} employees` : undefined]
                 .filter(Boolean)
-                .join(" · ") || "Company"}
+                .join(" · ") || "Organization"}
             </p>
           </div>
         </div>
@@ -116,7 +116,7 @@ function CompanyCard({ company }: { company: Company }) {
             </Badge>
           )}
           <span className="flex items-center gap-1 text-xs font-semibold text-[#0A66C2] opacity-0 transition-opacity group-hover:opacity-100 ml-auto">
-            View company <ArrowRight className="h-3 w-3" />
+            View organization <ArrowRight className="h-3 w-3" />
           </span>
         </div>
       </div>
@@ -193,9 +193,9 @@ export default function CompaniesDiscoveryPage() {
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       {/* Header */}
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-slate-900">Discover Companies</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Discover Organizations</h1>
         <p className="text-sm text-slate-500">
-          Explore remote-first companies and startups actively hiring remote engineers.
+          Explore remote-first organizations and startups actively hiring remote professionals.
         </p>
       </div>
 
@@ -206,7 +206,7 @@ export default function CompaniesDiscoveryPage() {
           <input
             id="company-search-input"
             type="text"
-            placeholder="Search by company name, industry, or description…"
+            placeholder="Search by organization name, industry, or description…"
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="min-w-0 flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
@@ -241,7 +241,7 @@ export default function CompaniesDiscoveryPage() {
                 </select>
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-600">Company size</span>
+                <span className="mb-1.5 block text-xs font-semibold text-slate-600">Organization size</span>
                 <select
                   id="filter-size"
                   value={size}
@@ -261,7 +261,7 @@ export default function CompaniesDiscoveryPage() {
                   onChange={(e) => setVerifiedOnly(e.target.checked)}
                   className="h-4 w-4 rounded border-slate-300 accent-[#0A66C2]"
                 />
-                <span className="text-xs font-medium text-slate-700">Verified companies only</span>
+                <span className="text-xs font-medium text-slate-700">Verified organizations only</span>
               </label>
             </div>
           </div>
@@ -276,13 +276,13 @@ export default function CompaniesDiscoveryPage() {
           </div>
         ) : companies.length === 0 ? (
           <div className="card-enterprise">
-            <EmptyState icon={Building2} title="No companies found" description="Try broadening your search or filters." />
+            <EmptyState icon={Building2} title="No organizations found" description="Try broadening your search or filters." />
           </div>
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
               <p className="text-xs text-slate-500">
-                {companies.length} compan{companies.length !== 1 ? "ies" : "y"} found
+                {companies.length} organization{companies.length !== 1 ? "s" : ""} found
               </p>
               {verifiedOnly && (
                 <Badge tone="brand"><ShieldCheck className="h-3 w-3" /> Verified only</Badge>
@@ -299,7 +299,7 @@ export default function CompaniesDiscoveryPage() {
 
       {isLoading && (
         <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading companies…
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading organizations…
         </div>
       )}
     </div>

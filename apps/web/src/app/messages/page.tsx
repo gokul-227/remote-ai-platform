@@ -60,7 +60,7 @@ function NewConversationModal({
         Enter the recipient&apos;s <strong>user ID</strong> to start a conversation.
       </p>
       <p className="text-xs text-[var(--text-light)] mb-4">
-        Tip: You can find someone&apos;s ID from their engineer or company profile page URL.
+        Tip: You can find someone&apos;s ID from their professional or organization profile page URL.
       </p>
       <input
         autoFocus

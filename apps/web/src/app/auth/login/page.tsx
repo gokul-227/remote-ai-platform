@@ -20,7 +20,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 const VALUE_POINTS = [
   { icon: Sparkles, text: "Explainable AI matching — see exactly why a role fits you." },
-  { icon: Network, text: "A professional network built for remote engineers." },
+  { icon: Network, text: "A professional network built for remote professionals." },
   { icon: ShieldCheck, text: "Verified profiles and trust signals on both sides of the hire." },
 ];
 
@@ -78,9 +78,9 @@ export default function LoginPage() {
           <div>
             <Link href="/" className="inline-flex items-center gap-2 font-black text-2xl tracking-tight text-white">
               <div className="h-9 w-9 rounded-xl bg-[#0A66C2] flex items-center justify-center text-white font-black text-xl shadow-xs">
-                W
+                R
               </div>
-              Work<span className="text-blue-400">Mesh</span>
+              Remote <span className="text-blue-400">AI Platform</span>
             </Link>
             <h2 className="text-2xl font-bold mt-10 leading-snug text-white">
               The professional network for remote engineering work.
@@ -94,7 +94,7 @@ export default function LoginPage() {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-white/40">© 2026 WorkMesh Inc. All rights reserved.</p>
+          <p className="text-xs text-white/40">© 2026 Remote AI Platform. All rights reserved.</p>
         </div>
 
         {/* Right: form */}
@@ -102,9 +102,9 @@ export default function LoginPage() {
           <div className="lg:hidden text-center">
             <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
               <div className="h-8 w-8 rounded-lg bg-[#0A66C2] flex items-center justify-center text-white font-black text-lg">
-                W
+                R
               </div>
-              Work<span className="text-[#0A66C2]">Mesh</span>
+              Remote <span className="text-[#0A66C2]">AI Platform</span>
             </Link>
           </div>
           <div>

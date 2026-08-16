@@ -50,7 +50,7 @@ export function JobCard({
       )}
     >
       <Avatar
-        name={job.company_name || "Company"}
+        name={job.company_name || "Organization"}
         src={job.company_logo}
         size={compact ? "sm" : "md"}
         className="rounded-xl ring-1 ring-[var(--border-color)] shrink-0"

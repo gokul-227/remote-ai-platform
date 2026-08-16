@@ -65,7 +65,7 @@ function CreateProfileForm() {
       </div>
 
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Create your engineer profile</h1>
+        <h1 className="text-xl font-bold text-slate-900">Create your professional profile</h1>
         <p className="mt-1 text-sm text-slate-600">Or enter your professional details manually below.</p>
       </div>
 
@@ -170,9 +170,9 @@ function EngineerProfileContent() {
 
   if (loading) return <ProfileHeaderSkeleton />;
   if (!viewingOther && user && profileQuery.error) return <CreateProfileForm />;
-  if ((!viewingOther && !user) || !profile) return <div className="card-enterprise mx-auto max-w-2xl p-8 text-center"><User className="mx-auto mb-3 h-8 w-8 text-slate-400" /><h1 className="text-xl font-bold text-slate-900">Engineer profile</h1><p className="mt-2 text-sm text-slate-600">{error || (viewingOther ? "This profile could not be found." : "Sign in to view your profile.")}</p></div>;
+  if ((!viewingOther && !user) || !profile) return <div className="card-enterprise mx-auto max-w-2xl p-8 text-center"><User className="mx-auto mb-3 h-8 w-8 text-slate-400" /><h1 className="text-xl font-bold text-slate-900">Professional profile</h1><p className="mt-2 text-sm text-slate-600">{error || (viewingOther ? "This profile could not be found." : "Sign in to view your profile.")}</p></div>;
 
-  const displayName = viewingOther ? (profile.headline || "Engineer profile") : (user!.full_name || user!.email);
+  const displayName = viewingOther ? (profile.headline || "Professional profile") : (user!.full_name || user!.email);
   const profileScore = computeProfileScore(profile);
   const items = completionItems(profile);
   const remainingItems = items.filter((it) => !it.done);
@@ -223,7 +223,7 @@ function EngineerProfileContent() {
                   <h1 className="text-2xl font-bold text-slate-900">{displayName}</h1>
                   {profile.is_open_to_work && <Badge tone="success">Open to work</Badge>}
                 </div>
-                <p className="text-sm text-slate-600 mt-0.5">{profile.headline || profile.primary_role || "Engineer"} · {profile.remote_preference || "Remote"}</p>
+                <p className="text-sm text-slate-600 mt-0.5">{profile.headline || profile.primary_role || "Professional"} · {profile.remote_preference || "Remote"}</p>
               </div>
             </div>
             {!viewingOther && (
@@ -274,9 +274,7 @@ function EngineerProfileContent() {
             {profile.skills.length ? (
               <div className="flex flex-wrap gap-2">
                 {profile.skills.map((skill) => (
-                  <span key={skill} className="text-xs font-medium bg-[var(--bg-subtle)] border border-[var(--border-color)] text-slate-700 rounded-md px-2.5 py-1 hover:border-[var(--color-brand)] hover:text-[var(--color-brand)] hover:bg-[var(--color-brand-light)] transition-colors cursor-default">
-                    {skill}
-                  </span>
+                  <Badge key={skill} tone="neutral">{skill}</Badge>
                 ))}
               </div>
             ) : (
@@ -287,7 +285,7 @@ function EngineerProfileContent() {
                 <p className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1"><Target className="h-3 w-3" />AI Keywords</p>
                 <div className="flex flex-wrap gap-1.5">
                   {profile.matching_keywords.slice(0, 8).map((kw) => (
-                    <span key={kw} className="text-[10px] font-medium text-[var(--color-ai)] bg-[var(--color-ai-soft)] border border-[var(--color-ai)]/20 rounded px-1.5 py-0.5">{kw}</span>
+                    <Badge key={kw} tone="brand">{kw}</Badge>
                   ))}
                 </div>
               </div>
@@ -308,7 +306,7 @@ function EngineerProfileContent() {
                     {item.technologies && item.technologies.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         {item.technologies.map((tech) => (
-                          <span key={tech} className="text-[10px] font-medium bg-slate-100 text-slate-600 rounded px-1.5 py-0.5">{tech}</span>
+                          <Badge key={tech} tone="neutral">{tech}</Badge>
                         ))}
                       </div>
                     )}

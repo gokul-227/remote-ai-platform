@@ -116,7 +116,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   }
 
   const sourceMeta = SOURCE_LABELS[job.source?.toLowerCase()] ?? {
-    label: `${job.source || "WorkMesh"} Direct`,
+    label: `${job.source || "Remote AI Platform"} Direct`,
     tone: "bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300",
   };
 
@@ -279,7 +279,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <AIMatchPanel
               match={matchQuery.data}
               loading={matchQuery.isLoading}
-              emptyHint="Complete your engineer profile to unlock explainable compatibility scoring for this position."
+              emptyHint="Complete your professional profile to unlock explainable compatibility scoring for this position."
             />
           ) : !user ? (
             <div className="card-enterprise p-5 text-center space-y-3">
@@ -287,7 +287,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 <Sparkles className="h-3.5 w-3.5 text-[#7F56D9]" /> Explainable AI Scoring
               </span>
               <p className="text-xs text-slate-500">
-                Sign in with an engineer profile to view your algorithmic compatibility score and skill gap breakdown.
+                Sign in with a professional profile to view your algorithmic compatibility score and skill gap breakdown.
               </p>
               <Link href="/auth/login">
                 <Button size="sm" variant="secondary" fullWidth>
@@ -303,7 +303,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <Building2 className="h-3.5 w-3.5 text-[#0A66C2]" /> About {job.company_name}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Verified remote employer hiring engineers through WorkMesh.
+              Verified remote employer hiring professionals through Remote AI Platform.
             </p>
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
               <span className="text-slate-500">Source</span>

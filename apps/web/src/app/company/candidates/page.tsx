@@ -279,7 +279,7 @@ function CompanyCandidatesPageContent() {
             <EmptyState
               icon={Users}
               title="No matching candidates"
-              description="No public freelancer profiles match your filters. Try widening your search."
+              description="No public professional profiles match your filters. Try widening your search."
             />
           </div>
         ) : (
@@ -294,7 +294,7 @@ function CompanyCandidatesPageContent() {
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <Avatar name={person.headline || person.primary_role || "Engineer"} size="lg" />
+                        <Avatar name={person.headline || person.primary_role || "Professional"} size="lg" />
                         <div>
                           <Link
                             href={`/engineers/${person.id}`}

@@ -96,7 +96,7 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-sm font-bold text-slate-900 group-hover:text-[#0A66C2] transition-colors">
-              {engineer.headline || engineer.primary_role || "Engineer"}
+              {engineer.headline || engineer.primary_role || "Professional"}
             </h2>
             <p className="truncate text-xs text-slate-500 mt-0.5">{engineer.primary_role || "Software Engineer"}</p>
           </div>
@@ -245,14 +245,14 @@ export default function EngineersDiscoveryPage() {
                 ● Live
               </span>
             </div>
-            <h1 className="text-3xl font-black tracking-tight">Discover Engineers</h1>
+            <h1 className="text-3xl font-black tracking-tight">Discover Professionals</h1>
             <p className="mt-2 text-sm text-blue-100/80 max-w-md">
-              Browse verified remote engineers with structured profiles, AI-matched skills, and real availability signals.
+              Browse verified remote professionals with structured profiles, AI-matched skills, and real availability signals.
             </p>
           </div>
           <div className="flex flex-wrap gap-4 shrink-0">
             {[
-              { label: "Verified Engineers", value: "2,400+" },
+              { label: "Verified Professionals", value: "2,400+" },
               { label: "Open to Work", value: "38%" },
               { label: "Avg Response", value: "< 48h" },
             ].map(({ label, value }) => (
@@ -343,13 +343,13 @@ export default function EngineersDiscoveryPage() {
           </div>
         ) : engineers.length === 0 ? (
           <div className="card-enterprise">
-            <EmptyState icon={User} title="No engineers found" description="Try broadening your search filters." />
+            <EmptyState icon={User} title="No professionals found" description="Try broadening your search filters." />
           </div>
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
               <p className="text-xs text-slate-500">
-                {engineers.length} engineer{engineers.length !== 1 ? "s" : ""} found
+                {engineers.length} professional{engineers.length !== 1 ? "s" : ""} found
               </p>
               {openOnly && (
                 <Badge tone="success"><Sparkles className="h-3 w-3" /> Open to work</Badge>
@@ -366,7 +366,7 @@ export default function EngineersDiscoveryPage() {
 
       {isLoading && (
         <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading engineers…
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading professionals…
         </div>
       )}
     </div>

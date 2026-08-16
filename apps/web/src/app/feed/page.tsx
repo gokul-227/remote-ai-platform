@@ -52,9 +52,9 @@ const TRENDING_SKILLS = [
 ];
 
 const SUGGESTED_COMPANIES = [
-  { name: "Linear", role: "Senior Engineers", count: 4 },
+  { name: "Linear", role: "Senior Professionals", count: 4 },
   { name: "Vercel", role: "Full Stack Devs", count: 7 },
-  { name: "Stripe", role: "Backend Engineers", count: 3 },
+  { name: "Stripe", role: "Backend Professionals", count: 3 },
 ];
 
 function timeAgo(dateStr: string) {
@@ -502,7 +502,7 @@ function ProfileWidget({ user }: { user: { full_name?: string; email?: string; r
           <Avatar name={user?.full_name || "You"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />
         </div>
         <p className="text-sm font-semibold text-[var(--text-main)]">{user?.full_name}</p>
-        <p className="text-xs text-[var(--text-muted)] capitalize mt-0.5">{user?.role?.toLowerCase()} · WorkMesh</p>
+        <p className="text-xs text-[var(--text-muted)] capitalize mt-0.5">{user?.role?.toLowerCase()} · Remote AI Platform</p>
         <div className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-2">
           <Link href="/network" className="flex items-center justify-between text-xs text-[var(--text-muted)] hover:text-[var(--color-brand)] transition-colors group">
             <span>My Network</span>
@@ -549,7 +549,7 @@ function HiringWidget() {
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] p-4 space-y-3">
       <div className="flex items-center gap-1.5">
         <Building2 className="h-4 w-4 text-[var(--color-brand)]" />
-        <h3 className="text-sm font-semibold text-[var(--text-main)]">Companies Hiring</h3>
+        <h3 className="text-sm font-semibold text-[var(--text-main)]">Organizations Hiring</h3>
       </div>
       <div className="space-y-2.5">
         {SUGGESTED_COMPANIES.map((c) => (
@@ -628,6 +628,7 @@ function SocialFeedContent() {
 
       {/* Main feed */}
       <div className="lg:col-span-6 space-y-4">
+        <h1 className="sr-only">Social Feed</h1>
         {/* Post composer */}
         {user && (
           <PostComposer user={user} onSubmit={handlePostSubmit} isPending={createPost.isPending} />
@@ -674,7 +675,7 @@ function SocialFeedContent() {
             <EmptyState
               icon={Sparkles}
               title={filterTab === "all" ? "Your feed is empty" : `No ${filterTab} posts`}
-              description="Share your first update above or connect with engineers and companies to see posts here."
+              description="Share your first update above or connect with professionals and organizations to see posts here."
               actionLabel="Discover people"
               actionHref="/network"
             />
