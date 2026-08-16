@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { RequireAuth } from "@/components/RequireAuth";
+import { Sidebar } from "@/components/Sidebar";
+import { RightSidebar } from "@/components/RightSidebar";
 
 const STATUS_TONE: Record<string, StatusTone> = {
   RELEASED: "success",
@@ -43,21 +45,26 @@ function PaymentsWalletContent() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            Wallet & Payments <Wallet className="h-5 w-5 text-[#0A66C2]" />
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Balances, escrow holdings, milestone settlements, and transaction history.
-          </p>
-        </div>
-        {(user?.role === "COMPANY" || user?.role === "ADMIN") && (
-          <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowFundModal(true)}>Fund Escrow</Button>
-        )}
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 py-6">
+      <div className="lg:col-span-3 space-y-4">
+        <Sidebar />
       </div>
+
+      <div className="lg:col-span-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              Wallet & Payments <Wallet className="h-5 w-5 text-[#0A66C2]" />
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Balances, escrow holdings, milestone settlements, and transaction history.
+            </p>
+          </div>
+          {(user?.role === "COMPANY" || user?.role === "ADMIN") && (
+            <Button icon={<Plus className="h-4 w-4" />} onClick={() => setShowFundModal(true)}>Fund Escrow</Button>
+          )}
+        </div>
 
       {/* Balance Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -148,6 +155,11 @@ function PaymentsWalletContent() {
         ) : (
           <EmptyState icon={Wallet} title="No transaction records" description="Escrow funding and milestone releases will be logged in this ledger." />
         )}
+      </div>
+    </div>
+
+      <div className="lg:col-span-3 space-y-4">
+        <RightSidebar />
       </div>
 
       <Modal open={showFundModal} onClose={() => setShowFundModal(false)} title="Fund Escrow Payment">
