@@ -117,14 +117,18 @@ ef03f1a fix(security): add distributed tiered rate limiter with sliding window
 
 - **Render Backend Deployment**: **BLOCKED (Requires Manual Dashboard Action)**.
   - **Previous Live Commit on Render**: `da00fea`
-  - **Target Commit on GitHub `main`**: `440db6a`
-  - **Status Statement**: `BLOCKED: Render deployment requires the user to manually deploy commit 440db6a from the Render dashboard or provide an authorized deployment mechanism.`
+  - **Target Commit on GitHub `main`**: `dc801b6`
+  - **Render Service ID**: `srv-d9uea4nlk1mc73elkm10` (`remote-ai-platform-api`)
+  - **Status Statement**: `BLOCKED: Render deployment requires the user to manually deploy commit dc801b6 from the Render dashboard or provide an authorized deployment mechanism.`
   - **Exact Manual Action Required**:
     1. Log in to [dashboard.render.com](https://dashboard.render.com/).
-    2. Navigate to web service `remote-ai-platform-api`.
-    3. Click **Manual Deploy** → **Deploy latest commit** (commit `440db6a`).
+    2. Navigate to web service `remote-ai-platform-api` (`srv-d9uea4nlk1mc73elkm10`).
+    3. Click **Manual Deploy** → **Deploy latest commit** (commit `dc801b6`).
     4. Render will pull the new Docker configuration, execute migrations `023` → `026`, and activate the newly configured `/health/ready` check.
-  - **CLI Alternative**: Run `render login` in your terminal, then execute `render deploys create srv-cu... --commit 440db6a`.
+  - **CLI Alternative**: Run `render login` in your terminal, then execute:
+    ```bash
+    render deploys create srv-d9uea4nlk1mc73elkm10 --commit dc801b6
+    ```
 
 - **Redis / Celery Architecture**: **VERIFIED (Honest Degraded Status)**. The $0 Render blueprint intentionally avoids a dedicated Celery/Redis node. Scheduled sync runs via GitHub Actions cron hitting `POST /api/v1/jobs/sync`. Rate limiting and WebSocket push gracefully use in-process structures when Redis is absent.
 - **Payment Rails**: **VERIFIED (Sandbox Status)**. Escrow transactions are executed through `SandboxPaymentProvider` with database-enforced idempotency.
@@ -136,7 +140,7 @@ ef03f1a fix(security): add distributed tiered rate limiter with sliding window
 In the event of an operational anomaly on Render or Vercel:
 1. **Git Rollback**: Revert to `da00fea` on `main`:
    ```bash
-   git revert 440db6a..586d40a
+   git revert dc801b6..586d40a
    git push origin main
    ```
 2. **Database Migration Rollback**:
