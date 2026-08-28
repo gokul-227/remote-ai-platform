@@ -60,10 +60,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         from app.core.rate_limiter import check_rate_limit
 
-        client_host = request.client.host if request.client else "unknown"
-        # Combine client IP with user-agent for fine-grained client identity
+        client_ip = (
+            request.headers.get("cf-connecting-ip")
+            or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+            or (request.client.host if request.client else "unknown")
+        )
         user_agent = request.headers.get("user-agent", "")
-        identifier = f"{client_host}_{hash(user_agent) % 100000}"
+        identifier = f"{client_ip}_{hash(user_agent) % 100000}"
 
         is_allowed, remaining, retry_after = await check_rate_limit(
             identifier=identifier,

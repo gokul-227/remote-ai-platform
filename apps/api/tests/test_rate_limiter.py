@@ -1,36 +1,31 @@
-"""
-Tests for Tiered Rate Limiting and Throttling.
-"""
-
 import pytest
+import uuid
 from httpx import AsyncClient
-from app.core.rate_limiter import check_rate_limit, TIER_AUTH
+from app.core.rate_limiter import check_rate_limit, get_route_tier
 
 
 @pytest.mark.asyncio
-async def test_rate_limiter_allows_and_throttles():
-    import app.core.rate_limiter as rl
-    rl._TESTING = False
-    rl.reset_fallback_state()
-    try:
-        identifier = "test_rate_client_ip_999"
-        path = "/api/v1/auth/login"
-        limit, window = TIER_AUTH
+async def test_rate_limiter_allows_and_throttles(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "RATE_LIMIT_MAX_REQUESTS", 5)
+    identifier = f"test_rate_{uuid.uuid4().hex}"
+    path = "/api/v1/auth/login"
+    tier = get_route_tier(path)
+    assert tier is not None
+    limit, window = tier
+    assert limit == 5
 
-        # First N calls within limit should succeed
-        for _ in range(limit):
-            allowed, remaining, retry_after = await check_rate_limit(identifier, path)
-            assert allowed is True
-            assert retry_after == 0
+    # First N calls within limit should succeed
+    for _ in range(limit):
+        allowed, remaining, retry_after = await check_rate_limit(identifier, path)
+        assert allowed is True
+        assert retry_after == 0
 
-        # Call N + 1 should be throttled
-        throttled, remaining, retry_after = await check_rate_limit(identifier, path)
-        assert throttled is False
-        assert remaining == 0
-        assert retry_after > 0
-    finally:
-        rl._TESTING = True
-        rl.reset_fallback_state()
+    # Call N + 1 should be throttled
+    throttled, remaining, retry_after = await check_rate_limit(identifier, path)
+    assert throttled is False
+    assert remaining == 0
+    assert retry_after > 0
 
 
 @pytest.mark.asyncio

@@ -19,10 +19,6 @@ TIER_GENERAL = (120, 60)
 # In-memory fallback state
 _fallback_windows: dict[str, deque[float]] = defaultdict(deque)
 
-# Set to True in test environments to bypass all rate limiting.
-# Never set this in production code — only in conftest.py fixtures.
-_TESTING: bool = False
-
 
 def reset_fallback_state() -> None:
     """Clear in-memory rate-limit counters. Call between tests to prevent state bleed."""
@@ -34,13 +30,16 @@ def get_route_tier(path: str) -> Optional[Tuple[int, int]]:
     if path in {"/health", "/health/live", "/health/ready", "/health/dependencies", "/api/v1/health", "/metrics", "/docs", "/redoc", "/openapi.json"}:
         return None
 
+    base_limit = settings.RATE_LIMIT_MAX_REQUESTS
+    window = settings.RATE_LIMIT_WINDOW_SECONDS
+
     if any(path.startswith(p) for p in ("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password")):
-        return TIER_AUTH
+        return (base_limit, window)
 
     if any(path.startswith(p) for p in ("/api/v1/quality", "/api/v1/matching", "/quality")):
-        return TIER_AI
+        return (base_limit * 3, window)
 
-    return TIER_GENERAL
+    return (base_limit * 10, window)
 
 
 async def check_rate_limit(
@@ -51,10 +50,6 @@ async def check_rate_limit(
     Check rate limit for client identifier on path.
     Returns: (is_allowed, remaining_requests, retry_after_seconds)
     """
-    # Bypass all limiting in test environments
-    if _TESTING:
-        return True, 9999, 0
-
     tier = get_route_tier(path)
     if tier is None:
         return True, 9999, 0

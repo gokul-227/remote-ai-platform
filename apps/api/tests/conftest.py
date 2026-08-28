@@ -66,17 +66,18 @@ app.dependency_overrides[get_db] = override_get_db
 
 
 @pytest.fixture(autouse=True)
-def disable_rate_limiting():
+def isolate_rate_limiting():
     """
-    Disable in-process rate limiting for all tests.
-    Prevents shared _fallback_windows state from causing 429 responses
-    when the same auth endpoint is called multiple times across tests.
+    Isolate rate limiter state between tests.
+    Sets high limit for general test suite and clears in-memory sliding windows.
     """
+    from app.core.config import settings
     import app.core.rate_limiter as rl
-    rl._TESTING = True
+    orig_limit = settings.RATE_LIMIT_MAX_REQUESTS
+    settings.RATE_LIMIT_MAX_REQUESTS = 1000
     rl.reset_fallback_state()
     yield
-    rl._TESTING = False
+    settings.RATE_LIMIT_MAX_REQUESTS = orig_limit
     rl.reset_fallback_state()
 
 
