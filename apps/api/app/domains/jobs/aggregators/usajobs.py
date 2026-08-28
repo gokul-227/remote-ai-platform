@@ -41,8 +41,8 @@ class USAJobsAggregator(BaseAggregator):
                     if not item or not item.get("PositionTitle"):
                         continue
 
-                    title = item.get("PositionTitle", "")
-                    company = item.get("OrganizationName", "US Federal Government")
+                    title = self.clean_text(item.get("PositionTitle", ""))
+                    company = self.clean_text(item.get("OrganizationName", "US Federal Government"))
                     ext_id = f"usajobs_{item.get('PositionID')}"
                     
                     user_area = item.get("UserArea", {}).get("Details", {})

@@ -79,12 +79,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.warning("Alembic migration skipped", error=str(e))
 
-    # Auto-seed demo data on first startup
-    try:
-        from app.scripts.seed_data import seed_demo_data
-        await seed_demo_data()
-    except Exception as e:
-        logger.warning("Seed data skipped", error=str(e))
+    # Auto-seed demo data only in development or if explicitly requested via configuration
+    if settings.is_development or settings.SEED_DEMO_DATA:
+        try:
+            from app.scripts.seed_data import seed_demo_data
+            await seed_demo_data()
+        except Exception as e:
+            logger.warning("Seed data skipped", error=str(e))
 
     yield
 
@@ -128,14 +129,16 @@ def create_app() -> FastAPI:
         should_ignore_untemplated=True,
         should_respect_env_var=True,
         should_instrument_requests_inprogress=True,
-        excluded_handlers=["/metrics", "/api/v1/health"],
+        excluded_handlers=["/metrics", "/api/v1/health", "/health/live", "/health/ready"],
         inprogress_name="remote_ai_platform_inprogress_requests",
         inprogress_labels=True,
     ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
-    # ── API Routers ────────────────────────────────────────────────────────────
-    prefix = "/api/v1"
+    # ── Root & API Routers ─────────────────────────────────────────────────────
+    # Register health router at root for standard cloud load balancers (/health/live, /health/ready)
+    app.include_router(health_router)
 
+    prefix = "/api/v1"
     app.include_router(health_router, prefix=prefix)
     app.include_router(auth_router, prefix=prefix)
     app.include_router(engineers_router, prefix=prefix)

@@ -32,15 +32,17 @@ class TheMuseAggregator(BaseAggregator):
                     if not isinstance(item, dict) or not item.get("name"):
                         continue
 
-                    title = item.get("name", "")
+                    title = self.clean_text(item.get("name", ""))
                     company_dict = item.get("company", {})
-                    company = company_dict.get("name", "Unknown Company") if isinstance(company_dict, dict) else "Unknown Company"
+                    raw_company = company_dict.get("name", "Unknown Company") if isinstance(company_dict, dict) else "Unknown Company"
+                    company = self.clean_text(raw_company)
                     job_id = item.get("id")
                     ext_id = f"themuse_{job_id}"
                     description = self.clean_text(item.get("contents", title))
                     
                     locations = item.get("locations", [])
-                    loc_str = locations[0].get("name") if locations and isinstance(locations[0], dict) else "Remote"
+                    raw_loc = locations[0].get("name") if locations and isinstance(locations[0], dict) else "Remote"
+                    loc_str = self.clean_text(raw_loc)
 
                     skills = self.extract_skills(f"{title} {description}")
 

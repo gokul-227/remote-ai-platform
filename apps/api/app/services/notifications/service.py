@@ -1,4 +1,4 @@
-"""Provider-independent notification delivery boundaries."""
+"""Provider-independent notification delivery — persists to DB and pushes via WebSocket."""
 
 from typing import Protocol
 from uuid import UUID
@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.notifications.models import Notification
+from app.core.ws_manager import ws_manager
 
 
 class NotificationProvider(Protocol):
@@ -17,7 +18,20 @@ class InAppNotificationProvider:
         self.db = db
 
     async def send(self, user_id: UUID, title: str, body: str, kind: str) -> None:
-        self.db.add(Notification(user_id=user_id, title=title, body=body, kind=kind))
+        notification = Notification(user_id=user_id, title=title, body=body, kind=kind)
+        self.db.add(notification)
+        await self.db.flush()
+
+        # Push real-time over WebSocket to any active connections
+        payload = {
+            "type": "notification",
+            "id": str(notification.id),
+            "title": title,
+            "body": body,
+            "kind": kind,
+            "is_read": False,
+        }
+        await ws_manager.send_to_user(user_id, payload)
 
 
 class EmailNotificationProvider:

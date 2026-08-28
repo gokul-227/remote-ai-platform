@@ -31,8 +31,8 @@ class ArbeitnowAggregator(BaseAggregator):
                     if not isinstance(item, dict) or not item.get("title"):
                         continue
 
-                    title = item.get("title", "")
-                    company = item.get("company_name", "Unknown Company")
+                    title = self.clean_text(item.get("title", ""))
+                    company = self.clean_text(item.get("company_name", "Unknown Company"))
                     slug = item.get("slug", "")
                     ext_id = f"arbeitnow_{slug}"
                     description = self.clean_text(item.get("description", title))
@@ -43,7 +43,7 @@ class ArbeitnowAggregator(BaseAggregator):
                         title=title,
                         description=description or title,
                         company_name=company,
-                        location=item.get("location") or "Remote",
+                        location=self.clean_text(item.get("location") or "Remote"),
                         is_remote=item.get("remote", True),
                         job_type="full-time",
                         experience_level="mid",

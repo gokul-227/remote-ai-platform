@@ -32,8 +32,8 @@ class RemotiveAggregator(BaseAggregator):
                     if not isinstance(item, dict) or not item.get("title"):
                         continue
 
-                    title = item.get("title", "")
-                    company = item.get("company_name", "Unknown Company")
+                    title = self.clean_text(item.get("title", ""))
+                    company = self.clean_text(item.get("company_name", "Unknown Company"))
                     job_id = item.get("id")
                     ext_id = f"remotive_{job_id}"
                     description = self.clean_text(item.get("description", title))
@@ -45,7 +45,7 @@ class RemotiveAggregator(BaseAggregator):
                         description=description or title,
                         company_name=company,
                         company_logo=item.get("company_logo"),
-                        location=item.get("candidate_required_location") or "Worldwide Remote",
+                        location=self.clean_text(item.get("candidate_required_location") or "Worldwide Remote"),
                         is_remote=True,
                         job_type=item.get("job_type", "full-time").lower(),
                         experience_level="mid",

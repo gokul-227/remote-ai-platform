@@ -33,8 +33,8 @@ class RemoteOKAggregator(BaseAggregator):
                     if not isinstance(item, dict) or not item.get("position"):
                         continue
 
-                    title = item.get("position", "")
-                    company = item.get("company", "Unknown Company")
+                    title = self.clean_text(item.get("position", ""))
+                    company = self.clean_text(item.get("company", "Unknown Company"))
                     ext_id = f"remoteok_{item.get('id', item.get('slug'))}"
                     description = self.clean_text(item.get("description", title))
                     tags = item.get("tags", [])
@@ -48,7 +48,7 @@ class RemoteOKAggregator(BaseAggregator):
                         description=description or title,
                         company_name=company,
                         company_logo=item.get("company_logo"),
-                        location=item.get("location") or "Worldwide Remote",
+                        location=self.clean_text(item.get("location") or "Worldwide Remote"),
                         is_remote=True,
                         job_type="full-time",
                         experience_level="mid",

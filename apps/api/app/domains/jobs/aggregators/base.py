@@ -1,10 +1,8 @@
-"""
-Base Abstract Aggregator interface for external job sources.
-"""
-
+import html
+import re
+import unicodedata
 from abc import ABC, abstractmethod
 from typing import List
-import re
 
 from app.domains.jobs.schemas import JobPostCreate
 
@@ -18,11 +16,30 @@ class BaseAggregator(ABC):
         pass
 
     def clean_text(self, text: str) -> str:
-        """Strip HTML tags and normalize whitespace."""
+        """Strip HTML tags, unescape HTML entities, fix common mojibake, and normalize whitespace."""
         if not text:
             return ""
-        clean = re.sub(r"<[^>]+>", " ", text)
-        return " ".join(clean.split())
+        # 1. Unescape HTML entities (&amp; -> &, &#39; -> ', etc.)
+        unescaped = html.unescape(text)
+        # 2. Fix common UTF-8 mojibake patterns
+        mojibake_map = {
+            "â€”": "—",
+            "â€“": "–",
+            "â€™": "'",
+            "â€˜": "'",
+            "â€œ": '"',
+            "â€\x9d": '"',
+            "â€\x9c": '"',
+            "â€¢": "•",
+            "Â": "",
+        }
+        for bad, good in mojibake_map.items():
+            unescaped = unescaped.replace(bad, good)
+        # 3. Strip HTML tags
+        clean = re.sub(r"<[^>]+>", " ", unescaped)
+        # 4. Normalize unicode & whitespace
+        normalized = unicodedata.normalize("NFKC", clean)
+        return " ".join(normalized.split())
 
     def extract_skills(self, text: str) -> List[str]:
         """Simple keyword matching for tech stack extraction."""

@@ -76,11 +76,31 @@ class LLMClient:
                 logger.warning("LLM provider failed; trying fallback", model=model_name, error=str(exc))
         return "{}"
 
+    async def complete_with_metadata(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.2,
+        json_mode: bool = True,
+    ) -> Dict[str, Any]:
+        """Execute completion and return content along with usage telemetry and success status."""
+        content = await self.complete(prompt, system_prompt=system_prompt, temperature=temperature, json_mode=json_mode)
+        is_success = bool(content and content != "{}" and not self.last_error)
+        return {
+            "success": is_success,
+            "content": content,
+            "usage": self.last_usage,
+            "error": self.last_error if not is_success else None,
+            "model": self.last_usage.get("provider_model", self.model),
+        }
+
     async def complete_structured_json(
         self, prompt: str, system_prompt: str
     ) -> Dict[str, Any]:
         """Execute completion call and parse return as Python dictionary."""
         raw_text = await self.complete(prompt, system_prompt=system_prompt, json_mode=True)
+        if not raw_text or raw_text == "{}":
+            return {}
         try:
             return json.loads(raw_text)
         except json.JSONDecodeError:

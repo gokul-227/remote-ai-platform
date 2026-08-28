@@ -134,8 +134,15 @@ async def quality_dashboard(current_user: User = Depends(get_current_user)):
 @router.get("/health")
 async def quality_engine_health():
     """Check if the AI quality engine is operational."""
+    from app.agents.model_config import get_ai_model_config
+    from app.core.config import settings
+
+    config = get_ai_model_config()
+    has_credentials = bool(settings.AI_API_KEY or settings.GROQ_API_KEY or settings.OPENAI_API_KEY or settings.OLLAMA_BASE_URL)
     return {
-        "status": "operational",
+        "status": "operational" if has_credentials else "degraded_fallback_mode",
         "agent": "QualityEngineAgent",
+        "primary_model": config.primary,
+        "fallbacks": list(config.fallbacks),
         "capabilities": ["submission_evaluation", "code_review", "batch_evaluation"],
     }
