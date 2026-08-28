@@ -82,3 +82,17 @@ class DisputeResolveRequest(BaseModel):
     client_amount: Optional[float] = None
     resolution_notes: str
 
+
+class AuditEventResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    actor_id: Optional[uuid.UUID] = None
+    actor_role: Optional[str] = None
+    action: str
+    resource_type: str
+    resource_id: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    payload: Dict[str, Any]
+    created_at: datetime

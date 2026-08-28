@@ -70,3 +70,59 @@ async def test_wallet_overview_and_escrow_workflow(client: AsyncClient, test_use
     txs_res = await client.get("/api/v1/payments/transactions", headers=auth_headers)
     assert txs_res.status_code == 200
     assert len(txs_res.json()) >= 1
+
+
+@pytest.mark.asyncio
+async def test_escrow_idempotency_key(client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession):
+    test_user.role = UserRole.COMPANY
+    await db.commit()
+
+    company = CompanyProfile(user_id=test_user.id, name="Idempotency Test Corp")
+    db.add(company)
+    await db.flush()
+
+    project = Project(company_id=company.id, title="Idempotent Project", description="Desc", status="ACTIVE")
+    db.add(project)
+    await db.flush()
+
+    worker_res = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "idemp_worker@example.com",
+            "password": "Password123!",
+            "full_name": "Idemp Worker",
+            "role": "ENGINEER",
+        },
+    )
+    worker_id = worker_res.json()["user"]["id"]
+
+    idempotency_key = "unique_request_tx_12345"
+
+    # First call creates transaction
+    resp1 = await client.post(
+        f"/api/v1/payments/escrow?idempotency_key={idempotency_key}",
+        json={
+            "project_id": str(project.id),
+            "payee_id": worker_id,
+            "amount": 500.0,
+            "currency": "USD",
+        },
+        headers=auth_headers,
+    )
+    assert resp1.status_code == 201
+    tx_id_1 = resp1.json()["id"]
+
+    # Second call with same idempotency_key returns existing transaction without duplicate creation
+    resp2 = await client.post(
+        f"/api/v1/payments/escrow?idempotency_key={idempotency_key}",
+        json={
+            "project_id": str(project.id),
+            "payee_id": worker_id,
+            "amount": 500.0,
+            "currency": "USD",
+        },
+        headers=auth_headers,
+    )
+    assert resp2.status_code == 201
+    tx_id_2 = resp2.json()["id"]
+    assert tx_id_1 == tx_id_2

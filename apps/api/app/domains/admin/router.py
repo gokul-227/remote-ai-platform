@@ -18,11 +18,12 @@ from redis.asyncio import Redis
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.domains.admin.models import ActivityLog
+from app.domains.admin.models import ActivityLog, AuditEvent
 from app.domains.admin.schemas import (
     ActivityLogResponse,
     ApiSyncLogResponse,
     AIUsageStatsResponse,
+    AuditEventResponse,
     JobStatusUpdate,
     PlatformStatsResponse,
     ServiceHealthStatus,
@@ -100,6 +101,27 @@ async def list_all_users(
     repo = UserRepository(db)
     users = await repo.list_users(skip=skip, limit=limit, role=role)
     return [UserResponse.model_validate(u) for u in users]
+
+
+@router.get("/audit-events", response_model=List[AuditEventResponse])
+async def list_audit_events(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    action: Optional[str] = Query(None),
+    resource_type: Optional[str] = Query(None),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> List[AuditEventResponse]:
+    """Retrieve immutable platform audit events (Admin only)."""
+    stmt = select(AuditEvent).order_by(AuditEvent.created_at.desc())
+    if action:
+        stmt = stmt.where(AuditEvent.action == action)
+    if resource_type:
+        stmt = stmt.where(AuditEvent.resource_type == resource_type)
+    stmt = stmt.offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    events = result.scalars().all()
+    return [AuditEventResponse.model_validate(e) for e in events]
 
 
 @router.patch("/users/{user_id}/status", response_model=UserResponse)

@@ -121,9 +121,22 @@ async def list_transactions(
 async def create_escrow_payment(
     data: DirectEscrowCreate,
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
+    idempotency_key: Optional[str] = Query(None, alias="idempotency_key"),
     db: AsyncSession = Depends(get_db),
 ) -> PaymentTransactionResponse:
-    """Authorize and hold funds in escrow for a project or task."""
+    """Authorize and hold funds in escrow for a project or task with idempotency support."""
+    # Check idempotency
+    if idempotency_key:
+        existing = await db.scalar(
+            select(PaymentTransaction).where(
+                PaymentTransaction.payer_id == current_user.id,
+                PaymentTransaction.project_id == data.project_id,
+                PaymentTransaction.provider_reference.like(f"%{idempotency_key}%"),
+            )
+        )
+        if existing:
+            return await _enrich_transaction(existing, db)
+
     project = await db.get(Project, data.project_id)
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
@@ -146,6 +159,8 @@ async def create_escrow_payment(
     authorization = await provider.authorize(data.amount, data.currency.upper())
     held = await provider.hold(authorization.reference, data.amount, data.currency.upper())
 
+    provider_ref = f"{held.reference}_{idempotency_key}" if idempotency_key else held.reference
+
     payment = PaymentTransaction(
         project_id=data.project_id,
         task_id=data.task_id,
@@ -155,7 +170,7 @@ async def create_escrow_payment(
         currency=data.currency.upper(),
         status=held.status,
         provider="SANDBOX",
-        provider_reference=held.reference,
+        provider_reference=provider_ref,
     )
     db.add(payment)
     await db.flush()
