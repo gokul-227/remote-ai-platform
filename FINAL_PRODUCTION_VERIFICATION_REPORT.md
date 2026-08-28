@@ -115,12 +115,16 @@ ef03f1a fix(security): add distributed tiered rate limiter with sliding window
     - `GET https://remote-ai-platform.vercel.app/auth/reset-password` → **HTTP 200** (589ms)
     - `GET https://remote-ai-platform.vercel.app/settings` → **HTTP 200** (408ms)
 
-- **Render Backend Deployment**: **PARTIALLY VERIFIED (Code on `main`, awaiting Render Dashboard Deploy)**.
-  - **Current Live Commit on Render**: `da00fea` (Pre-transformation state)
-  - **Target Commit on GitHub `main`**: `91d00ba` (Hardened production state with 117 tests passing)
-  - **Render Action Required**:
-    - Log in to the [Render Dashboard](https://dashboard.render.com/) → Navigate to `remote-ai-platform-api` web service → Click **Manual Deploy** → **Deploy latest commit** (or trigger the Deploy Hook).
-    - Render will automatically build the Dockerfile, apply migrations (`001` → `026`), and monitor `/health/ready`.
+- **Render Backend Deployment**: **BLOCKED (Requires Manual Dashboard Action)**.
+  - **Previous Live Commit on Render**: `da00fea`
+  - **Target Commit on GitHub `main`**: `440db6a`
+  - **Status Statement**: `BLOCKED: Render deployment requires the user to manually deploy commit 440db6a from the Render dashboard or provide an authorized deployment mechanism.`
+  - **Exact Manual Action Required**:
+    1. Log in to [dashboard.render.com](https://dashboard.render.com/).
+    2. Navigate to web service `remote-ai-platform-api`.
+    3. Click **Manual Deploy** → **Deploy latest commit** (commit `440db6a`).
+    4. Render will pull the new Docker configuration, execute migrations `023` → `026`, and activate the newly configured `/health/ready` check.
+  - **CLI Alternative**: Run `render login` in your terminal, then execute `render deploys create srv-cu... --commit 440db6a`.
 
 - **Redis / Celery Architecture**: **VERIFIED (Honest Degraded Status)**. The $0 Render blueprint intentionally avoids a dedicated Celery/Redis node. Scheduled sync runs via GitHub Actions cron hitting `POST /api/v1/jobs/sync`. Rate limiting and WebSocket push gracefully use in-process structures when Redis is absent.
 - **Payment Rails**: **VERIFIED (Sandbox Status)**. Escrow transactions are executed through `SandboxPaymentProvider` with database-enforced idempotency.
@@ -132,7 +136,7 @@ ef03f1a fix(security): add distributed tiered rate limiter with sliding window
 In the event of an operational anomaly on Render or Vercel:
 1. **Git Rollback**: Revert to `da00fea` on `main`:
    ```bash
-   git revert 91d00ba..586d40a
+   git revert 440db6a..586d40a
    git push origin main
    ```
 2. **Database Migration Rollback**:
