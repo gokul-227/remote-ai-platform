@@ -116,6 +116,7 @@ class Settings(BaseSettings):
     FEATURE_AI_MATCHING: bool = True
     FEATURE_JOB_AGGREGATOR: bool = True
     FEATURE_KEYCLOAK_AUTH: bool = True
+    SEED_DEMO_DATA: bool = False
 
     # ── Pagination ────────────────────────────────────────────────────────────
     DEFAULT_PAGE_SIZE: int = 20
@@ -134,6 +135,8 @@ class Settings(BaseSettings):
         if not self.is_production:
             return
         errors = []
+        if self.SEED_DEMO_DATA:
+            errors.append("SEED_DEMO_DATA must not be enabled in production environments")
         if len(self.JWT_SECRET_KEY) < 32 or "dev_secret" in self.JWT_SECRET_KEY:
             errors.append("JWT_SECRET_KEY must be a high-entropy production secret")
         if self.KEYCLOAK_CLIENT_SECRET in {"change-me-in-production", ""}:

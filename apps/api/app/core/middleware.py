@@ -53,29 +53,30 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
-    Small in-process sliding-window limiter for sensitive endpoints.
-    A shared Redis limiter remains the production-scale follow-up.
+    Tiered distributed sliding-window rate limiter with in-memory fallback.
+    Protects Authentication, AI Services, and General API routes.
     """
 
-    def __init__(self, app):
-        super().__init__(app)
-        self._requests: dict[str, deque[float]] = defaultdict(deque)
-
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        protected_paths = {"/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/engineers/me/resume"}
-        if request.url.path in protected_paths:
-            now = time.monotonic()
-            client_host = request.client.host if request.client else "unknown"
-            key = f"{client_host}:{request.url.path}"
-            window = self._requests[key]
-            cutoff = now - settings.RATE_LIMIT_WINDOW_SECONDS
-            while window and window[0] <= cutoff:
-                window.popleft()
-            if len(window) >= settings.RATE_LIMIT_MAX_REQUESTS:
-                return JSONResponse(
-                    status_code=429,
-                    content={"detail": "Too many requests. Please try again later."},
-                    headers={"Retry-After": str(settings.RATE_LIMIT_WINDOW_SECONDS)},
-                )
-            window.append(now)
-        return await call_next(request)
+        from app.core.rate_limiter import check_rate_limit
+
+        client_host = request.client.host if request.client else "unknown"
+        # Combine client IP with user-agent for fine-grained client identity
+        user_agent = request.headers.get("user-agent", "")
+        identifier = f"{client_host}_{hash(user_agent) % 100000}"
+
+        is_allowed, remaining, retry_after = await check_rate_limit(
+            identifier=identifier,
+            path=request.url.path,
+        )
+
+        if not is_allowed:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Please slow down and try again later."},
+                headers={"Retry-After": str(retry_after or 60)},
+            )
+
+        response = await call_next(request)
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
+        return response
