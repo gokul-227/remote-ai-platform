@@ -104,18 +104,35 @@ ef03f1a fix(security): add distributed tiered rate limiter with sliding window
 
 ## 6. Infrastructure & Deployment Status
 
+- **Vercel Frontend Deployment**: **VERIFIED (LIVE IN PRODUCTION)**.
+  - **Deployment ID**: `dpl_2T3ZigDFixFwcXw62fNResDFWko3`
+  - **Production Alias**: `https://remote-ai-platform.vercel.app`
+  - **Live Probe Verification**:
+    - `GET https://remote-ai-platform.vercel.app/` → **HTTP 200** (838ms)
+    - `GET https://remote-ai-platform.vercel.app/jobs` → **HTTP 200** (639ms)
+    - `GET https://remote-ai-platform.vercel.app/auth/login` → **HTTP 200** (615ms)
+    - `GET https://remote-ai-platform.vercel.app/auth/forgot-password` → **HTTP 200** (574ms)
+    - `GET https://remote-ai-platform.vercel.app/auth/reset-password` → **HTTP 200** (589ms)
+    - `GET https://remote-ai-platform.vercel.app/settings` → **HTTP 200** (408ms)
+
+- **Render Backend Deployment**: **PARTIALLY VERIFIED (Code on `main`, awaiting Render Dashboard Deploy)**.
+  - **Current Live Commit on Render**: `da00fea` (Pre-transformation state)
+  - **Target Commit on GitHub `main`**: `91d00ba` (Hardened production state with 117 tests passing)
+  - **Render Action Required**:
+    - Log in to the [Render Dashboard](https://dashboard.render.com/) → Navigate to `remote-ai-platform-api` web service → Click **Manual Deploy** → **Deploy latest commit** (or trigger the Deploy Hook).
+    - Render will automatically build the Dockerfile, apply migrations (`001` → `026`), and monitor `/health/ready`.
+
 - **Redis / Celery Architecture**: **VERIFIED (Honest Degraded Status)**. The $0 Render blueprint intentionally avoids a dedicated Celery/Redis node. Scheduled sync runs via GitHub Actions cron hitting `POST /api/v1/jobs/sync`. Rate limiting and WebSocket push gracefully use in-process structures when Redis is absent.
 - **Payment Rails**: **VERIFIED (Sandbox Status)**. Escrow transactions are executed through `SandboxPaymentProvider` with database-enforced idempotency.
-- **Live Deployment Sync**: **BLOCKED (Async CI Trigger)**. Commits are on GitHub `main`. Render and Vercel will complete automatic image build and deployment within standard deployment windows.
 
 ---
 
 ## 7. Operational Rollback Procedure
 
 In the event of an operational anomaly on Render or Vercel:
-1. **Git Rollback**: Revert `cfa5c79` on `main`:
+1. **Git Rollback**: Revert to `da00fea` on `main`:
    ```bash
-   git revert cfa5c79..586d40a
+   git revert 91d00ba..586d40a
    git push origin main
    ```
 2. **Database Migration Rollback**:
