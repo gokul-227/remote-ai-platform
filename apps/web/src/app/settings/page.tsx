@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   User, Lock, Bell, Eye, LogOut, Mail, Settings, Briefcase,
   Building2, CreditCard, Smartphone, Globe,
-  CheckCircle2, AlertCircle, Key, Fingerprint, Sliders, ShieldCheck,
+  CheckCircle2, AlertCircle, Key, Sliders, ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";

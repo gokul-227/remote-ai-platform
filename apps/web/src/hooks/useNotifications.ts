@@ -59,6 +59,8 @@ export function useNotifications(userIdOrEnabled?: string | boolean | null, enab
     },
   });
 
+  const connectWsRef = useRef<() => void>(() => {});
+
   // ── WebSocket real-time push ───────────────────────────────────────────────
   const connectWs = useCallback(() => {
     if (!userId || !isEnabled) return;
@@ -93,10 +95,16 @@ export function useNotifications(userIdOrEnabled?: string | boolean | null, enab
       wsRef.current = null;
       // Reconnect after 5s unless component is unmounted
       if (isEnabled && userId) {
-        setTimeout(connectWs, 5_000);
+        setTimeout(() => {
+          connectWsRef.current();
+        }, 5_000);
       }
     };
   }, [userId, isEnabled, client]);
+
+  useEffect(() => {
+    connectWsRef.current = connectWs;
+  }, [connectWs]);
 
   useEffect(() => {
     if (!userId || !isEnabled) return;
