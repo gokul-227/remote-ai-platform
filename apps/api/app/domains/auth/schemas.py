@@ -50,6 +50,7 @@ class TokenPayload(BaseModel):
     realm_access: Optional[dict] = None
     resource_access: Optional[dict] = None
     roles: List[str] = []
+    v: Optional[int] = None
     exp: Optional[int] = None
     iat: Optional[int] = None
 
@@ -98,3 +99,22 @@ class LoginUrlResponse(BaseModel):
 
 class LogoutUrlResponse(BaseModel):
     logout_url: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+    reset_token: Optional[str] = None  # Returned in dev/test for immediate automation
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=16)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=128)

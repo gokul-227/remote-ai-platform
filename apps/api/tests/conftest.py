@@ -65,6 +65,21 @@ async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
 app.dependency_overrides[get_db] = override_get_db
 
 
+@pytest.fixture(autouse=True)
+def disable_rate_limiting():
+    """
+    Disable in-process rate limiting for all tests.
+    Prevents shared _fallback_windows state from causing 429 responses
+    when the same auth endpoint is called multiple times across tests.
+    """
+    import app.core.rate_limiter as rl
+    rl._TESTING = True
+    rl.reset_fallback_state()
+    yield
+    rl._TESTING = False
+    rl.reset_fallback_state()
+
+
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     async with AsyncClient(
@@ -80,13 +95,16 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture
 async def test_user(db: AsyncSession) -> User:
     """Create a test user with ENGINEER role."""
+    keycloak_id = str(uuid.uuid4())
     user = User(
         id=uuid.uuid4(),
+        keycloak_id=keycloak_id,
         email="test@example.com",
         full_name="Test User",
-        password_hash=get_password_hash("testpassword"),
+        password_hash=get_password_hash("TestPassword123!"),
         role=UserRole.ENGINEER,
         is_active=True,
+        token_version=1,
     )
     db.add(user)
     await db.commit()
@@ -94,8 +112,40 @@ async def test_user(db: AsyncSession) -> User:
     return user
 
 @pytest.fixture
-def auth_headers(test_user: User) -> dict[str, str]:
+async def auth_headers(test_user: User) -> dict[str, str]:
     """Generate JWT auth headers for the test user."""
     from app.domains.auth.router import create_access_token
     token = create_access_token(test_user)
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+async def engineer_token(client: AsyncClient) -> str:
+    """Register an engineer and return a valid access token."""
+    resp = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": f"engineer_{uuid.uuid4().hex[:8]}@test.com",
+            "password": "EngineerPass123!",
+            "full_name": "Test Engineer",
+            "role": "ENGINEER",
+        },
+    )
+    assert resp.status_code == 200, f"Engineer registration failed: {resp.text}"
+    return resp.json()["access_token"]
+
+
+@pytest.fixture
+async def company_token(client: AsyncClient) -> str:
+    """Register a company user and return a valid access token."""
+    resp = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": f"company_{uuid.uuid4().hex[:8]}@test.com",
+            "password": "CompanyPass123!",
+            "full_name": "Test Company",
+            "role": "COMPANY",
+        },
+    )
+    assert resp.status_code == 200, f"Company registration failed: {resp.text}"
+    return resp.json()["access_token"]

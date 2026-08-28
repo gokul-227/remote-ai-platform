@@ -67,6 +67,7 @@ class AuthService:
                 realm_access=realm_access if isinstance(realm_access, dict) else None,
                 resource_access=resource_access if isinstance(resource_access, dict) else None,
                 roles=roles,
+                v=unverified_claims.get("v"),
                 exp=unverified_claims.get("exp"),
                 iat=unverified_claims.get("iat"),
             )

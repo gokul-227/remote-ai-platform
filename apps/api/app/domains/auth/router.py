@@ -1,15 +1,19 @@
+import hashlib
+import secrets
 import uuid
-from typing import Optional
+from typing import Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import record_audit_event
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password, pwd_context
 from app.domains.auth.dependencies import get_current_user, get_auth_service
-from app.domains.auth.models import User, UserRole
+from app.domains.auth.models import User, UserRole, PasswordResetToken
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import (
     UserResponse,
@@ -22,10 +26,18 @@ from app.domains.auth.schemas import (
     LoginUrlResponse,
     LogoutUrlResponse,
     RefreshTokenRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
+    ResetPasswordRequest,
+    ChangePasswordRequest,
 )
 from app.domains.auth.service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def create_token(user: User, token_type: str, expires_delta: timedelta) -> str:
@@ -36,6 +48,7 @@ def create_token(user: User, token_type: str, expires_delta: timedelta) -> str:
         "name": user.full_name,
         "roles": [user.role.value],
         "type": token_type,
+        "v": getattr(user, "token_version", 1),
         "exp": int((now + expires_delta).timestamp()),
         "iat": int(now.timestamp()),
     }
@@ -119,6 +132,19 @@ async def login(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if not user.password_hash or not password_val or not pwd_context.verify(password_val, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
+
+    await record_audit_event(
+        db=db,
+        action="USER_LOGIN",
+        resource_type="USER",
+        resource_id=str(user.id),
+        actor_id=user.id,
+        actor_role=user.role.value,
+        payload={"email": user.email},
+        request=request,
+    )
 
     token = create_access_token(user)
     return TokenResponse(
@@ -145,6 +171,12 @@ async def refresh_token(
     user = await repo.get_by_keycloak_id(claims.get("sub", ""))
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+    # Check session revocation
+    token_v = claims.get("v")
+    if token_v is not None and user.token_version > token_v:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked. Please log in again.")
+
     return TokenResponse(
         access_token=create_access_token(user),
         token_type="bearer",
@@ -152,6 +184,138 @@ async def refresh_token(
         refresh_token=create_refresh_token(user),
         user=UserResponse.model_validate(user),
     )
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ForgotPasswordResponse:
+    """Request a password reset link for the given email address."""
+    repo = UserRepository(db)
+    user = await repo.get_by_email(body.email)
+    raw_token = None
+    if user and user.is_active:
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = _hash_token(raw_token)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        reset_entry = PasswordResetToken(
+            user_id=user.id,
+            token_hash=token_hash,
+            expires_at=expires_at,
+        )
+        db.add(reset_entry)
+        await db.commit()
+
+    # Always return success message to prevent user enumeration
+    return ForgotPasswordResponse(
+        message="If an account with this email exists, a password reset link has been issued.",
+        reset_token=raw_token if not settings.is_production else None,
+    )
+
+
+@router.post("/reset-password")
+async def reset_password(
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, str]:
+    """Reset user password using a valid, unexpired reset token."""
+    token_hash = _hash_token(body.token)
+    now = datetime.now(timezone.utc)
+
+    result = await db.execute(
+        select(PasswordResetToken).where(
+            PasswordResetToken.token_hash == token_hash,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > now,
+        )
+    )
+    token_entry = result.scalar_one_or_none()
+    if not token_entry:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset token.",
+        )
+
+    user = await db.get(User, token_entry.user_id)
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User account associated with this token is invalid or inactive.",
+        )
+
+    # Update password, invalidate all existing sessions, and mark token used
+    user.password_hash = pwd_context.hash(body.new_password)
+    user.token_version = (user.token_version or 1) + 1
+    token_entry.used_at = now
+    await record_audit_event(
+        db=db,
+        action="PASSWORD_RESET",
+        resource_type="USER",
+        resource_id=str(user.id),
+        actor_id=user.id,
+        actor_role=user.role.value,
+        payload={},
+    )
+    await db.commit()
+
+    return {"message": "Password reset successful. Please log in with your new password."}
+
+
+@router.post("/change-password", response_model=TokenResponse)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """Change password for currently authenticated user and refresh session."""
+    if not current_user.password_hash or not pwd_context.verify(body.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password verification failed.",
+        )
+
+    current_user.password_hash = pwd_context.hash(body.new_password)
+    current_user.token_version = (current_user.token_version or 1) + 1
+    await record_audit_event(
+        db=db,
+        action="PASSWORD_CHANGED",
+        resource_type="USER",
+        resource_id=str(current_user.id),
+        actor_id=current_user.id,
+        actor_role=current_user.role.value,
+        payload={},
+    )
+    await db.commit()
+    await db.refresh(current_user)
+
+    return TokenResponse(
+        access_token=create_access_token(current_user),
+        token_type="bearer",
+        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        refresh_token=create_refresh_token(current_user),
+        user=UserResponse.model_validate(current_user),
+    )
+
+
+@router.post("/logout-all")
+async def logout_all_sessions(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, str]:
+    """Revoke all active sessions and refresh tokens across all devices."""
+    current_user.token_version = (current_user.token_version or 1) + 1
+    await record_audit_event(
+        db=db,
+        action="LOGOUT_ALL_SESSIONS",
+        resource_type="USER",
+        resource_id=str(current_user.id),
+        actor_id=current_user.id,
+        actor_role=current_user.role.value,
+        payload={},
+    )
+    await db.commit()
+    return {"message": "All active sessions have been successfully revoked."}
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -209,4 +373,14 @@ async def update_role(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot self-assign admin role")
     repo = UserRepository(db)
     updated_user = await repo.update(current_user, UserUpdate(role=role))
+    await record_audit_event(
+        db=db,
+        action="ROLE_SWITCHED",
+        resource_type="USER",
+        resource_id=str(current_user.id),
+        actor_id=current_user.id,
+        actor_role=role.value,
+        payload={"new_role": role.value},
+    )
+    await db.commit()
     return UserResponse.model_validate(updated_user)

@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   User, Lock, Bell, Eye, LogOut, Mail, Settings, Briefcase,
   Building2, CreditCard, Smartphone, Globe,
-  CheckCircle2, AlertCircle, Key, Fingerprint, Sliders,
+  CheckCircle2, AlertCircle, Key, Fingerprint, Sliders, ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
@@ -244,27 +244,162 @@ function NotificationsPanel() {
 
 
 function SecurityPanel() {
-  const { logout } = useAuth();
+  const { logout, login } = useAuth();
   const router = useRouter();
+  const { show } = useToast();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [revokingAll, setRevokingAll] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    try { await api.post("/auth/logout"); } finally {
-      logout(); router.push("/");
+    try {
+      await api.post("/auth/logout");
+    } finally {
+      logout();
+      router.push("/");
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    if (!confirm("Are you sure you want to log out of all devices? This will invalidate all active sessions.")) {
+      return;
+    }
+    setRevokingAll(true);
+    try {
+      await api.post("/auth/logout-all");
+      show("All sessions revoked. You have been logged out of all active devices.", "success");
+      logout();
+      router.push("/auth/login?reason=sessions_revoked");
+    } catch {
+      show("Failed to revoke sessions. Please try again.", "error");
+    } finally {
+      setRevokingAll(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 8) {
+      show("New password must be at least 8 characters.", "error");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      show("New password confirmation does not match.", "error");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await api.post("/auth/change-password", {
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      show("Your password has been changed successfully.", "success");
+      // Update session with new token
+      if (res.data?.access_token && res.data?.user) {
+        login(res.data.access_token, res.data.user, res.data.refresh_token);
+      }
+      setShowChangePassword(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      show(msg || "Current password incorrect or request failed.", "error");
+    } finally {
+      setChangingPassword(false);
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-[var(--text-main)]">Security</h2>
-        <p className="text-sm text-[var(--text-muted)] mt-0.5">Manage your password, sessions, and account security.</p>
+        <h2 className="text-base font-semibold text-[var(--text-main)]">Security & Sessions</h2>
+        <p className="text-sm text-[var(--text-muted)] mt-0.5">Manage your password, session revocation, and account security.</p>
       </div>
+
+      {showChangePassword && (
+        <form onSubmit={handleChangePassword} className="p-5 bg-[var(--bg-subtle)] border border-[var(--border-color)] rounded-xl space-y-4">
+          <h3 className="text-sm font-semibold text-[var(--text-main)]">Change Account Password</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Current Password</label>
+              <input
+                type="password"
+                required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-strong)] bg-[var(--bg-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20"
+                placeholder="Enter current password"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">New Password (min 8 chars)</label>
+              <input
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-strong)] bg-[var(--bg-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20"
+                placeholder="Enter new password"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">Confirm New Password</label>
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-strong)] bg-[var(--bg-card)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20"
+                placeholder="Re-enter new password"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <Button type="submit" size="sm" loading={changingPassword}>
+              Save New Password
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setShowChangePassword(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      )}
+
       <div className="divide-y divide-[var(--border-color)]">
-        <SettingRow icon={Key} label="Password" description="Last changed: not available" status="warn" action={<Button variant="secondary" size="sm">Change password</Button>} />
-        <SettingRow icon={Fingerprint} label="Two-factor authentication" description="Add extra security to your account" action={<span className="text-xs text-[var(--text-muted)] italic">Coming soon</span>} />
-        <SettingRow icon={Smartphone} label="Active sessions" description="Manage devices with access to your account" action={<span className="text-xs text-[var(--text-muted)] italic">Coming soon</span>} />
+        <SettingRow
+          icon={Key}
+          label="Password"
+          description="Update your login password and rotate session credentials."
+          status="ok"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => setShowChangePassword(!showChangePassword)}>
+              {showChangePassword ? "Close" : "Change password"}
+            </Button>
+          }
+        />
+        <SettingRow
+          icon={Smartphone}
+          label="Active sessions"
+          description="Revoke all active tokens and log out across all devices and browsers."
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={revokingAll}
+              onClick={handleLogoutAll}
+              icon={<ShieldCheck className="h-3.5 w-3.5 text-amber-600" />}
+            >
+              Log out all devices
+            </Button>
+          }
+        />
         <SettingRow
           icon={LogOut}
           label="Sign out"

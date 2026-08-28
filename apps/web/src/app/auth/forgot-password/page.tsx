@@ -1,24 +1,36 @@
-"use client";
-
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import api from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [devToken, setDevToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError(null);
+    try {
+      const res = await api.post<{ message: string; reset_token?: string }>("/auth/forgot-password", {
+        email: email.trim(),
+      });
+      if (res.data.reset_token) {
+        setDevToken(res.data.reset_token);
+      }
       setSubmitted(true);
-    }, 600);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(msg || "Failed to process password reset request. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,6 +58,17 @@ export default function ForgotPasswordPage() {
                 <p className="text-xs text-slate-500 leading-relaxed">
                   If an account exists for <span className="font-semibold text-slate-800">{email}</span>, you will receive password reset instructions shortly.
                 </p>
+                {devToken && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-left text-xs space-y-1">
+                    <p className="font-semibold text-amber-800">Development Mode Reset Token:</p>
+                    <Link
+                      href={`/auth/reset-password?token=${devToken}`}
+                      className="text-[#0A66C2] underline font-mono text-[11px] break-all block"
+                    >
+                      Click here to reset password directly →
+                    </Link>
+                  </div>
+                )}
               </div>
               <div className="pt-2">
                 <Link href="/auth/login" className="block">
@@ -57,6 +80,12 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
               <Input
                 label="Account Email"
                 type="email"

@@ -49,6 +49,12 @@ async def get_current_user(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User account is inactive",
             )
+        if payload.v is not None and user.token_version > payload.v:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session has been revoked. Please log in again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         # Ensure all server-default/onupdate columns are loaded within the async context
         # to avoid MissingGreenlet during Pydantic serialization.
         await repo.db.refresh(user)
