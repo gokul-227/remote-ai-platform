@@ -52,6 +52,14 @@ def create_celery_app() -> Celery:
     )
 
     app.conf.update(
+        # Broker resilience & connection handling
+        broker_connection_retry_on_startup=True,
+        broker_connection_max_retries=5,
+        broker_transport_options={
+            "socket_timeout": 3.0,
+            "socket_connect_timeout": 3.0,
+            "max_connections": 10,
+        },
         # Serialization
         task_serializer="json",
         accept_content=["json"],

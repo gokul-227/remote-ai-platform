@@ -31,7 +31,7 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     region: oregon
-    healthCheckPath: /api/v1/health
+    healthCheckPath: /health/ready
     envVars:
       - key: APP_ENV
         value: production
@@ -41,6 +41,12 @@ services:
         value: "8000"
       - key: WEB_CONCURRENCY
         value: "1" # free tier has 512MB RAM; keep uvicorn to a single worker
+      - key: SEED_DEMO_DATA
+        value: "false" # P0-1: Never auto-seed in production
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "10" # P1-2: Auth endpoint rate limiting
+      - key: RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
       # Set these manually in the Render dashboard (secrets, not committed):
       #   DATABASE_URL        — Supabase connection string, asyncpg driver:
       #                         postgresql+asyncpg://postgres:<password>@<host>:5432/postgres
