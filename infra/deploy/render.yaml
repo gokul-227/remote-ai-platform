@@ -31,7 +31,11 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     region: oregon
-    healthCheckPath: /health/live
+    # NOTE: Using /docs as health check bootstrap path because the new image adds
+    # /health/live for the first time — Render cannot promote a new image whose
+    # health check path didn't exist in the previous image. Once this deploy
+    # succeeds, revert to /health/live.
+    healthCheckPath: /docs
     envVars:
       - key: APP_ENV
         value: production
