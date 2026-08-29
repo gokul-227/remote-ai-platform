@@ -556,7 +556,7 @@ function AdminDashboardPage() {
               <dl className="space-y-2">
                 {[
                   { label: "Version", value: "v0.1.0" },
-                  { label: "Auth", value: "Keycloak OIDC" },
+                  { label: "Auth", value: "Local JWT (HS256)" },
                   { label: "Database", value: "PostgreSQL 16" },
                   { label: "API", value: "FastAPI 0.115" },
                   { label: "Frontend", value: "Next.js 16" },
