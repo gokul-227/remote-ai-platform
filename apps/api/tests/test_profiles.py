@@ -4,6 +4,7 @@ Tests for Engineer and Company profiles & onboarding security.
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @pytest.mark.asyncio
@@ -40,6 +41,61 @@ async def test_engineer_profile_onboarding_flow(client: AsyncClient):
     assert "Python" in profile["skills"]
     assert profile["profile_score"] is not None
     assert profile["profile_score"] > 0
+
+
+@pytest.mark.asyncio
+async def test_public_engineer_profile_hides_resume_url_from_anonymous_callers(
+    client: AsyncClient, db: AsyncSession
+):
+    reg = await client.post("/api/v1/auth/register", json={
+        "email": "engineer_resume_privacy@example.com",
+        "password": "Password123!",
+        "full_name": "Resume Privacy Engineer",
+        "role": "engineer",
+    })
+    token = reg.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    profile_res = await client.post(
+        "/api/v1/engineers/me",
+        json={"headline": "Backend Engineer", "skills": ["Go"]},
+        headers=headers,
+    )
+    profile_id = profile_res.json()["id"]
+
+    # Directly set a resume_url as if a resume had been uploaded, bypassing
+    # the upload endpoint (which needs real file bytes) for this test.
+    import uuid
+
+    from app.domains.engineers.models import EngineerProfile
+
+    db_profile = await db.get(EngineerProfile, uuid.UUID(profile_id))
+    db_profile.resume_url = "http://localhost:9000/remote-ai-platform-resumes/resumes/secret.pdf"
+    await db.commit()
+
+    # Anonymous (no token) request must NOT see resume_url — this is the
+    # actual public directory-browsing path (GET /engineers/{id} has no auth
+    # dependency at all).
+    anon_res = await client.get(f"/api/v1/engineers/{profile_id}")
+    assert anon_res.status_code == 200
+    assert anon_res.json()["resume_url"] is None
+
+    # An authenticated caller (any logged-in user) may see it.
+    other_reg = await client.post("/api/v1/auth/register", json={
+        "email": "another_authenticated_user@example.com",
+        "password": "Password123!",
+        "full_name": "Another User",
+        "role": "engineer",
+    })
+    other_headers = {"Authorization": f"Bearer {other_reg.json()['access_token']}"}
+    auth_res = await client.get(f"/api/v1/engineers/{profile_id}", headers=other_headers)
+    assert auth_res.status_code == 200
+    assert auth_res.json()["resume_url"] is not None
+
+    # Bulk listing/search endpoints never include resume_url, authenticated or not.
+    list_res = await client.get("/api/v1/engineers", headers=other_headers)
+    assert list_res.status_code == 200
+    assert all("resume_url" not in item for item in list_res.json())
 
 
 @pytest.mark.asyncio

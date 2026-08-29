@@ -112,6 +112,26 @@ class EngineerProfileResponse(EngineerProfileBase):
     updated_at: datetime
 
 
+class EngineerPublicProfileResponse(EngineerProfileBase):
+    """Response for endpoints reachable by other users/anonymous callers.
+
+    Deliberately omits resume_url and parsed_resume_data — those are private
+    to the profile owner and must never be serialized to a public listing,
+    search, or by-id lookup.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    ai_summary: str | None = None
+    profile_score: float | None = None
+    missing_skills: list[str] = []
+    matching_keywords: list[str] = []
+    created_at: datetime
+    updated_at: datetime
+
+
 class ResumeUploadResponse(BaseModel):
     resume_url: str
     message: str = "Resume uploaded successfully. AI parsing queued."

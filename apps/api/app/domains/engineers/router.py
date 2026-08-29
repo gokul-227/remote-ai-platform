@@ -9,13 +9,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import ALLOWED_RESUME_TYPES
-from app.domains.auth.dependencies import get_current_user, require_role
+from app.domains.auth.dependencies import get_current_user, get_optional_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import (
     EngineerProfileCreate,
     EngineerProfileResponse,
     EngineerProfileUpdate,
+    EngineerPublicProfileResponse,
     EngineerSearchQuery,
     ResumeUploadResponse,
 )
@@ -29,16 +30,16 @@ async def get_engineer_service(db: AsyncSession = Depends(get_db)) -> EngineerSe
     return EngineerService(repo)
 
 
-@router.get("", response_model=list[EngineerProfileResponse])
+@router.get("", response_model=list[EngineerPublicProfileResponse])
 async def list_engineers(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: EngineerService = Depends(get_engineer_service),
-) -> list[EngineerProfileResponse]:
+) -> list[EngineerPublicProfileResponse]:
     """List public engineer profiles for company dashboards."""
     params = EngineerSearchQuery(skip=skip, limit=limit)
     results = await service.search_engineers(params)
-    return [EngineerProfileResponse.model_validate(profile) for profile in results]
+    return [EngineerPublicProfileResponse.model_validate(profile) for profile in results]
 
 
 @router.get("/me", response_model=EngineerProfileResponse)
@@ -112,7 +113,7 @@ async def upload_resume(
     return ResumeUploadResponse(resume_url=resume_url)
 
 
-@router.get("/search", response_model=list[EngineerProfileResponse])
+@router.get("/search", response_model=list[EngineerPublicProfileResponse])
 async def search_engineers(
     query: str | None = Query(None, description="Keywords search"),
     skills: list[str] | None = Query(None, description="Match any listed skill"),
@@ -123,7 +124,7 @@ async def search_engineers(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: EngineerService = Depends(get_engineer_service),
-) -> list[EngineerProfileResponse]:
+) -> list[EngineerPublicProfileResponse]:
     """Search public engineer profiles (for companies & admins)."""
     search_params = EngineerSearchQuery(
         query=query,
@@ -136,14 +137,27 @@ async def search_engineers(
         limit=limit,
     )
     results = await service.search_engineers(search_params)
-    return [EngineerProfileResponse.model_validate(p) for p in results]
+    return [EngineerPublicProfileResponse.model_validate(p) for p in results]
 
 
 @router.get("/{profile_id}", response_model=EngineerProfileResponse)
 async def get_engineer_by_id(
     profile_id: uuid.UUID,
+    current_user: User | None = Depends(get_optional_user),
     service: EngineerService = Depends(get_engineer_service),
 ) -> EngineerProfileResponse:
-    """Get public engineer profile by ID."""
+    """Get public engineer profile by ID.
+
+    The profile itself is visible to anonymous callers (public directory
+    browsing), but resume_url/parsed_resume_data are only included for
+    authenticated callers — a fully anonymous request must never be able to
+    harvest permanent resume storage URLs at scale.
+    """
     profile = await service.get_by_id(profile_id)
-    return EngineerProfileResponse.model_validate(profile)
+    if not profile:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Engineer profile not found")
+    response = EngineerProfileResponse.model_validate(profile)
+    if current_user is None:
+        response.resume_url = None
+        response.parsed_resume_data = None
+    return response
