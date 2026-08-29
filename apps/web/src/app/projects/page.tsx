@@ -187,10 +187,13 @@ function ProjectsContent() {
             title={data.length === 0 ? "No projects yet" : "No projects match your filters"}
             description={
               data.length === 0
-                ? canCreate ? "Create your first project brief and let AI build the plan." : "No projects available yet."
+                ? canCreate
+                  ? "Create your first project brief and let AI build the plan."
+                  : "Projects appear here once a company staffs you on a contract. Browse open roles to get started."
                 : "Try changing your search or status filter."
             }
-            actionLabel={canCreate && data.length === 0 ? "Create First Project" : undefined}
+            actionLabel={data.length === 0 ? (canCreate ? "Create First Project" : "Browse Jobs") : undefined}
+            actionHref={!canCreate && data.length === 0 ? "/jobs" : undefined}
             onAction={canCreate && data.length === 0 ? () => setShowCreate(true) : undefined}
           />
         </div>

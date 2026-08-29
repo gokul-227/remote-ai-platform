@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/Progress";
 import { ProfileHeaderSkeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { EditProfileDrawer } from "./EditProfileDrawer";
 
 type Experience = { title: string; company: string; start_date: string; end_date?: string; description?: string; technologies?: string[] };
@@ -221,7 +222,6 @@ function EngineerProfileContent() {
               <div className="mb-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl font-bold text-slate-900">{displayName}</h1>
-                  {profile.is_open_to_work && <Badge tone="success">Open to work</Badge>}
                 </div>
                 <p className="text-sm text-slate-600 mt-0.5">{profile.headline || profile.primary_role || "Professional"} · {profile.remote_preference || "Remote"}</p>
               </div>
@@ -313,7 +313,15 @@ function EngineerProfileContent() {
                   </article>
                 ))}
               </div>
-            ) : <p className="text-sm text-slate-500">No experience added yet.</p>}
+            ) : (
+              <EmptyState
+                icon={Briefcase}
+                title="No experience added yet"
+                description={viewingOther ? "This person hasn't added any work experience." : "Add your work history so companies can see your background."}
+                actionLabel={viewingOther ? undefined : "Add experience"}
+                onAction={viewingOther ? undefined : () => setEditOpen(true)}
+              />
+            )}
           </section>
 
           {/* Projects */}
@@ -355,7 +363,15 @@ function EngineerProfileContent() {
                 <h3 className="text-sm font-semibold text-slate-900">{edu.degree}{edu.field_of_study ? `, ${edu.field_of_study}` : ""}</h3>
                 <p className="text-xs text-slate-500">{edu.institution} {edu.start_year ? `· ${edu.start_year}–${edu.end_year || "Present"}` : ""}</p>
               </article>
-            )) : <p className="text-sm text-slate-500">No education added yet.</p>}
+            )) : (
+              <EmptyState
+                icon={GraduationCap}
+                title="No education added yet"
+                description={viewingOther ? "This person hasn't added their education history." : "Add your education so companies can see your background."}
+                actionLabel={viewingOther ? undefined : "Add education"}
+                onAction={viewingOther ? undefined : () => setEditOpen(true)}
+              />
+            )}
           </section>
 
           {/* Resume */}

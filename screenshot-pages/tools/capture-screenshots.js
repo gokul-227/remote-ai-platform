@@ -41,6 +41,18 @@ const ROUTES = {
     { path: "/engineer/profile", name: "engineer-profile", state: "default" },
     { path: "/engineer/recommendations", name: "engineer-recommendations", state: "default" },
     { path: "/engineer/workspace", name: "engineer-workspace", state: "default" },
+    // Shared authenticated routes — previously only ever captured logged-out
+    // (which just shows the login redirect), never in their real logged-in state.
+    { path: "/messages", name: "auth-messages", state: "default" },
+    { path: "/network", name: "auth-network", state: "default" },
+    { path: "/payments", name: "auth-payments", state: "default" },
+    { path: "/projects", name: "auth-projects", state: "default" },
+    { path: "/contracts", name: "auth-contracts", state: "default" },
+    { path: "/groups", name: "auth-groups", state: "default" },
+    { path: "/feed", name: "auth-feed", state: "default" },
+    { path: "/quality", name: "auth-quality", state: "default" },
+    { path: "/settings", name: "auth-settings", state: "default" },
+    { path: "/notifications", name: "auth-notifications", state: "default" },
   ],
   company: [
     { path: "/company/dashboard", name: "company-dashboard", state: "default" },
