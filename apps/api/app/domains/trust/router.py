@@ -11,9 +11,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import record_audit_event
 from app.core.database import get_db
-from app.domains.auth.dependencies import get_current_user
-from app.domains.auth.models import User
+from app.domains.auth.dependencies import get_current_user, require_role
+from app.domains.auth.models import User, UserRole
 from app.domains.projects.models import Project, ProjectReview
 from app.domains.trust.models import UserVerification
 from app.domains.trust.schemas import (
@@ -23,6 +24,7 @@ from app.domains.trust.schemas import (
     TrustScoreResponse,
     VerificationCreate,
     VerificationResponse,
+    VerificationReviewUpdate,
 )
 from app.domains.trust.service import TrustService
 from app.services.notifications import notify_user
@@ -192,19 +194,75 @@ async def create_verification(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> VerificationResponse:
-    """Request or self-verify identity/credentials badge."""
+    """Submit a credential for verification.
+
+    This only records the user's own claim — no evidence is checked here, so
+    the badge starts as SELF_REPORTED. It becomes VERIFIED only once an admin
+    reviews it via PATCH /verifications/{id}/review; see that endpoint and
+    TrustService.calculate_trust_score, which only awards verification points
+    for status == "VERIFIED".
+    """
     verification = UserVerification(
         user_id=current_user.id,
         verification_type=data.verification_type,
-        status="VERIFIED",  # Auto-verify in development/MVP
-        verifier_notes=data.verifier_notes or f"Verified {data.verification_type} credential",
-        verified_at=func.now(),
+        status="SELF_REPORTED",
+        verifier_notes=data.verifier_notes,
     )
     db.add(verification)
     await db.flush()
     await db.refresh(verification)
 
-    # Recalculate trust score
-    await TrustService.calculate_trust_score(current_user.id, db)
+    return VerificationResponse.model_validate(verification)
+
+
+@router.patch(
+    "/verifications/{verification_id}/review",
+    response_model=VerificationResponse,
+    summary="Admin: verify or reject a submitted credential",
+    dependencies=[Depends(require_role(UserRole.ADMIN))],
+)
+async def review_verification(
+    verification_id: uuid.UUID,
+    data: VerificationReviewUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> VerificationResponse:
+    """Move a SELF_REPORTED/PENDING credential to VERIFIED or REJECTED.
+
+    This is the only path that produces a "VERIFIED" badge — it requires
+    actual admin review, backed by an audit event, rather than the user's
+    own submission.
+    """
+    verification = await db.get(UserVerification, verification_id)
+    if not verification:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Verification not found")
+
+    verification.status = data.status
+    verification.verifier_notes = data.verifier_notes or verification.verifier_notes
+    verification.reviewed_by_id = current_user.id
+    verification.verified_at = func.now() if data.status == "VERIFIED" else None
+    await db.flush()
+    await db.refresh(verification)
+
+    await record_audit_event(
+        db,
+        action=f"trust.verification.{data.status.lower()}",
+        resource_type="user_verification",
+        resource_id=str(verification.id),
+        actor_id=current_user.id,
+        actor_role=current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role),
+        payload={"user_id": str(verification.user_id), "verification_type": verification.verification_type},
+    )
+
+    # Recalculate trust score now that verification status may have changed
+    await TrustService.calculate_trust_score(verification.user_id, db)
+
+    await notify_user(
+        db,
+        verification.user_id,
+        "Verification Reviewed",
+        f"Your {verification.verification_type} credential was {data.status.lower()}.",
+        "verification_review",
+    )
 
     return VerificationResponse.model_validate(verification)

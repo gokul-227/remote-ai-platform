@@ -20,7 +20,9 @@ async def test_get_trust_score(client: AsyncClient, test_user: User, auth_header
 
 
 @pytest.mark.asyncio
-async def test_add_verification_badge(client: AsyncClient, test_user: User, auth_headers: dict[str, str]):
+async def test_add_verification_badge_starts_self_reported(
+    client: AsyncClient, test_user: User, auth_headers: dict[str, str]
+):
     res = await client.post(
         "/api/v1/trust/verifications",
         json={"verification_type": "GITHUB", "verifier_notes": "Connected GitHub account"},
@@ -28,12 +30,60 @@ async def test_add_verification_badge(client: AsyncClient, test_user: User, auth
     )
     assert res.status_code == 201
     assert res.json()["verification_type"] == "GITHUB"
-    assert res.json()["status"] == "VERIFIED"
+    # A self-submitted credential is NOT auto-verified — no evidence has been checked yet.
+    assert res.json()["status"] == "SELF_REPORTED"
 
-    # Verify score recalculated
+    # A self-reported (unverified) badge must not count toward the trust score.
     score_res = await client.get(f"/api/v1/trust/scores/{test_user.id}")
     assert score_res.status_code == 200
-    assert score_res.json()["verified_skills_count"] >= 1
+    assert score_res.json()["verified_skills_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_review_verification(
+    client: AsyncClient, test_user: User, auth_headers: dict[str, str]
+):
+    create_res = await client.post(
+        "/api/v1/trust/verifications",
+        json={"verification_type": "IDENTITY"},
+        headers=auth_headers,
+    )
+    verification_id = create_res.json()["id"]
+
+    review_res = await client.patch(
+        f"/api/v1/trust/verifications/{verification_id}/review",
+        json={"status": "VERIFIED"},
+        headers=auth_headers,
+    )
+    assert review_res.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_review_verifies_badge_and_updates_score(
+    client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession
+):
+    create_res = await client.post(
+        "/api/v1/trust/verifications",
+        json={"verification_type": "IDENTITY"},
+        headers=auth_headers,
+    )
+    verification_id = create_res.json()["id"]
+
+    test_user.role = UserRole.ADMIN
+    await db.commit()
+
+    review_res = await client.patch(
+        f"/api/v1/trust/verifications/{verification_id}/review",
+        json={"status": "VERIFIED", "verifier_notes": "Confirmed government ID"},
+        headers=auth_headers,
+    )
+    assert review_res.status_code == 200
+    assert review_res.json()["status"] == "VERIFIED"
+    assert review_res.json()["reviewed_by_id"] == str(test_user.id)
+    assert review_res.json()["verified_at"] is not None
+
+    score_res = await client.get(f"/api/v1/trust/scores/{test_user.id}")
+    assert score_res.json()["verified_skills_count"] == 1
 
 
 @pytest.mark.asyncio

@@ -22,10 +22,14 @@ class UserVerification(Base):
     )
     # IDENTITY, GITHUB, LINKEDIN, SKILL_ASSESSMENT
     verification_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    # PENDING, VERIFIED, REJECTED
-    status: Mapped[str] = mapped_column(String(30), default="PENDING", nullable=False)
+    # SELF_REPORTED (submitted by the user, no evidence checked), PENDING (queued for
+    # admin review), VERIFIED (an admin confirmed evidence), REJECTED
+    status: Mapped[str] = mapped_column(String(30), default="SELF_REPORTED", nullable=False)
     verifier_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reviewed_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import { ShieldCheck, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
-import { useTrustScore, useAddVerification, ScoreFactor } from "@/hooks/useTrust";
+import { useTrustScore, useUserVerifications, useAddVerification, ScoreFactor } from "@/hooks/useTrust";
+
+const VERIFICATION_STATUS_LABEL: Record<string, { label: string; className: string }> = {
+  VERIFIED: { label: "Verified by admin", className: "bg-emerald-100 text-emerald-700" },
+  SELF_REPORTED: { label: "Self-reported, not yet reviewed", className: "bg-slate-100 text-slate-600" },
+  PENDING: { label: "Pending review", className: "bg-amber-100 text-amber-700" },
+  REJECTED: { label: "Review rejected", className: "bg-red-100 text-red-700" },
+};
 
 export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: string; showBreakdownToggle?: boolean }) {
   const { data: trust, isLoading } = useTrustScore(userId);
+  const { data: verifications } = useUserVerifications(userId);
   const addVerification = useAddVerification();
   const [expanded, setExpanded] = useState(false);
 
@@ -72,22 +80,40 @@ export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: str
             ))}
           </div>
 
-          {/* Quick add verification badge button */}
-          <div className="border-t border-slate-100 pt-2 flex flex-wrap gap-1">
-            <button
-              onClick={() => addVerification.mutate({ verification_type: "GITHUB" })}
-              disabled={addVerification.isPending}
-              className="text-[10px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded"
-            >
-              + Add GitHub Badge
-            </button>
-            <button
-              onClick={() => addVerification.mutate({ verification_type: "IDENTITY" })}
-              disabled={addVerification.isPending}
-              className="text-[10px] font-semibold bg-sky-50 text-[#0A66C2] hover:bg-sky-100 px-2 py-1 rounded"
-            >
-              + Add ID Badge
-            </button>
+          {/* Submitted credentials and their real review status */}
+          {verifications && verifications.length > 0 && (
+            <div className="border-t border-slate-100 pt-2 space-y-1">
+              {verifications.map((v) => {
+                const meta = VERIFICATION_STATUS_LABEL[v.status] || VERIFICATION_STATUS_LABEL.SELF_REPORTED;
+                return (
+                  <div key={v.id} className="flex items-center justify-between text-[10px]">
+                    <span className="font-semibold text-slate-700">{v.verification_type}</span>
+                    <span className={`px-1.5 py-0.5 rounded font-semibold ${meta.className}`}>{meta.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Submit a credential for review — this does not verify it instantly */}
+          <div className="border-t border-slate-100 pt-2 space-y-1">
+            <p className="text-[10px] text-slate-400">Submitting only records your claim — an admin must review it before it counts as verified.</p>
+            <div className="flex flex-wrap gap-1">
+              <button
+                onClick={() => addVerification.mutate({ verification_type: "GITHUB" })}
+                disabled={addVerification.isPending}
+                className="text-[10px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 px-2 py-1 rounded"
+              >
+                Submit GitHub for review
+              </button>
+              <button
+                onClick={() => addVerification.mutate({ verification_type: "IDENTITY" })}
+                disabled={addVerification.isPending}
+                className="text-[10px] font-semibold bg-sky-50 text-[#0A66C2] hover:bg-sky-100 px-2 py-1 rounded"
+              >
+                Submit ID for review
+              </button>
+            </div>
           </div>
         </div>
       )}

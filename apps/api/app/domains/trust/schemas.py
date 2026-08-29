@@ -26,6 +26,11 @@ class VerificationCreate(BaseModel):
     verifier_notes: str | None = None
 
 
+class VerificationReviewUpdate(BaseModel):
+    status: str = Field(pattern="^(VERIFIED|REJECTED)$")
+    verifier_notes: str | None = None
+
+
 class VerificationResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -33,6 +38,7 @@ class VerificationResponse(BaseModel):
     status: str
     verifier_notes: str | None = None
     verified_at: datetime | None = None
+    reviewed_by_id: uuid.UUID | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
