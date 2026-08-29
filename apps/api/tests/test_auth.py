@@ -25,6 +25,30 @@ async def test_register_user_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_update_me_changes_full_name(client: AsyncClient):
+    reg = await client.post("/api/v1/auth/register", json={
+        "email": "rename_me@example.com",
+        "password": "SecurePassword123!",
+        "full_name": "Old Name",
+        "role": "engineer",
+    })
+    headers = {"Authorization": f"Bearer {reg.json()['access_token']}"}
+
+    res = await client.patch("/api/v1/auth/me", json={"full_name": "New Name"}, headers=headers)
+    assert res.status_code == 200
+    assert res.json()["full_name"] == "New Name"
+
+    me_res = await client.get("/api/v1/auth/me", headers=headers)
+    assert me_res.json()["full_name"] == "New Name"
+
+
+@pytest.mark.asyncio
+async def test_update_me_requires_auth(client: AsyncClient):
+    res = await client.patch("/api/v1/auth/me", json={"full_name": "New Name"})
+    assert res.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_register_admin_forbidden(client: AsyncClient):
     payload = {
         "email": "hacker@example.com",

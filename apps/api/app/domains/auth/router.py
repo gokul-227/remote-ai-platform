@@ -3,7 +3,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from jose import jwt
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import select
@@ -414,5 +414,23 @@ async def update_role(
         actor_role=role.value,
         payload={"new_role": role.value},
     )
+    await db.commit()
+    return UserResponse.model_validate(updated_user)
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    full_name: str = Body(..., embed=True, min_length=1, max_length=255),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    """Update the current user's own display name.
+
+    Deliberately narrow — email/phone/avatar changes are not implemented
+    (no verification flow, storage integration, or phone column exist yet),
+    so this endpoint only accepts what's actually safe to change instantly.
+    """
+    repo = UserRepository(db)
+    updated_user = await repo.update(current_user, UserUpdate(full_name=full_name))
     await db.commit()
     return UserResponse.model_validate(updated_user)

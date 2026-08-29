@@ -93,7 +93,21 @@ function SettingRow({
 }
 
 function AccountPanel() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const toast = useToast();
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(user?.full_name || "");
+
+  const updateName = useMutation({
+    mutationFn: async (full_name: string) => (await api.patch("/auth/me", { full_name })).data,
+    onSuccess: (data) => {
+      updateUser({ full_name: data.full_name });
+      setEditingName(false);
+      toast.show("Name updated.", "success");
+    },
+    onError: (err) => toast.show(extractErrorMessage(err, "Failed to update name."), "error"),
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -110,32 +124,53 @@ function AccountPanel() {
           </p>
           <p className="text-xs text-[var(--text-muted)] capitalize mt-0.5">{user?.role?.toLowerCase()} · Remote AI Platform</p>
         </div>
-        <Button variant="secondary" size="sm">Edit photo</Button>
+        <Button variant="secondary" size="sm" disabled title="Photo upload isn't available yet">Edit photo</Button>
       </div>
       <div className="divide-y divide-[var(--border-color)]">
-        <SettingRow
-          icon={User}
-          label="Full name"
-          description={user?.full_name}
-          action={<Button variant="secondary" size="sm">Edit</Button>}
-        />
+        {editingName ? (
+          <div className="flex items-center gap-3 py-4 border-b border-[var(--border-color)]">
+            <div className="h-8 w-8 rounded-lg bg-[var(--bg-subtle)] flex items-center justify-center shrink-0">
+              <User className="h-4 w-4 text-[var(--text-muted)]" />
+            </div>
+            <input
+              autoFocus
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              className="input-enterprise flex-1 max-w-xs"
+              maxLength={255}
+            />
+            <Button size="sm" loading={updateName.isPending} onClick={() => nameDraft.trim() && updateName.mutate(nameDraft.trim())}>
+              Save
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => { setEditingName(false); setNameDraft(user?.full_name || ""); }}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <SettingRow
+            icon={User}
+            label="Full name"
+            description={user?.full_name}
+            action={<Button variant="secondary" size="sm" onClick={() => setEditingName(true)}>Edit</Button>}
+          />
+        )}
         <SettingRow
           icon={Mail}
           label="Email address"
           description={user?.email}
           status="ok"
-          action={<Button variant="secondary" size="sm">Change</Button>}
+          action={<Button variant="secondary" size="sm" disabled title="Email changes aren't available yet">Change</Button>}
         />
         <SettingRow
           icon={Smartphone}
           label="Phone number"
           description="Not set"
-          action={<Button variant="secondary" size="sm">Add</Button>}
+          action={<Button variant="secondary" size="sm" disabled title="Phone numbers aren't supported yet">Add</Button>}
         />
       </div>
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800 flex items-start gap-3">
-        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
-        <p>Name and email changes are processed within 24 hours. Contact support if you need immediate assistance.</p>
+      <div className="p-4 bg-[var(--bg-subtle)] border border-[var(--border-color)] rounded-xl text-sm text-[var(--text-muted)] flex items-start gap-3">
+        <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+        <p>Photo, email, and phone changes aren&apos;t supported yet. Your name updates immediately when saved.</p>
       </div>
     </div>
   );
