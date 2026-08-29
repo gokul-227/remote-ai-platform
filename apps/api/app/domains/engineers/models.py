@@ -109,5 +109,16 @@ class EngineerProfile(Base):
     # Relationship
     user: Mapped["User"] = relationship("User", back_populates="engineer_profile")
 
+    @property
+    def full_name(self) -> str | None:
+        """The profile owner's display name, sourced from the linked User.
+
+        EngineerProfile has no name column of its own — every card/listing
+        that needs to show "who this is" (not just their role/headline) must
+        go through this. Callers querying EngineerProfile must eager-load
+        `user` (see EngineerRepository) or this raises under async SQLAlchemy.
+        """
+        return self.user.full_name if self.user else None
+
     def __repr__(self) -> str:
         return f"<EngineerProfile id={self.id} user_id={self.user_id} headline={self.headline}>"

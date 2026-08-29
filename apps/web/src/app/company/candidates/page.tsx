@@ -284,8 +284,9 @@ function CompanyCandidatesPageContent() {
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {items.map((person: { id: string; headline?: string; primary_role?: string; years_of_experience?: number; skills?: string[]; location?: string; hourly_rate?: number }) => {
+            {items.map((person: { id: string; full_name?: string; headline?: string; primary_role?: string; years_of_experience?: number; skills?: string[]; location?: string; hourly_rate?: number }) => {
               const match = matchByEngineer.get(person.id);
+              const displayName = person.full_name || person.headline || person.primary_role || "Remote professional";
               return (
                 <article
                   key={person.id}
@@ -294,15 +295,18 @@ function CompanyCandidatesPageContent() {
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">
-                        <Avatar name={person.headline || person.primary_role || "Professional"} size="lg" />
+                        <Avatar name={displayName} size="lg" />
                         <div>
                           <Link
                             href={`/engineers/${person.id}`}
                             className="font-bold text-slate-900 dark:text-white text-sm hover:text-[#0A66C2] transition-colors flex items-center gap-1"
                           >
-                            {person.headline || person.primary_role || "Remote professional"}{" "}
+                            {displayName}{" "}
                             <ExternalLink className="h-3 w-3 text-slate-400" />
                           </Link>
+                          {(person.headline || person.primary_role) && person.full_name && (
+                            <p className="text-xs text-slate-500 mt-0.5">{person.headline || person.primary_role}</p>
+                          )}
                           <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 flex-wrap">
                             <span>{person.years_of_experience ?? 0} yrs exp</span>
                             {person.location && (

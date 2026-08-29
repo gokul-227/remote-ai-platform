@@ -44,6 +44,44 @@ async def test_engineer_profile_onboarding_flow(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_engineer_profile_endpoints_expose_full_name(client: AsyncClient):
+    """EngineerProfile has no name column of its own — full_name is a
+    computed property sourced from the linked User. Regression test for a
+    real gap found via UI audit: candidate/professional cards across the
+    app could only ever show a role/headline, never the person's actual
+    name, because these endpoints never returned it.
+    """
+    reg = await client.post("/api/v1/auth/register", json={
+        "email": "named_engineer@example.com",
+        "password": "Password123!",
+        "full_name": "Jordan Rivera",
+        "role": "engineer",
+    })
+    token = reg.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = await client.post(
+        "/api/v1/engineers/me",
+        json={"headline": "Backend Engineer", "skills": ["Go"], "is_public": True},
+        headers=headers,
+    )
+    profile_id = create_res.json()["id"]
+    assert create_res.json()["full_name"] == "Jordan Rivera"
+
+    by_id_res = await client.get(f"/api/v1/engineers/{profile_id}")
+    assert by_id_res.json()["full_name"] == "Jordan Rivera"
+
+    list_res = await client.get("/api/v1/engineers")
+    listed = next(e for e in list_res.json() if e["id"] == profile_id)
+    assert listed["full_name"] == "Jordan Rivera"
+
+    search_res = await client.get("/api/v1/engineers/search")
+    found = next((e for e in search_res.json() if e["id"] == profile_id), None)
+    assert found is not None
+    assert found["full_name"] == "Jordan Rivera"
+
+
+@pytest.mark.asyncio
 async def test_public_engineer_profile_hides_resume_url_from_anonymous_callers(
     client: AsyncClient, db: AsyncSession
 ):

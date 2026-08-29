@@ -7,6 +7,7 @@ from collections.abc import Sequence
 
 from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.domains.engineers.models import EngineerProfile
 from app.domains.engineers.schemas import EngineerProfileCreate, EngineerProfileUpdate
@@ -17,12 +18,20 @@ class EngineerRepository:
         self.db = db
 
     async def get_by_id(self, profile_id: uuid.UUID) -> EngineerProfile | None:
-        stmt = select(EngineerProfile).where(EngineerProfile.id == profile_id)
+        stmt = (
+            select(EngineerProfile)
+            .options(selectinload(EngineerProfile.user))
+            .where(EngineerProfile.id == profile_id)
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_by_user_id(self, user_id: uuid.UUID) -> EngineerProfile | None:
-        stmt = select(EngineerProfile).where(EngineerProfile.user_id == user_id)
+        stmt = (
+            select(EngineerProfile)
+            .options(selectinload(EngineerProfile.user))
+            .where(EngineerProfile.user_id == user_id)
+        )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -95,7 +104,11 @@ class EngineerRepository:
         skip: int = 0,
         limit: int = 20,
     ) -> Sequence[EngineerProfile]:
-        stmt = select(EngineerProfile).where(EngineerProfile.is_public.is_(True))
+        stmt = (
+            select(EngineerProfile)
+            .options(selectinload(EngineerProfile.user))
+            .where(EngineerProfile.is_public.is_(True))
+        )
 
         if is_open_to_work is not None:
             stmt = stmt.where(EngineerProfile.is_open_to_work == is_open_to_work)

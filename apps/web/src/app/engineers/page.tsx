@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 type Engineer = {
   id: string;
+  full_name?: string;
   headline?: string;
   bio?: string;
   location?: string;
@@ -68,7 +69,8 @@ function ScoreRing({ score }: { score: number }) {
 }
 
 function EngineerCard({ engineer }: { engineer: Engineer }) {
-  const initials = (engineer.primary_role || engineer.headline || "E")
+  const displayName = engineer.full_name || engineer.headline || engineer.primary_role || "Remote professional";
+  const initials = (engineer.full_name || engineer.primary_role || engineer.headline || "E")
     .split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
   const avatarGradients = [
@@ -96,9 +98,13 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-sm font-bold text-slate-900 group-hover:text-[#0A66C2] transition-colors">
-              {engineer.headline || engineer.primary_role || "Professional"}
+              {displayName}
             </h2>
-            <p className="truncate text-xs text-slate-500 mt-0.5">{engineer.primary_role || "Software Engineer"}</p>
+            <p className="truncate text-xs text-slate-500 mt-0.5">
+              {(engineer.headline || engineer.primary_role) && engineer.full_name
+                ? engineer.headline || engineer.primary_role
+                : engineer.primary_role || "Software Engineer"}
+            </p>
           </div>
           {engineer.profile_score != null && <ScoreRing score={Math.round(engineer.profile_score)} />}
         </div>

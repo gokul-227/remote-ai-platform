@@ -107,10 +107,10 @@ function SuggestionCard({ person, onConnect, connecting }: {
       <div className="h-12 bg-gradient-to-br from-[#0A66C2]/20 via-[#7F56D9]/10 to-emerald-500/10" />
       <div className="px-4 pb-4">
         <div className="-mt-5 mb-2">
-          <Avatar name={person.full_name || "Professional"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />
+          <Avatar name={person.full_name || person.headline || "Professional"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />
         </div>
-        <p className="text-sm font-semibold text-[var(--text-main)] leading-tight">{person.full_name || "Professional"}</p>
-        {person.headline && (
+        <p className="text-sm font-semibold text-[var(--text-main)] leading-tight">{person.full_name || person.headline || "Remote professional"}</p>
+        {person.headline && person.full_name && (
           <p className="text-xs text-[var(--text-muted)] mt-0.5 line-clamp-1">{person.headline}</p>
         )}
         <div className="flex items-center gap-2 mt-1 flex-wrap">

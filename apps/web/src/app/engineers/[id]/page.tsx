@@ -48,6 +48,7 @@ type EducationItem = {
 type EngineerProfile = {
   id: string;
   user_id?: string;
+  full_name?: string;
   headline?: string;
   bio?: string;
   ai_summary?: string;
@@ -174,7 +175,7 @@ export default function PublicEngineerProfilePage({
     );
   }
 
-  const initials = (profile.headline || profile.primary_role || "E")
+  const initials = (profile.full_name || profile.primary_role || profile.headline || "E")
     .split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   const score = Math.round(profile.profile_score ?? 0);
 
@@ -182,6 +183,7 @@ export default function PublicEngineerProfilePage({
 }
 
 function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfile; id: string; initials: string; score: number }) {
+  const displayName = profile.full_name || profile.headline || profile.primary_role || "Remote professional";
   const { user } = useAuth();
   const router = useRouter();
   const toast = useToast();
@@ -212,7 +214,7 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
       <nav className="flex items-center gap-1.5 text-xs text-slate-500">
         <Link href="/engineers" className="hover:text-[#0A66C2] hover:underline">Professionals</Link>
         <span>/</span>
-        <span className="text-slate-700">{profile.headline || profile.primary_role || "Profile"}</span>
+        <span className="text-slate-700">{displayName}</span>
       </nav>
 
       {/* Hero card */}
@@ -228,9 +230,13 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
               </div>
               <div className="pb-1">
                 <h1 className="text-2xl font-bold text-slate-900">
-                  {profile.headline || profile.primary_role || "Professional"}
+                  {displayName}
                 </h1>
                 <p className="text-sm text-slate-600">
+                  {profile.full_name && profile.headline && <span>{profile.headline}</span>}
+                  {profile.full_name && profile.headline && profile.primary_role && (
+                    <span className="mx-1.5 text-slate-300">·</span>
+                  )}
                   {profile.primary_role && <span>{profile.primary_role}</span>}
                   {profile.remote_preference && (
                     <span className="mx-1.5 text-slate-300">·</span>

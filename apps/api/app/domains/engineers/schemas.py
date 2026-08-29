@@ -102,6 +102,7 @@ class EngineerProfileResponse(EngineerProfileBase):
 
     id: uuid.UUID
     user_id: uuid.UUID
+    full_name: str | None = None
     resume_url: str | None = None
     parsed_resume_data: dict[str, Any] | None = None
     ai_summary: str | None = None
@@ -124,6 +125,7 @@ class EngineerPublicProfileResponse(EngineerProfileBase):
 
     id: uuid.UUID
     user_id: uuid.UUID
+    full_name: str | None = None
     ai_summary: str | None = None
     profile_score: float | None = None
     missing_skills: list[str] = []
