@@ -59,7 +59,9 @@ async function login(page, account) {
   await page.fill('input[id="email"]', account.email);
   await page.fill('input[id="password"]', account.password);
   await page.click('button[type="submit"]');
-  await page.waitForURL(BASE_URL + "/", { waitUntil: "networkidle" });
+  // Login redirects to a role-specific dashboard (/engineer|company|admin/dashboard),
+  // not "/" — wait for navigation away from the login page instead of a fixed URL.
+  await page.waitForURL((url) => !url.pathname.includes("/auth/login"), { waitUntil: "networkidle", timeout: 30000 });
   console.log(`  ✓ Logged in as ${account.email}`);
 }
 

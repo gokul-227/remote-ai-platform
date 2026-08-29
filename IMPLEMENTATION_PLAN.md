@@ -32,46 +32,50 @@ What follows is a plan that can actually be executed, phase by phase, across mul
 **Depends on**: Phase 1 decision #1 (resolved above).
 **Exit criteria**: Storybook-equivalent component gallery page (or equivalent visual QA artifact) covering every primitive in both light and dark mode; Lighthouse accessibility score baseline recorded for the gallery page. **Not yet met** — tracked as the next concrete increment.
 
-## Phase 3 — App Shell
-**Scope**: workspace switcher (Personal/Organization), consolidating the current separate `/engineer/*` and `/company/*` route trees behind one shell driven by the existing `PATCH /auth/role` endpoint; right contextual panel framework (generalizing the existing page-specific `RightSidebar`); persistent AI assistant entry point (UI shell only — wiring real AI behind it happens per-surface in later phases).
-**Depends on**: Phase 1 decision #3 (does this shell also serve as the admin shell, or is admin truly separate).
-**Exit criteria**: existing engineer/company/admin flows all still work identically through the new shell (regression-tested against the existing E2E suite); new workspace-switcher flow demoed end to end.
+## Phase 3 — App Shell — **already substantially done, verified 2026-08-29 via fresh screenshots**
+**Correction**: this phase's "workspace switcher doesn't exist" premise was wrong even at plan-writing time — `WorkspaceSwitcher.tsx` was built in two commits (`aea3edd`, `0a2f7c1`, "Phase C increment 1/2") and is live in the shell today: the top nav shows "Personal Workspace" (engineer) / "Organization Workspace" (company) with a switcher control, confirmed in fresh screenshots of `/engineer/dashboard` and `/company/dashboard`. `RightSidebar` still exists and still appears page-specific rather than a generalized contextual-panel framework — that part of the phase is genuinely still open. No persistent AI assistant entry point was found anywhere in the shell — still open.
+**Still open**: generalize `RightSidebar` into a reusable contextual-panel framework; add a persistent AI assistant entry point (UI shell only).
+**Depends on**: Phase 1 decision #3 — resolved: admin will be a separate app (Phase 12), so this shell does not need to also serve as the admin shell.
 
-## Phase 4 — Authentication
+## Phase 4 — Authentication — **not re-verified this pass**
 **Scope**: splash, welcome, onboarding wizard (replacing "land on empty profile page"), AI profile import screen wrapping the existing `POST /engineers/me/resume` + `/ai-enhance` endpoints. Forgot-password and email-verification remain stubs unless the user commits to the backend work in PRODUCT_AUDIT.md §4/§7 — do not fake these.
+**Note**: given Phase 3/7/9's "already done" corrections below, check `/onboarding` and `/auth/register` against this scope before assuming it's still open — don't repeat the mistake of trusting this doc without a fresh check.
 **Exit criteria**: full registration → onboarding → first-dashboard-view flow tested for both Personal and Organization workspace paths.
 
-## Phase 5 — Feed (Social Network core)
-**Scope**: restyle existing `/feed` under the new shell/design system; this phase does NOT include shares/polls/events/articles (zero backend support today — see API_MAPPING.md) unless the user explicitly greenlights the backend work first. Flag this scope boundary in the phase kickoff so it isn't silently dropped or silently faked.
+## Phase 5 — Feed (Social Network core) — **not re-verified this pass**
+**Scope**: restyle existing `/feed` under the new shell/design system; this phase does NOT include shares/polls/events/articles (zero backend support today — see API_MAPPING.md) unless the user explicitly greenlights the backend work first.
 **Exit criteria**: feed parity with today's functionality (post/like/comment) under the new shell, confirmed via E2E.
 
-## Phase 6 — Profile
-**Scope**: unify engineer/company profile screens into one persona-agnostic "Profile" surface per the one-identity model; surface the professional identity graph (skills, experience, connections, completed projects, reviews, trust score) — most of this data already exists across `engineer_profiles`, `trust`, `projects.project_reviews`; this is real aggregation/frontend work, not new backend modeling.
+## Phase 6 — Profile — **not re-verified this pass**
+**Scope**: unify engineer/company profile screens into one persona-agnostic "Profile" surface per the one-identity model; surface the professional identity graph (skills, experience, connections, completed projects, reviews, trust score).
 **Exit criteria**: one profile URL serves both "view as engineer" and "view as org" contexts correctly.
 
-## Phase 7 — Jobs
-**Scope**: restyle `/jobs`, `/jobs/[id]`, `/jobs/new` under the new shell; add AI panels (match explanation, resume optimizer, cover-letter generator, interview prep) — these are new prompt/agent work on top of the existing `AIService`, not new infrastructure. Job aggregator expansion (Greenhouse/Lever/Ashby/etc.) is out of scope for this phase — track as a separate backend initiative per API_MAPPING.md Part C item 5.
-**Exit criteria**: existing job-board functionality unchanged in production behavior; at least one new AI panel (recommend: match explanation, since `matching.JobMatch` already stores factor scores) shipped and demoed.
+## Phase 7 — Jobs — **substantially done, verified 2026-08-29 via fresh screenshots**
+**Correction**: the plan assumed AI match panels were still to build. Fresh screenshots of the public `/jobs` page and the engineer dashboard's "Top AI Career Match" card show this already shipped: a real AI match panel with a 93% "Excellent Match" score, an explicit "Why This Position Matches" explanation, and a 6-factor breakdown (Skills Alignment, Experience Level, Role & Seniority Fit, Timezone Compatibility, Target Compensation, Remote Working Fit) with real per-factor percentages, not decorative. Job search/filter UI (remote type, salary range, seniority, tech stack chips) is live and clean.
+**Still open**: resume optimizer / cover-letter generator / interview-prep AI panels (not confirmed either way this pass); job aggregator expansion (out of scope per original plan anyway).
+**Exit criteria**: existing job-board functionality unchanged in production behavior; at least one new AI panel shipped and demoed — **met** (match explanation).
 
-## Phase 8 — Projects (Freelance Marketplace + AI Work OS overlap)
-**Scope**: this is the highest-leverage phase per SCREEN_SPECIFICATION.md — expose the already-built backend depth (task offers/proposals, unified milestones after reconciling the 3 overlapping models per API_MAPPING.md Part C item 1, work submissions, AI planning/progress/risk/documentation panels). Ship the Project Workspace "AI" tab first (5 endpoints already exist and work) as the fastest, highest-value increment.
+## Phase 8 — Projects (Freelance Marketplace + AI Work OS overlap) — **not re-verified this pass**
+**Scope**: expose the already-built backend depth (task offers/proposals, unified milestones after reconciling the 3 overlapping models per API_MAPPING.md Part C item 1, work submissions, AI planning/progress/risk/documentation panels).
 **Exit criteria**: a real project can be created, staffed via a proposal/offer, tracked through a unified milestone timeline, and the AI panels (plan/progress/risk/docs) all produce real output against real project data.
 
-## Phase 9 — Organization Workspace
-**Scope**: hiring pipeline (kanban over existing application-status transitions), candidates, interviews (⚠️ new backend model needed — flag before committing to this in-phase), team (⚠️ new backend model needed if "team" means multiple humans per org account — confirm cardinality question from PRODUCT_AUDIT.md §3 first), org-scoped analytics (⚠️ new backend endpoint needed).
-**Exit criteria**: hiring pipeline ships against existing data; interviews/team/analytics either ship with their required new backend work explicitly scoped and estimated, or are explicitly deferred with a stated reason — never silently faked with static data.
+## Phase 9 — Organization Workspace — **substantially done, verified 2026-08-29 via fresh screenshots**
+**Correction**: the plan assumed the hiring pipeline was still a kanban-to-build. Fresh screenshot of `/company/dashboard` shows a "Hiring Command Center" already shipped with real metrics (active roles, pipeline count, active projects, talent pool size), an open-positions list, a hiring pipeline progress bar, recent applications with review status, and a top-talent list.
+**Still open**: interviews/team/org-analytics (flagged in the original plan as needing new backend models — cardinality/scope questions from PRODUCT_AUDIT.md §3 still apply, not re-verified this pass).
+**Exit criteria**: hiring pipeline ships against existing data — **met**; interviews/team/analytics still need their scope question answered before committing to them.
 
-## Phase 10 — AI Workspace
-**Scope**: a dedicated surface unifying the AI capabilities that already exist across engineers/jobs/matching/projects/quality domains (6 distinct AI capabilities per PRODUCT_AUDIT.md §2) into one coherent "AI assistant" experience, per the brief's "contextual AI, not a chatbot" principle. This is primarily an integration/IA phase, not new AI infrastructure.
-**Exit criteria**: every AI capability listed in PRODUCT_AUDIT.md §2 is reachable from a contextual entry point in the relevant surface (feed, profile, jobs, hiring, projects, messages), not just via direct API calls.
+## Phase 10 — AI Workspace — **not re-verified this pass**
+**Scope**: a dedicated surface unifying the AI capabilities that already exist across engineers/jobs/matching/projects/quality domains into one coherent "AI assistant" experience.
+**Exit criteria**: every AI capability is reachable from a contextual entry point in the relevant surface, not just via direct API calls.
 
-## Phase 11 — Wallet
-**Scope**: restyle `/payments` under the new shell, fix its orphaned-from-nav status (BUGS.md finding), wire into the workspace switcher. **Explicitly does not include real payment gateway integration** (Phase 1 decision #4) — ship clearly labeled as sandbox/demo mode unless that decision is made and scoped separately.
+## Phase 11 — Wallet — **not re-verified this pass**
+**Scope**: restyle `/payments` under the new shell, fix its orphaned-from-nav status, wire into the workspace switcher. Per the resolved decision, real Stripe Connect integration is tracked as its own initiative (not blocking this phase) — ship this phase against the existing sandbox provider, clearly labeled.
 **Exit criteria**: wallet reachable from nav in both Personal and Organization workspace; all existing sandbox escrow flows (create/release/refund) work identically to today.
 
-## Phase 12 — Admin Application
-**Scope**: depends entirely on Phase 1 decision #3. If genuinely separate: new Next.js app or route group with its own auth flow, own Vercel deployment target, own URL — real DevOps work, not just a frontend screen. If staying integrated: fix the known system-health hardcoding bug, add the missing organizations/projects/payments/audit-log/moderation screens identified as gaps in SCREEN_SPECIFICATION.md. Feature flags are new backend scope either way.
-**Exit criteria**: admin system-health panel reports real status (bug fixed); all screens in SCREEN_SPECIFICATION.md's Admin table marked EXISTS or PARTIAL are shipped; NET-NEW items (feature flags) explicitly scoped as a follow-on, not faked.
+## Phase 12 — Admin Application — **admin UI quality confirmed good; separate-app split not started**
+**Correction**: the plan's "fix the known system-health hardcoding bug" item is done — fresh screenshot of `/admin/dashboard` confirms Keycloak shows honestly as `DOWN` (a real check, not hardcoded green) while Postgres/Redis/MinIO/Celery show real per-service latencies; platform metrics, AI token cost monitoring, job-source sync status, and moderation queue are all real and wired to live data.
+**Given the resolved decision** (split into a separate app): none of the actual DevOps work has started — new Next.js app, new Vercel project, auth flow decision, CORS updates. The good admin UI that exists today still lives inside the main app and would need to move.
+**Exit criteria**: system-health panel reports real status — **met** (in current integrated location); separate-app migration — not started.
 
 ---
 
