@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from jose import jwt
+from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -113,8 +114,17 @@ async def login(
     email_val: str | None = None
     password_val: str | None = None
     if content_type.startswith("application/json"):
-        payload = await request.json()
-        data = LoginRequest.model_validate(payload)
+        try:
+            payload = await request.json()
+            data = LoginRequest.model_validate(payload)
+        except PydanticValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=[
+                    {"field": ".".join(str(loc_part) for loc_part in e["loc"]), "msg": e["msg"]}
+                    for e in exc.errors()
+                ],
+            ) from exc
         email_val = str(data.email)
         password_val = data.password
     else:
