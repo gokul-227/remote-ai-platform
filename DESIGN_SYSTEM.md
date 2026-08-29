@@ -7,7 +7,7 @@
 ## 1. Current State (verified, as of this audit)
 
 ### 1.1 Existing tokens (`apps/web/src/app/globals.css`)
-Light-mode only — **no dark mode exists today** (no `.dark` class, no `prefers-color-scheme` block anywhere in the file).
+**Correction (2026-08-29): this section was written 2026-08-15 and is stale — dark mode now exists.** A full `:root[data-theme="dark"]` token block was added since, plus a Tailwind v4 `@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));` declaration enabling `dark:` utility classes. Token hex values below have also drifted slightly from what's actually in the file (e.g. `--bg-page` is now `#F7F9FC`, not `#F3F2EF`) — treat this table as historical; read `globals.css` directly for current values.
 
 | Category | Tokens |
 |---|---|

@@ -70,6 +70,20 @@
   --badge-warning-bg: #FEF0C7; --badge-warning-text: #B54708;
   --badge-danger-bg: #FEE4E2;  --badge-danger-text: #B42318;
   --badge-neutral-bg: #F2F4F7; --badge-neutral-text: #344054; --badge-neutral-border: #D0D5DD;
+
+  /* Spacing: 8px grid, formalized (Tailwind's own scale already matches these
+     at each step — these exist so components can reference a named step via
+     var(--space-*) instead of a raw Tailwind number, per DESIGN_SYSTEM.md §3) */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px;
+
+  /* Typography: formalized scale (font stack unchanged — see body{} below,
+     already system-ui-based, not Inter; sizes match Tailwind's defaults so
+     no visual change to existing pages, just names to reference explicitly) */
+  --text-xs: 0.75rem;   --text-sm: 0.875rem; --text-base: 1rem;
+  --text-lg: 1.125rem;  --text-xl: 1.25rem;  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem; --text-4xl: 2.25rem;
 }
 
 :root[data-theme="dark"] {

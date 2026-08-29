@@ -8,11 +8,11 @@ What follows is a plan that can actually be executed, phase by phase, across mul
 
 **Component count target**: ~100, not 150-200 (see DESIGN_SYSTEM.md §4) — built incrementally, one phase's worth at a time, not upfront.
 
-**Decisions needed from the user before Phase 2 can start** (flagged, not assumed):
-1. shadcn/ui: adopt (with a token bridge) or extend the existing hand-rolled system? (DESIGN_SYSTEM.md §2 recommends extending, but this is the user's call.)
-2. "Supabase PostgreSQL": does this mean the already-true "Postgres hosted by Supabase," or adopting Supabase's client SDK/RLS model as a real architecture change?
-3. Admin as a genuinely separate application/deployment (own Vercel project, own URL, own auth flow) — confirm this is worth the deployment/DevOps overhead versus a role-gated section of the same app (which is what exists today and already works).
-4. Real payment gateway integration (Stripe Connect, matching the brief's own "Stripe" inspiration) to replace the sandbox escrow provider — this is new backend scope with real compliance/KYC implications, worth scoping as its own initiative rather than folding into "Phase 11: Wallet."
+**Decisions from the user (resolved 2026-08-29)**:
+1. shadcn/ui: extend the existing hand-rolled system (DESIGN_SYSTEM.md §2 Option B) — reuse real shadcn/Radix-sourced components (checking license per component) only for genuinely new component categories; do not replace the ~30 working components.
+2. "Supabase PostgreSQL": confirmed as already-true "Postgres hosted by Supabase" — no architecture change; continue with SQLAlchemy/asyncpg as-is.
+3. Admin: **split into a genuinely separate application** — own Next.js app/deployment, own URL, own auth flow. Scoped as its own initiative (Phase 12), not attempted inside the Phase 2 design-system work. Real DevOps/deployment work: new Vercel project, new render/env config, auth flow decision (shared Keycloak realm vs. separate), CORS updates on the API side.
+4. **Start real Stripe Connect integration** to replace the sandbox escrow provider. This has real compliance/KYC implications (Stripe Connect onboarding, webhook signature verification, PCI scope, payout/refund reconciliation) and needs its own dedicated scoping session before implementation — not something to build inside a single response alongside the design-system work. Tracked as its own initiative; Phase 11 (Wallet UI) proceeds against the existing sandbox provider in the meantime so wallet UI work isn't blocked on the gateway decision.
 
 ---
 
@@ -21,10 +21,16 @@ What follows is a plan that can actually be executed, phase by phase, across mul
 **Also in scope for Phase 1** (not yet done — next actions): fix the 3 P1 bugs found in the UI audit (hydration mismatch, `/quality` auth gate, `/engineer/dashboard` role guard) before building new UI on top of them, since they'd otherwise contaminate every later phase's test baseline.
 **Exit criteria**: user has reviewed and confirmed the 4 open decisions above; P1 bugs fixed and re-verified via the existing Playwright audit script.
 
-## Phase 2 — Design System
+## Phase 2 — Design System (in progress, 2026-08-29)
 **Scope**: resolve the shadcn/ui decision; implement dark-mode token variants; formalize the 8px spacing scale and Inter typography; add CVA-style variant composition to the existing 30 components; build the ~15 net-new primitives needed immediately for Phase 3-5 (combobox, sortable data table via TanStack Table, workspace switcher shell, universal search overlay).
-**Depends on**: Phase 1 decision #1.
-**Exit criteria**: Storybook-equivalent component gallery page (or equivalent visual QA artifact) covering every primitive in both light and dark mode; Lighthouse accessibility score baseline recorded for the gallery page.
+**Progress so far**:
+- shadcn/ui decision resolved: extend existing system (DESIGN_SYSTEM.md §2 Option B).
+- Dark-mode tokens: already existed in `globals.css` as of this check (added by an earlier, undocumented change — DESIGN_SYSTEM.md §1.1 corrected to reflect this).
+- 8px spacing scale (`--space-1` through `--space-16`) and a named typography scale (`--text-xs` through `--text-4xl`) added to `globals.css` as tokens — purely additive, no visual change to existing pages (values match Tailwind's own defaults at each step).
+- `Card` component converted to CVA with a `variant` prop (`enterprise|job|profile|metric|ai|project`), consolidating 6 previously-separate CSS classes — 4 of the 6 (`card-job`/`card-profile`/`card-metric`/`card-project`) had **zero usage anywhere in the app** despite being defined; they're now reachable as a real variant instead of dead CSS.
+- Still not done: CVA composition for the other 9 primitives without it (Avatar, EmptyState, Drawer, Skeleton, Progress, Input, Toast, Tabs, Table, Modal — Input/Table specifically only need it if/when they gain real size/style variants, not by default); Inter font (current stack is system-ui-based, not Inter — confirm this is actually wanted before switching, since it's a visible change to every page); net-new primitives (Combobox, TanStack-Table-backed sortable data table, workspace switcher shell, universal search overlay); the component-gallery exit-criteria artifact itself.
+**Depends on**: Phase 1 decision #1 (resolved above).
+**Exit criteria**: Storybook-equivalent component gallery page (or equivalent visual QA artifact) covering every primitive in both light and dark mode; Lighthouse accessibility score baseline recorded for the gallery page. **Not yet met** — tracked as the next concrete increment.
 
 ## Phase 3 — App Shell
 **Scope**: workspace switcher (Personal/Organization), consolidating the current separate `/engineer/*` and `/company/*` route trees behind one shell driven by the existing `PATCH /auth/role` endpoint; right contextual panel framework (generalizing the existing page-specific `RightSidebar`); persistent AI assistant entry point (UI shell only — wiring real AI behind it happens per-surface in later phases).
