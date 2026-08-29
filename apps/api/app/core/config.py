@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_NAME: str = "Remote AI Platform"
     APP_VERSION: str = "0.1.0"
+    GIT_SHA: str = "93896403d95d07367f71d68606a1b45efe1be131"
     APP_URL: str = "http://localhost:3000"
     API_URL: str = "http://localhost:8000"
     DEBUG: bool = False

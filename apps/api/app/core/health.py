@@ -9,6 +9,7 @@ Provides distinct liveness, readiness, and dependency diagnostics endpoints:
 """
 
 import asyncio
+import os
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -45,12 +46,21 @@ class HealthLiveResponse(BaseModel):
     timestamp: str
 
 
+class HealthVersionResponse(BaseModel):
+    service: str = "remote-ai-platform-api"
+    version: str
+    git_sha: str
+    environment: str
+    timestamp: str
+
+
 class HealthReadyResponse(BaseModel):
     status: str  # HEALTHY, DEGRADED, DOWN
     version: str
     environment: str
     timestamp: str
     services: dict[str, ServiceCheckResult]
+
 
 
 # ── Dependency Check Helpers ──────────────────────────────────────────────────
@@ -198,6 +208,18 @@ async def _check_ai_provider() -> ServiceCheckResult:
 
 
 # ── Health Route Definitions ──────────────────────────────────────────────────
+
+
+@router.get("/health/version", response_model=HealthVersionResponse, summary="Service version and git commit SHA")
+async def health_version() -> HealthVersionResponse:
+    """Return current service version, git commit SHA, and environment without secrets."""
+    return HealthVersionResponse(
+        service="remote-ai-platform-api",
+        version=settings.APP_VERSION,
+        git_sha=os.environ.get("RENDER_GIT_COMMIT", os.environ.get("GIT_SHA", settings.GIT_SHA)),
+        environment=settings.APP_ENV,
+        timestamp=datetime.now(UTC).isoformat(),
+    )
 
 
 @router.get("/health/live", response_model=HealthLiveResponse, summary="Process liveness check")
