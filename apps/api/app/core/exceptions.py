@@ -6,15 +6,15 @@ import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
 
-from app.core.schemas import ErrorResponse, ErrorDetail
+from app.core.schemas import ErrorDetail, ErrorResponse
 
 logger = structlog.get_logger(__name__)
 
 
-class PlatformException(Exception):
+class PlatformException(Exception):  # noqa: N818
     """Base domain exception."""
+
     def __init__(
         self,
         message: str,

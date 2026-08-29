@@ -4,61 +4,62 @@ Pydantic schemas for Engineer Profile domain.
 
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ExperienceItem(BaseModel):
     company: str
     title: str
     start_date: str
-    end_date: Optional[str] = "Present"
+    end_date: str | None = "Present"
     is_current: bool = False
-    description: Optional[str] = None
-    technologies: List[str] = []
+    description: str | None = None
+    technologies: list[str] = []
 
 
 class ProjectItem(BaseModel):
     title: str
     description: str
-    url: Optional[str] = None
-    github_url: Optional[str] = None
-    technologies: List[str] = []
+    url: str | None = None
+    github_url: str | None = None
+    technologies: list[str] = []
 
 
 class EducationItem(BaseModel):
     institution: str
     degree: str
-    field_of_study: Optional[str] = None
-    start_year: Optional[int] = None
-    end_year: Optional[int] = None
+    field_of_study: str | None = None
+    start_year: int | None = None
+    end_year: int | None = None
 
 
 class EngineerProfileBase(BaseModel):
-    country: Optional[str] = None
-    profile_image_url: Optional[str] = None
-    headline: Optional[str] = Field(None, max_length=255)
-    bio: Optional[str] = None
-    location: Optional[str] = Field(None, max_length=255)
-    timezone: Optional[str] = None
-    availability: Optional[str] = None
-    remote_preference: Optional[str] = None
+    country: str | None = None
+    profile_image_url: str | None = None
+    headline: str | None = Field(None, max_length=255)
+    bio: str | None = None
+    location: str | None = Field(None, max_length=255)
+    timezone: str | None = None
+    availability: str | None = None
+    remote_preference: str | None = None
     years_of_experience: int = Field(0, ge=0, le=50)
-    primary_role: Optional[str] = Field(None, max_length=255)
-    certifications: List[Dict[str, Any]] = []
-    previous_companies: List[str] = []
-    employment_type: Optional[str] = None
-    available_hours: Optional[int] = Field(None, ge=0, le=168)
-    hourly_rate: Optional[float] = Field(None, ge=0)
-    desired_salary_min: Optional[float] = Field(None, ge=0)
-    languages: List[str] = []
-    github_url: Optional[str] = None
-    linkedin_url: Optional[str] = None
-    portfolio_url: Optional[str] = None
-    skills: List[str] = []
-    experience: List[ExperienceItem] = []
-    projects: List[ProjectItem] = []
-    education: List[EducationItem] = []
+    primary_role: str | None = Field(None, max_length=255)
+    certifications: list[dict[str, Any]] = []
+    previous_companies: list[str] = []
+    employment_type: str | None = None
+    available_hours: int | None = Field(None, ge=0, le=168)
+    hourly_rate: float | None = Field(None, ge=0)
+    desired_salary_min: float | None = Field(None, ge=0)
+    languages: list[str] = []
+    github_url: str | None = None
+    linkedin_url: str | None = None
+    portfolio_url: str | None = None
+    skills: list[str] = []
+    experience: list[ExperienceItem] = []
+    projects: list[ProjectItem] = []
+    education: list[EducationItem] = []
     is_public: bool = True
     is_open_to_work: bool = True
 
@@ -68,32 +69,32 @@ class EngineerProfileCreate(EngineerProfileBase):
 
 
 class EngineerProfileUpdate(BaseModel):
-    country: Optional[str] = None
-    profile_image_url: Optional[str] = None
-    headline: Optional[str] = None
-    bio: Optional[str] = None
-    location: Optional[str] = None
-    timezone: Optional[str] = None
-    availability: Optional[str] = None
-    remote_preference: Optional[str] = None
-    years_of_experience: Optional[int] = Field(None, ge=0, le=50)
-    primary_role: Optional[str] = None
-    certifications: Optional[List[Dict[str, Any]]] = None
-    previous_companies: Optional[List[str]] = None
-    employment_type: Optional[str] = None
-    available_hours: Optional[int] = Field(None, ge=0, le=168)
-    hourly_rate: Optional[float] = Field(None, ge=0)
-    desired_salary_min: Optional[float] = Field(None, ge=0)
-    languages: Optional[List[str]] = None
-    github_url: Optional[str] = None
-    linkedin_url: Optional[str] = None
-    portfolio_url: Optional[str] = None
-    skills: Optional[List[str]] = None
-    experience: Optional[List[ExperienceItem]] = None
-    projects: Optional[List[ProjectItem]] = None
-    education: Optional[List[EducationItem]] = None
-    is_public: Optional[bool] = None
-    is_open_to_work: Optional[bool] = None
+    country: str | None = None
+    profile_image_url: str | None = None
+    headline: str | None = None
+    bio: str | None = None
+    location: str | None = None
+    timezone: str | None = None
+    availability: str | None = None
+    remote_preference: str | None = None
+    years_of_experience: int | None = Field(None, ge=0, le=50)
+    primary_role: str | None = None
+    certifications: list[dict[str, Any]] | None = None
+    previous_companies: list[str] | None = None
+    employment_type: str | None = None
+    available_hours: int | None = Field(None, ge=0, le=168)
+    hourly_rate: float | None = Field(None, ge=0)
+    desired_salary_min: float | None = Field(None, ge=0)
+    languages: list[str] | None = None
+    github_url: str | None = None
+    linkedin_url: str | None = None
+    portfolio_url: str | None = None
+    skills: list[str] | None = None
+    experience: list[ExperienceItem] | None = None
+    projects: list[ProjectItem] | None = None
+    education: list[EducationItem] | None = None
+    is_public: bool | None = None
+    is_open_to_work: bool | None = None
 
 
 class EngineerProfileResponse(EngineerProfileBase):
@@ -101,12 +102,12 @@ class EngineerProfileResponse(EngineerProfileBase):
 
     id: uuid.UUID
     user_id: uuid.UUID
-    resume_url: Optional[str] = None
-    parsed_resume_data: Optional[Dict[str, Any]] = None
-    ai_summary: Optional[str] = None
-    profile_score: Optional[float] = None
-    missing_skills: List[str] = []
-    matching_keywords: List[str] = []
+    resume_url: str | None = None
+    parsed_resume_data: dict[str, Any] | None = None
+    ai_summary: str | None = None
+    profile_score: float | None = None
+    missing_skills: list[str] = []
+    matching_keywords: list[str] = []
     created_at: datetime
     updated_at: datetime
 
@@ -117,11 +118,11 @@ class ResumeUploadResponse(BaseModel):
 
 
 class EngineerSearchQuery(BaseModel):
-    query: Optional[str] = None
-    skills: Optional[List[str]] = None
-    min_years_exp: Optional[int] = None
-    primary_role: Optional[str] = None
-    location: Optional[str] = None
+    query: str | None = None
+    skills: list[str] | None = None
+    min_years_exp: int | None = None
+    primary_role: str | None = None
+    location: str | None = None
     is_open_to_work: bool = True
     skip: int = 0
     limit: int = 20

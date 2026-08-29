@@ -5,7 +5,7 @@ Provides tiered rate limits across Authentication, AI, and Public endpoints.
 
 import time
 from collections import defaultdict, deque
-from typing import Optional, Tuple
+
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
@@ -25,15 +25,33 @@ def reset_fallback_state() -> None:
     _fallback_windows.clear()
 
 
-def get_route_tier(path: str) -> Optional[Tuple[int, int]]:
+def get_route_tier(path: str) -> tuple[int, int] | None:
     # Exempt internal/diagnostic routes
-    if path in {"/health", "/health/live", "/health/ready", "/health/dependencies", "/api/v1/health", "/metrics", "/docs", "/redoc", "/openapi.json"}:
+    if path in {
+        "/health",
+        "/health/live",
+        "/health/ready",
+        "/health/dependencies",
+        "/api/v1/health",
+        "/metrics",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    }:
         return None
 
     base_limit = settings.RATE_LIMIT_MAX_REQUESTS
     window = settings.RATE_LIMIT_WINDOW_SECONDS
 
-    if any(path.startswith(p) for p in ("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password")):
+    if any(
+        path.startswith(p)
+        for p in (
+            "/api/v1/auth/login",
+            "/api/v1/auth/register",
+            "/api/v1/auth/forgot-password",
+            "/api/v1/auth/reset-password",
+        )
+    ):
         return (base_limit, window)
 
     if any(path.startswith(p) for p in ("/api/v1/quality", "/api/v1/matching", "/quality")):
@@ -45,7 +63,7 @@ def get_route_tier(path: str) -> Optional[Tuple[int, int]]:
 async def check_rate_limit(
     identifier: str,
     path: str,
-) -> Tuple[bool, int, int]:
+) -> tuple[bool, int, int]:
     """
     Check rate limit for client identifier on path.
     Returns: (is_allowed, remaining_requests, retry_after_seconds)

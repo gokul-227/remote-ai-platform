@@ -3,8 +3,8 @@ API Router for AI Matching domain.
 """
 
 import uuid
-from typing import List
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,13 +23,13 @@ async def get_matching_service(db: AsyncSession = Depends(get_db)) -> MatchingSe
     return MatchingService(db)
 
 
-@router.get("/recommendations", response_model=List[JobMatchResponse])
+@router.get("/recommendations", response_model=list[JobMatchResponse])
 async def get_my_job_recommendations(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     service: MatchingService = Depends(get_matching_service),
-) -> List[JobMatchResponse]:
+) -> list[JobMatchResponse]:
     """Get personalized AI-recommended jobs with per-factor match scores for logged-in engineer."""
     matches = await service.get_recommendations_for_engineer(
         current_user.id, skip=skip, limit=limit
@@ -49,22 +49,27 @@ async def get_my_match_for_job(
     return JobMatchResponse.model_validate(match)
 
 
-@router.get("/candidates/{job_id}", response_model=List[JobMatchResponse])
+@router.get("/candidates/{job_id}", response_model=list[JobMatchResponse])
 async def get_candidates_for_job(
     job_id: uuid.UUID,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     service: MatchingService = Depends(get_matching_service),
-) -> List[JobMatchResponse]:
+) -> list[JobMatchResponse]:
     """Get top matching engineer candidates for a company's job post."""
     if current_user.role == UserRole.COMPANY:
         job = await service.job_repo.get_by_id(job_id)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job post not found")
-        company = await service.db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+        company = await service.db.scalar(
+            select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
+        )
         if not company or job.company_id != company.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view candidates for this job")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to view candidates for this job",
+            )
     matches = await service.get_top_candidates_for_job(job_id, skip=skip, limit=limit)
     return [JobMatchResponse.model_validate(m) for m in matches]
 
@@ -82,7 +87,9 @@ async def update_match_status(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match not found")
     engineer = await service.db.get(EngineerProfile, match_obj.engineer_id)
     if not engineer or engineer.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this match")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this match"
+        )
     match_obj.status = body.status
     await service.db.commit()
     return JobMatchResponse.model_validate(match_obj)

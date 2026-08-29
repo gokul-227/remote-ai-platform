@@ -4,18 +4,19 @@ User entity model for authentication and role management.
 
 import enum
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import String, Boolean, Enum as SQLEnum, DateTime, func, Text, Integer, ForeignKey
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.domains.engineers.models import EngineerProfile
     from app.domains.companies.models import CompanyProfile
+    from app.domains.engineers.models import EngineerProfile
 
 
 class UserRole(str, enum.Enum):
@@ -33,7 +34,7 @@ class User(Base):
         default=uuid.uuid4,
         index=True,
     )
-    keycloak_id: Mapped[Optional[str]] = mapped_column(
+    keycloak_id: Mapped[str | None] = mapped_column(
         String(255),
         unique=True,
         nullable=True,
@@ -45,7 +46,7 @@ class User(Base):
         nullable=False,
         index=True,
     )
-    password_hash: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     full_name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
@@ -65,7 +66,7 @@ class User(Base):
         default=1,
         nullable=False,
     )
-    avatar_url: Mapped[Optional[str]] = mapped_column(
+    avatar_url: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -116,7 +117,7 @@ class PasswordResetToken(Base):
     )
     token_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

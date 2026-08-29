@@ -4,9 +4,8 @@ All configuration is loaded from environment variables or .env file.
 """
 
 from functools import lru_cache
-from typing import List, Optional
 
-from pydantic import AnyHttpUrl, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,7 +37,7 @@ class Settings(BaseSettings):
     )
 
     @property
-    def CORS_ORIGINS(self) -> List[str]:
+    def CORS_ORIGINS(self) -> list[str]:  # noqa: N802
         return [origin.strip() for origin in self.CORS_ORIGINS_RAW.split(",") if origin.strip()]
 
     # ── Database ───────────────────────────────────────────────────────────────
@@ -84,8 +83,8 @@ class Settings(BaseSettings):
 
     AI_PROVIDER: str = "ollama"
     AI_MODEL: str = "qwen2.5"
-    AI_API_KEY: Optional[str] = None
-    LITELLM_BASE_URL: Optional[str] = None
+    AI_API_KEY: str | None = None
+    LITELLM_BASE_URL: str | None = None
     AI_FALLBACK_PROVIDERS: str = "ollama/qwen2.5"
     AI_MAX_RETRIES: int = 3
     AI_TIMEOUT_SECONDS: int = 60
@@ -96,8 +95,8 @@ class Settings(BaseSettings):
     MAX_RESUME_SIZE_BYTES: int = 5 * 1024 * 1024
 
     # Optional: production AI providers via LiteLLM
-    GROQ_API_KEY: Optional[str] = None
-    OPENAI_API_KEY: Optional[str] = None
+    GROQ_API_KEY: str | None = None
+    OPENAI_API_KEY: str | None = None
 
     # ── Job Aggregator ────────────────────────────────────────────────────────
     REMOTEOK_API_URL: str = "https://remoteok.com/api"
@@ -105,7 +104,7 @@ class Settings(BaseSettings):
     REMOTIVE_API_URL: str = "https://remotive.com/api/remote-jobs"
     USAJOBS_API_URL: str = "https://data.usajobs.gov/api/search"
     USAJOBS_USER_AGENT: str = "RemoteAIPlatform/0.1 (admin@remoteaiplatform.ai)"
-    USAJOBS_AUTH_KEY: Optional[str] = None
+    USAJOBS_AUTH_KEY: str | None = None
     THEMUSE_API_URL: str = "https://www.themuse.com/api/public/jobs"
 
     JOB_SYNC_SCHEDULE: str = "0 */6 * * *"  # Every 6 hours
@@ -144,7 +143,29 @@ class Settings(BaseSettings):
         if self.MINIO_SECRET_KEY in {"minioadmin", "minioadmin_dev_password", ""}:
             errors.append("MINIO_SECRET_KEY must be configured")
         if "*" in self.CORS_ORIGINS:
-            errors.append("CORS_ORIGINS must not contain a wildcard in production (combined with allow_credentials=True, this permits credentialed cross-origin requests from any site)")
+            errors.append(
+                "CORS_ORIGINS must not contain a wildcard in production (combined with allow_credentials=True, this permits credentialed cross-origin requests from any site)"
+            )
+        # Warn (non-fatal) if Redis is pointing at localhost — the app will boot but
+        # rate limiting, caching and the job queue will silently degrade to in-memory
+        # fallbacks.  Operators should set REDIS_URL / CELERY_BROKER_URL to a real
+        # Redis instance (e.g. Upstash free tier) or accept the degraded behaviour.
+        _redis_localhost_warning: list[str] = []
+        if self.REDIS_URL.startswith("redis://localhost"):
+            _redis_localhost_warning.append("REDIS_URL")
+        if self.CELERY_BROKER_URL.startswith("redis://localhost"):
+            _redis_localhost_warning.append("CELERY_BROKER_URL")
+        if self.CELERY_RESULT_BACKEND.startswith("redis://localhost"):
+            _redis_localhost_warning.append("CELERY_RESULT_BACKEND")
+        if _redis_localhost_warning:
+            import warnings
+
+            warnings.warn(
+                f"Production broker/cache config uses localhost for: {', '.join(_redis_localhost_warning)}. "
+                "Rate limiting, caching and background tasks will run in degraded in-memory fallback mode. "
+                "Set these env vars to a hosted Redis URL (e.g. Upstash) to enable full functionality.",
+                stacklevel=2,
+            )
         if errors:
             raise RuntimeError("Invalid production configuration: " + "; ".join(errors))
 

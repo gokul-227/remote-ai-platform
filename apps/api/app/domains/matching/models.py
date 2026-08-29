@@ -4,10 +4,10 @@ AI Job Match domain models.
 
 import uuid
 from datetime import datetime
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from sqlalchemy import String, DateTime, func, Text, Float, ForeignKey, UniqueConstraint, JSON
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 class JobMatch(Base):
     __tablename__ = "job_matches"
-    __table_args__ = (
-        UniqueConstraint("engineer_id", "job_id", name="uq_engineer_job_match"),
-    )
+    __table_args__ = (UniqueConstraint("engineer_id", "job_id", name="uq_engineer_job_match"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -42,18 +40,22 @@ class JobMatch(Base):
         index=True,
     )
 
-    overall_score: Mapped[float] = mapped_column(Float, nullable=False, index=True) # 0.0 to 100.0
-    skill_score: Mapped[float] = mapped_column(Float, nullable=False)               # 0.0 to 100.0
-    experience_score: Mapped[float] = mapped_column(Float, nullable=False)          # 0.0 to 100.0
-    role_score: Mapped[float] = mapped_column(Float, nullable=False)                # 0.0 to 100.0
+    overall_score: Mapped[float] = mapped_column(Float, nullable=False, index=True)  # 0.0 to 100.0
+    skill_score: Mapped[float] = mapped_column(Float, nullable=False)  # 0.0 to 100.0
+    experience_score: Mapped[float] = mapped_column(Float, nullable=False)  # 0.0 to 100.0
+    role_score: Mapped[float] = mapped_column(Float, nullable=False)  # 0.0 to 100.0
     timezone_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     availability_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     compensation_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     remote_score: Mapped[float] = mapped_column(Float, nullable=False, default=0)
 
     reasoning: Mapped[str] = mapped_column(Text, nullable=False)
-    matching_skills: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
-    missing_skills: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    matching_skills: Mapped[list[str]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False
+    )
+    missing_skills: Mapped[list[str]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False
+    )
 
     status: Mapped[str] = mapped_column(
         String(50), default="recommended", nullable=False, index=True

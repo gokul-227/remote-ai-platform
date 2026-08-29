@@ -2,13 +2,14 @@
 FastAPI authentication and authorization dependencies.
 """
 
-from typing import Optional, List, Callable
+from collections.abc import Callable
+
 from fastapi import Depends, HTTPException, Security, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.exceptions import AuthenticationError, AuthorizationError
+from app.core.exceptions import AuthenticationError
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.service import AuthService
@@ -22,7 +23,7 @@ async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Security(security_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """
@@ -66,13 +67,13 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(security_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Security(security_scheme),
     db: AsyncSession = Depends(get_db),
-) -> Optional[User]:
+) -> User | None:
     """Returns User if valid bearer token present, else None."""
     if not credentials or not credentials.credentials:
         return None
@@ -87,6 +88,7 @@ def require_role(*allowed_roles: UserRole) -> Callable:
     Factory for role-based access control dependency.
     Example: Depends(require_role(UserRole.COMPANY, UserRole.ADMIN))
     """
+
     async def role_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in allowed_roles:
             raise HTTPException(

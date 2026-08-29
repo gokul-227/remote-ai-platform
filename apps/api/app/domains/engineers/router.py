@@ -3,8 +3,8 @@ API Router for Engineer Profile domain.
 """
 
 import uuid
-from typing import List, Optional
-from fastapi import APIRouter, Depends, File, UploadFile, Query, status, HTTPException
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -14,8 +14,8 @@ from app.domains.auth.models import User, UserRole
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import (
     EngineerProfileCreate,
-    EngineerProfileUpdate,
     EngineerProfileResponse,
+    EngineerProfileUpdate,
     EngineerSearchQuery,
     ResumeUploadResponse,
 )
@@ -29,12 +29,12 @@ async def get_engineer_service(db: AsyncSession = Depends(get_db)) -> EngineerSe
     return EngineerService(repo)
 
 
-@router.get("", response_model=List[EngineerProfileResponse])
+@router.get("", response_model=list[EngineerProfileResponse])
 async def list_engineers(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: EngineerService = Depends(get_engineer_service),
-) -> List[EngineerProfileResponse]:
+) -> list[EngineerProfileResponse]:
     """List public engineer profiles for company dashboards."""
     params = EngineerSearchQuery(skip=skip, limit=limit)
     results = await service.search_engineers(params)
@@ -102,7 +102,9 @@ async def upload_resume(
             detail="File format not supported. Upload PDF or DOCX.",
         )
     if file.content_type not in ALLOWED_RESUME_TYPES:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported content type")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported content type"
+        )
     try:
         resume_url = await service.upload_resume(current_user.id, file)
     except ValueError as exc:
@@ -110,18 +112,18 @@ async def upload_resume(
     return ResumeUploadResponse(resume_url=resume_url)
 
 
-@router.get("/search", response_model=List[EngineerProfileResponse])
+@router.get("/search", response_model=list[EngineerProfileResponse])
 async def search_engineers(
-    query: Optional[str] = Query(None, description="Keywords search"),
-    skills: Optional[List[str]] = Query(None, description="Match any listed skill"),
-    min_years_exp: Optional[int] = Query(None, ge=0),
-    primary_role: Optional[str] = Query(None),
-    location: Optional[str] = Query(None),
+    query: str | None = Query(None, description="Keywords search"),
+    skills: list[str] | None = Query(None, description="Match any listed skill"),
+    min_years_exp: int | None = Query(None, ge=0),
+    primary_role: str | None = Query(None),
+    location: str | None = Query(None),
     is_open_to_work: bool = Query(True),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: EngineerService = Depends(get_engineer_service),
-) -> List[EngineerProfileResponse]:
+) -> list[EngineerProfileResponse]:
     """Search public engineer profiles (for companies & admins)."""
     search_params = EngineerSearchQuery(
         query=query,

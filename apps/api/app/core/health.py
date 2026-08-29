@@ -10,14 +10,14 @@ Provides distinct liveness, readiness, and dependency diagnostics endpoints:
 
 import asyncio
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import boto3
 import httpx
 from botocore.client import Config as BotoConfig
 from fastapi import APIRouter, Depends, Response, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from redis.asyncio import Redis
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,8 +34,8 @@ class ServiceCheckResult(BaseModel):
     status: str  # HEALTHY, DEGRADED, DOWN, UNKNOWN
     latency_ms: float
     checked_at: str
-    details: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    details: dict[str, Any] | None = None
+    error: str | None = None
 
 
 class HealthLiveResponse(BaseModel):
@@ -50,14 +50,15 @@ class HealthReadyResponse(BaseModel):
     version: str
     environment: str
     timestamp: str
-    services: Dict[str, ServiceCheckResult]
+    services: dict[str, ServiceCheckResult]
 
 
 # ── Dependency Check Helpers ──────────────────────────────────────────────────
 
+
 async def _check_database(db: AsyncSession) -> ServiceCheckResult:
     started = time.perf_counter()
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
     try:
         await db.execute(text("SELECT 1"))
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
@@ -80,15 +81,16 @@ async def _check_database(db: AsyncSession) -> ServiceCheckResult:
 
 async def _check_redis() -> ServiceCheckResult:
     started = time.perf_counter()
-    checked_at = datetime.now(timezone.utc).isoformat()
-    client: Optional[Redis] = None
+    checked_at = datetime.now(UTC).isoformat()
+    client: Redis | None = None
     try:
         client = Redis.from_url(
             settings.CELERY_BROKER_URL,
             socket_connect_timeout=1.5,
             socket_timeout=1.5,
         )
-        await client.ping()
+        if client is not None:
+            await client.ping()
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         return ServiceCheckResult(
             service="Redis Broker & Cache",
@@ -113,7 +115,9 @@ async def _check_redis() -> ServiceCheckResult:
 def _probe_s3_storage_sync() -> None:
     scheme = "https" if settings.MINIO_SECURE else "http"
     endpoint = settings.MINIO_ENDPOINT
-    endpoint_url = endpoint if endpoint.startswith(("http://", "https://")) else f"{scheme}://{endpoint}"
+    endpoint_url = (
+        endpoint if endpoint.startswith(("http://", "https://")) else f"{scheme}://{endpoint}"
+    )
     client = boto3.client(
         "s3",
         endpoint_url=endpoint_url,
@@ -132,7 +136,7 @@ def _probe_s3_storage_sync() -> None:
 
 async def _check_storage() -> ServiceCheckResult:
     started = time.perf_counter()
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
     try:
         await asyncio.wait_for(asyncio.to_thread(_probe_s3_storage_sync), timeout=2.0)
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
@@ -155,7 +159,7 @@ async def _check_storage() -> ServiceCheckResult:
 
 async def _check_ai_provider() -> ServiceCheckResult:
     started = time.perf_counter()
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
     provider = settings.AI_PROVIDER.lower()
     if provider == "ollama":
         url = f"{settings.OLLAMA_BASE_URL}/api/tags"
@@ -195,6 +199,7 @@ async def _check_ai_provider() -> ServiceCheckResult:
 
 # ── Health Route Definitions ──────────────────────────────────────────────────
 
+
 @router.get("/health/live", response_model=HealthLiveResponse, summary="Process liveness check")
 async def health_liveness() -> HealthLiveResponse:
     """Fast non-blocking liveness probe to verify FastAPI process event loop is active."""
@@ -202,7 +207,7 @@ async def health_liveness() -> HealthLiveResponse:
         status="HEALTHY",
         version=settings.APP_VERSION,
         environment=settings.APP_ENV,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 
@@ -237,12 +242,16 @@ async def health_readiness(
         status=overall,
         version=settings.APP_VERSION,
         environment=settings.APP_ENV,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         services=services,
     )
 
 
-@router.get("/health/dependencies", response_model=HealthReadyResponse, summary="Deep dependencies diagnostic")
+@router.get(
+    "/health/dependencies",
+    response_model=HealthReadyResponse,
+    summary="Deep dependencies diagnostic",
+)
 async def health_dependencies(
     response: Response,
     db: AsyncSession = Depends(get_db),
@@ -277,7 +286,7 @@ async def health_dependencies(
         status=overall,
         version=settings.APP_VERSION,
         environment=settings.APP_ENV,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         services=services,
     )
 
@@ -286,7 +295,7 @@ async def health_dependencies(
 async def health_check_legacy(
     response: Response,
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Legacy health check endpoint returning format expected by Docker and monitoring."""
     ready_resp = await health_readiness(response, db)
     return {
@@ -294,7 +303,9 @@ async def health_check_legacy(
         "version": ready_resp.version,
         "environment": ready_resp.environment,
         "services": {
-            k: v.status.lower() if v.status == "HEALTHY" else f"{v.status.lower()}: {v.error or ''}".strip()
+            k: v.status.lower()
+            if v.status == "HEALTHY"
+            else f"{v.status.lower()}: {v.error or ''}".strip()
             for k, v in ready_resp.services.items()
         },
     }

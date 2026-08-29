@@ -4,11 +4,11 @@ Pydantic schemas for AI Matching domain.
 
 import uuid
 from datetime import datetime
-from typing import Optional, List
+
 from pydantic import BaseModel, ConfigDict
 
-from app.domains.jobs.schemas import JobPostResponse
 from app.domains.engineers.schemas import EngineerProfileResponse
+from app.domains.jobs.schemas import JobPostResponse
 
 
 class JobMatchResponse(BaseModel):
@@ -26,14 +26,14 @@ class JobMatchResponse(BaseModel):
     compensation_score: float
     remote_score: float
     reasoning: str
-    matching_skills: List[str]
-    missing_skills: List[str]
+    matching_skills: list[str]
+    missing_skills: list[str]
     status: str
     created_at: datetime
     updated_at: datetime
 
-    job: Optional[JobPostResponse] = None
-    engineer: Optional[EngineerProfileResponse] = None
+    job: JobPostResponse | None = None
+    engineer: EngineerProfileResponse | None = None
 
 
 class MatchStatusUpdate(BaseModel):

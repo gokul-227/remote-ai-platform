@@ -3,7 +3,8 @@ AI Matching Engine Service — Computes multi-factor score breakdown and explain
 """
 
 import uuid
-from typing import List, Sequence
+from collections.abc import Sequence
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
@@ -26,19 +27,17 @@ class MatchingService:
         self.engineer_repo = EngineerRepository(db)
         self.job_repo = JobRepository(db)
 
-    async def calculate_match(
-        self, engineer: EngineerProfile, job: JobPost
-    ) -> JobMatch:
+    async def calculate_match(self, engineer: EngineerProfile, job: JobPost) -> JobMatch:
         """
         Evaluate multi-factor match score between Engineer profile and Job post.
         """
-        eng_skills = set(s.lower() for s in (engineer.skills or []))
-        job_skills = set(s.lower() for s in (job.skills or []))
+        eng_skills = {s.lower() for s in (engineer.skills or [])}
+        job_skills = {s.lower() for s in (job.skills or [])}
 
         # 1. Skill Score (0-100)
         matching_skills = [s for s in (job.skills or []) if s.lower() in eng_skills]
         missing_skills = [s for s in (job.skills or []) if s.lower() not in eng_skills]
-        
+
         if not job_skills:
             skill_score = 75.0
         else:
@@ -94,7 +93,11 @@ class MatchingService:
             else:
                 remote_score = 50.0
         else:
-            if "onsite" in eng_remote_pref or "on-site" in eng_remote_pref or "in-office" in eng_remote_pref:
+            if (
+                "onsite" in eng_remote_pref
+                or "on-site" in eng_remote_pref
+                or "in-office" in eng_remote_pref
+            ):
                 remote_score = 100.0
             elif "hybrid" in eng_remote_pref:
                 remote_score = 70.0
@@ -103,9 +106,14 @@ class MatchingService:
 
         # Weighted Overall Score
         overall_score = round(
-            0.40 * skill_score + 0.25 * experience_score + 0.15 * role_score
-            + 0.08 * timezone_score + 0.07 * availability_score
-            + 0.03 * compensation_score + 0.02 * remote_score, 1
+            0.40 * skill_score
+            + 0.25 * experience_score
+            + 0.15 * role_score
+            + 0.08 * timezone_score
+            + 0.07 * availability_score
+            + 0.03 * compensation_score
+            + 0.02 * remote_score,
+            1,
         )
 
         # Explainable AI rationale
@@ -125,7 +133,6 @@ class MatchingService:
         if missing_skills:
             rationale_parts.append(f"Gaps identified in: {', '.join(missing_skills[:2])}.")
 
-        reasoning = " ".join(rationale_parts)
         analysis = AIResponse(
             score=overall_score,
             reason=rationale_parts,
@@ -177,9 +184,7 @@ class MatchingService:
 
         return existing
 
-    async def get_or_compute_match_for_job(
-        self, user_id: uuid.UUID, job_id: uuid.UUID
-    ) -> JobMatch:
+    async def get_or_compute_match_for_job(self, user_id: uuid.UUID, job_id: uuid.UUID) -> JobMatch:
         """Fetch this engineer's existing match against one specific job, computing it on
         demand if it doesn't exist yet — used by the job detail page's AI match panel."""
         engineer = await self.engineer_repo.get_by_user_id(user_id)
@@ -199,7 +204,10 @@ class MatchingService:
         # Re-fetch rather than return calculate_match's result directly: that
         # object's `.job`/`.engineer` relationships aren't eager-loaded, and
         # JobMatchResponse needs them populated for the job detail page.
-        return await self.match_repo.get_match(engineer.id, job.id)
+        match = await self.match_repo.get_match(engineer.id, job.id)
+        if not match:
+            raise NotFoundError("Failed to generate job match")
+        return match
 
     async def get_top_candidates_for_job(
         self, job_id: uuid.UUID, skip: int = 0, limit: int = 20

@@ -5,6 +5,7 @@ Outputs JSON in production, colored console in development.
 
 import logging
 import sys
+from typing import Any
 
 import structlog
 
@@ -14,7 +15,7 @@ from app.core.config import settings
 def configure_logging() -> None:
     """Configure structlog for the application."""
 
-    shared_processors = [
+    shared_processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -23,6 +24,7 @@ def configure_logging() -> None:
         structlog.processors.StackInfoRenderer(),
     ]
 
+    renderer: Any
     if settings.is_production:
         # JSON output for production (Loki-friendly)
         renderer = structlog.processors.JSONRenderer()
@@ -31,7 +33,8 @@ def configure_logging() -> None:
         renderer = structlog.dev.ConsoleRenderer(colors=True)
 
     structlog.configure(
-        processors=shared_processors + [
+        processors=shared_processors
+        + [
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
@@ -52,9 +55,7 @@ def configure_logging() -> None:
 
     root_logger = logging.getLogger()
     root_logger.handlers = [handler]
-    root_logger.setLevel(
-        logging.DEBUG if settings.is_development else logging.INFO
-    )
+    root_logger.setLevel(logging.DEBUG if settings.is_development else logging.INFO)
 
     # Silence noisy libraries
     for name in ["uvicorn.access", "sqlalchemy.engine", "httpx"]:

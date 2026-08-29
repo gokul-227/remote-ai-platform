@@ -2,10 +2,11 @@
 Repository pattern for Job Post domain.
 """
 
-import uuid
 import re
-from typing import Optional, List, Sequence
-from sqlalchemy import select, func, or_, and_, cast, Text
+import uuid
+from collections.abc import Sequence
+
+from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.jobs.models import JobPost
@@ -23,17 +24,17 @@ class JobRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, job_id: uuid.UUID) -> Optional[JobPost]:
+    async def get_by_id(self, job_id: uuid.UUID) -> JobPost | None:
         stmt = select(JobPost).where(JobPost.id == job_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_slug(self, slug: str) -> Optional[JobPost]:
+    async def get_by_slug(self, slug: str) -> JobPost | None:
         stmt = select(JobPost).where(JobPost.slug == slug)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_external_id(self, external_id: str) -> Optional[JobPost]:
+    async def get_by_external_id(self, external_id: str) -> JobPost | None:
         stmt = select(JobPost).where(JobPost.external_id == external_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
@@ -72,7 +73,7 @@ class JobRepository:
         await self.db.refresh(job)
         return job
 
-    async def update(self, job_id: uuid.UUID, data: JobPostUpdate) -> Optional[JobPost]:
+    async def update(self, job_id: uuid.UUID, data: JobPostUpdate) -> JobPost | None:
         job = await self.get_by_id(job_id)
         if not job:
             return None
@@ -95,7 +96,7 @@ class JobRepository:
         if existing:
             existing.title = data.title
             existing.description = data.description
-            existing.company_name = data.company_name
+            existing.company_name = data.company_name or existing.company_name
             existing.company_logo = data.company_logo or existing.company_logo
             existing.location = data.location
             existing.is_remote = data.is_remote
@@ -112,19 +113,19 @@ class JobRepository:
 
     async def search(
         self,
-        query: Optional[str] = None,
-        skills: Optional[List[str]] = None,
-        is_remote: Optional[bool] = None,
-        job_type: Optional[str] = None,
-        experience_level: Optional[str] = None,
-        min_salary: Optional[float] = None,
-        max_salary: Optional[float] = None,
-        source: Optional[str] = None,
-        company_id: Optional[uuid.UUID] = None,
+        query: str | None = None,
+        skills: list[str] | None = None,
+        is_remote: bool | None = None,
+        job_type: str | None = None,
+        experience_level: str | None = None,
+        min_salary: float | None = None,
+        max_salary: float | None = None,
+        source: str | None = None,
+        company_id: uuid.UUID | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> Sequence[JobPost]:
-        stmt = select(JobPost).where(JobPost.is_active == True)
+        stmt = select(JobPost).where(JobPost.is_active.is_(True))
 
         if company_id is not None:
             stmt = stmt.where(JobPost.company_id == company_id)
@@ -157,7 +158,10 @@ class JobRepository:
                 document = func.to_tsvector(
                     "simple",
                     func.concat_ws(
-                        " ", JobPost.title, JobPost.description, JobPost.company_name,
+                        " ",
+                        JobPost.title,
+                        JobPost.description,
+                        JobPost.company_name,
                         cast(JobPost.skills, Text),
                     ),
                 )
@@ -174,7 +178,11 @@ class JobRepository:
                 )
 
         if skills:
-            skill_filters = [cast(JobPost.skills, Text).ilike(f'%"{skill.strip()}"%') for skill in skills if skill.strip()]
+            skill_filters = [
+                cast(JobPost.skills, Text).ilike(f'%"{skill.strip()}"%')
+                for skill in skills
+                if skill.strip()
+            ]
             if skill_filters:
                 stmt = stmt.where(or_(*skill_filters))
 

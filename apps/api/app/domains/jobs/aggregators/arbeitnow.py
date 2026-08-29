@@ -2,8 +2,8 @@
 Arbeitnow API Aggregator Adapter.
 """
 
-from typing import List
 import httpx
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.domains.jobs.aggregators.base import BaseAggregator
@@ -15,8 +15,8 @@ logger = get_logger("aggregator.arbeitnow")
 class ArbeitnowAggregator(BaseAggregator):
     source_name = "ARBEITNOW"
 
-    async def fetch_jobs(self, limit: int = 100) -> List[JobPostCreate]:
-        jobs: List[JobPostCreate] = []
+    async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        jobs: list[JobPostCreate] = []
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.get(settings.ARBEITNOW_API_URL)

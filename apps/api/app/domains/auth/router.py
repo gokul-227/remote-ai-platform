@@ -1,35 +1,35 @@
 import hashlib
 import secrets
 import uuid
-from typing import Optional, Dict, Any
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from jose import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit_event
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import get_password_hash, verify_password, pwd_context
-from app.domains.auth.dependencies import get_current_user, get_auth_service
-from app.domains.auth.models import User, UserRole, PasswordResetToken
+from app.core.security import pwd_context
+from app.domains.auth.dependencies import get_auth_service, get_current_user
+from app.domains.auth.models import PasswordResetToken, User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import (
-    UserResponse,
-    UserCreate,
-    UserUpdate,
     AuthSyncRequest,
-    RegisterRequest,
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     LoginRequest,
-    TokenResponse,
     LoginUrlResponse,
     LogoutUrlResponse,
     RefreshTokenRequest,
-    ForgotPasswordRequest,
-    ForgotPasswordResponse,
+    RegisterRequest,
     ResetPasswordRequest,
-    ChangePasswordRequest,
+    TokenResponse,
+    UserCreate,
+    UserResponse,
+    UserUpdate,
 )
 from app.domains.auth.service import AuthService
 
@@ -41,7 +41,7 @@ def _hash_token(token: str) -> str:
 
 
 def create_token(user: User, token_type: str, expires_delta: timedelta) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     claims = {
         "sub": str(user.keycloak_id or user.id),
         "email": user.email,
@@ -110,16 +110,19 @@ async def login(
 ) -> TokenResponse:
     """Login with email & password (supports form-data and json)."""
     content_type = request.headers.get("content-type", "")
-    password_val: str | None
+    email_val: str | None = None
+    password_val: str | None = None
     if content_type.startswith("application/json"):
         payload = await request.json()
         data = LoginRequest.model_validate(payload)
-        email_val = data.email
+        email_val = str(data.email)
         password_val = data.password
     else:
         form = await request.form()
-        email_val = form.get("username") or form.get("email")
-        password_val = form.get("password")
+        raw_email = form.get("username") or form.get("email")
+        email_val = str(raw_email) if isinstance(raw_email, str) else None
+        raw_pwd = form.get("password")
+        password_val = str(raw_pwd) if isinstance(raw_pwd, str) else None
     if not email_val:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -130,10 +133,16 @@ async def login(
     user = await repo.get_by_email(email_val)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    if not user.password_hash or not password_val or not pwd_context.verify(password_val, user.password_hash):
+    if (
+        not user.password_hash
+        or not password_val
+        or not pwd_context.verify(password_val, user.password_hash)
+    ):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
+        )
 
     await record_audit_event(
         db=db,
@@ -162,20 +171,29 @@ async def refresh_token(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     try:
-        claims = jwt.decode(body.refresh_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        claims = jwt.decode(
+            body.refresh_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
         if claims.get("type") != "refresh":
             raise ValueError("not a refresh token")
     except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        ) from exc
     repo = UserRepository(db)
     user = await repo.get_by_keycloak_id(claims.get("sub", ""))
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+        )
 
     # Check session revocation
     token_v = claims.get("v")
     if token_v is not None and user.token_version > token_v:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked. Please log in again.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session has been revoked. Please log in again.",
+        )
 
     return TokenResponse(
         access_token=create_access_token(user),
@@ -198,7 +216,7 @@ async def forgot_password(
     if user and user.is_active:
         raw_token = secrets.token_urlsafe(32)
         token_hash = _hash_token(raw_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        expires_at = datetime.now(UTC) + timedelta(hours=1)
         reset_entry = PasswordResetToken(
             user_id=user.id,
             token_hash=token_hash,
@@ -218,10 +236,10 @@ async def forgot_password(
 async def reset_password(
     body: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Reset user password using a valid, unexpired reset token."""
     token_hash = _hash_token(body.token)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     result = await db.execute(
         select(PasswordResetToken).where(
@@ -269,7 +287,9 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Change password for currently authenticated user and refresh session."""
-    if not current_user.password_hash or not pwd_context.verify(body.current_password, current_user.password_hash):
+    if not current_user.password_hash or not pwd_context.verify(
+        body.current_password, current_user.password_hash
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password verification failed.",
@@ -302,7 +322,7 @@ async def change_password(
 async def logout_all_sessions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Revoke all active sessions and refresh tokens across all devices."""
     current_user.token_version = (current_user.token_version or 1) + 1
     await record_audit_event(
@@ -370,7 +390,9 @@ async def update_role(
 ) -> UserResponse:
     """Update current user role during onboarding choice (ENGINEER or COMPANY only)."""
     if role == UserRole.ADMIN:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot self-assign admin role")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Cannot self-assign admin role"
+        )
     repo = UserRepository(db)
     updated_user = await repo.update(current_user, UserUpdate(role=role))
     await record_audit_event(

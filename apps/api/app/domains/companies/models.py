@@ -4,10 +4,10 @@ Company Profile domain models.
 
 import uuid
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Boolean, DateTime, func, Text, ForeignKey, JSON
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -34,16 +34,22 @@ class CompanyProfile(Base):
     )
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    website: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    logo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    industry: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    company_size: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g., "1-10", "11-50"
-    location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    country: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    hiring_status: Mapped[Optional[str]] = mapped_column(String(50), default="actively_hiring", nullable=True)
+    website: Mapped[str | None] = mapped_column(Text, nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    industry: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    company_size: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # e.g., "1-10", "11-50"
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    hiring_status: Mapped[str | None] = mapped_column(
+        String(50), default="actively_hiring", nullable=True
+    )
 
-    tech_stack: Mapped[List[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
+    tech_stack: Mapped[list[str]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False
+    )
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(

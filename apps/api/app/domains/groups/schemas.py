@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-
 # ── Group ────────────────────────────────────────────────────────────────────
+
 
 class GroupCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=120)
-    description: Optional[str] = None
+    description: str | None = None
     category: str = Field(default="general")
     tags: list[str] = Field(default_factory=list)
     is_private: bool = False
@@ -27,13 +26,13 @@ class GroupCreate(BaseModel):
 
 
 class GroupUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=120)
-    description: Optional[str] = None
-    category: Optional[str] = None
-    tags: Optional[list[str]] = None
-    is_private: Optional[bool] = None
-    avatar_url: Optional[str] = None
-    banner_url: Optional[str] = None
+    name: str | None = Field(None, min_length=2, max_length=120)
+    description: str | None = None
+    category: str | None = None
+    tags: list[str] | None = None
+    is_private: bool | None = None
+    avatar_url: str | None = None
+    banner_url: str | None = None
 
 
 class GroupMemberSummary(BaseModel):
@@ -49,20 +48,20 @@ class GroupResponse(BaseModel):
     id: uuid.UUID
     name: str
     slug: str
-    description: Optional[str]
+    description: str | None
     category: str
     tags: list[str]
-    avatar_url: Optional[str]
-    banner_url: Optional[str]
+    avatar_url: str | None
+    banner_url: str | None
     is_private: bool
     is_verified: bool
     member_count: int
     post_count: int
-    owner_id: Optional[uuid.UUID]
+    owner_id: uuid.UUID | None
     created_at: datetime
     # Caller-specific context — injected by router
     is_member: bool = False
-    my_role: Optional[str] = None
+    my_role: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -75,6 +74,7 @@ class GroupListResponse(BaseModel):
 
 
 # ── Membership ───────────────────────────────────────────────────────────────
+
 
 class MembershipResponse(BaseModel):
     id: uuid.UUID
@@ -92,6 +92,7 @@ class MemberRoleUpdate(BaseModel):
 
 
 # ── Group Posts ──────────────────────────────────────────────────────────────
+
 
 class GroupPostCreate(BaseModel):
     content: str = Field(..., min_length=1)

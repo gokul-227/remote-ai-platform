@@ -4,22 +4,31 @@ Sanitizes sensitive keys before persisting events.
 """
 
 import uuid
-from typing import Any, Dict, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Any
+
 from fastapi import Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.admin.models import AuditEvent
 
 SENSITIVE_KEYS = {
-    "password", "password_hash", "token", "access_token", "refresh_token",
-    "secret", "api_key", "client_secret", "jwt_secret_key", "authorization",
+    "password",
+    "password_hash",
+    "token",
+    "access_token",
+    "refresh_token",
+    "secret",
+    "api_key",
+    "client_secret",
+    "jwt_secret_key",
+    "authorization",
 }
 
 
-def sanitize_payload(payload: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+def sanitize_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
     if not payload:
         return {}
-    sanitized: Dict[str, Any] = {}
+    sanitized: dict[str, Any] = {}
     for k, v in payload.items():
         if any(s in k.lower() for s in SENSITIVE_KEYS):
             sanitized[k] = "[REDACTED]"
@@ -34,11 +43,11 @@ async def record_audit_event(
     db: AsyncSession,
     action: str,
     resource_type: str,
-    resource_id: Optional[str] = None,
-    actor_id: Optional[uuid.UUID] = None,
-    actor_role: Optional[str] = None,
-    payload: Optional[Dict[str, Any]] = None,
-    request: Optional[Request] = None,
+    resource_id: str | None = None,
+    actor_id: uuid.UUID | None = None,
+    actor_role: str | None = None,
+    payload: dict[str, Any] | None = None,
+    request: Request | None = None,
 ) -> AuditEvent:
     ip_address = None
     user_agent = None

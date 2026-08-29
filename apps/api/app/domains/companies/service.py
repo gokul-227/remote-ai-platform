@@ -3,7 +3,7 @@ Service layer for Company Profile domain.
 """
 
 import uuid
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
@@ -18,7 +18,7 @@ class CompanyService:
     def __init__(self, repo: CompanyRepository):
         self.repo = repo
 
-    async def get_by_user_id(self, user_id: uuid.UUID) -> Optional[CompanyProfile]:
+    async def get_by_user_id(self, user_id: uuid.UUID) -> CompanyProfile | None:
         return await self.repo.get_by_user_id(user_id)
 
     async def get_by_id(self, company_id: uuid.UUID) -> CompanyProfile:
@@ -45,6 +45,6 @@ class CompanyService:
         return await self.repo.update(company, data)
 
     async def list_companies(
-        self, skip: int = 0, limit: int = 20, is_verified: Optional[bool] = None
+        self, skip: int = 0, limit: int = 20, is_verified: bool | None = None
     ) -> Sequence[CompanyProfile]:
         return await self.repo.list_companies(skip=skip, limit=limit, is_verified=is_verified)

@@ -5,8 +5,8 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.notifications.models import Notification
 from app.core.ws_manager import ws_manager
+from app.domains.notifications.models import Notification
 
 
 class NotificationProvider(Protocol):

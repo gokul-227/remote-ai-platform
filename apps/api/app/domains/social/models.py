@@ -4,9 +4,8 @@ Social domain models — Posts, PostLikes, PostComments.
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,11 +20,13 @@ class Post(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    image_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
-    link_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
-    link_preview_title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    link_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    link_preview_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # PUBLIC | CONNECTIONS | PRIVATE
-    visibility: Mapped[str] = mapped_column(String(20), default="PUBLIC", nullable=False, index=True)
+    visibility: Mapped[str] = mapped_column(
+        String(20), default="PUBLIC", nullable=False, index=True
+    )
     like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     comment_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_at: Mapped[datetime] = mapped_column(

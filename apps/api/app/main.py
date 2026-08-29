@@ -2,8 +2,8 @@
 Remote AI Platform — FastAPI Application Factory
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 import structlog
 from fastapi import FastAPI
@@ -12,33 +12,32 @@ from fastapi.middleware.gzip import GZipMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.core.config import settings
-from app.core.database import engine, Base
-from app.core.logging import configure_logging
-from app.core.middleware import RequestIDMiddleware, RateLimitMiddleware
-
-from app.core.health import router as health_router
+from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
+from app.core.health import router as health_router
+from app.core.logging import configure_logging
+from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware
+from app.domains.admin.moderation_router import router as moderation_router
+from app.domains.admin.router import router as admin_router
+from app.domains.applications.router import router as applications_router
 
 # Domain routers — imported as they are implemented
 from app.domains.auth.router import router as auth_router
-from app.domains.engineers.router import router as engineers_router
 from app.domains.companies.router import router as companies_router
-from app.domains.jobs.router import router as jobs_router
-from app.domains.search.router import router as search_router
-from app.domains.matching.router import router as matching_router
-from app.domains.admin.router import router as admin_router
-from app.domains.admin.moderation_router import router as moderation_router
-from app.domains.saved_jobs.router import router as saved_jobs_router
-from app.domains.applications.router import router as applications_router
-from app.domains.projects.router import router as projects_router
-from app.domains.notifications.router import router as notifications_router
-from app.domains.network.router import router as network_router
-from app.domains.social.router import router as social_router
 from app.domains.contracts.router import router as contracts_router
-from app.domains.trust.router import router as trust_router
-from app.domains.payments.router import router as payments_router
+from app.domains.engineers.router import router as engineers_router
 from app.domains.groups.router import router as groups_router
+from app.domains.jobs.router import router as jobs_router
+from app.domains.matching.router import router as matching_router
+from app.domains.network.router import router as network_router
+from app.domains.notifications.router import router as notifications_router
+from app.domains.payments.router import router as payments_router
+from app.domains.projects.router import router as projects_router
 from app.domains.quality.router import router as quality_router
+from app.domains.saved_jobs.router import router as saved_jobs_router
+from app.domains.search.router import router as search_router
+from app.domains.social.router import router as social_router
+from app.domains.trust.router import router as trust_router
 
 logger = structlog.get_logger(__name__)
 
@@ -57,9 +56,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup: verify DB connectivity, run migrations, seed data
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(lambda c: c.execute(
-                __import__("sqlalchemy").text("SELECT 1")
-            ))
+            await conn.run_sync(lambda c: c.execute(__import__("sqlalchemy").text("SELECT 1")))
         logger.info("Database connection verified")
     except Exception as e:
         logger.error("Database connection failed", error=str(e))
@@ -67,10 +64,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Auto-run alembic migrations on startup (safe: idempotent)
     try:
-        import subprocess, sys as _sys
+        import subprocess
+        import sys as _sys
+
         result = subprocess.run(
             [_sys.executable, "-m", "alembic", "upgrade", "head"],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True,
+            text=True,
+            timeout=120,
         )
         if result.returncode == 0:
             logger.info("Alembic migrations applied", output=result.stdout.strip().split("\n")[-1])
@@ -83,6 +84,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if settings.is_development or settings.SEED_DEMO_DATA:
         try:
             from app.scripts.seed_data import seed_demo_data
+
             await seed_demo_data()
         except Exception as e:
             logger.warning("Seed data skipped", error=str(e))

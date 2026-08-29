@@ -3,7 +3,6 @@ Notifications Router — REST endpoints + WebSocket real-time delivery.
 """
 
 import uuid
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 from sqlalchemy import func, select, update
@@ -20,13 +19,14 @@ router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 # ─── REST Endpoints ─────────────────────────────────────────────────────────
 
+
 @router.get("", summary="List notifications for current user")
 async def list_notifications(
     limit: int = Query(50, ge=1, le=200),
     unread_only: bool = Query(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> List[dict]:
+) -> list[dict]:
     stmt = select(Notification).where(Notification.user_id == current_user.id)
     if unread_only:
         stmt = stmt.where(Notification.is_read.is_(False))
@@ -95,6 +95,7 @@ async def mark_all_read(
 
 # ─── WebSocket Real-Time Delivery ─────────────────────────────────────────
 
+
 @router.websocket("/ws/{user_id}")
 async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID) -> None:
     """
@@ -125,6 +126,7 @@ async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID) -> No
 
 
 # ─── Utility: push notification and persist in DB ───────────────────────
+
 
 async def notify_user(
     db: AsyncSession,

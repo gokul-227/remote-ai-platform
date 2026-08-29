@@ -3,12 +3,13 @@ LiteLLM Client Abstraction — supports Ollama (local testing with qwen/deepseek
 """
 
 import json
-from typing import Dict, Any, Optional
+from typing import Any
+
 import litellm
 
+from app.agents.model_config import get_ai_model_config
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.agents.model_config import get_ai_model_config
 
 logger = get_logger("agents.llm_client")
 
@@ -18,11 +19,11 @@ litellm.drop_params = True
 
 
 class LLMClient:
-    def __init__(self, model_override: Optional[str] = None):
+    def __init__(self, model_override: str | None = None):
         self.config = get_ai_model_config(model_override)
         self.model = self.config.primary
-        self.last_usage: Dict[str, Any] = {}
-        self.last_error: Optional[str] = None
+        self.last_usage: dict[str, Any] = {}
+        self.last_error: str | None = None
 
     @property
     def fallback_models(self) -> list[str]:
@@ -31,7 +32,7 @@ class LLMClient:
     async def complete(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.2,
         json_mode: bool = True,
     ) -> str:
@@ -73,18 +74,22 @@ class LLMClient:
                 return response.choices[0].message.content or "{}"
             except Exception as exc:
                 self.last_error = str(exc)
-                logger.warning("LLM provider failed; trying fallback", model=model_name, error=str(exc))
+                logger.warning(
+                    "LLM provider failed; trying fallback", model=model_name, error=str(exc)
+                )
         return "{}"
 
     async def complete_with_metadata(
         self,
         prompt: str,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.2,
         json_mode: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute completion and return content along with usage telemetry and success status."""
-        content = await self.complete(prompt, system_prompt=system_prompt, temperature=temperature, json_mode=json_mode)
+        content = await self.complete(
+            prompt, system_prompt=system_prompt, temperature=temperature, json_mode=json_mode
+        )
         is_success = bool(content and content != "{}" and not self.last_error)
         return {
             "success": is_success,
@@ -94,9 +99,7 @@ class LLMClient:
             "model": self.last_usage.get("provider_model", self.model),
         }
 
-    async def complete_structured_json(
-        self, prompt: str, system_prompt: str
-    ) -> Dict[str, Any]:
+    async def complete_structured_json(self, prompt: str, system_prompt: str) -> dict[str, Any]:
         """Execute completion call and parse return as Python dictionary."""
         raw_text = await self.complete(prompt, system_prompt=system_prompt, json_mode=True)
         if not raw_text or raw_text == "{}":
@@ -106,6 +109,7 @@ class LLMClient:
         except json.JSONDecodeError:
             # Fallback extraction using regex if model wraps in markdown backticks
             import re
+
             match = re.search(r"\{.*\}", raw_text, re.DOTALL)
             if match:
                 try:

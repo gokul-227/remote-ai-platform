@@ -3,10 +3,11 @@ Repository pattern for AI Job Matching domain.
 """
 
 import uuid
-from typing import Optional, Sequence
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
+from collections.abc import Sequence
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.domains.matching.models import JobMatch
 
@@ -15,12 +16,12 @@ class MatchingRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, match_id: uuid.UUID) -> Optional[JobMatch]:
+    async def get_by_id(self, match_id: uuid.UUID) -> JobMatch | None:
         stmt = select(JobMatch).where(JobMatch.id == match_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_match(self, engineer_id: uuid.UUID, job_id: uuid.UUID) -> Optional[JobMatch]:
+    async def get_match(self, engineer_id: uuid.UUID, job_id: uuid.UUID) -> JobMatch | None:
         stmt = (
             select(JobMatch)
             .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer))

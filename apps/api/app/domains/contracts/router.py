@@ -6,8 +6,7 @@ milestone management, and contract lifecycle status updates.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import or_, select
@@ -18,15 +17,16 @@ from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.contracts.models import Contract, ContractMilestone
-from app.domains.projects.models import Project
 from app.domains.contracts.schemas import (
     ContractCreate,
     ContractMilestoneCreate,
     ContractMilestoneResponse,
+    ContractMilestoneStatusUpdate,
     ContractResponse,
     ContractUpdate,
     UserPartySummary,
 )
+from app.domains.projects.models import Milestone, Project
 from app.services.notifications import notify_user
 
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
@@ -76,7 +76,12 @@ async def _enrich_contract(contract: Contract, db: AsyncSession) -> ContractResp
     )
 
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=ContractResponse, summary="Create contract")
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ContractResponse,
+    summary="Create contract",
+)
 async def create_contract(
     data: ContractCreate,
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
@@ -92,9 +97,13 @@ async def create_contract(
         if not project:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
         if current_user.role != UserRole.ADMIN:
-            company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+            company = await db.scalar(
+                select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
+            )
             if not company or company.id != project.company_id:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project access required")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="Project access required"
+                )
 
     contract = Contract(
         project_id=data.project_id,
@@ -175,9 +184,13 @@ async def update_contract(
 ) -> ContractResponse:
     contract = await db.get(Contract, contract_id)
     if not contract or current_user.id != contract.client_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found or access denied")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found or access denied"
+        )
     if contract.status in {"ACTIVE", "COMPLETED", "TERMINATED"}:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Active/signed contract cannot be updated")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Active/signed contract cannot be updated"
+        )
 
     if data.title is not None:
         contract.title = data.title
@@ -198,7 +211,9 @@ async def update_contract(
     return await _enrich_contract(contract, db)
 
 
-@router.post("/{contract_id}/sign", response_model=ContractResponse, summary="Digital sign contract")
+@router.post(
+    "/{contract_id}/sign", response_model=ContractResponse, summary="Digital sign contract"
+)
 async def sign_contract(
     contract_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -209,9 +224,12 @@ async def sign_contract(
     if not contract or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
     if contract.status in {"COMPLETED", "TERMINATED"}:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Contract is already completed or terminated")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Contract is already completed or terminated",
+        )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if current_user.id == contract.client_id:
         contract.client_signed_at = now
     if current_user.id == contract.worker_id:
@@ -220,7 +238,9 @@ async def sign_contract(
     # If both signed, activate contract
     if contract.client_signed_at and contract.worker_signed_at:
         contract.status = "ACTIVE"
-        recipient = contract.worker_id if current_user.id == contract.client_id else contract.client_id
+        recipient = (
+            contract.worker_id if current_user.id == contract.client_id else contract.client_id
+        )
         await notify_user(
             db,
             recipient,
@@ -235,7 +255,9 @@ async def sign_contract(
     return await _enrich_contract(contract, db)
 
 
-@router.post("/{contract_id}/terminate", response_model=ContractResponse, summary="Terminate contract")
+@router.post(
+    "/{contract_id}/terminate", response_model=ContractResponse, summary="Terminate contract"
+)
 async def terminate_contract(
     contract_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -285,4 +307,73 @@ async def add_milestone(
     db.add(milestone)
     await db.flush()
     await db.refresh(milestone)
+    return ContractMilestoneResponse.model_validate(milestone)
+
+
+@router.patch(
+    "/{contract_id}/milestones/{milestone_id}/status",
+    response_model=ContractMilestoneResponse,
+    summary="Update contract milestone status",
+)
+async def update_contract_milestone_status(
+    contract_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    data: ContractMilestoneStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ContractMilestoneResponse:
+    contract = await db.get(Contract, contract_id)
+    if not contract or current_user.id not in (contract.client_id, contract.worker_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
+
+    milestone = await db.get(ContractMilestone, milestone_id)
+    if not milestone or milestone.contract_id != contract_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Contract milestone not found"
+        )
+
+    # Worker can submit/deliver; Client/Admin can approve/pay
+    if data.status in {"DELIVERED", "IN_PROGRESS"} and current_user.id != contract.worker_id:
+        if current_user.role != UserRole.ADMIN and current_user.id != contract.client_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only worker can mark milestone delivered",
+            )
+    if data.status in {"APPROVED", "PAID"} and current_user.id != contract.client_id:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only client can approve or pay milestone",
+            )
+
+    milestone.status = data.status
+
+    # Synchronize linked project milestone if present
+    linked_project_milestone = await db.scalar(
+        select(Milestone).where(Milestone.contract_milestone_id == milestone.id)
+    )
+    if linked_project_milestone:
+        status_map = {
+            "PENDING": "TODO",
+            "IN_PROGRESS": "IN_PROGRESS",
+            "DELIVERED": "IN_REVIEW",
+            "APPROVED": "COMPLETED",
+            "PAID": "COMPLETED",
+        }
+        linked_project_milestone.status = status_map.get(
+            data.status, linked_project_milestone.status
+        )
+
+    await db.flush()
+    await db.refresh(milestone)
+
+    recipient = contract.worker_id if current_user.id == contract.client_id else contract.client_id
+    await notify_user(
+        db,
+        recipient,
+        f"Milestone {data.status.lower()}",
+        f"Milestone '{milestone.title}' was marked as {data.status}.",
+        "milestone_update",
+    )
+
     return ContractMilestoneResponse.model_validate(milestone)

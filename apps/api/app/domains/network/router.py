@@ -5,7 +5,6 @@ from collections import defaultdict
 from typing import Any
 
 import redis.asyncio as aioredis
-
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
@@ -15,6 +14,7 @@ from app.core.config import settings
 from app.core.database import AsyncSessionFactory, get_db
 from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
+from app.domains.auth.repository import UserRepository
 from app.domains.auth.service import AuthService
 from app.domains.network.models import Connection, Conversation, Message
 from app.services.notifications import notify_user as send_notification
@@ -43,7 +43,9 @@ async def notify(db: AsyncSession, user_id: uuid.UUID, title: str, body: str, ki
 
 
 @router.get("/connections")
-async def list_connections(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def list_connections(
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
     result = await db.execute(
         select(Connection)
         .where(
@@ -176,7 +178,9 @@ async def create_conversation(
     return conversation
 
 
-async def get_conversation(conversation_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession) -> Conversation:
+async def get_conversation(
+    conversation_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession
+) -> Conversation:
     conversation = await db.get(Conversation, conversation_id)
     if not conversation or user_id not in (
         conversation.participant_one_id,
@@ -230,13 +234,16 @@ async def send_message(
     )
     await db.flush()
     await db.refresh(message)
-    await manager.broadcast(conversation_id, {
-        "id": str(message.id),
-        "conversation_id": str(conversation_id),
-        "sender_id": str(current_user.id),
-        "content": message.content,
-        "created_at": message.created_at.isoformat(),
-    })
+    await manager.broadcast(
+        conversation_id,
+        {
+            "id": str(message.id),
+            "conversation_id": str(conversation_id),
+            "sender_id": str(current_user.id),
+            "content": message.content,
+            "created_at": message.created_at.isoformat(),
+        },
+    )
     return message
 
 
@@ -297,9 +304,7 @@ class ConnectionManager:
         pubsub = self._redis().pubsub()
         await pubsub.subscribe(self._channel(uuid.UUID(key)))
         self._subscribers[key] = pubsub
-        self._subscriber_tasks[key] = asyncio.create_task(
-            self._subscriber_loop(key, pubsub)
-        )
+        self._subscriber_tasks[key] = asyncio.create_task(self._subscriber_loop(key, pubsub))
 
     async def _subscriber_loop(self, key: str, pubsub: aioredis.client.PubSub) -> None:
         try:
@@ -353,14 +358,16 @@ manager = ConnectionManager()
 
 
 @router.websocket("/messages/ws/{conversation_id}")
-async def websocket_messages(websocket: WebSocket, conversation_id: uuid.UUID, token: str = Query(...)):
+async def websocket_messages(
+    websocket: WebSocket, conversation_id: uuid.UUID, token: str = Query(...)
+):
     async with AsyncSessionFactory() as db:
         try:
-            service = AuthService(None)
-            payload = await service.verify_token(token)
-            user = await db.scalar(select(User).where(User.keycloak_id == payload.sub))
-            if not user:
-                user = await db.scalar(select(User).where(User.email == payload.email))
+            service = AuthService(UserRepository(db))
+            token_payload = await service.verify_token(token)
+            user = await db.scalar(select(User).where(User.keycloak_id == token_payload.sub))
+            if not user and token_payload.email:
+                user = await db.scalar(select(User).where(User.email == token_payload.email))
             if not user:
                 await websocket.close(code=4401)
                 return
@@ -382,21 +389,28 @@ async def websocket_messages(websocket: WebSocket, conversation_id: uuid.UUID, t
                 )
                 db.add(message)
                 conversation = await db.get(Conversation, conversation_id)
-                recipient = (
-                    conversation.participant_two_id
-                    if user.id == conversation.participant_one_id
-                    else conversation.participant_one_id
-                )
-                await notify(db, recipient, "New message", f"{user.full_name} sent you a message.", "message")
+                if conversation is not None:
+                    recipient = (
+                        conversation.participant_two_id
+                        if user.id == conversation.participant_one_id
+                        else conversation.participant_one_id
+                    )
+                    await notify(
+                        db,
+                        recipient,
+                        "New message",
+                        f"{user.full_name} sent you a message.",
+                        "message",
+                    )
                 await db.commit()
                 await db.refresh(message)
-                payload = {
+                broadcast_payload = {
                     "id": str(message.id),
                     "conversation_id": str(conversation_id),
                     "sender_id": str(user.id),
                     "content": content,
                     "created_at": message.created_at.isoformat(),
                 }
-                await manager.broadcast(conversation_id, payload)
+                await manager.broadcast(conversation_id, broadcast_payload)
         except WebSocketDisconnect:
             manager.disconnect(conversation_id, websocket)

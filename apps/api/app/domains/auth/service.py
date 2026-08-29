@@ -9,16 +9,14 @@ provisioning/sync (see get_or_create_user_from_token, sync_keycloak_user), not
 for cryptographic token verification.
 """
 
-from typing import Optional, Dict, Any
-from jose import jwt, JWTError
-import httpx
+from jose import JWTError, jwt
 
 from app.core.config import settings
-from app.core.exceptions import AuthenticationError, AuthorizationError
+from app.core.exceptions import AuthenticationError
 from app.core.logging import get_logger
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
-from app.domains.auth.schemas import TokenPayload, AuthSyncRequest, UserCreate, UserUpdate
+from app.domains.auth.schemas import AuthSyncRequest, TokenPayload, UserCreate, UserUpdate
 
 logger = get_logger("auth.service")
 
@@ -36,21 +34,29 @@ class AuthService:
         try:
             claims = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
             unverified_claims = claims
-            
+
             # Keycloak JWT payload parsing
             sub = unverified_claims.get("sub")
             if not sub:
                 raise AuthenticationError("Invalid token: missing subject (sub)")
 
-            email = unverified_claims.get("email") or unverified_claims.get("preferred_username") or f"{sub}@remoteaiplatform.local"
-            name = unverified_claims.get("name") or unverified_claims.get("preferred_username") or email.split("@")[0]
-            
+            email = (
+                unverified_claims.get("email")
+                or unverified_claims.get("preferred_username")
+                or f"{sub}@remoteaiplatform.local"
+            )
+            name = (
+                unverified_claims.get("name")
+                or unverified_claims.get("preferred_username")
+                or email.split("@")[0]
+            )
+
             # Extract roles from Keycloak realm_access or resource_access
             roles = []
             realm_access = unverified_claims.get("realm_access", {})
             if isinstance(realm_access, dict):
                 roles.extend(realm_access.get("roles", []))
-            
+
             resource_access = unverified_claims.get("resource_access", {})
             if isinstance(resource_access, dict):
                 client_access = resource_access.get(settings.KEYCLOAK_CLIENT_ID, {})
@@ -118,7 +124,7 @@ class AuthService:
                 avatar_url=sync_req.avatar_url,
             )
             return await self.user_repo.update(user, user_update)
-        
+
         user_create = UserCreate(
             keycloak_id=sync_req.keycloak_id,
             email=sync_req.email,

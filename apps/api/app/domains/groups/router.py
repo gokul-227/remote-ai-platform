@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import re
 import uuid
-from math import ceil
-from typing import Optional
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -47,7 +45,9 @@ async def _get_group_or_404(group_id: uuid.UUID, db: AsyncSession) -> Group:
     return group
 
 
-async def _get_membership(group_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession) -> Optional[GroupMembership]:
+async def _get_membership(
+    group_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSession
+) -> GroupMembership | None:
     result = await db.execute(
         select(GroupMembership).where(
             GroupMembership.group_id == group_id,
@@ -57,7 +57,7 @@ async def _get_membership(group_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSess
     return result.scalar_one_or_none()
 
 
-def _enrich(group: Group, membership: Optional[GroupMembership]) -> GroupResponse:
+def _enrich(group: Group, membership: GroupMembership | None) -> GroupResponse:
     resp = GroupResponse.model_validate(group)
     if membership and membership.status == "active":
         resp.is_member = True
@@ -67,10 +67,11 @@ def _enrich(group: Group, membership: Optional[GroupMembership]) -> GroupRespons
 
 # ── Groups CRUD ───────────────────────────────────────────────────────────────
 
+
 @router.get("", response_model=GroupListResponse)
 async def list_groups(
-    category: Optional[str] = Query(None),
-    search: Optional[str] = Query(None),
+    category: str | None = Query(None),
+    search: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -199,14 +200,19 @@ async def delete_group(
     """Delete a group. Only owner or ADMIN role user can delete."""
     group = await _get_group_or_404(group_id, db)
     if group.owner_id != current_user.id and current_user.role.value != "ADMIN":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can delete group")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can delete group"
+        )
     await db.delete(group)
     await db.commit()
 
 
 # ── Membership ────────────────────────────────────────────────────────────────
 
-@router.post("/{group_id}/join", response_model=MembershipResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{group_id}/join", response_model=MembershipResponse, status_code=status.HTTP_201_CREATED
+)
 async def join_group(
     group_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -217,7 +223,9 @@ async def join_group(
     existing = await _get_membership(group_id, current_user.id, db)
     if existing:
         if existing.status == "banned":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are banned from this group")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="You are banned from this group"
+            )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Already a member")
 
     membership = GroupMembership(
@@ -250,7 +258,10 @@ async def leave_group(
     if not membership:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not a member")
     if group.owner_id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Owner cannot leave. Transfer ownership first.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Owner cannot leave. Transfer ownership first.",
+        )
 
     await db.delete(membership)
     if group.member_count > 0:
@@ -268,13 +279,17 @@ async def list_members(
     group = await _get_group_or_404(group_id, db)
     membership = await _get_membership(group_id, current_user.id, db)
     if group.is_private and (not membership or membership.status != "active"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Must be a member to view")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Must be a member to view"
+        )
 
     result = await db.execute(
-        select(GroupMembership).where(
+        select(GroupMembership)
+        .where(
             GroupMembership.group_id == group_id,
             GroupMembership.status == "active",
-        ).order_by(GroupMembership.joined_at)
+        )
+        .order_by(GroupMembership.joined_at)
     )
     memberships = result.scalars().all()
     # Refresh each to ensure server-default columns are loaded
@@ -291,8 +306,7 @@ async def update_member_role(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Promote or demote a member. Requires admin access."""
-    group = await _get_group_or_404(group_id, db)
+    _ = await _get_group_or_404(group_id, db)
     caller_mem = await _get_membership(group_id, current_user.id, db)
     if not caller_mem or caller_mem.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
@@ -308,6 +322,7 @@ async def update_member_role(
 
 
 # ── My Groups ─────────────────────────────────────────────────────────────────
+
 
 @router.get("/me/joined", response_model=GroupListResponse)
 async def my_groups(
@@ -350,6 +365,7 @@ async def my_groups(
 
 # ── Group Posts ───────────────────────────────────────────────────────────────
 
+
 @router.get("/{group_id}/posts", response_model=GroupPostListResponse)
 async def list_group_posts(
     group_id: uuid.UUID,
@@ -362,13 +378,19 @@ async def list_group_posts(
     group = await _get_group_or_404(group_id, db)
     membership = await _get_membership(group_id, current_user.id, db)
     if group.is_private and (not membership or membership.status != "active"):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Must be a member to view posts")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Must be a member to view posts"
+        )
 
     q = select(GroupPost).where(GroupPost.group_id == group_id)
     total_result = await db.execute(select(func.count()).select_from(q.subquery()))
     total = total_result.scalar_one()
 
-    q = q.order_by(GroupPost.is_pinned.desc(), GroupPost.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    q = (
+        q.order_by(GroupPost.is_pinned.desc(), GroupPost.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
     result = await db.execute(q)
     posts = result.scalars().all()
 
@@ -380,7 +402,9 @@ async def list_group_posts(
     )
 
 
-@router.post("/{group_id}/posts", response_model=GroupPostResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{group_id}/posts", response_model=GroupPostResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_group_post(
     group_id: uuid.UUID,
     body: GroupPostCreate,
@@ -391,7 +415,9 @@ async def create_group_post(
     group = await _get_group_or_404(group_id, db)
     membership = await _get_membership(group_id, current_user.id, db)
     if not membership or membership.status != "active":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Must be an active member to post")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Must be an active member to post"
+        )
 
     post = GroupPost(
         group_id=group_id,
@@ -414,13 +440,17 @@ async def delete_group_post(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a group post. Author or group admin can delete."""
-    result = await db.execute(select(GroupPost).where(GroupPost.id == post_id, GroupPost.group_id == group_id))
+    result = await db.execute(
+        select(GroupPost).where(GroupPost.id == post_id, GroupPost.group_id == group_id)
+    )
     post = result.scalar_one_or_none()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
     membership = await _get_membership(group_id, current_user.id, db)
-    is_admin = membership and membership.role in ("admin", "moderator") and membership.status == "active"
+    is_admin = (
+        membership and membership.role in ("admin", "moderator") and membership.status == "active"
+    )
     if post.author_id != current_user.id and not is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
 

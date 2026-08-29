@@ -10,7 +10,6 @@ on the same code path. See docs/DEPLOYMENT_ZERO_COST.md.
 """
 
 from functools import lru_cache
-from typing import Optional
 
 import boto3
 import structlog
@@ -60,7 +59,7 @@ def generate_presigned_url(
     bucket_name: str,
     object_name: str,
     expires_hours: int = 1,
-) -> Optional[str]:
+) -> str | None:
     """Generate a presigned GET URL for temporary file access."""
     client = get_s3_client()
     try:
@@ -96,7 +95,9 @@ class StorageService:
             )
             return f"{settings.MINIO_PUBLIC_ENDPOINT.rstrip('/')}/{bucket_name}/{object_name}"
         except Exception as e:
-            logger.error("Storage upload failed", bucket=bucket_name, object=object_name, error=str(e))
+            logger.error(
+                "Storage upload failed", bucket=bucket_name, object=object_name, error=str(e)
+            )
             raise RuntimeError("Object storage upload failed") from e
 
 

@@ -20,7 +20,9 @@ class AIModelConfig:
 def get_ai_model_config(model_override: str | None = None) -> AIModelConfig:
     provider = model_override or settings.AI_PROVIDER
     primary = provider if "/" in provider else f"{provider}/{settings.AI_MODEL}"
-    fallbacks = tuple(model.strip() for model in settings.AI_FALLBACK_PROVIDERS.split(",") if model.strip())
+    fallbacks = tuple(
+        model.strip() for model in settings.AI_FALLBACK_PROVIDERS.split(",") if model.strip()
+    )
     return AIModelConfig(
         primary=primary,
         fallbacks=fallbacks,

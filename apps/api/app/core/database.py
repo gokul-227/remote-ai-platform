@@ -2,7 +2,7 @@
 SQLAlchemy 2.x Async Database Engine & Session Factory
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -17,6 +17,7 @@ from app.core.config import settings
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
+
     pass
 
 

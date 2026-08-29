@@ -3,8 +3,8 @@ API Router for Company domain.
 """
 
 import uuid
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -13,8 +13,8 @@ from app.domains.auth.models import User, UserRole
 from app.domains.companies.repository import CompanyRepository
 from app.domains.companies.schemas import (
     CompanyProfileCreate,
-    CompanyProfileUpdate,
     CompanyProfileResponse,
+    CompanyProfileUpdate,
 )
 from app.domains.companies.service import CompanyService
 
@@ -63,13 +63,13 @@ async def update_my_company(
     return CompanyProfileResponse.model_validate(company)
 
 
-@router.get("/public", response_model=List[CompanyProfileResponse])
+@router.get("/public", response_model=list[CompanyProfileResponse])
 async def list_public_companies(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    is_verified: Optional[bool] = Query(None),
+    is_verified: bool | None = Query(None),
     service: CompanyService = Depends(get_company_service),
-) -> List[CompanyProfileResponse]:
+) -> list[CompanyProfileResponse]:
     """List public company directory."""
     results = await service.list_companies(skip=skip, limit=limit, is_verified=is_verified)
     return [CompanyProfileResponse.model_validate(c) for c in results]

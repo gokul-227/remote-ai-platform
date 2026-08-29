@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -15,7 +15,7 @@ class TrustScoreResponse(BaseModel):
     rating_avg: float = Field(ge=0, le=5)
     review_count: int = Field(ge=0)
     verified_skills_count: int = Field(ge=0)
-    score_breakdown: Dict[str, Any] = Field(default_factory=dict)
+    score_breakdown: dict[str, Any] = Field(default_factory=dict)
     updated_at: datetime
 
     model_config = {"from_attributes": True}
@@ -23,7 +23,7 @@ class TrustScoreResponse(BaseModel):
 
 class VerificationCreate(BaseModel):
     verification_type: str = Field(pattern="^(IDENTITY|GITHUB|LINKEDIN|SKILL_ASSESSMENT)$")
-    verifier_notes: Optional[str] = None
+    verifier_notes: str | None = None
 
 
 class VerificationResponse(BaseModel):
@@ -31,8 +31,8 @@ class VerificationResponse(BaseModel):
     user_id: uuid.UUID
     verification_type: str
     status: str
-    verifier_notes: Optional[str] = None
-    verified_at: Optional[datetime] = None
+    verifier_notes: str | None = None
+    verified_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -58,7 +58,7 @@ class ProjectReviewResponse(BaseModel):
     project_id: uuid.UUID
     reviewer_id: uuid.UUID
     reviewee_id: uuid.UUID
-    reviewer: Optional[ReviewerSummary] = None
+    reviewer: ReviewerSummary | None = None
     rating: int
     comment: str
     created_at: datetime

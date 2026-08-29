@@ -5,24 +5,24 @@ API Router for Admin domain.
 import asyncio
 import time
 import uuid
-from datetime import datetime, timezone
-from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status, HTTPException
-from sqlalchemy import func, select, Integer
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime
 
 import boto3
 import httpx
 from botocore.client import Config as BotoConfig
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from redis.asyncio import Redis
+from sqlalchemy import Integer, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.domains.admin.models import ActivityLog, AuditEvent
+from app.domains.admin.repository import AdminRepository
 from app.domains.admin.schemas import (
     ActivityLogResponse,
-    ApiSyncLogResponse,
     AIUsageStatsResponse,
+    ApiSyncLogResponse,
     AuditEventResponse,
     JobStatusUpdate,
     PlatformStatsResponse,
@@ -30,7 +30,6 @@ from app.domains.admin.schemas import (
     SystemHealthDetailResponse,
     UserStatusUpdate,
 )
-from app.domains.admin.repository import AdminRepository
 from app.domains.admin.service import AdminService
 from app.domains.auth.dependencies import require_role
 from app.domains.auth.models import User, UserRole
@@ -68,50 +67,50 @@ async def get_platform_stats(
     return await service.get_platform_stats()
 
 
-@router.get("/sync-logs", response_model=List[ApiSyncLogResponse])
+@router.get("/sync-logs", response_model=list[ApiSyncLogResponse])
 async def get_sync_logs(
     limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     service: AdminService = Depends(get_admin_service),
-) -> List[ApiSyncLogResponse]:
+) -> list[ApiSyncLogResponse]:
     """Recent job-aggregator sync runs — source, status, counts, duration (Admin only)."""
     logs = await service.get_recent_syncs(limit=limit)
     return [ApiSyncLogResponse.model_validate(log) for log in logs]
 
 
-@router.get("/activity-logs", response_model=List[ActivityLogResponse])
+@router.get("/activity-logs", response_model=list[ActivityLogResponse])
 async def get_activity_logs(
     limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     service: AdminService = Depends(get_admin_service),
-) -> List[ActivityLogResponse]:
+) -> list[ActivityLogResponse]:
     logs = await service.get_activity_logs(limit=limit)
     return [ActivityLogResponse.model_validate(log) for log in logs]
 
 
-@router.get("/users", response_model=List[UserResponse])
+@router.get("/users", response_model=list[UserResponse])
 async def list_all_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    role: Optional[UserRole] = Query(None),
+    role: UserRole | None = Query(None),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
-) -> List[UserResponse]:
+) -> list[UserResponse]:
     """List all registered platform users (Admin only)."""
     repo = UserRepository(db)
     users = await repo.list_users(skip=skip, limit=limit, role=role)
     return [UserResponse.model_validate(u) for u in users]
 
 
-@router.get("/audit-events", response_model=List[AuditEventResponse])
+@router.get("/audit-events", response_model=list[AuditEventResponse])
 async def list_audit_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-    action: Optional[str] = Query(None),
-    resource_type: Optional[str] = Query(None),
+    action: str | None = Query(None),
+    resource_type: str | None = Query(None),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
-) -> List[AuditEventResponse]:
+) -> list[AuditEventResponse]:
     """Retrieve immutable platform audit events (Admin only)."""
     stmt = select(AuditEvent).order_by(AuditEvent.created_at.desc())
     if action:
@@ -137,7 +136,9 @@ async def update_user_status(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     user.is_active = body.is_active
-    await AdminRepository(db).log_activity(current_user.id, "USER_STATUS_UPDATED", "USER", str(user.id), {"is_active": body.is_active})
+    await AdminRepository(db).log_activity(
+        current_user.id, "USER_STATUS_UPDATED", "USER", str(user.id), {"is_active": body.is_active}
+    )
     await db.commit()
     await db.refresh(user)
     return UserResponse.model_validate(user)
@@ -154,7 +155,13 @@ async def update_job_status(
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     job.is_active = body.is_active
-    await AdminRepository(db).log_activity(current_user.id, "JOB_STATUS_UPDATED", "JOB", str(job.id), {"is_active": body.is_active, "source": job.source})
+    await AdminRepository(db).log_activity(
+        current_user.id,
+        "JOB_STATUS_UPDATED",
+        "JOB",
+        str(job.id),
+        {"is_active": body.is_active, "source": job.source},
+    )
     await db.commit()
     await db.refresh(job)
     return {"id": job.id, "is_active": job.is_active}
@@ -169,8 +176,13 @@ async def get_ai_usage_stats(
     result = await db.execute(
         select(
             func.count(ActivityLog.id),
-            func.coalesce(func.sum(func.cast(ActivityLog.details["prompt_tokens"].as_string(), Integer)), 0),
-            func.coalesce(func.sum(func.cast(ActivityLog.details["completion_tokens"].as_string(), Integer)), 0),
+            func.coalesce(
+                func.sum(func.cast(ActivityLog.details["prompt_tokens"].as_string(), Integer)), 0
+            ),
+            func.coalesce(
+                func.sum(func.cast(ActivityLog.details["completion_tokens"].as_string(), Integer)),
+                0,
+            ),
         ).where(ActivityLog.action.like("AI_%"))
     )
     total_calls, prompt_tokens, completion_tokens = result.one()
@@ -193,19 +205,37 @@ async def _check_postgres(db: AsyncSession) -> ServiceHealthStatus:
     started = time.monotonic()
     try:
         await db.execute(select(1))
-        return ServiceHealthStatus(service="PostgreSQL Database Pool", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="PostgreSQL Database Pool",
+            status="OPERATIONAL",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
     except Exception:
-        return ServiceHealthStatus(service="PostgreSQL Database Pool", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="PostgreSQL Database Pool",
+            status="DOWN",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
 
 
 async def _check_redis() -> ServiceHealthStatus:
     started = time.monotonic()
-    client: Redis = Redis.from_url(settings.CELERY_BROKER_URL, socket_connect_timeout=1, socket_timeout=1)
+    client: Redis = Redis.from_url(
+        settings.CELERY_BROKER_URL, socket_connect_timeout=1, socket_timeout=1
+    )
     try:
         await client.ping()
-        return ServiceHealthStatus(service="Redis Cache & Session Broker", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="Redis Cache & Session Broker",
+            status="OPERATIONAL",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
     except Exception:
-        return ServiceHealthStatus(service="Redis Cache & Session Broker", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="Redis Cache & Session Broker",
+            status="DOWN",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
     finally:
         await client.aclose()
 
@@ -219,7 +249,9 @@ def _list_buckets_short_timeout():
     # what made this health check occasionally take 4-6s in production.
     scheme = "https" if settings.MINIO_SECURE else "http"
     endpoint = settings.MINIO_ENDPOINT
-    endpoint_url = endpoint if endpoint.startswith(("http://", "https://")) else f"{scheme}://{endpoint}"
+    endpoint_url = (
+        endpoint if endpoint.startswith(("http://", "https://")) else f"{scheme}://{endpoint}"
+    )
     client = boto3.client(
         "s3",
         endpoint_url=endpoint_url,
@@ -241,33 +273,60 @@ async def _check_minio() -> ServiceHealthStatus:
     try:
         # boto3 is sync — run in a thread so it doesn't block the event loop.
         await asyncio.wait_for(asyncio.to_thread(_list_buckets_short_timeout), timeout=2.0)
-        return ServiceHealthStatus(service="MinIO Object Storage S3", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="MinIO Object Storage S3",
+            status="OPERATIONAL",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
     except Exception:
-        return ServiceHealthStatus(service="MinIO Object Storage S3", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="MinIO Object Storage S3",
+            status="DOWN",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
 
 
 async def _check_keycloak() -> ServiceHealthStatus:
     started = time.monotonic()
     if not settings.FEATURE_KEYCLOAK_AUTH:
-        return ServiceHealthStatus(service="Keycloak Identity Provider", status="UNKNOWN", latency_ms=0.0)
+        return ServiceHealthStatus(
+            service="Keycloak Identity Provider", status="UNKNOWN", latency_ms=0.0
+        )
     try:
         realm_url = f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}"
         async with httpx.AsyncClient(timeout=1.5) as client:
             resp = await client.get(realm_url)
         status_str = "OPERATIONAL" if resp.status_code == 200 else "DOWN"
-        return ServiceHealthStatus(service="Keycloak Identity Provider", status=status_str, latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="Keycloak Identity Provider",
+            status=status_str,
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
     except Exception:
-        return ServiceHealthStatus(service="Keycloak Identity Provider", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="Keycloak Identity Provider",
+            status="DOWN",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
 
 
 async def _check_celery_queues() -> ServiceHealthStatus:
     started = time.monotonic()
     try:
         from app.core.queue_monitor import get_queue_depths
+
         await get_queue_depths()
-        return ServiceHealthStatus(service="Celery Background Task Queue", status="OPERATIONAL", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="Celery Background Task Queue",
+            status="OPERATIONAL",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
     except Exception:
-        return ServiceHealthStatus(service="Celery Background Task Queue", status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1))
+        return ServiceHealthStatus(
+            service="Celery Background Task Queue",
+            status="DOWN",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
 
 
 @router.get("/health/details", response_model=SystemHealthDetailResponse)
@@ -298,14 +357,19 @@ async def get_system_health_details(
         return_exceptions=True,
     )
     services = [
-        r if isinstance(r, ServiceHealthStatus) else ServiceHealthStatus(service=name, status="DOWN", latency_ms=3000.0)
-        for (name, _), r in zip(checks, results)
+        r
+        if isinstance(r, ServiceHealthStatus)
+        else ServiceHealthStatus(service=name, status="DOWN", latency_ms=3000.0)
+        for (name, _), r in zip(checks, results, strict=False)
     ]
-    overall_status = "OPERATIONAL" if all(s.status in ("OPERATIONAL", "UNKNOWN") for s in services) else "DEGRADED"
+    overall_status = (
+        "OPERATIONAL"
+        if all(s.status in ("OPERATIONAL", "UNKNOWN") for s in services)
+        else "DEGRADED"
+    )
 
     return SystemHealthDetailResponse(
         overall_status=overall_status,
         services=services,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(UTC),
     )
-

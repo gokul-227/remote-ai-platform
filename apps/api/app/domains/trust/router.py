@@ -6,7 +6,6 @@ and managing verification badges.
 """
 
 import uuid
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
@@ -14,9 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user
-from app.domains.auth.models import User, UserRole
+from app.domains.auth.models import User
 from app.domains.projects.models import Project, ProjectReview
-from app.domains.trust.models import UserTrustScore, UserVerification
+from app.domains.trust.models import UserVerification
 from app.domains.trust.schemas import (
     ProjectReviewResponse,
     ReviewCreate,
@@ -39,7 +38,9 @@ def _reviewer_summary(user: User) -> ReviewerSummary:
     )
 
 
-@router.get("/scores/{user_id}", response_model=TrustScoreResponse, summary="Get explainable trust score")
+@router.get(
+    "/scores/{user_id}", response_model=TrustScoreResponse, summary="Get explainable trust score"
+)
 async def get_user_trust_score(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -53,14 +54,18 @@ async def get_user_trust_score(
     return TrustScoreResponse.model_validate(score_record)
 
 
-@router.get("/reviews/{user_id}", response_model=list[ProjectReviewResponse], summary="List user reviews")
+@router.get(
+    "/reviews/{user_id}", response_model=list[ProjectReviewResponse], summary="List user reviews"
+)
 async def get_user_reviews(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ) -> list[ProjectReviewResponse]:
     """Get project reviews received by a user."""
     result = await db.execute(
-        select(ProjectReview).where(ProjectReview.reviewee_id == user_id).order_by(ProjectReview.created_at.desc())
+        select(ProjectReview)
+        .where(ProjectReview.reviewee_id == user_id)
+        .order_by(ProjectReview.created_at.desc())
     )
     reviews = result.scalars().all()
 
@@ -75,7 +80,9 @@ async def get_user_reviews(
             project_id=r.project_id,
             reviewer_id=r.reviewer_id,
             reviewee_id=r.reviewee_id,
-            reviewer=_reviewer_summary(reviewers[r.reviewer_id]) if r.reviewer_id in reviewers else None,
+            reviewer=_reviewer_summary(reviewers[r.reviewer_id])
+            if r.reviewer_id in reviewers
+            else None,
             rating=r.rating,
             comment=r.comment,
             created_at=r.created_at,
@@ -84,7 +91,12 @@ async def get_user_reviews(
     ]
 
 
-@router.post("/reviews", status_code=status.HTTP_201_CREATED, response_model=ProjectReviewResponse, summary="Submit project review")
+@router.post(
+    "/reviews",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ProjectReviewResponse,
+    summary="Submit project review",
+)
 async def submit_review(
     data: ReviewCreate,
     current_user: User = Depends(get_current_user),
@@ -92,7 +104,9 @@ async def submit_review(
 ) -> ProjectReviewResponse:
     """Submit a peer review for a completed project or engagement."""
     if data.reviewee_id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot review yourself")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot review yourself"
+        )
 
     project = await db.get(Project, data.project_id)
     if not project:
@@ -111,7 +125,10 @@ async def submit_review(
         )
     )
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You have already reviewed this user for this project")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="You have already reviewed this user for this project",
+        )
 
     review = ProjectReview(
         project_id=data.project_id,
@@ -146,13 +163,19 @@ async def submit_review(
     )
 
 
-@router.get("/verifications/{user_id}", response_model=list[VerificationResponse], summary="List user verifications")
+@router.get(
+    "/verifications/{user_id}",
+    response_model=list[VerificationResponse],
+    summary="List user verifications",
+)
 async def get_verifications(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ) -> list[VerificationResponse]:
     result = await db.execute(
-        select(UserVerification).where(UserVerification.user_id == user_id).order_by(UserVerification.created_at.desc())
+        select(UserVerification)
+        .where(UserVerification.user_id == user_id)
+        .order_by(UserVerification.created_at.desc())
     )
     verifications = result.scalars().all()
     return [VerificationResponse.model_validate(v) for v in verifications]

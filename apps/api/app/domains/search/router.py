@@ -2,16 +2,15 @@
 API Router for Unified Search domain.
 """
 
-from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.domains.jobs.repository import JobRepository
-from app.domains.jobs.schemas import JobPostResponse
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import EngineerProfileResponse
+from app.domains.jobs.repository import JobRepository
+from app.domains.jobs.schemas import JobPostResponse
 
 router = APIRouter(prefix="/search", tags=["Global Search"])
 
@@ -20,8 +19,8 @@ class GlobalSearchResponse(BaseModel):
     query: str
     total_jobs: int
     total_engineers: int
-    jobs: List[JobPostResponse]
-    engineers: List[EngineerProfileResponse]
+    jobs: list[JobPostResponse]
+    engineers: list[EngineerProfileResponse]
 
 
 @router.get("", response_model=GlobalSearchResponse)

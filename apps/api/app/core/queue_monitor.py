@@ -1,6 +1,5 @@
 """Best-effort Celery broker queue inspection."""
 
-from typing import Dict
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
@@ -10,17 +9,18 @@ from app.core.metrics import CELERY_QUEUE_DEPTH
 QUEUE_NAMES = ("default", "jobs", "ai", "matching")
 
 
-async def get_queue_depths() -> Dict[str, int]:
+async def get_queue_depths() -> dict[str, int]:
     client: Redis = Redis.from_url(
         settings.CELERY_BROKER_URL,
         socket_connect_timeout=1.5,
         socket_timeout=1.5,
     )
     try:
-        depths: Dict[str, int] = {}
+        depths: dict[str, int] = {}
         for queue in QUEUE_NAMES:
             try:
-                depth = int(await client.llen(queue))
+                res = client.llen(queue)
+                depth = int(await res) if hasattr(res, "__await__") else int(res)
             except (RedisError, Exception):
                 depth = 0
             depths[queue] = depth

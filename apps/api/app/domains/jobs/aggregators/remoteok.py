@@ -2,8 +2,8 @@
 RemoteOK API Aggregator Adapter.
 """
 
-from typing import List
 import httpx
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.domains.jobs.aggregators.base import BaseAggregator
@@ -15,8 +15,8 @@ logger = get_logger("aggregator.remoteok")
 class RemoteOKAggregator(BaseAggregator):
     source_name = "REMOTEOK"
 
-    async def fetch_jobs(self, limit: int = 100) -> List[JobPostCreate]:
-        jobs: List[JobPostCreate] = []
+    async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        jobs: list[JobPostCreate] = []
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 headers = {"User-Agent": "RemoteAIPlatform/0.1 (admin@remoteaiplatform.ai)"}
@@ -40,8 +40,12 @@ class RemoteOKAggregator(BaseAggregator):
                     tags = item.get("tags", [])
                     skills = self.extract_skills(f"{title} {' '.join(tags)} {description}")
 
-                    salary_min = float(item.get("salary_min", 0)) if item.get("salary_min") else None
-                    salary_max = float(item.get("salary_max", 0)) if item.get("salary_max") else None
+                    salary_min = (
+                        float(item.get("salary_min", 0)) if item.get("salary_min") else None
+                    )
+                    salary_max = (
+                        float(item.get("salary_max", 0)) if item.get("salary_max") else None
+                    )
 
                     job = JobPostCreate(
                         title=title,
@@ -57,7 +61,8 @@ class RemoteOKAggregator(BaseAggregator):
                         currency="USD",
                         skills=skills,
                         external_id=ext_id,
-                        external_url=item.get("url") or f"https://remoteok.com/remote-jobs/{item.get('id')}",
+                        external_url=item.get("url")
+                        or f"https://remoteok.com/remote-jobs/{item.get('id')}",
                         source=self.source_name,
                     )
                     jobs.append(job)

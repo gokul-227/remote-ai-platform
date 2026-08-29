@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +9,11 @@ from pydantic import BaseModel, Field
 class ContractMilestoneCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     amount: float = Field(gt=0)
-    due_date: Optional[datetime] = None
+    due_date: datetime | None = None
+
+
+class ContractMilestoneStatusUpdate(BaseModel):
+    status: str = Field(pattern="^(PENDING|IN_PROGRESS|DELIVERED|APPROVED|PAID)$")
 
 
 class ContractMilestoneResponse(BaseModel):
@@ -19,34 +22,34 @@ class ContractMilestoneResponse(BaseModel):
     title: str
     amount: float
     status: str
-    due_date: Optional[datetime] = None
+    due_date: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
 class ContractCreate(BaseModel):
-    project_id: Optional[uuid.UUID] = None
+    project_id: uuid.UUID | None = None
     worker_id: uuid.UUID
     title: str = Field(min_length=1, max_length=255)
     scope_description: str = Field(min_length=1)
     rate_type: str = Field(default="FIXED", pattern="^(FIXED|HOURLY|MONTHLY)$")
     rate_amount: float = Field(gt=0)
     currency: str = Field(default="USD", max_length=3)
-    terms: Optional[str] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    terms: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     milestones: list[ContractMilestoneCreate] = Field(default_factory=list)
 
 
 class ContractUpdate(BaseModel):
-    title: Optional[str] = Field(default=None, min_length=1, max_length=255)
-    scope_description: Optional[str] = None
-    rate_type: Optional[str] = Field(default=None, pattern="^(FIXED|HOURLY|MONTHLY)$")
-    rate_amount: Optional[float] = Field(default=None, gt=0)
-    terms: Optional[str] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    scope_description: str | None = None
+    rate_type: str | None = Field(default=None, pattern="^(FIXED|HOURLY|MONTHLY)$")
+    rate_amount: float | None = Field(default=None, gt=0)
+    terms: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
 
 
 class UserPartySummary(BaseModel):
@@ -60,22 +63,22 @@ class UserPartySummary(BaseModel):
 
 class ContractResponse(BaseModel):
     id: uuid.UUID
-    project_id: Optional[uuid.UUID] = None
+    project_id: uuid.UUID | None = None
     client_id: uuid.UUID
     worker_id: uuid.UUID
-    client: Optional[UserPartySummary] = None
-    worker: Optional[UserPartySummary] = None
+    client: UserPartySummary | None = None
+    worker: UserPartySummary | None = None
     title: str
     scope_description: str
     rate_type: str
     rate_amount: float
     currency: str
     status: str
-    terms: Optional[str] = None
-    client_signed_at: Optional[datetime] = None
-    worker_signed_at: Optional[datetime] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    terms: str | None = None
+    client_signed_at: datetime | None = None
+    worker_signed_at: datetime | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     created_at: datetime
     updated_at: datetime
     milestones: list[ContractMilestoneResponse] = Field(default_factory=list)

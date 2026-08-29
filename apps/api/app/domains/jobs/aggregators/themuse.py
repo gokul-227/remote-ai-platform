@@ -2,8 +2,8 @@
 The Muse API Aggregator Adapter.
 """
 
-from typing import List
 import httpx
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.domains.jobs.aggregators.base import BaseAggregator
@@ -15,8 +15,8 @@ logger = get_logger("aggregator.themuse")
 class TheMuseAggregator(BaseAggregator):
     source_name = "THEMUSE"
 
-    async def fetch_jobs(self, limit: int = 100) -> List[JobPostCreate]:
-        jobs: List[JobPostCreate] = []
+    async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        jobs: list[JobPostCreate] = []
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 url = f"{settings.THEMUSE_API_URL}?category=Software%20Engineering&page=1"
@@ -34,15 +34,23 @@ class TheMuseAggregator(BaseAggregator):
 
                     title = self.clean_text(item.get("name", ""))
                     company_dict = item.get("company", {})
-                    raw_company = company_dict.get("name", "Unknown Company") if isinstance(company_dict, dict) else "Unknown Company"
+                    raw_company = (
+                        company_dict.get("name", "Unknown Company")
+                        if isinstance(company_dict, dict)
+                        else "Unknown Company"
+                    )
                     company = self.clean_text(raw_company)
                     job_id = item.get("id")
                     ext_id = f"themuse_{job_id}"
                     description = self.clean_text(item.get("contents", title))
-                    
+
                     locations = item.get("locations", [])
-                    raw_loc = locations[0].get("name") if locations and isinstance(locations[0], dict) else "Remote"
-                    loc_str = self.clean_text(raw_loc)
+                    raw_loc = (
+                        locations[0].get("name")
+                        if (locations and isinstance(locations[0], dict))
+                        else "Remote"
+                    )
+                    loc_str = self.clean_text(str(raw_loc) if raw_loc is not None else "Remote")
 
                     skills = self.extract_skills(f"{title} {description}")
 

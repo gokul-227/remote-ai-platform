@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -28,25 +27,25 @@ class PaymentPartySummary(BaseModel):
 class PaymentTransactionResponse(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
-    task_id: Optional[uuid.UUID] = None
+    task_id: uuid.UUID | None = None
     payer_id: uuid.UUID
     payee_id: uuid.UUID
-    payer: Optional[PaymentPartySummary] = None
-    payee: Optional[PaymentPartySummary] = None
+    payer: PaymentPartySummary | None = None
+    payee: PaymentPartySummary | None = None
     amount: float
     currency: str
     status: str
     provider: str
     provider_reference: str
     created_at: datetime
-    released_at: Optional[datetime] = None
+    released_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
 
 class DirectEscrowCreate(BaseModel):
     project_id: uuid.UUID
-    task_id: Optional[uuid.UUID] = None
+    task_id: uuid.UUID | None = None
     payee_id: uuid.UUID
     amount: float = Field(gt=0)
     currency: str = Field(default="USD", max_length=3)

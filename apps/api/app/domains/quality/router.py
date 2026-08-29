@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
 from app.agents.quality_engine import QualityEngineAgent
 from app.domains.auth.dependencies import get_current_user
@@ -107,7 +107,9 @@ async def batch_evaluate(
 
     results = await agent.batch_evaluate(raw_submissions)
     typed_results = [SubmissionQualityReport(**r) for r in results]
-    avg_score = sum(r.overall_score for r in typed_results) / len(typed_results) if typed_results else 0.0
+    avg_score = (
+        sum(r.overall_score for r in typed_results) / len(typed_results) if typed_results else 0.0
+    )
 
     return BatchQualityReport(
         results=typed_results,
@@ -138,7 +140,12 @@ async def quality_engine_health():
     from app.core.config import settings
 
     config = get_ai_model_config()
-    has_credentials = bool(settings.AI_API_KEY or settings.GROQ_API_KEY or settings.OPENAI_API_KEY or settings.OLLAMA_BASE_URL)
+    has_credentials = bool(
+        settings.AI_API_KEY
+        or settings.GROQ_API_KEY
+        or settings.OPENAI_API_KEY
+        or settings.OLLAMA_BASE_URL
+    )
     return {
         "status": "operational" if has_credentials else "degraded_fallback_mode",
         "agent": "QualityEngineAgent",

@@ -2,16 +2,18 @@
 Service layer for Admin domain.
 """
 
-from typing import Dict, Any, List, Sequence
-from sqlalchemy import select, func
+from collections.abc import Sequence
+from typing import Any
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.admin.models import ApiSyncLog
 from app.domains.admin.repository import AdminRepository
 from app.domains.admin.schemas import PlatformStatsResponse
-from app.domains.auth.models import User, UserRole
-from app.domains.engineers.models import EngineerProfile
+from app.domains.auth.models import User
 from app.domains.companies.models import CompanyProfile
+from app.domains.engineers.models import EngineerProfile
 from app.domains.jobs.models import JobPost
 from app.domains.matching.models import JobMatch
 
@@ -23,11 +25,15 @@ class AdminService:
 
     async def get_platform_stats(self) -> PlatformStatsResponse:
         total_users = (await self.db.execute(select(func.count(User.id)))).scalar_one() or 0
-        total_engineers = (await self.db.execute(select(func.count(EngineerProfile.id)))).scalar_one() or 0
-        total_companies = (await self.db.execute(select(func.count(CompanyProfile.id)))).scalar_one() or 0
+        total_engineers = (
+            await self.db.execute(select(func.count(EngineerProfile.id)))
+        ).scalar_one() or 0
+        total_companies = (
+            await self.db.execute(select(func.count(CompanyProfile.id)))
+        ).scalar_one() or 0
         total_jobs = (await self.db.execute(select(func.count(JobPost.id)))).scalar_one() or 0
         total_active_jobs = (
-            await self.db.execute(select(func.count(JobPost.id)).where(JobPost.is_active == True))
+            await self.db.execute(select(func.count(JobPost.id)).where(JobPost.is_active.is_(True)))
         ).scalar_one() or 0
         total_matches = (await self.db.execute(select(func.count(JobMatch.id)))).scalar_one() or 0
 

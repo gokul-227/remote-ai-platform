@@ -2,26 +2,25 @@
 Service layer for Job Post domain & Aggregator coordination.
 """
 
-import asyncio
 import hashlib
 import json
 import time
 import uuid
-from typing import Optional, List, Sequence, Dict
+from collections.abc import Sequence
 
+from app.agents.job_enricher import JobEnricherAgent
+from app.core.cache import RedisCache
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
-from app.core.cache import RedisCache
 from app.domains.admin.repository import AdminRepository
-from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.arbeitnow import ArbeitnowAggregator
+from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.remotive import RemotiveAggregator
 from app.domains.jobs.aggregators.themuse import TheMuseAggregator
 from app.domains.jobs.aggregators.usajobs import USAJobsAggregator
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
-from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate, JobPostResponse, JobSearchQuery
-from app.agents.job_enricher import JobEnricherAgent
+from app.domains.jobs.schemas import JobPostCreate, JobPostResponse, JobPostUpdate, JobSearchQuery
 from app.domains.marketplace.models import AIReport
 
 logger = get_logger("jobs.service")
@@ -65,7 +64,9 @@ class JobService:
             "milestones": analysis.get("milestones", []),
             "tasks": analysis.get("tasks", []),
         }
-        self.repo.db.add(AIReport(job_id=job.id, report_type="job_analysis", payload=job.ai_analysis))
+        self.repo.db.add(
+            AIReport(job_id=job.id, report_type="job_analysis", payload=job.ai_analysis)
+        )
         await self.repo.db.flush()
         await self.repo.db.refresh(job)
         return job
@@ -75,7 +76,6 @@ class JobService:
         if not job:
             raise NotFoundError("Job post not found")
         return job
-
 
     async def search_jobs(self, query: JobSearchQuery) -> Sequence[JobPost]:
         return await self.repo.search(
@@ -105,15 +105,15 @@ class JobService:
         return serialized
 
     async def sync_all_job_sources(
-        self, limit_per_source: int = 50, admin_repo: Optional[AdminRepository] = None
-    ) -> Dict[str, int]:
+        self, limit_per_source: int = 50, admin_repo: AdminRepository | None = None
+    ) -> dict[str, int]:
         """
         Runs job aggregation across all 5 public APIs, saving/upserting jobs to DB.
         If `admin_repo` is given, records a per-source ApiSyncLog entry (fetched/inserted/
         updated/status/duration) so the admin status page reflects every sync run.
         """
         logger.info("Starting background job aggregation sync across 5 public APIs...")
-        stats: Dict[str, int] = {}
+        stats: dict[str, int] = {}
 
         for aggregator in self.aggregators:
             started = time.monotonic()

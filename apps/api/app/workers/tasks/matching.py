@@ -2,14 +2,16 @@
 Matching engine Celery tasks.
 """
 
-import uuid
 import asyncio
-from app.workers.celery_app import celery_app
+import uuid
+
+from celery import shared_task
+
 from app.core.database import AsyncSessionFactory
-from app.domains.matching.service import MatchingService
+from app.core.logging import get_logger
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.jobs.repository import JobRepository
-from app.core.logging import get_logger
+from app.domains.matching.service import MatchingService
 
 logger = get_logger("workers.tasks.matching")
 
@@ -43,21 +45,21 @@ async def _async_compute_engineer_recommendations(engineer_id_str: str):
         return 0
 
 
-@celery_app.task(name="app.workers.tasks.matching.compute_match", queue="matching")
+@shared_task(name="app.workers.tasks.matching.compute_match", queue="matching")
 def compute_match(engineer_id: str, job_id: str):
     """Compute AI match score between an engineer and a job."""
     logger.info(f"Computing match between engineer {engineer_id} and job {job_id}")
     return asyncio.run(_async_compute_match(engineer_id, job_id))
 
 
-@celery_app.task(name="app.workers.tasks.matching.compute_stale_matches", queue="matching")
+@shared_task(name="app.workers.tasks.matching.compute_stale_matches", queue="matching")
 def compute_stale_matches():
     """Recompute match scores for engineers with stale data."""
     logger.info("Recomputing stale matches...")
     return {"status": "ok"}
 
 
-@celery_app.task(name="app.workers.tasks.matching.compute_engineer_recommendations", queue="matching")
+@shared_task(name="app.workers.tasks.matching.compute_engineer_recommendations", queue="matching")
 def compute_engineer_recommendations(engineer_id: str):
     """Generate ranked job recommendations for an engineer."""
     logger.info(f"Generating recommendations for engineer {engineer_id}")

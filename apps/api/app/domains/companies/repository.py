@@ -3,8 +3,9 @@ Repository pattern for Company Profile domain.
 """
 
 import uuid
-from typing import Optional, Sequence
-from sqlalchemy import select, func
+from collections.abc import Sequence
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.companies.models import CompanyProfile
@@ -15,12 +16,12 @@ class CompanyRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, company_id: uuid.UUID) -> Optional[CompanyProfile]:
+    async def get_by_id(self, company_id: uuid.UUID) -> CompanyProfile | None:
         stmt = select(CompanyProfile).where(CompanyProfile.id == company_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_user_id(self, user_id: uuid.UUID) -> Optional[CompanyProfile]:
+    async def get_by_user_id(self, user_id: uuid.UUID) -> CompanyProfile | None:
         stmt = select(CompanyProfile).where(CompanyProfile.user_id == user_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
@@ -53,7 +54,7 @@ class CompanyRepository:
         return company
 
     async def list_companies(
-        self, skip: int = 0, limit: int = 20, is_verified: Optional[bool] = None
+        self, skip: int = 0, limit: int = 20, is_verified: bool | None = None
     ) -> Sequence[CompanyProfile]:
         stmt = select(CompanyProfile)
         if is_verified is not None:

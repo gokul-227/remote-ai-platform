@@ -7,9 +7,9 @@ Falls back gracefully when no connections are active.
 import asyncio
 import uuid
 from collections import defaultdict
-from typing import Dict, List
-from fastapi import WebSocket
+
 import structlog
+from fastapi import WebSocket
 
 logger = structlog.get_logger("notifications.ws_manager")
 
@@ -18,7 +18,7 @@ class ConnectionManager:
     """Thread-safe WebSocket connection manager per user ID."""
 
     def __init__(self):
-        self._connections: Dict[str, List[WebSocket]] = defaultdict(list)
+        self._connections: dict[str, list[WebSocket]] = defaultdict(list)
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket, user_id: uuid.UUID) -> None:
@@ -46,7 +46,7 @@ class ConnectionManager:
         """
         key = str(user_id)
         delivered = 0
-        stale: List[WebSocket] = []
+        stale: list[WebSocket] = []
 
         for ws in list(self._connections.get(key, [])):
             try:

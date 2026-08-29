@@ -6,7 +6,6 @@ from uuid import UUID
 
 from passlib.context import CryptContext
 
-
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 
@@ -27,7 +26,9 @@ ALLOWED_RESUME_TYPES = {
 }
 
 
-def validate_resume_upload(filename: str | None, content_type: str | None, data: bytes, max_bytes: int) -> str:
+def validate_resume_upload(
+    filename: str | None, content_type: str | None, data: bytes, max_bytes: int
+) -> str:
     name = PurePosixPath(filename or "").name.lower()
     if not (name.endswith(".pdf") or name.endswith(".docx")):
         raise ValueError("File format not supported. Upload PDF or DOCX.")

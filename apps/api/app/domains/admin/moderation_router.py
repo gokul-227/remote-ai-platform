@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -26,35 +25,64 @@ class ModerationReportCreate(BaseModel):
 class ModerationDecision(BaseModel):
     status: str = Field(pattern="^(RESOLVED|DISMISSED)$")
     decision: str = Field(pattern="^(HIDE_JOB|SUSPEND_USER|NO_ACTION)$")
-    note: Optional[str] = Field(default=None, max_length=5000)
+    note: str | None = Field(default=None, max_length=5000)
 
 
 @router.post("/reports", status_code=status.HTTP_201_CREATED)
-async def create_report(data: ModerationReportCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def create_report(
+    data: ModerationReportCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     if data.target_type == "USER":
-        target = await db.get(User, data.target_id)
-        if not target or target.id == current_user.id:
+        user_target = await db.get(User, data.target_id)
+        if not user_target or user_target.id == current_user.id:
             raise HTTPException(status_code=404, detail="Report target not found")
     else:
-        target = await db.get(JobPost, data.target_id)
-        if not target:
+        job_target = await db.get(JobPost, data.target_id)
+        if not job_target:
             raise HTTPException(status_code=404, detail="Report target not found")
-    existing = await db.scalar(select(ModerationReport).where(ModerationReport.reporter_id == current_user.id, ModerationReport.target_type == data.target_type, ModerationReport.target_id == str(data.target_id), ModerationReport.status == "OPEN"))
+    existing = await db.scalar(
+        select(ModerationReport).where(
+            ModerationReport.reporter_id == current_user.id,
+            ModerationReport.target_type == data.target_type,
+            ModerationReport.target_id == str(data.target_id),
+            ModerationReport.status == "OPEN",
+        )
+    )
     if existing:
-        raise HTTPException(status_code=409, detail="You already have an open report for this target")
-    report = ModerationReport(reporter_id=current_user.id, target_type=data.target_type, target_id=str(data.target_id), reason=data.reason)
+        raise HTTPException(
+            status_code=409, detail="You already have an open report for this target"
+        )
+    report = ModerationReport(
+        reporter_id=current_user.id,
+        target_type=data.target_type,
+        target_id=str(data.target_id),
+        reason=data.reason,
+    )
     db.add(report)
     await db.flush()
     return report
 
 
 @router.get("/reports")
-async def list_reports(current_user: User = Depends(require_role(UserRole.ADMIN)), db: AsyncSession = Depends(get_db)):
-    return (await db.execute(select(ModerationReport).order_by(ModerationReport.created_at.desc()))).scalars().all()
+async def list_reports(
+    current_user: User = Depends(require_role(UserRole.ADMIN)), db: AsyncSession = Depends(get_db)
+):
+    return (
+        (await db.execute(select(ModerationReport).order_by(ModerationReport.created_at.desc())))
+        .scalars()
+        .all()
+    )
 
 
 @router.patch("/reports/{report_id}")
-async def decide_report(report_id: uuid.UUID, data: ModerationDecision, current_user: User = Depends(require_role(UserRole.ADMIN)), db: AsyncSession = Depends(get_db)):
+async def decide_report(
+    report_id: uuid.UUID,
+    data: ModerationDecision,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
     report = await db.get(ModerationReport, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Moderation report not found")
@@ -63,23 +91,29 @@ async def decide_report(report_id: uuid.UUID, data: ModerationDecision, current_
     if data.decision == "HIDE_JOB":
         if report.target_type != "JOB":
             raise HTTPException(status_code=422, detail="HIDE_JOB requires a job report")
-        target = await db.get(JobPost, uuid.UUID(report.target_id))
-        if not target:
+        job_target = await db.get(JobPost, uuid.UUID(report.target_id))
+        if not job_target:
             raise HTTPException(status_code=404, detail="Reported job no longer exists")
-        target.is_active = False
+        job_target.is_active = False
     elif data.decision == "SUSPEND_USER":
         if report.target_type != "USER":
             raise HTTPException(status_code=422, detail="SUSPEND_USER requires a user report")
-        target = await db.get(User, uuid.UUID(report.target_id))
-        if not target:
+        user_target = await db.get(User, uuid.UUID(report.target_id))
+        if not user_target:
             raise HTTPException(status_code=404, detail="Reported user no longer exists")
-        target.is_active = False
+        user_target.is_active = False
     report.status = data.status
     report.decision = data.decision
     report.decision_note = data.note
     report.reviewed_by_id = current_user.id
     report.resolved_at = datetime.utcnow()
-    await AdminRepository(db).log_activity(current_user.id, "MODERATION_DECISION", report.target_type, report.target_id, {"report_id": str(report.id), "status": report.status, "decision": report.decision})
+    await AdminRepository(db).log_activity(
+        current_user.id,
+        "MODERATION_DECISION",
+        report.target_type,
+        report.target_id,
+        {"report_id": str(report.id), "status": report.status, "decision": report.decision},
+    )
     await db.commit()
     await db.refresh(report)
     return report

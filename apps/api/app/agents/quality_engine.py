@@ -5,7 +5,7 @@ Evaluates work submissions for quality, completeness, and delivery standards.
 Returns a structured quality report with score, issues, and actionable feedback.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from app.core.logging import get_logger
 from app.services.ai import AIService
@@ -90,7 +90,7 @@ Return ONLY valid JSON without markdown wrapping.
 class QualityEngineAgent:
     """AI-powered work quality evaluation engine."""
 
-    def __init__(self, model_name: Optional[str] = None):
+    def __init__(self, model_name: str | None = None):
         self.ai = AIService(model=model_name)
 
     async def evaluate_submission(
@@ -98,8 +98,8 @@ class QualityEngineAgent:
         task_title: str,
         task_description: str,
         submission_content: str,
-        requirements: Optional[list[str]] = None,
-    ) -> Dict[str, Any]:
+        requirements: list[str] | None = None,
+    ) -> dict[str, Any]:
         """
         Evaluate a work submission against task requirements.
 
@@ -123,11 +123,14 @@ class QualityEngineAgent:
             return self._fallback_report(task_title)
 
         # Normalize and ensure required keys
+        raw_score = (
+            result.get("overall_score") or result.get("quality_score") or result.get("score") or 70
+        )
         return {
-            "overall_score": int(result.get("overall_score", 70)),
+            "overall_score": int(raw_score),
             "grade": result.get("grade", "C+"),
             "verdict": result.get("verdict", "approved_with_notes"),
-            "summary": result.get("summary", "Submission received."),
+            "summary": result.get("summary") or result.get("feedback") or "Submission received.",
             "dimensions": result.get("dimensions", {}),
             "issues": result.get("issues", []),
             "strengths": result.get("strengths", []),
@@ -141,7 +144,7 @@ class QualityEngineAgent:
         task_description: str,
         code_snippet: str,
         language: str = "python",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Perform a technical code review on a code snippet or diff.
 
@@ -171,9 +174,10 @@ class QualityEngineAgent:
             "requires_revision": bool(result.get("requires_revision", False)),
         }
 
-    async def batch_evaluate(self, submissions: list[Dict[str, Any]]) -> list[Dict[str, Any]]:
+    async def batch_evaluate(self, submissions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Evaluate multiple submissions. Each dict must have: task_title, task_description, submission_content."""
         import asyncio
+
         tasks = [
             self.evaluate_submission(
                 task_title=s.get("task_title", "Task"),
@@ -186,7 +190,7 @@ class QualityEngineAgent:
         return list(await asyncio.gather(*tasks))
 
     @staticmethod
-    def _fallback_report(task_title: str) -> Dict[str, Any]:
+    def _fallback_report(task_title: str) -> dict[str, Any]:
         """Returns a neutral fallback report when the LLM is unavailable."""
         return {
             "overall_score": 70,
@@ -194,7 +198,13 @@ class QualityEngineAgent:
             "verdict": "approved_with_notes",
             "summary": f"Automated review of '{task_title}' could not be completed. Manual review required.",
             "dimensions": {},
-            "issues": [{"severity": "info", "category": "system", "description": "AI review engine temporarily unavailable."}],
+            "issues": [
+                {
+                    "severity": "info",
+                    "category": "system",
+                    "description": "AI review engine temporarily unavailable.",
+                }
+            ],
             "strengths": [],
             "recommended_actions": ["Request manual review from project lead."],
             "requires_revision": False,
@@ -202,7 +212,7 @@ class QualityEngineAgent:
         }
 
     @staticmethod
-    def _fallback_code_review() -> Dict[str, Any]:
+    def _fallback_code_review() -> dict[str, Any]:
         return {
             "overall_score": 70,
             "grade": "C+",

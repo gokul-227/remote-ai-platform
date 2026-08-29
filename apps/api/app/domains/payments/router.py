@@ -6,8 +6,7 @@ and escrow release/refund financial workflows.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
@@ -18,13 +17,13 @@ from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.marketplace.models import ProjectTask
-from app.domains.projects.models import PaymentTransaction, Project, ProjectMember
 from app.domains.payments.schemas import (
     DirectEscrowCreate,
     PaymentPartySummary,
     PaymentTransactionResponse,
     WalletBalanceResponse,
 )
+from app.domains.projects.models import PaymentTransaction, Project
 from app.services.notifications import notify_user
 from app.services.payments import SandboxPaymentProvider
 
@@ -40,7 +39,9 @@ def _party_summary(user: User) -> PaymentPartySummary:
     )
 
 
-async def _enrich_transaction(p: PaymentTransaction, db: AsyncSession) -> PaymentTransactionResponse:
+async def _enrich_transaction(
+    p: PaymentTransaction, db: AsyncSession
+) -> PaymentTransactionResponse:
     payer = await db.get(User, p.payer_id)
     payee = await db.get(User, p.payee_id)
 
@@ -62,7 +63,9 @@ async def _enrich_transaction(p: PaymentTransaction, db: AsyncSession) -> Paymen
     )
 
 
-@router.get("/wallet", response_model=WalletBalanceResponse, summary="Get user wallet balance overview")
+@router.get(
+    "/wallet", response_model=WalletBalanceResponse, summary="Get user wallet balance overview"
+)
 async def get_wallet_balance(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -97,7 +100,11 @@ async def get_wallet_balance(
     )
 
 
-@router.get("/transactions", response_model=list[PaymentTransactionResponse], summary="List transaction history")
+@router.get(
+    "/transactions",
+    response_model=list[PaymentTransactionResponse],
+    summary="List transaction history",
+)
 async def list_transactions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -117,11 +124,16 @@ async def list_transactions(
     return [await _enrich_transaction(t, db) for t in txs]
 
 
-@router.post("/escrow", status_code=status.HTTP_201_CREATED, response_model=PaymentTransactionResponse, summary="Create escrow payment")
+@router.post(
+    "/escrow",
+    status_code=status.HTTP_201_CREATED,
+    response_model=PaymentTransactionResponse,
+    summary="Create escrow payment",
+)
 async def create_escrow_payment(
     data: DirectEscrowCreate,
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
-    idempotency_key: Optional[str] = Query(None, alias="idempotency_key"),
+    idempotency_key: str | None = Query(None, alias="idempotency_key"),
     db: AsyncSession = Depends(get_db),
 ) -> PaymentTransactionResponse:
     """Authorize and hold funds in escrow for a project or task with idempotency support."""
@@ -142,9 +154,13 @@ async def create_escrow_payment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
     if current_user.role != UserRole.ADMIN:
-        company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+        company = await db.scalar(
+            select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
+        )
         if not company or company.id != project.company_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project access required")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Project access required"
+            )
 
     payee = await db.get(User, data.payee_id)
     if not payee:
@@ -153,7 +169,10 @@ async def create_escrow_payment(
     if data.task_id:
         task = await db.get(ProjectTask, data.task_id)
         if not task or task.project_id != project.id:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Task must belong to project")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Task must belong to project",
+            )
 
     provider = SandboxPaymentProvider()
     authorization = await provider.authorize(data.amount, data.currency.upper())
@@ -186,7 +205,11 @@ async def create_escrow_payment(
     return await _enrich_transaction(payment, db)
 
 
-@router.post("/{payment_id}/release", response_model=PaymentTransactionResponse, summary="Release escrow payment")
+@router.post(
+    "/{payment_id}/release",
+    response_model=PaymentTransactionResponse,
+    summary="Release escrow payment",
+)
 async def release_escrow(
     payment_id: uuid.UUID,
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
@@ -195,14 +218,18 @@ async def release_escrow(
     """Release escrowed payment to the worker."""
     payment = await db.get(PaymentTransaction, payment_id)
     if not payment or payment.payer_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escrow transaction not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Escrow transaction not found"
+        )
 
     if payment.status != "ESCROWED":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Payment is not currently in escrow")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Payment is not currently in escrow"
+        )
 
     result = await SandboxPaymentProvider().release(payment.provider_reference)
     payment.status = result.status
-    payment.released_at = datetime.now(timezone.utc)
+    payment.released_at = datetime.now(UTC)
     await db.flush()
 
     await notify_user(
@@ -216,7 +243,11 @@ async def release_escrow(
     return await _enrich_transaction(payment, db)
 
 
-@router.post("/{payment_id}/refund", response_model=PaymentTransactionResponse, summary="Refund escrow payment")
+@router.post(
+    "/{payment_id}/refund",
+    response_model=PaymentTransactionResponse,
+    summary="Refund escrow payment",
+)
 async def refund_escrow(
     payment_id: uuid.UUID,
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
@@ -225,10 +256,14 @@ async def refund_escrow(
     """Refund escrowed payment back to the client."""
     payment = await db.get(PaymentTransaction, payment_id)
     if not payment or payment.payer_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escrow transaction not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Escrow transaction not found"
+        )
 
     if payment.status != "ESCROWED":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Payment is not currently in escrow")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Payment is not currently in escrow"
+        )
 
     result = await SandboxPaymentProvider().refund(payment.provider_reference)
     payment.status = result.status

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Protocol
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 
 @dataclass(frozen=True)
@@ -23,7 +23,9 @@ class EscrowProvider(Protocol):
 
 
 class PayoutProvider(Protocol):
-    async def payout(self, reference: str, amount: float, currency: str) -> PaymentProviderResult: ...
+    async def payout(
+        self, reference: str, amount: float, currency: str
+    ) -> PaymentProviderResult: ...
 
 
 class SandboxPaymentProvider:

@@ -3,8 +3,9 @@ Repository pattern for Engineer Profile domain.
 """
 
 import uuid
-from typing import Optional, List, Sequence
-from sqlalchemy import select, func, or_, and_, cast, Text
+from collections.abc import Sequence
+
+from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.engineers.models import EngineerProfile
@@ -15,12 +16,12 @@ class EngineerRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, profile_id: uuid.UUID) -> Optional[EngineerProfile]:
+    async def get_by_id(self, profile_id: uuid.UUID) -> EngineerProfile | None:
         stmt = select(EngineerProfile).where(EngineerProfile.id == profile_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_user_id(self, user_id: uuid.UUID) -> Optional[EngineerProfile]:
+    async def get_by_user_id(self, user_id: uuid.UUID) -> EngineerProfile | None:
         stmt = select(EngineerProfile).where(EngineerProfile.user_id == user_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
@@ -54,9 +55,11 @@ class EngineerRepository:
         await self.db.refresh(profile)
         return profile
 
-    async def update(self, profile: EngineerProfile, data: EngineerProfileUpdate) -> EngineerProfile:
+    async def update(
+        self, profile: EngineerProfile, data: EngineerProfileUpdate
+    ) -> EngineerProfile:
         update_dict = data.model_dump(exclude_unset=True)
-        
+
         # Serialize nested schemas if present
         if "experience" in update_dict and update_dict["experience"] is not None:
             update_dict["experience"] = [
@@ -83,16 +86,16 @@ class EngineerRepository:
 
     async def search(
         self,
-        query: Optional[str] = None,
-        skills: Optional[List[str]] = None,
-        min_years_exp: Optional[int] = None,
-        primary_role: Optional[str] = None,
-        location: Optional[str] = None,
-        is_open_to_work: Optional[bool] = None,
+        query: str | None = None,
+        skills: list[str] | None = None,
+        min_years_exp: int | None = None,
+        primary_role: str | None = None,
+        location: str | None = None,
+        is_open_to_work: bool | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> Sequence[EngineerProfile]:
-        stmt = select(EngineerProfile).where(EngineerProfile.is_public == True)
+        stmt = select(EngineerProfile).where(EngineerProfile.is_public.is_(True))
 
         if is_open_to_work is not None:
             stmt = stmt.where(EngineerProfile.is_open_to_work == is_open_to_work)
@@ -101,7 +104,9 @@ class EngineerRepository:
             stmt = stmt.where(EngineerProfile.years_of_experience >= min_years_exp)
 
         if primary_role:
-            stmt = stmt.where(func.lower(EngineerProfile.primary_role).contains(primary_role.lower()))
+            stmt = stmt.where(
+                func.lower(EngineerProfile.primary_role).contains(primary_role.lower())
+            )
 
         if location:
             stmt = stmt.where(func.lower(EngineerProfile.location).contains(location.lower()))

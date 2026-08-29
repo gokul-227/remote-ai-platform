@@ -2,7 +2,7 @@
 Shared Pydantic response schemas and error models.
 """
 
-from typing import Any, Generic, List, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -11,14 +11,16 @@ DataT = TypeVar("DataT")
 
 class APIResponse(BaseModel, Generic[DataT]):
     """Standard API response envelope."""
+
     success: bool = True
-    data: Optional[DataT] = None
-    message: Optional[str] = None
+    data: DataT | None = None
+    message: str | None = None
 
 
 class PaginatedResponse(BaseModel, Generic[DataT]):
     """Paginated list response."""
-    items: List[DataT]
+
+    items: list[DataT]
     total: int
     page: int
     page_size: int
@@ -29,7 +31,7 @@ class PaginatedResponse(BaseModel, Generic[DataT]):
     @classmethod
     def from_items(
         cls,
-        items: List[DataT],
+        items: list[DataT],
         total: int,
         page: int,
         page_size: int,
@@ -47,16 +49,16 @@ class PaginatedResponse(BaseModel, Generic[DataT]):
 
 
 class ErrorDetail(BaseModel):
-    field: Optional[str] = None
+    field: str | None = None
     message: str
-    code: Optional[str] = None
+    code: str | None = None
 
 
 class ErrorResponse(BaseModel):
     success: bool = False
     error: str
-    details: Optional[List[ErrorDetail]] = None
-    request_id: Optional[str] = None
+    details: list[ErrorDetail] | None = None
+    request_id: str | None = None
 
 
 class HealthResponse(BaseModel):

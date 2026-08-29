@@ -2,9 +2,10 @@
 AI Resume Parser Agent.
 """
 
-from typing import Dict, Any, List, Optional
-from app.services.ai import AIService
+from typing import Any
+
 from app.core.logging import get_logger
+from app.services.ai import AIService
 
 logger = get_logger("agents.resume_parser")
 
@@ -53,14 +54,14 @@ Return ONLY valid JSON without markdown wrapping.
 
 
 class ResumeParserAgent:
-    def __init__(self, model_name: Optional[str] = None):
+    def __init__(self, model_name: str | None = None):
         self.ai = AIService(model=model_name)
 
-    async def parse_resume_text(self, resume_text: str) -> Dict[str, Any]:
+    async def parse_resume_text(self, resume_text: str) -> dict[str, Any]:
         """Parse raw resume text into structured profile dictionary."""
         prompt = f"Extract structured profile data from the following resume text:\n\n{resume_text[:4000]}"
         result = (await self.ai.analyze(prompt, system_prompt=SYSTEM_PROMPT)).data
-        
+
         # Ensure default keys exist
         return {
             "headline": result.get("headline", "Software Engineer"),

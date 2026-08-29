@@ -3,8 +3,9 @@ Repository pattern implementation for User persistence.
 """
 
 import uuid
-from typing import Optional, List, Sequence
-from sqlalchemy import select, func
+from collections.abc import Sequence
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.models import User, UserRole
@@ -15,17 +16,17 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, user_id: uuid.UUID) -> Optional[User]:
+    async def get_by_id(self, user_id: uuid.UUID) -> User | None:
         stmt = select(User).where(User.id == user_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str) -> User | None:
         stmt = select(User).where(func.lower(User.email) == func.lower(email))
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_keycloak_id(self, keycloak_id: str) -> Optional[User]:
+    async def get_by_keycloak_id(self, keycloak_id: str) -> User | None:
         stmt = select(User).where(User.keycloak_id == keycloak_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
@@ -57,8 +58,8 @@ class UserRepository:
         self,
         skip: int = 0,
         limit: int = 50,
-        role: Optional[UserRole] = None,
-        is_active: Optional[bool] = None,
+        role: UserRole | None = None,
+        is_active: bool | None = None,
     ) -> Sequence[User]:
         stmt = select(User)
         if role is not None:
@@ -71,8 +72,8 @@ class UserRepository:
 
     async def count(
         self,
-        role: Optional[UserRole] = None,
-        is_active: Optional[bool] = None,
+        role: UserRole | None = None,
+        is_active: bool | None = None,
     ) -> int:
         stmt = select(func.count(User.id))
         if role is not None:

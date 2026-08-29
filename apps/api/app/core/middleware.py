@@ -4,15 +4,13 @@ Custom FastAPI Middleware
 
 import time
 import uuid
-from collections import defaultdict, deque
-from typing import Callable
+from collections.abc import Callable
 
 import structlog
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.core.config import settings
 from app.core.metrics import HTTP_REQUESTS
 
 logger = structlog.get_logger(__name__)

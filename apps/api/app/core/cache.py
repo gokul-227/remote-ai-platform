@@ -1,7 +1,7 @@
 """Best-effort Redis JSON cache for low-risk read models."""
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from redis.asyncio import Redis
 
@@ -18,7 +18,7 @@ class RedisCache:
     def _key(self, key: str) -> str:
         return f"{self.namespace}:{key}"
 
-    async def get_json(self, key: str) -> Optional[Any]:
+    async def get_json(self, key: str) -> Any | None:
         client = self._client()
         try:
             value = await client.get(self._key(key))

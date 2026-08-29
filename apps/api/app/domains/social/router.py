@@ -7,10 +7,9 @@ can be introduced later via the feed algorithm abstraction.
 """
 
 import uuid
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -19,13 +18,13 @@ from app.domains.auth.models import User
 from app.domains.network.models import Connection
 from app.domains.social.models import Post, PostComment, PostLike
 from app.domains.social.schemas import (
+    AuthorSummary,
     CommentCreate,
     CommentResponse,
     FeedResponse,
     PostCreate,
     PostResponse,
     PostUpdate,
-    AuthorSummary,
 )
 
 router = APIRouter(prefix="/social", tags=["Social Feed"])
@@ -73,7 +72,7 @@ async def _enrich_posts(
             PostLike.user_id == current_user_id,
         )
     )
-    liked_set = {row for row in liked_result.scalars().all()}
+    liked_set = set(liked_result.scalars().all())
 
     enriched = []
     for post in posts:
@@ -135,12 +134,15 @@ async def get_feed(
     feed_author_ids = list(connected_ids | {current_user.id})
 
     # Total count
-    total = await db.scalar(
-        select(func.count(Post.id)).where(
-            Post.author_id.in_(feed_author_ids),
-            Post.visibility.in_(["PUBLIC", "CONNECTIONS"]),
+    total = (
+        await db.scalar(
+            select(func.count(Post.id)).where(
+                Post.author_id.in_(feed_author_ids),
+                Post.visibility.in_(["PUBLIC", "CONNECTIONS"]),
+            )
         )
-    ) or 0
+        or 0
+    )
 
     # Paginated posts
     offset = (page - 1) * page_size
@@ -175,9 +177,7 @@ async def get_public_feed(
     db: AsyncSession = Depends(get_db),
 ) -> FeedResponse:
     """Return public posts from all users, newest first."""
-    total = await db.scalar(
-        select(func.count(Post.id)).where(Post.visibility == "PUBLIC")
-    ) or 0
+    total = await db.scalar(select(func.count(Post.id)).where(Post.visibility == "PUBLIC")) or 0
 
     offset = (page - 1) * page_size
     posts_result = await db.execute(
@@ -202,7 +202,12 @@ async def get_public_feed(
 # ── Posts CRUD ─────────────────────────────────────────────────────────────────
 
 
-@router.post("/posts", status_code=status.HTTP_201_CREATED, response_model=PostResponse, summary="Create a post")
+@router.post(
+    "/posts",
+    status_code=status.HTTP_201_CREATED,
+    response_model=PostResponse,
+    summary="Create a post",
+)
 async def create_post(
     data: PostCreate,
     current_user: User = Depends(get_current_user),
@@ -258,7 +263,9 @@ async def update_post(
 ) -> PostResponse:
     post = await _get_post_or_404(post_id, db)
     if post.author_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only edit your own posts")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You can only edit your own posts"
+        )
 
     if data.content is not None:
         post.content = data.content
@@ -271,7 +278,9 @@ async def update_post(
     return enriched[0]
 
 
-@router.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete own post")
+@router.delete(
+    "/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete own post"
+)
 async def delete_post(
     post_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
@@ -279,7 +288,9 @@ async def delete_post(
 ) -> None:
     post = await _get_post_or_404(post_id, db)
     if post.author_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own posts")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own posts"
+        )
     await db.delete(post)
 
 
@@ -320,7 +331,9 @@ async def toggle_like(
 # ── Comments ───────────────────────────────────────────────────────────────────
 
 
-@router.get("/posts/{post_id}/comments", response_model=list[CommentResponse], summary="List post comments")
+@router.get(
+    "/posts/{post_id}/comments", response_model=list[CommentResponse], summary="List post comments"
+)
 async def list_comments(
     post_id: uuid.UUID,
     page: int = Query(default=1, ge=1),
@@ -401,7 +414,9 @@ async def delete_comment(
     if not comment or comment.post_id != post_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
     if comment.author_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own comments")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own comments"
+        )
     post = await _get_post_or_404(post_id, db)
     post.comment_count = max(0, post.comment_count - 1)
     await db.delete(comment)

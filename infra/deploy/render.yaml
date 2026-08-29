@@ -31,7 +31,7 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     region: oregon
-    healthCheckPath: /health/ready
+    healthCheckPath: /health/live
     envVars:
       - key: APP_ENV
         value: production
@@ -52,6 +52,8 @@ services:
       #                         postgresql+asyncpg://postgres:<password>@<host>:5432/postgres
       #   JWT_SECRET_KEY      — high-entropy 32+ char secret (openssl rand -hex 32)
       #   CORS_ORIGINS        — https://<your-vercel-app>.vercel.app
+      #   REDIS_URL           — (Optional) Hosted Redis URL (e.g. Upstash) for distributed caching
+      #   CELERY_BROKER_URL   — (Optional) Hosted Redis URL if deploying separate Celery workers
       #   MINIO_ENDPOINT      — Supabase Storage S3-compatible endpoint (verify format — see deployment doc)
       #   MINIO_ACCESS_KEY    — Supabase Storage S3 access key
       #   MINIO_SECRET_KEY    — Supabase Storage S3 secret key

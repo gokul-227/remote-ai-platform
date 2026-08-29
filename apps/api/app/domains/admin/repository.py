@@ -3,7 +3,8 @@ Admin Domain Repository — Activity Logs and Sync Audits.
 """
 
 import uuid
-from typing import Optional, Sequence
+from collections.abc import Sequence
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,11 +17,11 @@ class AdminRepository:
 
     async def log_activity(
         self,
-        user_id: Optional[uuid.UUID],
+        user_id: uuid.UUID | None,
         action: str,
-        entity_type: Optional[str] = None,
-        entity_id: Optional[str] = None,
-        details: Optional[dict] = None,
+        entity_type: str | None = None,
+        entity_id: str | None = None,
+        details: dict | None = None,
     ) -> ActivityLog:
         entry = ActivityLog(
             user_id=user_id,
@@ -40,7 +41,7 @@ class AdminRepository:
         jobs_inserted: int,
         jobs_updated: int,
         status: str = "SUCCESS",
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
         duration_ms: int = 0,
     ) -> ApiSyncLog:
         entry = ApiSyncLog(

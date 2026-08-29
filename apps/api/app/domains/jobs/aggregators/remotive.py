@@ -2,8 +2,8 @@
 Remotive API Aggregator Adapter.
 """
 
-from typing import List
 import httpx
+
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.domains.jobs.aggregators.base import BaseAggregator
@@ -15,8 +15,8 @@ logger = get_logger("aggregator.remotive")
 class RemotiveAggregator(BaseAggregator):
     source_name = "REMOTIVE"
 
-    async def fetch_jobs(self, limit: int = 100) -> List[JobPostCreate]:
-        jobs: List[JobPostCreate] = []
+    async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        jobs: list[JobPostCreate] = []
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 url = f"{settings.REMOTIVE_API_URL}?category=software-dev"
@@ -45,7 +45,9 @@ class RemotiveAggregator(BaseAggregator):
                         description=description or title,
                         company_name=company,
                         company_logo=item.get("company_logo"),
-                        location=self.clean_text(item.get("candidate_required_location") or "Worldwide Remote"),
+                        location=self.clean_text(
+                            item.get("candidate_required_location") or "Worldwide Remote"
+                        ),
                         is_remote=True,
                         job_type=item.get("job_type", "full-time").lower(),
                         experience_level="mid",
