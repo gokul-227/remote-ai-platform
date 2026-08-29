@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Lock, Mail, Eye, EyeOff, Sparkles, Network, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
-import api from "@/lib/api";
+import api, { extractErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -55,15 +55,15 @@ export default function LoginPage() {
       const dest = userData.role === "COMPANY" ? "/company/dashboard" : userData.role === "ADMIN" ? "/admin/dashboard" : "/engineer/dashboard";
       router.push(dest);
     } catch (err: unknown) {
-      const response = (err as { response?: { status?: number; data?: { detail?: string } } }).response;
+      const response = (err as { response?: { status?: number } }).response;
       if (!response) {
         setError("Can't reach the server right now. Check your connection and try again.");
       } else if (response.status === 429) {
         setError("Too many attempts. Please wait a moment and try again.");
       } else if (response.status === 401 || response.status === 422) {
-        setError(response.data?.detail || "Invalid email or password. Please try again.");
+        setError(extractErrorMessage(err, "Invalid email or password. Please try again."));
       } else {
-        setError(response.data?.detail || "Something went wrong signing you in. Please try again.");
+        setError(extractErrorMessage(err, "Something went wrong signing you in. Please try again."));
       }
     } finally {
       setLoading(false);

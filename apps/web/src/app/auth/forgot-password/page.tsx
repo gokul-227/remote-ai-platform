@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import api from "@/lib/api";
+import api, { extractErrorMessage } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -28,8 +28,8 @@ export default function ForgotPasswordPage() {
       }
       setSubmitted(true);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || "Failed to process password reset request. Please try again.");
+      const msg = extractErrorMessage(err, "Failed to process password reset request. Please try again.");
+      setError(msg);
     } finally {
       setLoading(false);
     }

@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import api from "@/lib/api";
+import api, { extractErrorMessage } from "@/lib/api";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -48,8 +48,8 @@ function ResetPasswordForm() {
         router.push("/auth/login?reset=success");
       }, 2000);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || "Failed to reset password. The link may have expired or been used already.");
+      const msg = extractErrorMessage(err, "Failed to reset password. The link may have expired or been used already.");
+      setError(msg);
     } finally {
       setLoading(false);
     }

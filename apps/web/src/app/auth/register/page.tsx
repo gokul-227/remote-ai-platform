@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Mail, Lock, User, Eye, EyeOff, Building2, AlertCircle, ArrowRight, ArrowLeft, Check } from "lucide-react";
-import api from "@/lib/api";
+import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -88,8 +88,8 @@ export default function RegisterPage() {
       login(access_token, userData, refresh_token);
       router.push("/onboarding");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || "Registration failed. Please try again.");
+      const msg = extractErrorMessage(err, "Registration failed. Please try again.");
+      setError(msg);
     } finally {
       setLoading(false);
     }

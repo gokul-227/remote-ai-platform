@@ -16,7 +16,7 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
-import api from "@/lib/api";
+import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Button } from "@/components/ui/Button";
@@ -96,8 +96,8 @@ function OnboardingContent() {
       router.push("/engineer/dashboard");
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || "Failed to create engineer profile. Please check your entries.");
+      const msg = extractErrorMessage(err, "Failed to create engineer profile. Please check your entries.");
+      setError(msg);
     },
   });
 
@@ -119,8 +119,8 @@ function OnboardingContent() {
       router.push("/company/dashboard");
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || "Failed to create company profile. Please check your entries.");
+      const msg = extractErrorMessage(err, "Failed to create company profile. Please check your entries.");
+      setError(msg);
     },
   });
 
@@ -153,8 +153,8 @@ function OnboardingContent() {
       }
       setStep(3); // Advance to review step
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || "Failed to parse resume. You can still set up your profile manually below.");
+      const msg = extractErrorMessage(err, "Failed to parse resume. You can still set up your profile manually below.");
+      setError(msg);
     } finally {
       setUploading(false);
       setEnhancing(false);

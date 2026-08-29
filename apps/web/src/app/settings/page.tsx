@@ -9,7 +9,7 @@ import {
   CheckCircle2, AlertCircle, Key, Sliders, ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import api from "@/lib/api";
+import api, { extractErrorMessage } from "@/lib/api";
 import { useEngineerProfile } from "@/hooks/useEngineerProfile";
 
 import { Avatar } from "@/components/ui/Avatar";
@@ -309,8 +309,8 @@ function SecurityPanel() {
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      show(msg || "Current password incorrect or request failed.", "error");
+      const msg = extractErrorMessage(err, "Current password incorrect or request failed.");
+      show(msg, "error");
     } finally {
       setChangingPassword(false);
     }

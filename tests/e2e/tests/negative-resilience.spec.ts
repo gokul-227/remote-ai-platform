@@ -22,7 +22,7 @@ test.describe("Negative Resilience & Error State Handling", () => {
 
   test("rejects invalid login credentials with user-friendly error message", async ({ page }) => {
     await page.goto("/auth/login");
-    await page.getByPlaceholder(/you@company.com/i).fill("nonexistent-user@invalid-domain.test");
+    await page.getByPlaceholder(/you@company.com/i).fill("nonexistent-user@doesnotexist-e2e.com");
     await page.getByPlaceholder(/••••••••/i).fill("WrongPassword123!");
     await page.getByRole("button", { name: /sign in/i }).click();
 

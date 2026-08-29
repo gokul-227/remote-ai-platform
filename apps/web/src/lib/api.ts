@@ -75,4 +75,21 @@ api.interceptors.response.use(
   },
 );
 
+// Backend validation errors (422) return `detail` as an array of
+// {field, msg} objects; other errors return `detail` as a plain string.
+// Callers must not render `detail` directly — React throws when handed an
+// array of objects as a child.
+export function extractErrorMessage(err: unknown, fallback: string): string {
+  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const joined = detail
+      .map((d) => (typeof d === "string" ? d : (d as { msg?: string })?.msg))
+      .filter(Boolean)
+      .join(" ");
+    return joined || fallback;
+  }
+  return fallback;
+}
+
 export default api;
