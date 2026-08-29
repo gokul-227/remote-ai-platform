@@ -66,7 +66,10 @@ export function useNotifications(userIdOrEnabled?: string | boolean | null, enab
     if (!userId || !isEnabled) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(`${WS_URL}/api/v1/notifications/ws/${userId}`);
+    const token = typeof window !== "undefined" ? localStorage.getItem("remote_ai_platform_token") : null;
+    if (!token) return;
+
+    const ws = new WebSocket(`${WS_URL}/api/v1/notifications/ws/${userId}?token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
 
     ws.onopen = () => {

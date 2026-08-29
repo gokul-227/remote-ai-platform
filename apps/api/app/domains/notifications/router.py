@@ -8,10 +8,12 @@ from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, s
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.database import AsyncSessionFactory, get_db
 from app.core.ws_manager import ws_manager
 from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
+from app.domains.auth.repository import UserRepository
+from app.domains.auth.service import AuthService
 from app.domains.notifications.models import Notification
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
@@ -97,7 +99,7 @@ async def mark_all_read(
 
 
 @router.websocket("/ws/{user_id}")
-async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID) -> None:
+async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID, token: str = Query(...)) -> None:
     """
     WebSocket endpoint for real-time notification delivery.
 
@@ -109,9 +111,23 @@ async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID) -> No
       {"type": "unread_count", "count": N}     — sent on connect
       {"type": "notification", ...fields}      — new notification pushed
 
-    The client must send a bearer token as the first message for authentication.
-    In an embedded WebSocket context the frontend passes ?token= as a query param.
+    The frontend passes ?token= as a query param. The token's owner must match
+    `user_id` — a caller cannot subscribe to another user's notification stream.
     """
+    async with AsyncSessionFactory() as db:
+        try:
+            service = AuthService(UserRepository(db))
+            token_payload = await service.verify_token(token)
+            user = await db.scalar(select(User).where(User.keycloak_id == token_payload.sub))
+            if not user and token_payload.email:
+                user = await db.scalar(select(User).where(User.email == token_payload.email))
+            if not user or user.id != user_id:
+                await websocket.close(code=4401)
+                return
+        except Exception:
+            await websocket.close(code=4401)
+            return
+
     await ws_manager.connect(websocket, user_id)
     try:
         # Send a welcome ping on connection
