@@ -130,6 +130,20 @@ class Settings(BaseSettings):
     FEATURE_KEYCLOAK_AUTH: bool = True
     SEED_DEMO_DATA: bool = False
 
+    # ── Social login (direct OAuth2, no identity-broker service) ────────────────
+    # Keycloak was evaluated for this and rejected: its JVM cannot boot in
+    # Render's free 512MB tier (confirmed by testing), and a lighter broker
+    # like Ory Hydra solves a different problem (being an OAuth *provider*,
+    # not a *client* consuming Google/Microsoft) -- it would still require
+    # writing this exact integration, just behind an extra service. Each
+    # provider's *_CLIENT_ID is not secret; the matching *_CLIENT_SECRET is.
+    FRONTEND_URL: str = "http://localhost:3000"
+    GOOGLE_OAUTH_CLIENT_ID: str | None = None
+    GOOGLE_OAUTH_CLIENT_SECRET: str | None = None
+    MICROSOFT_OAUTH_CLIENT_ID: str | None = None
+    MICROSOFT_OAUTH_CLIENT_SECRET: str | None = None
+    MICROSOFT_OAUTH_TENANT: str = "common"
+
     # ── Pagination ────────────────────────────────────────────────────────────
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100
