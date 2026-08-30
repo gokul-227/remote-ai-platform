@@ -358,7 +358,7 @@ async def _check_redis() -> ServiceHealthStatus:
         await client.aclose()
 
 
-def _list_buckets_short_timeout():
+def _storage_ping():
     # A dedicated, short-lived client with an explicit connect/read timeout —
     # get_s3_client() is a cached, shared client with no timeout configured
     # (fine for real uploads/downloads), so wrapping IT in asyncio.wait_for
@@ -378,8 +378,8 @@ def _list_buckets_short_timeout():
         config=BotoConfig(
             signature_version="s3v4",
             s3={"addressing_style": "path"},
-            connect_timeout=1.5,
-            read_timeout=1.5,
+            connect_timeout=3.0,
+            read_timeout=3.0,
             retries={"max_attempts": 0},
         ),
     )
@@ -390,6 +390,19 @@ def _list_buckets_short_timeout():
     # app actually performs) succeeded -- so this check now exercises
     # exactly the same operations real usage does, against a key reserved
     # for this purpose rather than real user data.
+    #
+    # 1.5s connect/read timeouts (the original value here) turned out to be
+    # a second, independent false-negative source: this check always uses a
+    # fresh, unpooled client (deliberately -- get_s3_client()'s cached
+    # client has no timeout at all, and wrapping IT in asyncio.wait_for only
+    # abandons *waiting*, it doesn't cancel the underlying blocking call
+    # running against botocore's tens-of-seconds default, which is what
+    # caused this endpoint's original 4-6s-in-production bug). A cold TLS
+    # handshake to Supabase's endpoint from Render's network measured
+    # consistently over 1.5s but under 2s in production, so 1.5s failed
+    # every real request while still being real. 3s is generous enough to
+    # survive a cold connection without reopening the original slow-
+    # dashboard problem (worst case ~6s only on the down/degraded path).
     bucket = settings.MINIO_BUCKET_RESUMES
     key = "_health/ping.txt"
     client.put_object(Bucket=bucket, Key=key, Body=b"ok")
@@ -400,7 +413,7 @@ async def _check_minio() -> ServiceHealthStatus:
     started = time.monotonic()
     try:
         # boto3 is sync — run in a thread so it doesn't block the event loop.
-        await asyncio.wait_for(asyncio.to_thread(_list_buckets_short_timeout), timeout=2.0)
+        await asyncio.wait_for(asyncio.to_thread(_storage_ping), timeout=6.0)
         return ServiceHealthStatus(
             service="MinIO Object Storage S3",
             status="OPERATIONAL",
