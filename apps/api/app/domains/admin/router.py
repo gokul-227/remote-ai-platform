@@ -383,7 +383,12 @@ def _list_buckets_short_timeout():
             retries={"max_attempts": 0},
         ),
     )
-    client.list_buckets()
+    # HeadBucket on the bucket we actually read/write, not ListBuckets: the
+    # account-wide bucket listing operation isn't necessarily permitted by a
+    # storage-account-scoped access key (e.g. Supabase Storage's S3 gateway),
+    # so this previously reported DOWN in production even while real
+    # uploads/downloads against the resumes bucket worked correctly.
+    client.head_bucket(Bucket=settings.MINIO_BUCKET_RESUMES)
 
 
 async def _check_minio() -> ServiceHealthStatus:
