@@ -7,26 +7,26 @@
  * One source of truth for color, surfaces, elevation, radius, typography, and card types.
  */
 :root {
-  /* Surfaces */
-  --bg-page: #F7F9FC;
+  /* Surfaces — warm cream page, white cards to lift off it */
+  --bg-page: #FAF6F0;
   --bg-surface: #FFFFFF;
-  --bg-subtle: #F4F6F9;
-  --surface-muted: #F8FAFC;
+  --bg-subtle: #F3ECE2;
+  --surface-muted: #F5EFE6;
   --surface-elevated: #FFFFFF;
 
-  /* Borders */
-  --border-color: #E4E7EC;
-  --border-hover: #D0D5DD;
-  --border-strong: #98A2B3;
+  /* Borders — warm neutrals instead of cool grays */
+  --border-color: #E8DFD2;
+  --border-hover: #D9CBB6;
+  --border-strong: #B3A38C;
 
-  /* Brand / primary */
-  --color-brand: #0A66C2;
-  --color-brand-hover: #004182;
-  --color-brand-light: #EBF4FE;
+  /* Brand / primary — terracotta, replacing the prior brand blue */
+  --color-brand: #B54A2C;
+  --color-brand-hover: #8F3A21;
+  --color-brand-light: #FBEAE1;
   --primary-soft: var(--color-brand-light);
 
   /* Status */
-  --color-accent: #0A66C2;
+  --color-accent: #B54A2C;
   --color-info: #0284C7;
   --color-info-soft: #E0F2FE;
   --color-success: #12B76A;
@@ -41,10 +41,10 @@
   --color-ai: #7F56D9;
   --color-ai-soft: #F4EBFF;
 
-  /* Text */
-  --text-main: #172B4D;
-  --text-muted: #667085;
-  --text-light: #98A2B3;
+  /* Text — warm charcoal instead of cool navy-slate */
+  --text-main: #2B2420;
+  --text-muted: #7A6C5D;
+  --text-light: #A69985;
 
   /* Radius: 6-8px controls, 12px cards, 16px modals/drawers */
   --radius-sm: 6px;
@@ -59,10 +59,10 @@
   --shadow-lg: 0 12px 24px -4px rgba(16, 24, 40, 0.12), 0 4px 8px -2px rgba(16, 24, 40, 0.06);
 
   /* Focus ring */
-  --focus-ring: 0 0 0 3px rgba(10, 102, 194, 0.25);
+  --focus-ring: 0 0 0 3px rgba(181, 74, 44, 0.25);
 
   /* Skeleton loading placeholder */
-  --skeleton-bg: #E4E7EC;
+  --skeleton-bg: #E8DFD2;
 
   /* Badges */
   --badge-info-bg: #E0F2FE;   --badge-info-text: #0284C7;
@@ -87,18 +87,18 @@
 }
 
 :root[data-theme="dark"] {
-  --bg-page: #0B0F17;
-  --bg-surface: #131826;
-  --bg-subtle: #0F1420;
-  --surface-elevated: #1A2030;
+  --bg-page: #1C1712;
+  --bg-surface: #26201A;
+  --bg-subtle: #201A14;
+  --surface-elevated: #2E2620;
 
-  --border-color: #1F2937;
-  --border-hover: #374151;
-  --border-strong: #4B5563;
+  --border-color: #3A2F26;
+  --border-hover: #4D4033;
+  --border-strong: #6B5B48;
 
-  --color-brand: #388BFD;
-  --color-brand-hover: #58A6FF;
-  --color-brand-light: #16243E;
+  --color-brand: #E08659;
+  --color-brand-hover: #F0A075;
+  --color-brand-light: #3D2A1F;
 
   --color-info: #38BDF8;
   --color-info-soft: #0C2840;
@@ -112,17 +112,17 @@
   --color-ai: #A78BFA;
   --color-ai-soft: #231942;
 
-  --text-main: #F1F5F9;
-  --text-muted: #94A3B8;
-  --text-light: #64748B;
+  --text-main: #F2E9DE;
+  --text-muted: #B3A18C;
+  --text-light: #8A7A66;
 
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5);
   --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.7);
 
-  --focus-ring: 0 0 0 3px rgba(56, 139, 253, 0.35);
-  --skeleton-bg: #1F2937;
+  --focus-ring: 0 0 0 3px rgba(224, 134, 89, 0.35);
+  --skeleton-bg: #3A2F26;
 
   --badge-info-bg: #0C2840;   --badge-info-text: #7DD3FC;
   --badge-success-bg: #063826; --badge-success-text: #6EE7B7;
@@ -137,6 +137,20 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-brand);
+}
+
+/* Editorial display serif for primary headings — every h1 in the product
+   (page titles, dashboard greetings, marketing headlines) picks this up
+   automatically; body/UI text is untouched. */
+h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ========================================================================= */

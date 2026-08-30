@@ -96,7 +96,7 @@ function EngineerDashboardContent() {
     return (
       <div className="max-w-lg mx-auto py-16">
         <div className="card-enterprise p-8 text-center space-y-4">
-          <div className="h-12 w-12 rounded-full bg-blue-50 text-[#0A66C2] flex items-center justify-center mx-auto">
+          <div className="h-12 w-12 rounded-full bg-blue-50 text-[#B54A2C] flex items-center justify-center mx-auto">
             <User className="h-6 w-6" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Build Your Professional Identity</h2>
@@ -125,7 +125,7 @@ function EngineerDashboardContent() {
       {/* Main Center Column */}
       <div className="lg:col-span-6 space-y-5">
         {/* Header Banner */}
-        <div className="card-enterprise p-6 bg-gradient-to-r from-white via-blue-50/20 to-white dark:from-slate-900 dark:to-slate-900 border-l-4 border-l-[#0A66C2] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="card-enterprise p-6 bg-gradient-to-r from-white via-blue-50/20 to-white dark:from-slate-900 dark:to-slate-900 border-l-4 border-l-[#B54A2C] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="badge-ent badge-ent-brand text-[10px]">Career Command Center</span>
@@ -154,18 +154,18 @@ function EngineerDashboardContent() {
         <div className="card-enterprise p-5 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-[#0A66C2]" />
+              <ShieldCheck className="h-5 w-5 text-[#B54A2C]" />
               <div>
                 <h3 className="text-xs font-bold text-slate-900 dark:text-white">Profile Readiness</h3>
                 <p className="text-[11px] text-slate-500">Completing all sections maximizes your AI match accuracy</p>
               </div>
             </div>
-            <span className="text-base font-extrabold text-[#0A66C2]">{completionPercent}%</span>
+            <span className="text-base font-extrabold text-[#B54A2C]">{completionPercent}%</span>
           </div>
 
           <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
             <div
-              className="bg-[#0A66C2] h-full rounded-full transition-all duration-500"
+              className="bg-[#B54A2C] h-full rounded-full transition-all duration-500"
               style={{ width: `${completionPercent}%` }}
             />
           </div>
@@ -190,7 +190,7 @@ function EngineerDashboardContent() {
         {/* 4-Tile Quick Metric Overview */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "AI Matches", value: matches.data?.length ?? 0, tone: "text-[#0A66C2]", icon: Sparkles },
+            { label: "AI Matches", value: matches.data?.length ?? 0, tone: "text-[#B54A2C]", icon: Sparkles },
             { label: "Active Applications", value: applications.data?.length ?? 0, tone: "text-emerald-600", icon: FileText },
             { label: "Saved Roles", value: savedJobs.data?.length ?? 0, tone: "text-amber-600", icon: Bookmark },
             { label: "Profile Score", value: `${completionPercent}%`, tone: "text-purple-600", icon: Target },
@@ -220,7 +220,7 @@ function EngineerDashboardContent() {
               </div>
               <Link
                 href="/engineer/recommendations"
-                className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1"
+                className="text-xs font-semibold text-[#B54A2C] hover:underline flex items-center gap-1"
               >
                 View all ({matches.data.length}) <ArrowRight className="h-3 w-3" />
               </Link>
@@ -237,12 +237,12 @@ function EngineerDashboardContent() {
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div>
               <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                <Briefcase className="h-4 w-4 text-[#0A66C2]" />
+                <Briefcase className="h-4 w-4 text-[#B54A2C]" />
                 Recommended Engineering Positions
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">Aggregated live roles aligned with your experience</p>
             </div>
-            <Link href="/jobs" className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1">
+            <Link href="/jobs" className="text-xs font-semibold text-[#B54A2C] hover:underline flex items-center gap-1">
               Browse All Jobs <ArrowRight className="h-3 w-3" />
             </Link>
           </div>

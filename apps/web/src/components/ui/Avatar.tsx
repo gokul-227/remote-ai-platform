@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-const PALETTE = ["#0A66C2", "#6366F1", "#0284C7", "#059669", "#D97706", "#DC2626", "#7C3AED"];
+const PALETTE = ["#B54A2C", "#6366F1", "#0284C7", "#059669", "#D97706", "#DC2626", "#7C3AED"];
 
 function colorFor(seed: string) {
   let hash = 0;

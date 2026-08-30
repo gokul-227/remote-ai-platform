@@ -75,7 +75,7 @@ function CompanyCandidatesPageContent() {
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 space-y-6">
       {/* Header */}
-      <div className="card-enterprise p-6 bg-gradient-to-r from-white via-indigo-50/20 to-white dark:from-slate-900 dark:to-slate-900 border-l-4 border-l-indigo-600 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="card-enterprise p-6 bg-gradient-to-r from-white via-[#FBEAE1]/30 to-white dark:from-slate-900 dark:to-slate-900 border-l-4 border-l-[#B54A2C] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="badge-ent badge-ent-brand text-[10px]">Talent Sourcing Engine</span>
@@ -99,7 +99,7 @@ function CompanyCandidatesPageContent() {
       <section className="card-enterprise p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
-            <Filter className="h-3.5 w-3.5 text-[#0A66C2]" /> Talent Filter Controls
+            <Filter className="h-3.5 w-3.5 text-[#B54A2C]" /> Talent Filter Controls
           </h2>
         </div>
 
@@ -139,7 +139,7 @@ function CompanyCandidatesPageContent() {
               type="checkbox"
               checked={openOnly}
               onChange={(e) => setOpenOnly(e.target.checked)}
-              className="rounded border-slate-300 text-[#0A66C2] focus:ring-[#0A66C2] h-4 w-4"
+              className="rounded border-slate-300 text-[#B54A2C] focus:ring-[#B54A2C] h-4 w-4"
             />
             Open to work only
           </label>
@@ -299,7 +299,7 @@ function CompanyCandidatesPageContent() {
                   <div className="min-w-[180px] flex-1 basis-64">
                     <Link
                       href={`/engineers/${person.id}`}
-                      className="font-semibold text-slate-900 dark:text-white text-sm hover:text-[#0A66C2] transition-colors inline-flex items-center gap-1"
+                      className="font-semibold text-slate-900 dark:text-white text-sm hover:text-[#B54A2C] transition-colors inline-flex items-center gap-1"
                     >
                       {displayName}
                       <ExternalLink className="h-3 w-3 text-slate-400" />
@@ -354,7 +354,7 @@ function CompanyCandidatesPageContent() {
                   <div className="flex items-center gap-3 ml-auto shrink-0">
                     <Link
                       href={`/engineers/${person.id}`}
-                      className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1"
+                      className="text-xs font-semibold text-[#B54A2C] hover:underline flex items-center gap-1"
                     >
                       View <ArrowRight className="h-3 w-3" />
                     </Link>

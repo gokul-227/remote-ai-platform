@@ -17,17 +17,17 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* HERO SECTION */}
       {/* ========================================================================= */}
-      <section className="card-enterprise overflow-hidden p-8 sm:p-14 bg-gradient-to-b from-white via-blue-50/30 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
+      <section className="card-enterprise overflow-hidden p-8 sm:p-14 bg-gradient-to-b from-white via-[#FBEAE1]/40 to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
         <div className="grid items-center gap-12 lg:grid-cols-12">
           {/* Left Hero Content */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50/80 px-3.5 py-1 text-xs font-semibold text-[#0A66C2] dark:border-blue-900 dark:bg-blue-950/50 dark:text-blue-400">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#EAD2C4] bg-[#FBEAE1]/80 px-3.5 py-1 text-xs font-semibold text-[#B54A2C] dark:border-[#4D4033] dark:bg-[#3D2A1F]/50 dark:text-[#E08659]">
               <Sparkles className="h-3.5 w-3.5" />
               The Intelligent Remote Work Operating System
             </div>
 
             <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-5xl lg:text-6xl leading-[1.15]">
-              The professional network for <span className="text-[#0A66C2]">remote engineering</span> work.
+              The professional network for <span className="text-[#B54A2C]">remote engineering</span> work.
             </h1>
 
             <p className="text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-300 max-w-2xl">
@@ -40,7 +40,7 @@ export default function Home() {
                 <Search className="h-5 w-5" /> Find Your Next Role <ArrowRight className="h-5 w-5" />
               </Link>
               <Link href="/auth/register" className="btn-secondary-brand text-base py-3 px-6 flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-[#0A66C2]" /> Hire Exceptional Professionals
+                <Building2 className="h-5 w-5 text-[#B54A2C]" /> Hire Exceptional Professionals
               </Link>
             </div>
 
@@ -51,7 +51,7 @@ export default function Home() {
                 <span>Verified Talent</span>
               </div>
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-[#0A66C2] shrink-0" />
+                <Sparkles className="h-4 w-4 text-[#B54A2C] shrink-0" />
                 <span>Explainable AI Match</span>
               </div>
               <div className="flex items-center gap-2">
@@ -67,7 +67,7 @@ export default function Home() {
             <div className="card-enterprise p-5 space-y-3 shadow-lg border-blue-200 dark:border-blue-900 bg-white dark:bg-slate-900">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-950 text-[#0A66C2] flex items-center justify-center font-bold text-lg">
+                  <div className="h-10 w-10 rounded-xl bg-blue-100 dark:bg-blue-950 text-[#B54A2C] flex items-center justify-center font-bold text-lg">
                     R
                   </div>
                   <div>
@@ -95,7 +95,7 @@ export default function Home() {
                   <span className="font-semibold text-slate-800 dark:text-slate-200">92%</span>
                 </div>
                 <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-[#0A66C2] h-full rounded-full w-[92%]" />
+                  <div className="bg-[#B54A2C] h-full rounded-full w-[92%]" />
                 </div>
               </div>
 
@@ -103,20 +103,20 @@ export default function Home() {
                 <span className="flex items-center gap-1 font-medium text-emerald-700">
                   <CheckCircle2 className="h-3.5 w-3.5" /> High AI Confidence
                 </span>
-                <span className="text-[#0A66C2] font-semibold">View Breakdown &rarr;</span>
+                <span className="text-[#B54A2C] font-semibold">View Breakdown &rarr;</span>
               </div>
             </div>
 
             {/* Quick Workspace Shortcuts */}
             <div className="grid grid-cols-2 gap-3">
-              <Link href="/engineer/dashboard" className="card-enterprise p-4 hover:border-[#0A66C2] transition-colors block">
-                <Users className="h-5 w-5 text-[#0A66C2]" />
+              <Link href="/engineer/dashboard" className="card-enterprise p-4 hover:border-[#B54A2C] transition-colors block">
+                <Users className="h-5 w-5 text-[#B54A2C]" />
                 <h3 className="mt-2 text-xs font-bold text-slate-900 dark:text-white">Professional Workspace</h3>
                 <p className="mt-0.5 text-[11px] text-slate-500">Career dashboard, applications & AI matches.</p>
               </Link>
 
-              <Link href="/company/dashboard" className="card-enterprise p-4 hover:border-[#0A66C2] transition-colors block">
-                <Building2 className="h-5 w-5 text-[#0A66C2]" />
+              <Link href="/company/dashboard" className="card-enterprise p-4 hover:border-[#B54A2C] transition-colors block">
+                <Building2 className="h-5 w-5 text-[#B54A2C]" />
                 <h3 className="mt-2 text-xs font-bold text-slate-900 dark:text-white">Organization Workspace</h3>
                 <p className="mt-0.5 text-[11px] text-slate-500">Candidate discovery & hiring pipeline.</p>
               </Link>
@@ -130,7 +130,7 @@ export default function Home() {
       {/* ========================================================================= */}
       <section className="space-y-8">
         <div className="text-center space-y-2 max-w-2xl mx-auto">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#0A66C2]">Simple 3-Step Process</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#B54A2C]">Simple 3-Step Process</span>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">How Remote AI Platform Works</h2>
           <p className="text-sm text-slate-600 dark:text-slate-400">
             A seamless bridge connecting professionals and hiring organizations through verified identity and explainable AI matching.
@@ -160,7 +160,7 @@ export default function Home() {
           ].map((item) => (
             <div key={item.step} className="card-enterprise p-6 space-y-3 relative overflow-hidden">
               <div className="flex items-center justify-between">
-                <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#0A66C2] flex items-center justify-center font-bold">
+                <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#B54A2C] flex items-center justify-center font-bold">
                   <item.icon className="h-5 w-5" />
                 </div>
                 <span className="text-2xl font-black text-slate-200 dark:text-slate-800">{item.step}</span>
@@ -177,7 +177,7 @@ export default function Home() {
       {/* ========================================================================= */}
       <section className="grid gap-8 lg:grid-cols-2">
         {/* For Professionals Card */}
-        <div className="card-enterprise p-8 space-y-6 border-l-4 border-l-[#0A66C2]">
+        <div className="card-enterprise p-8 space-y-6 border-l-4 border-l-[#B54A2C]">
           <div className="space-y-2">
             <span className="badge-ent badge-ent-brand">For Professionals & Developers</span>
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Accelerate Your Remote Career</h3>
@@ -194,7 +194,7 @@ export default function Home() {
               "Project Work OS — Deliver milestone tasks with AI progress & risk reports",
             ].map((feat) => (
               <div key={feat} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
-                <CheckCircle2 className="h-4 w-4 text-[#0A66C2] shrink-0 mt-0.5" />
+                <CheckCircle2 className="h-4 w-4 text-[#B54A2C] shrink-0 mt-0.5" />
                 <span>{feat}</span>
               </div>
             ))}
@@ -295,13 +295,13 @@ export default function Home() {
       <section className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0A66C2]">Aggregated Job Engine</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-[#B54A2C]">Aggregated Job Engine</span>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">Live Positions Across 5 Major Aggregators</h2>
             <p className="text-xs text-slate-500 mt-1">
               Synchronized periodically from RemoteOK, Remotive, Arbeitnow, USAJobs, and The Muse.
             </p>
           </div>
-          <Link href="/jobs" className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1">
+          <Link href="/jobs" className="text-xs font-semibold text-[#B54A2C] hover:underline flex items-center gap-1">
             View All Job Listings &rarr;
           </Link>
         </div>
@@ -312,14 +312,14 @@ export default function Home() {
             { title: "Staff Backend Engineer (Python/FastAPI)", company: "AI Cloud Infrastructure", location: "US / EU Remote", salary: "$160k - $190k", source: "Remotive" },
             { title: "Lead Systems Engineer (Rust / Go)", company: "Distributed Ledger Inc", location: "Worldwide", salary: "$150k - $185k", source: "Arbeitnow" },
           ].map((job) => (
-            <div key={job.title} className="card-enterprise p-5 space-y-3 hover:border-[#0A66C2] transition-colors">
+            <div key={job.title} className="card-enterprise p-5 space-y-3 hover:border-[#B54A2C] transition-colors">
               <div className="flex items-center justify-between">
                 <span className="badge-ent badge-ent-neutral text-[10px] font-mono">{job.source}</span>
                 <span className="badge-ent badge-ent-brand text-[10px]">Remote</span>
               </div>
               <div>
                 <h3 className="font-bold text-slate-900 dark:text-white text-sm">{job.title}</h3>
-                <p className="text-xs text-[#0A66C2] font-semibold mt-0.5">{job.company}</p>
+                <p className="text-xs text-[#B54A2C] font-semibold mt-0.5">{job.company}</p>
               </div>
               <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <span>{job.location}</span>
@@ -333,13 +333,13 @@ export default function Home() {
       {/* ========================================================================= */}
       {/* FINAL CTA BANNER */}
       {/* ========================================================================= */}
-      <section className="card-enterprise p-8 sm:p-12 text-center space-y-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white border-none shadow-xl">
+      <section className="card-enterprise p-8 sm:p-12 text-center space-y-5 bg-gradient-to-r from-[#B54A2C] to-[#7A3B4A] text-white border-none shadow-xl">
         <h2 className="text-3xl font-extrabold sm:text-4xl">Ready to join the remote engineering network?</h2>
         <p className="text-sm sm:text-base text-blue-100 max-w-xl mx-auto">
           Create your account today, import your resume with AI, and start connecting with exceptional remote organizations and professionals.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-          <Link href="/auth/register" className="btn-primary-brand bg-white text-[#0A66C2] hover:bg-blue-50 py-3 px-8 text-sm font-bold shadow-md">
+          <Link href="/auth/register" className="btn-primary-brand bg-white text-[#B54A2C] hover:bg-blue-50 py-3 px-8 text-sm font-bold shadow-md">
             Get Started Free
           </Link>
           <Link href="/auth/login" className="btn-secondary-brand border-white/40 text-white hover:bg-white/10 py-3 px-8 text-sm font-semibold">

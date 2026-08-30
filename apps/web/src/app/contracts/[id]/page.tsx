@@ -81,7 +81,7 @@ function ContractDetailContent({ params }: { params: Promise<{ id: string }> }) 
     <div className="max-w-4xl mx-auto py-6 space-y-6">
       {/* Navigation header */}
       <div className="flex items-center justify-between">
-        <Link href="/contracts" className="text-xs font-semibold text-slate-600 hover:text-[#0A66C2] flex items-center gap-1">
+        <Link href="/contracts" className="text-xs font-semibold text-slate-600 hover:text-[#B54A2C] flex items-center gap-1">
           <ArrowLeft className="h-4 w-4" /> Back to Contracts List
         </Link>
 

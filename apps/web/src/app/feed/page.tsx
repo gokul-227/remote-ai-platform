@@ -37,7 +37,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 const POST_TYPES = [
-  { id: "update", label: "Share an update", icon: Globe, color: "text-[#0A66C2]" },
+  { id: "update", label: "Share an update", icon: Globe, color: "text-[#B54A2C]" },
   { id: "project", label: "Project update", icon: Briefcase, color: "text-emerald-600" },
   { id: "achievement", label: "Celebrate achievement", icon: Trophy, color: "text-amber-500" },
   { id: "article", label: "Write article", icon: FileText, color: "text-purple-600" },
@@ -496,7 +496,7 @@ function ProfileWidget({ user }: { user: { full_name?: string; email?: string; r
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] overflow-hidden">
       {/* Banner */}
-      <div className="h-14 bg-gradient-to-br from-[#0A66C2] via-[#1d4ed8] to-[#7c3aed]" />
+      <div className="h-14 bg-gradient-to-br from-[#B54A2C] via-[#C97B2E] to-[#7A3B4A]" />
       <div className="px-4 pb-4">
         <div className="-mt-6 mb-2">
           <Avatar name={user?.full_name || "You"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />

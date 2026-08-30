@@ -80,7 +80,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
               href={`${(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1").replace(/\/api\/v1\/?$/, "")}/docs`}
               target="_blank"
               rel="noreferrer"
-              className="hover:text-[#0A66C2]"
+              className="hover:text-[#B54A2C]"
             >
               API Swagger Docs
             </a>

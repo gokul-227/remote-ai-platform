@@ -76,7 +76,7 @@ function ScoreRing({ score }: { score: number }) {
   const r = 32;
   const circumference = 2 * Math.PI * r;
   const offset = circumference - (clamped / 100) * circumference;
-  const color = clamped >= 75 ? "#059669" : clamped >= 50 ? "#D97706" : "#0A66C2";
+  const color = clamped >= 75 ? "#059669" : clamped >= 50 ? "#D97706" : "#B54A2C";
   const label = clamped >= 75 ? "Strong" : clamped >= 50 ? "Good" : "Building";
 
   return (
@@ -112,8 +112,8 @@ function ExperienceTimeline({ items }: { items: ExperienceItem[] }) {
       {items.map((item, i) => (
         <li key={`${item.company}-${i}`} className="relative pb-6 last:pb-0">
           {/* Timeline dot */}
-          <span className="absolute -left-[1.4rem] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#0A66C2] bg-white">
-            <span className="h-2 w-2 rounded-full bg-[#0A66C2]" />
+          <span className="absolute -left-[1.4rem] top-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#B54A2C] bg-white">
+            <span className="h-2 w-2 rounded-full bg-[#B54A2C]" />
           </span>
           <div>
             <h3 className="text-sm font-semibold text-slate-900">{item.title}</h3>
@@ -212,7 +212,7 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-500">
-        <Link href="/engineers" className="hover:text-[#0A66C2] hover:underline">Professionals</Link>
+        <Link href="/engineers" className="hover:text-[#B54A2C] hover:underline">Professionals</Link>
         <span>/</span>
         <span className="text-slate-700">{displayName}</span>
       </nav>
@@ -220,12 +220,12 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
       {/* Hero card */}
       <section className="card-enterprise overflow-hidden">
         {/* Cover banner */}
-        <div className="h-28 bg-gradient-to-r from-blue-600 via-blue-500 to-sky-400" />
+        <div className="h-28 bg-gradient-to-r from-[#B54A2C] via-[#C97B2E] to-[#7A3B4A]" />
         <div className="px-6 pb-6">
           <div className="-mt-10 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             {/* Avatar + name */}
             <div className="flex items-end gap-4">
-              <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-blue-500 to-blue-700 text-2xl font-bold text-white shadow-md">
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-4 border-white bg-gradient-to-br from-[#B54A2C] to-[#8F3A21] text-2xl font-bold text-white shadow-md">
                 {initials}
               </div>
               <div className="pb-1">
@@ -426,9 +426,9 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
                     href={project.url || project.github_url || "#"}
                     target="_blank"
                     rel="noreferrer"
-                    className="group rounded-xl border border-slate-100 p-4 transition-all hover:border-[#0A66C2] hover:shadow-sm"
+                    className="group rounded-xl border border-slate-100 p-4 transition-all hover:border-[#B54A2C] hover:shadow-sm"
                   >
-                    <h3 className="text-sm font-semibold text-slate-900 group-hover:text-[#0A66C2]">
+                    <h3 className="text-sm font-semibold text-slate-900 group-hover:text-[#B54A2C]">
                       {project.title}
                     </h3>
                     <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
@@ -489,22 +489,22 @@ function ProfileHero({ profile, id, initials, score }: { profile: EngineerProfil
               <h2 className="mb-3 text-sm font-semibold text-slate-700">Links</h2>
               <div className="space-y-2">
                 {profile.github_url && (
-                  <a href={profile.github_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-slate-600 hover:text-[#0A66C2]">
+                  <a href={profile.github_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-slate-600 hover:text-[#B54A2C]">
                     <Github className="h-4 w-4 shrink-0" /> GitHub profile
                   </a>
                 )}
                 {profile.linkedin_url && (
-                  <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-slate-600 hover:text-[#0A66C2]">
+                  <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-slate-600 hover:text-[#B54A2C]">
                     <Linkedin className="h-4 w-4 shrink-0" /> LinkedIn
                   </a>
                 )}
                 {profile.portfolio_url && (
-                  <a href={profile.portfolio_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-slate-600 hover:text-[#0A66C2]">
+                  <a href={profile.portfolio_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs text-slate-600 hover:text-[#B54A2C]">
                     <ExternalLink className="h-4 w-4 shrink-0" /> Portfolio site
                   </a>
                 )}
                 {profile.resume_url && (
-                  <a href={profile.resume_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-semibold text-[#0A66C2] hover:underline">
+                  <a href={profile.resume_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-semibold text-[#B54A2C] hover:underline">
                     <ExternalLink className="h-4 w-4 shrink-0" /> Download resume
                   </a>
                 )}

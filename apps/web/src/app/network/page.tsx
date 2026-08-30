@@ -104,7 +104,7 @@ function SuggestionCard({ person, onConnect, connecting }: {
   const skills = (person.skills || []).slice(0, 3);
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl overflow-hidden hover:shadow-[var(--shadow-md)] hover:border-[var(--border-hover)] transition-all group">
-      <div className="h-12 bg-gradient-to-br from-[#0A66C2]/20 via-[#7F56D9]/10 to-emerald-500/10" />
+      <div className="h-12 bg-gradient-to-br from-[#B54A2C]/20 via-[#7F56D9]/10 to-emerald-500/10" />
       <div className="px-4 pb-4">
         <div className="-mt-5 mb-2">
           <Avatar name={person.full_name || person.headline || "Professional"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />

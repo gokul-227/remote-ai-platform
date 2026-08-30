@@ -99,7 +99,7 @@ function CompanyJobsPageContent() {
                 return (
                   <tr key={job.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60">
                     <td className="px-5 py-3.5">
-                      <Link href={`/jobs/${job.id}`} className="font-semibold text-slate-900 hover:text-[#0A66C2]">{job.title}</Link>
+                      <Link href={`/jobs/${job.id}`} className="font-semibold text-slate-900 hover:text-[#B54A2C]">{job.title}</Link>
                       <p className="text-[11px] text-slate-500 capitalize mt-0.5">{job.job_type}</p>
                     </td>
                     <td className="px-5 py-3.5">

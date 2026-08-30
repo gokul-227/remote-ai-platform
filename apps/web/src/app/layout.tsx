@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
+import { Fraunces } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme";
 import { LayoutShell } from "@/components/LayoutShell";
 import { QueryProvider } from "@/components/QueryProvider";
 import { ToastProvider } from "@/components/ui/Toast";
+
+// Editorial display serif for headlines only — body/UI text stays on the
+// existing system-sans stack for density and readability.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Remote AI Platform — Remote Work Marketplace",
@@ -28,7 +39,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="antialiased min-h-screen">
+      <body className={`${fraunces.variable} antialiased min-h-screen`}>
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
