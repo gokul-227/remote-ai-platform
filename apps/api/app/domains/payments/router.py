@@ -8,10 +8,12 @@ and escrow release/refund financial workflows.
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import stripe
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
@@ -25,7 +27,7 @@ from app.domains.payments.schemas import (
 )
 from app.domains.projects.models import PaymentTransaction, Project
 from app.services.notifications import notify_user
-from app.services.payments import SandboxPaymentProvider
+from app.services.payments import get_payment_provider
 
 router = APIRouter(prefix="/payments", tags=["Payments & Financial Ledger"])
 
@@ -40,7 +42,7 @@ def _party_summary(user: User) -> PaymentPartySummary:
 
 
 async def _enrich_transaction(
-    p: PaymentTransaction, db: AsyncSession
+    p: PaymentTransaction, db: AsyncSession, client_secret: str | None = None
 ) -> PaymentTransactionResponse:
     payer = await db.get(User, p.payer_id)
     payee = await db.get(User, p.payee_id)
@@ -60,6 +62,7 @@ async def _enrich_transaction(
         provider_reference=p.provider_reference,
         created_at=p.created_at,
         released_at=p.released_at,
+        client_secret=client_secret,
     )
 
 
@@ -143,7 +146,7 @@ async def create_escrow_payment(
             select(PaymentTransaction).where(
                 PaymentTransaction.payer_id == current_user.id,
                 PaymentTransaction.project_id == data.project_id,
-                PaymentTransaction.provider_reference.like(f"%{idempotency_key}%"),
+                PaymentTransaction.idempotency_key == idempotency_key,
             )
         )
         if existing:
@@ -174,11 +177,9 @@ async def create_escrow_payment(
                 detail="Task must belong to project",
             )
 
-    provider = SandboxPaymentProvider()
+    provider = get_payment_provider()
     authorization = await provider.authorize(data.amount, data.currency.upper())
     held = await provider.hold(authorization.reference, data.amount, data.currency.upper())
-
-    provider_ref = f"{held.reference}_{idempotency_key}" if idempotency_key else held.reference
 
     payment = PaymentTransaction(
         project_id=data.project_id,
@@ -188,21 +189,26 @@ async def create_escrow_payment(
         amount=data.amount,
         currency=data.currency.upper(),
         status=held.status,
-        provider="SANDBOX",
-        provider_reference=provider_ref,
+        provider=settings.PAYMENT_PROVIDER.upper(),
+        provider_reference=held.reference,
+        idempotency_key=idempotency_key,
     )
     db.add(payment)
     await db.flush()
 
-    await notify_user(
-        db,
-        data.payee_id,
-        "Escrow Funded",
-        f"An escrow payment of {data.amount:.2f} {data.currency.upper()} has been funded for {project.title}.",
-        "escrow_funded",
-    )
+    # Only meaningful once real, actual funds have moved -- with Stripe,
+    # that's after the frontend confirms this PaymentIntent client-side and
+    # the escrow-funded webhook fires, not at creation time.
+    if held.status == "ESCROWED":
+        await notify_user(
+            db,
+            data.payee_id,
+            "Escrow Funded",
+            f"An escrow payment of {data.amount:.2f} {data.currency.upper()} has been funded for {project.title}.",
+            "escrow_funded",
+        )
 
-    return await _enrich_transaction(payment, db)
+    return await _enrich_transaction(payment, db, client_secret=authorization.client_secret)
 
 
 @router.post(
@@ -227,7 +233,7 @@ async def release_escrow(
             status_code=status.HTTP_409_CONFLICT, detail="Payment is not currently in escrow"
         )
 
-    result = await SandboxPaymentProvider().release(payment.provider_reference)
+    result = await get_payment_provider().release(payment.provider_reference)
     payment.status = result.status
     payment.released_at = datetime.now(UTC)
     await db.flush()
@@ -265,8 +271,68 @@ async def refund_escrow(
             status_code=status.HTTP_409_CONFLICT, detail="Payment is not currently in escrow"
         )
 
-    result = await SandboxPaymentProvider().refund(payment.provider_reference)
+    result = await get_payment_provider().refund(payment.provider_reference)
     payment.status = result.status
     await db.flush()
 
     return await _enrich_transaction(payment, db)
+
+
+# Stripe PaymentIntent.status -> this app's PaymentTransaction.status.
+_WEBHOOK_STATUS_MAP = {
+    "payment_intent.amount_capturable_updated": "ESCROWED",  # customer confirmed -> funds held
+    "payment_intent.succeeded": "RELEASED",  # captured -> funds moved
+    "payment_intent.canceled": "REFUNDED",
+    "payment_intent.payment_failed": "FAILED",
+}
+
+
+@router.post("/webhooks/stripe", include_in_schema=False)
+async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
+    """Stripe webhook receiver -- the only path that ever marks an escrow as
+    actually funded, since that requires the customer to have confirmed the
+    PaymentIntent client-side (this app never sees card details).
+
+    Never active unless PAYMENT_PROVIDER=stripe and STRIPE_WEBHOOK_SECRET is
+    configured; every event's signature is verified before any DB write.
+    """
+    if settings.PAYMENT_PROVIDER != "stripe" or not settings.STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+    except (ValueError, stripe.SignatureVerificationError) as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature") from exc
+
+    new_status = _WEBHOOK_STATUS_MAP.get(event["type"])
+    if not new_status:
+        return {"received": True}  # event type we don't act on
+
+    intent_id = event["data"]["object"]["id"]
+    payment = await db.scalar(
+        select(PaymentTransaction).where(PaymentTransaction.provider_reference == intent_id)
+    )
+    if not payment:
+        return {"received": True}  # not one of ours (or already deleted) -- not an error
+
+    # Idempotent by construction: re-delivering the same event just sets the
+    # same status again. Only notify on an actual transition so a webhook
+    # retry can't send duplicate notifications.
+    if payment.status != new_status:
+        payment.status = new_status
+        if new_status == "RELEASED":
+            payment.released_at = datetime.now(UTC)
+        await db.flush()
+        if new_status == "ESCROWED":
+            await notify_user(
+                db,
+                payment.payee_id,
+                "Escrow Funded",
+                f"An escrow payment of {payment.amount:.2f} {payment.currency} has been funded.",
+                "escrow_funded",
+            )
+        await db.commit()
+
+    return {"received": True}

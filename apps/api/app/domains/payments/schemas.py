@@ -39,6 +39,10 @@ class PaymentTransactionResponse(BaseModel):
     provider_reference: str
     created_at: datetime
     released_at: datetime | None = None
+    # Present only immediately after creation with a real (non-sandbox)
+    # provider that requires client-side confirmation (e.g. Stripe) --
+    # never persisted, and absent for every other response.
+    client_secret: str | None = None
 
     model_config = {"from_attributes": True}
 

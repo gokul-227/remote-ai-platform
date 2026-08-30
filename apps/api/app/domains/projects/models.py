@@ -255,7 +255,16 @@ class PaymentTransaction(Base):
     currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="ESCROWED", nullable=False, index=True)
     provider: Mapped[str] = mapped_column(String(30), default="SANDBOX", nullable=False)
+    # The exact, unmodified reference the payment provider uses for this
+    # transaction (e.g. a raw Stripe PaymentIntent ID) -- must never be
+    # mangled (previously had an idempotency key string-concatenated onto
+    # it), since release()/refund() pass it straight to the provider's API.
     provider_reference: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    # Caller-supplied idempotency key for escrow creation, kept in its own
+    # column (unique when present) instead of folded into provider_reference.
+    idempotency_key: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

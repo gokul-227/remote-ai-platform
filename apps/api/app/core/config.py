@@ -111,6 +111,18 @@ class Settings(BaseSettings):
     JOB_SYNC_SCHEDULE: str = "0 */6 * * *"  # Every 6 hours
     JOB_SYNC_MAX_PER_SOURCE: int = 500
 
+    # ── Payments ──────────────────────────────────────────────────────────────
+    # "sandbox" (default, no real payment network contact) or "stripe". Never
+    # flips to real money processing just because STRIPE_SECRET_KEY is set --
+    # that also requires explicitly setting PAYMENT_PROVIDER=stripe, and
+    # whether STRIPE_SECRET_KEY itself is a test (sk_test_...) or live
+    # (sk_live_...) key is a separate, deliberate choice made in the Stripe
+    # dashboard, not by this app.
+    PAYMENT_PROVIDER: str = "sandbox"
+    STRIPE_SECRET_KEY: str | None = None
+    STRIPE_WEBHOOK_SECRET: str | None = None
+    STRIPE_PUBLISHABLE_KEY: str | None = None
+
     # ── Feature Flags ─────────────────────────────────────────────────────────
     FEATURE_AI_RESUME_PARSING: bool = True
     FEATURE_AI_MATCHING: bool = True

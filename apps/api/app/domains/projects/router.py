@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.quality_engine import QualityEngineAgent
+from app.core.config import settings
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
@@ -30,7 +31,7 @@ from app.domains.projects.models import (
 )
 from app.services.ai.service import AIService
 from app.services.notifications import notify_user
-from app.services.payments import SandboxPaymentProvider
+from app.services.payments import get_payment_provider
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -784,7 +785,7 @@ async def create_sandbox_escrow(
         raise HTTPException(
             status_code=409, detail="An active escrow already exists for this task and payee"
         )
-    provider = SandboxPaymentProvider()
+    provider = get_payment_provider()
     authorization = await provider.authorize(data.amount, data.currency.upper())
     held = await provider.hold(authorization.reference, data.amount, data.currency.upper())
     payment = PaymentTransaction(
@@ -795,7 +796,7 @@ async def create_sandbox_escrow(
         amount=data.amount,
         currency=data.currency.upper(),
         status=held.status,
-        provider="SANDBOX",
+        provider=settings.PAYMENT_PROVIDER.upper(),
         provider_reference=held.reference,
     )
     db.add(payment)
@@ -807,7 +808,19 @@ async def create_sandbox_escrow(
         "PAYMENT_ESCROWED",
         {"payment_id": str(payment.id), "amount": payment.amount, "currency": payment.currency},
     )
-    return payment
+    return {
+        "id": str(payment.id),
+        "project_id": str(payment.project_id),
+        "task_id": str(payment.task_id) if payment.task_id else None,
+        "payer_id": str(payment.payer_id),
+        "payee_id": str(payment.payee_id),
+        "amount": payment.amount,
+        "currency": payment.currency,
+        "status": payment.status,
+        "provider": payment.provider,
+        "provider_reference": payment.provider_reference,
+        "client_secret": authorization.client_secret,
+    }
 
 
 @router.patch("/payments/{payment_id}/release")
@@ -822,7 +835,7 @@ async def release_sandbox_payment(
     project = await require_project_access(payment.project_id, current_user, db)
     if payment.status != "ESCROWED":
         raise HTTPException(status_code=409, detail="Payment is not currently escrowed")
-    result = await SandboxPaymentProvider().release(payment.provider_reference)
+    result = await get_payment_provider().release(payment.provider_reference)
     payment.status = result.status
     payment.released_at = datetime.utcnow()
     await db.flush()
@@ -837,7 +850,7 @@ async def release_sandbox_payment(
         db,
         payment.payee_id,
         "Payment released",
-        f"Sandbox payment of {payment.amount:.2f} {payment.currency} was released.",
+        f"Payment of {payment.amount:.2f} {payment.currency} was released.",
         "payment_update",
     )
     return payment
@@ -855,7 +868,7 @@ async def refund_sandbox_payment(
     project = await require_project_access(payment.project_id, current_user, db)
     if payment.status != "ESCROWED":
         raise HTTPException(status_code=409, detail="Only escrowed payments can be refunded")
-    result = await SandboxPaymentProvider().refund(payment.provider_reference)
+    result = await get_payment_provider().refund(payment.provider_reference)
     payment.status = result.status
     await db.flush()
     await record_activity(
@@ -869,7 +882,7 @@ async def refund_sandbox_payment(
         db,
         payment.payee_id,
         "Payment refunded",
-        f"Sandbox payment of {payment.amount:.2f} {payment.currency} was refunded.",
+        f"Payment of {payment.amount:.2f} {payment.currency} was refunded.",
         "payment_update",
     )
     return payment
