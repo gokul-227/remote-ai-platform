@@ -8,6 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from app.domains.auth.models import UserRole
+
 
 class PlatformStatsResponse(BaseModel):
     total_users: int
@@ -22,6 +24,10 @@ class PlatformStatsResponse(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
+
+
+class UserRoleUpdate(BaseModel):
+    role: UserRole
 
 
 class JobStatusUpdate(BaseModel):

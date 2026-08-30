@@ -28,6 +28,7 @@ from app.domains.admin.schemas import (
     PlatformStatsResponse,
     ServiceHealthStatus,
     SystemHealthDetailResponse,
+    UserRoleUpdate,
     UserStatusUpdate,
 )
 from app.domains.admin.service import AdminService
@@ -138,6 +139,36 @@ async def update_user_status(
     user.is_active = body.is_active
     await AdminRepository(db).log_activity(
         current_user.id, "USER_STATUS_UPDATED", "USER", str(user.id), {"is_active": body.is_active}
+    )
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.model_validate(user)
+
+
+@router.patch("/users/{user_id}/role", response_model=UserResponse)
+async def update_user_role(
+    user_id: uuid.UUID,
+    body: UserRoleUpdate,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    """Change a user's role, including promoting to ADMIN (Admin only).
+
+    Distinct from PATCH /auth/role, which is self-service onboarding and
+    explicitly forbids self-assigning ADMIN.
+    """
+    repo = UserRepository(db)
+    user = await repo.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    previous_role = user.role
+    user.role = body.role
+    await AdminRepository(db).log_activity(
+        current_user.id,
+        "USER_ROLE_UPDATED",
+        "USER",
+        str(user.id),
+        {"previous_role": previous_role.value, "new_role": body.role.value},
     )
     await db.commit()
     await db.refresh(user)
