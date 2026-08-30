@@ -383,12 +383,17 @@ def _list_buckets_short_timeout():
             retries={"max_attempts": 0},
         ),
     )
-    # HeadBucket on the bucket we actually read/write, not ListBuckets: the
-    # account-wide bucket listing operation isn't necessarily permitted by a
-    # storage-account-scoped access key (e.g. Supabase Storage's S3 gateway),
-    # so this previously reported DOWN in production even while real
-    # uploads/downloads against the resumes bucket worked correctly.
-    client.head_bucket(Bucket=settings.MINIO_BUCKET_RESUMES)
+    # A real put_object + get_object round trip against a dedicated health
+    # key, not ListBuckets/HeadBucket: both bucket-level operations timed
+    # out in production against Supabase Storage's S3 gateway even while
+    # real resume uploads (object-level put/get, the only operations the
+    # app actually performs) succeeded -- so this check now exercises
+    # exactly the same operations real usage does, against a key reserved
+    # for this purpose rather than real user data.
+    bucket = settings.MINIO_BUCKET_RESUMES
+    key = "_health/ping.txt"
+    client.put_object(Bucket=bucket, Key=key, Body=b"ok")
+    client.get_object(Bucket=bucket, Key=key)
 
 
 async def _check_minio() -> ServiceHealthStatus:
