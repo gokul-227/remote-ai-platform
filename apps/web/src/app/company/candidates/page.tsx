@@ -262,9 +262,11 @@ function CompanyCandidatesPageContent() {
         </div>
 
         {candidates.isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-44 w-full rounded-xl" />
+          <div className="card-enterprise divide-y divide-slate-100 dark:divide-slate-800">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="p-4">
+                <Skeleton className="h-12 w-full rounded-lg" />
+              </div>
             ))}
           </div>
         ) : candidates.isError ? (
@@ -283,94 +285,86 @@ function CompanyCandidatesPageContent() {
             />
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="card-enterprise divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
             {items.map((person: { id: string; full_name?: string; headline?: string; primary_role?: string; years_of_experience?: number; skills?: string[]; location?: string; hourly_rate?: number }) => {
               const match = matchByEngineer.get(person.id);
               const displayName = person.full_name || person.headline || person.primary_role || "Remote professional";
               return (
                 <article
                   key={person.id}
-                  className="card-enterprise p-5 flex flex-col justify-between space-y-3 hover:border-slate-300 transition-colors"
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <Avatar name={displayName} size="lg" />
-                        <div>
-                          <Link
-                            href={`/engineers/${person.id}`}
-                            className="font-bold text-slate-900 dark:text-white text-sm hover:text-[#0A66C2] transition-colors flex items-center gap-1"
-                          >
-                            {displayName}{" "}
-                            <ExternalLink className="h-3 w-3 text-slate-400" />
-                          </Link>
-                          {(person.headline || person.primary_role) && person.full_name && (
-                            <p className="text-xs text-slate-500 mt-0.5">{person.headline || person.primary_role}</p>
-                          )}
-                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 flex-wrap">
-                            <span>{person.years_of_experience ?? 0} yrs exp</span>
-                            {person.location && (
-                              <span className="flex items-center gap-0.5 text-[11px]">
-                                <MapPin className="h-3 w-3" /> {person.location}
-                              </span>
-                            )}
-                            {person.hourly_rate ? (
-                              <span className="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[11px]">
-                                ${person.hourly_rate}/hr
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        {match && <MatchPill score={match.overall_score} />}
-                      </div>
-                    </div>
+                  <Avatar name={displayName} size="md" />
 
-                    <div className="flex flex-wrap gap-1.5">
-                      {(person.skills || []).slice(0, 6).map((skill) => (
-                        <span key={skill} className="badge-ent badge-ent-neutral text-[10px]">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-
-                    {match && (
-                      <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-                        <div className="grid grid-cols-3 gap-2 text-[11px] text-slate-500">
-                          <span>
-                            Skills <strong className="block text-slate-800 dark:text-slate-200">{Math.round(match.skill_score)}%</strong>
-                          </span>
-                          <span>
-                            Experience <strong className="block text-slate-800 dark:text-slate-200">{Math.round(match.experience_score)}%</strong>
-                          </span>
-                          <span>
-                            Role <strong className="block text-slate-800 dark:text-slate-200">{Math.round(match.role_score)}%</strong>
-                          </span>
-                        </div>
-                        <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">{match.reasoning}</p>
-                        {match.missing_skills.length > 0 && (
-                          <p className="mt-1 text-xs text-amber-700">Missing: {match.missing_skills.join(", ")}</p>
-                        )}
-                      </div>
+                  <div className="min-w-[180px] flex-1 basis-64">
+                    <Link
+                      href={`/engineers/${person.id}`}
+                      className="font-semibold text-slate-900 dark:text-white text-sm hover:text-[#0A66C2] transition-colors inline-flex items-center gap-1"
+                    >
+                      {displayName}
+                      <ExternalLink className="h-3 w-3 text-slate-400" />
+                    </Link>
+                    {(person.headline || person.primary_role) && person.full_name && (
+                      <p className="text-xs text-slate-500 truncate">{person.headline || person.primary_role}</p>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2 text-xs text-slate-500 shrink-0">
+                    <span>{person.years_of_experience ?? 0} yrs</span>
+                    {person.location && (
+                      <span className="flex items-center gap-0.5">
+                        <MapPin className="h-3 w-3" /> {person.location}
+                      </span>
+                    )}
+                    {person.hourly_rate ? (
+                      <span className="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[11px]">
+                        ${person.hourly_rate}/hr
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 min-w-[140px] basis-48 shrink-0">
+                    {(person.skills || []).slice(0, 3).map((skill) => (
+                      <span key={skill} className="badge-ent badge-ent-neutral text-[10px]">
+                        {skill}
+                      </span>
+                    ))}
+                    {(person.skills || []).length > 3 && (
+                      <span className="text-[10px] text-slate-400 self-center">
+                        +{(person.skills || []).length - 3}
+                      </span>
+                    )}
+                  </div>
+
+                  {match && (
+                    <div
+                      className="flex items-center gap-2 shrink-0"
+                      title={[
+                        match.reasoning,
+                        match.missing_skills.length > 0 ? `Missing: ${match.missing_skills.join(", ")}` : "",
+                      ].filter(Boolean).join(" — ")}
+                    >
+                      <MatchPill score={match.overall_score} />
+                      <span className="text-[11px] text-slate-400 hidden lg:inline">
+                        Skills {Math.round(match.skill_score)}% · Exp {Math.round(match.experience_score)}% · Role {Math.round(match.role_score)}%
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 ml-auto shrink-0">
                     <Link
                       href={`/engineers/${person.id}`}
                       className="text-xs font-semibold text-[#0A66C2] hover:underline flex items-center gap-1"
                     >
-                      View Profile <ArrowRight className="h-3 w-3" />
+                      View <ArrowRight className="h-3 w-3" />
                     </Link>
-
                     {selectedJob && (
                       <Button
                         size="sm"
                         loading={applications.invite.isPending}
                         onClick={() => handleInvite(person.id)}
                       >
-                        Invite to Role
+                        Invite
                       </Button>
                     )}
                   </div>

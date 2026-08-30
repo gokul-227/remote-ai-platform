@@ -59,9 +59,12 @@ const ROUTES = {
     { path: "/company/jobs", name: "company-jobs", state: "default" },
     { path: "/company/candidates", name: "company-candidates", state: "default" },
     { path: "/company/profile", name: "company-profile", state: "default" },
+    { path: "/jobs/new", name: "company-jobs-new", state: "default" },
   ],
   admin: [
     { path: "/admin/dashboard", name: "admin-dashboard", state: "default" },
+    { path: "/admin/users", name: "admin-users", state: "default" },
+    { path: "/admin/jobs", name: "admin-jobs", state: "default" },
   ],
 };
 
