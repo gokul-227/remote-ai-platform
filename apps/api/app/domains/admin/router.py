@@ -429,11 +429,21 @@ async def _check_keycloak() -> ServiceHealthStatus:
 
 
 async def _check_celery_queues() -> ServiceHealthStatus:
-    started = time.monotonic()
-    try:
-        from app.core.queue_monitor import get_queue_depths
+    """Check broker connectivity directly with a real PING.
 
-        await get_queue_depths()
+    Previously delegated to queue_monitor.get_queue_depths(), which is
+    designed for its own caller (a metrics endpoint that should always
+    return *something*) to swallow every Redis error and return
+    {queue: 0} rather than raise -- so this check could never observe a
+    broker outage and always reported OPERATIONAL, the exact hardcoded-
+    health failure mode this endpoint's other checks were fixed to avoid.
+    """
+    started = time.monotonic()
+    client: Redis = Redis.from_url(
+        settings.CELERY_BROKER_URL, socket_connect_timeout=1, socket_timeout=1
+    )
+    try:
+        await client.ping()
         return ServiceHealthStatus(
             service="Celery Background Task Queue",
             status="OPERATIONAL",
@@ -445,6 +455,8 @@ async def _check_celery_queues() -> ServiceHealthStatus:
             status="DOWN",
             latency_ms=round((time.monotonic() - started) * 1000, 1),
         )
+    finally:
+        await client.aclose()
 
 
 @router.get("/health/details", response_model=SystemHealthDetailResponse)
