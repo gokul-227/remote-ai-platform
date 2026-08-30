@@ -14,7 +14,8 @@ class BaseAggregator(ABC):
         """Fetch and normalize jobs into JobPostCreate objects."""
         pass
 
-    def clean_text(self, text: str | None = None) -> str:
+    @staticmethod
+    def clean_text(text: str | None = None) -> str:
         """Strip HTML tags, unescape HTML entities, fix common mojibake, and normalize whitespace."""
         if not text:
             return ""

@@ -1,0 +1,53 @@
+import pytest
+from httpx import AsyncClient
+
+
+@pytest.mark.asyncio
+async def test_reclean_requires_admin(client: AsyncClient):
+    reporter = await client.post(
+        "/api/v1/auth/register",
+        json={"email": "not-admin-4@example.com", "password": "secure-pass", "full_name": "Not Admin", "role": "ENGINEER"},
+    )
+    headers = {"Authorization": f"Bearer {reporter.json()['access_token']}"}
+
+    resp = await client.post("/api/v1/admin/jobs/reclean-text", headers=headers)
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_reclean_fixes_stale_html_entities(client: AsyncClient):
+    from conftest import TestingSessionLocal
+    from app.domains.auth.models import User, UserRole
+    from app.domains.auth.router import create_access_token
+    from app.domains.jobs.models import JobPost
+
+    async with TestingSessionLocal() as db:
+        admin = User(email="reclean-admin@example.com", password_hash="hashed", full_name="Reclean Admin", role=UserRole.ADMIN)
+        job = JobPost(
+            title="Smokemart &amp; GiftBox Sales Assistant",
+            slug="smokemart-sales-assistant",
+            description="Smoke Mart &amp; Giftbox is hiring",
+            company_name="Smokemart &amp; GiftBox",
+            source="REMOTEOK",
+        )
+        db.add_all([admin, job])
+        await db.flush()
+        job_id = job.id
+        token = create_access_token(admin)
+        await db.commit()
+    headers = {"Authorization": f"Bearer {token}"}
+
+    resp = await client.post("/api/v1/admin/jobs/reclean-text", headers=headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["changed"] >= 1
+
+    async with TestingSessionLocal() as db:
+        refreshed = await db.get(JobPost, job_id)
+        assert "&amp;" not in refreshed.title
+        assert "&amp;" not in refreshed.company_name
+        assert refreshed.company_name == "Smokemart & GiftBox"
+
+    logs = await client.get("/api/v1/admin/activity-logs", headers=headers)
+    assert logs.status_code == 200
+    assert any(log["action"] == "JOBS_TEXT_RECLEANED" for log in logs.json())

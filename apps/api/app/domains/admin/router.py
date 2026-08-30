@@ -251,6 +251,40 @@ async def delete_job(
     return None
 
 
+@router.post("/jobs/reclean-text")
+async def reclean_job_text(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Re-run HTML-entity/mojibake cleanup over existing job rows (Admin only).
+
+    JobRepository.upsert_external_job always re-cleans title/company_name/
+    description on every sync, so this only matters for legacy rows whose
+    source listing has since expired from the aggregator's feed and will
+    therefore never be re-synced -- a small, permanently-stale tail from
+    before clean_text() covered every field it does today.
+    """
+    from app.domains.jobs.aggregators.base import BaseAggregator
+
+    result = await db.execute(select(JobPost))
+    jobs = result.scalars().all()
+    changed = 0
+    for job in jobs:
+        new_title = BaseAggregator.clean_text(job.title)
+        new_company = BaseAggregator.clean_text(job.company_name)
+        new_description = BaseAggregator.clean_text(job.description)
+        if new_title != job.title or new_company != job.company_name or new_description != job.description:
+            job.title = new_title
+            job.company_name = new_company
+            job.description = new_description
+            changed += 1
+    await AdminRepository(db).log_activity(
+        current_user.id, "JOBS_TEXT_RECLEANED", "JOB", "bulk", {"scanned": len(jobs), "changed": changed}
+    )
+    await db.commit()
+    return {"scanned": len(jobs), "changed": changed}
+
+
 @router.get("/ai-usage", response_model=AIUsageStatsResponse)
 async def get_ai_usage_stats(
     current_user: User = Depends(require_role(UserRole.ADMIN)),
