@@ -197,6 +197,29 @@ async def update_job_status(
     return {"id": job.id, "is_active": job.is_active}
 
 
+@router.delete("/jobs/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job(
+    job_id: uuid.UUID,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Permanently delete a job posting (Admin only).
+
+    Distinct from PATCH /jobs/{id}/status (pause/activate, keeps the row):
+    this actually removes the row, for cleaning up test/demo listings that
+    should not exist in production at all.
+    """
+    job = await db.get(JobPost, job_id)
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    await AdminRepository(db).log_activity(
+        current_user.id, "JOB_DELETED", "JOB", str(job.id), {"title": job.title, "source": job.source}
+    )
+    await db.delete(job)
+    await db.commit()
+    return None
+
+
 @router.get("/ai-usage", response_model=AIUsageStatsResponse)
 async def get_ai_usage_stats(
     current_user: User = Depends(require_role(UserRole.ADMIN)),
