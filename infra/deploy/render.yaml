@@ -31,7 +31,11 @@ services:
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: ./apps/api
     region: oregon
-    healthCheckPath: /health/live
+    # /health/live is a pure liveness ping (always 200, no dependency checks) --
+    # it can never detect a real database outage. /health/ready checks DB
+    # connectivity too (503 only if DB is down; Redis-down alone stays a 200
+    # DEGRADED, since Redis isn't provisioned in this $0 deployment anyway).
+    healthCheckPath: /health/ready
     envVars:
       - key: APP_ENV
         value: production
