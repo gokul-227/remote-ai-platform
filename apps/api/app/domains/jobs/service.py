@@ -105,17 +105,28 @@ class JobService:
         return serialized
 
     async def sync_all_job_sources(
-        self, limit_per_source: int = 50, admin_repo: AdminRepository | None = None
+        self,
+        limit_per_source: int = 50,
+        admin_repo: AdminRepository | None = None,
+        source_name: str | None = None,
     ) -> dict[str, int]:
         """
         Runs job aggregation across all 5 public APIs, saving/upserting jobs to DB.
         If `admin_repo` is given, records a per-source ApiSyncLog entry (fetched/inserted/
         updated/status/duration) so the admin status page reflects every sync run.
+        If `source_name` is given, only that source is synced (case-insensitive match
+        against each aggregator's `source_name`); an unknown name is a no-op.
         """
         logger.info("Starting background job aggregation sync across 5 public APIs...")
         stats: dict[str, int] = {}
 
-        for aggregator in self.aggregators:
+        aggregators = self.aggregators
+        if source_name is not None:
+            aggregators = [
+                a for a in self.aggregators if a.source_name.lower() == source_name.lower()
+            ]
+
+        for aggregator in aggregators:
             started = time.monotonic()
             try:
                 fetched_jobs = await aggregator.fetch_jobs(limit=limit_per_source)
