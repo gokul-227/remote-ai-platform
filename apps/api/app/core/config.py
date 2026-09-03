@@ -144,6 +144,17 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str | None = None
     STRIPE_PUBLISHABLE_KEY: str | None = None
 
+    # ── Email ─────────────────────────────────────────────────────────────────
+    # "none" (default, honest no-op -- matches the behavior this app has always
+    # had; no email was ever actually sent before this) or "resend".
+    EMAIL_PROVIDER: str = "none"
+    RESEND_API_KEY: str | None = None
+    # Resend's own sandbox sender -- works with zero domain setup, but can only
+    # deliver to the account owner's verified email until a real sending
+    # domain is added.
+    EMAIL_FROM_ADDRESS: str = "onboarding@resend.dev"
+    EMAIL_FROM_NAME: str = "Remote AI Platform"
+
     # ── Feature Flags ─────────────────────────────────────────────────────────
     FEATURE_AI_RESUME_PARSING: bool = True
     FEATURE_AI_MATCHING: bool = True
