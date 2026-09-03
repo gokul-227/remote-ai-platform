@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.engineers.repository import EngineerRepository
-from app.domains.engineers.schemas import EngineerProfileResponse
+from app.domains.engineers.schemas import EngineerPublicProfileResponse
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import JobPostResponse
 
@@ -20,7 +20,7 @@ class GlobalSearchResponse(BaseModel):
     total_jobs: int
     total_engineers: int
     jobs: list[JobPostResponse]
-    engineers: list[EngineerProfileResponse]
+    engineers: list[EngineerPublicProfileResponse]
 
 
 @router.get("", response_model=GlobalSearchResponse)
@@ -43,5 +43,5 @@ async def global_search(
         total_jobs=len(jobs),
         total_engineers=len(engineers),
         jobs=[JobPostResponse.model_validate(j) for j in jobs],
-        engineers=[EngineerProfileResponse.model_validate(e) for e in engineers],
+        engineers=[EngineerPublicProfileResponse.model_validate(e) for e in engineers],
     )

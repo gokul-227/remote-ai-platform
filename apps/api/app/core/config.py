@@ -154,13 +154,23 @@ class Settings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
-        return self.APP_ENV == "production"
+        # Render sets RENDER=true on every service it runs, regardless of
+        # whether APP_ENV was also configured. Treating a Render deployment
+        # as production even if APP_ENV is missing closes a real incident:
+        # an env-var wipe that dropped APP_ENV silently disarmed every check
+        # below (dev JWT secret, dev MinIO creds, etc.) because is_production
+        # depended on APP_ENV alone.
+        import os
+
+        return self.APP_ENV == "production" or os.environ.get("RENDER") == "true"
 
     def validate_production_settings(self) -> None:
         """Fail fast instead of booting with known development credentials."""
         if not self.is_production:
             return
         errors = []
+        if self.DATABASE_URL.startswith("postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost"):
+            errors.append("DATABASE_URL is still the local development default")
         if self.SEED_DEMO_DATA:
             errors.append("SEED_DEMO_DATA must not be enabled in production environments")
         if len(self.JWT_SECRET_KEY) < 32 or "dev_secret" in self.JWT_SECRET_KEY:

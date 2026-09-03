@@ -139,12 +139,17 @@ async def create_job(
     service: JobService = Depends(get_job_service),
 ) -> JobPostResponse:
     """Post a new job (Requires COMPANY or ADMIN role)."""
-    if current_user.role == UserRole.COMPANY and not data.company_id:
+    if current_user.role == UserRole.COMPANY:
         company = await service.repo.db.scalar(
             select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
         )
         if not company:
             raise HTTPException(status_code=404, detail="Company profile required")
+        if data.company_id and data.company_id != company.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot post a job on behalf of another company",
+            )
         data = data.model_copy(
             update={
                 "company_id": company.id,
