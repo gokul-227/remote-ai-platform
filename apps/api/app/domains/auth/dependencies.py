@@ -8,10 +8,13 @@ from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AuthenticationError
+from app.domains.auth import supabase_auth
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
+from app.domains.auth.schemas import TokenPayload
 from app.domains.auth.service import AuthService
 
 security_scheme = HTTPBearer(auto_error=False)
@@ -43,7 +46,15 @@ async def get_current_user(
 
     token = credentials.credentials
     try:
-        payload = await service.verify_token(token)
+        if settings.AUTH_PROVIDER == "supabase":
+            identity = supabase_auth.verify_supabase_token(token)
+            # Supabase's own `role` JWT claim is the Postgres RLS role, not
+            # this app's business role -- role is decided by this backend
+            # (defaulted on first sight, changed only through its own admin
+            # endpoints), never read off the identity provider's token.
+            payload = TokenPayload(sub=identity.user_id, email=identity.email, roles=[])
+        else:
+            payload = await service.verify_token(token)
         user = await service.get_or_create_user_from_token(payload)
         if not user.is_active:
             raise HTTPException(
