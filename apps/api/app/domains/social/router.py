@@ -49,6 +49,30 @@ async def _get_post_or_404(post_id: uuid.UUID, db: AsyncSession) -> Post:
     return post
 
 
+async def _get_visible_post_or_404(post_id: uuid.UUID, current_user_id: uuid.UUID, db: AsyncSession) -> Post:
+    """Like _get_post_or_404, but also enforces the post's own visibility —
+    a PRIVATE or CONNECTIONS-only post must not be readable/likeable/
+    commentable by a direct post_id lookup just because get_feed's own
+    visibility filter was bypassed. Returns 404 rather than 403 either way
+    so a caller can't distinguish "doesn't exist" from "not visible to you"."""
+    post = await _get_post_or_404(post_id, db)
+    if post.author_id == current_user_id or post.visibility == "PUBLIC":
+        return post
+    if post.visibility == "CONNECTIONS":
+        connected = await db.scalar(
+            select(Connection).where(
+                or_(
+                    (Connection.sender_id == current_user_id) & (Connection.receiver_id == post.author_id),
+                    (Connection.sender_id == post.author_id) & (Connection.receiver_id == current_user_id),
+                ),
+                Connection.status == "ACCEPTED",
+            )
+        )
+        if connected:
+            return post
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+
 async def _enrich_posts(
     posts: list[Post],
     current_user_id: uuid.UUID,
@@ -249,7 +273,7 @@ async def get_post(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> PostResponse:
-    post = await _get_post_or_404(post_id, db)
+    post = await _get_visible_post_or_404(post_id, current_user.id, db)
     enriched = await _enrich_posts([post], current_user.id, db)
     return enriched[0]
 
@@ -304,7 +328,7 @@ async def toggle_like(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     """Toggle like on a post. Returns {liked: true/false, like_count: N}."""
-    post = await _get_post_or_404(post_id, db)
+    post = await _get_visible_post_or_404(post_id, current_user.id, db)
 
     existing = await db.scalar(
         select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == current_user.id)
@@ -341,7 +365,7 @@ async def list_comments(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[CommentResponse]:
-    await _get_post_or_404(post_id, db)
+    await _get_visible_post_or_404(post_id, current_user.id, db)
     offset = (page - 1) * page_size
     comments_result = await db.execute(
         select(PostComment)
@@ -382,7 +406,7 @@ async def add_comment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> CommentResponse:
-    post = await _get_post_or_404(post_id, db)
+    post = await _get_visible_post_or_404(post_id, current_user.id, db)
     comment = PostComment(post_id=post_id, author_id=current_user.id, content=data.content)
     db.add(comment)
     # Increment comment count on the post
