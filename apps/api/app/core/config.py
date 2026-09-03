@@ -76,6 +76,27 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # ── Supabase Auth (target IdP -- not yet the default) ───────────────────────
+    # AUTH_PROVIDER="custom_jwt" (default, current behavior: this app issues and
+    # verifies its own HS256 tokens) or "supabase" (verifies Supabase Auth's own
+    # asymmetric-signed tokens via JWKS; this app no longer issues tokens at all
+    # -- signup/login happens entirely against Supabase from the frontend). Kept
+    # switchable so the Supabase path can be built and tested without touching
+    # the currently-working custom auth until it's verified end-to-end.
+    AUTH_PROVIDER: str = "custom_jwt"
+    SUPABASE_URL: str | None = None
+    SUPABASE_JWT_AUDIENCE: str = "authenticated"
+    # JWKS responses are cached in-process for this long (Supabase's own edge
+    # cache is ~10 minutes; matching that avoids re-fetching more often than
+    # the keys could plausibly rotate).
+    SUPABASE_JWKS_CACHE_SECONDS: int = 600
+
+    @property
+    def SUPABASE_JWKS_URL(self) -> str | None:  # noqa: N802
+        if not self.SUPABASE_URL:
+            return None
+        return f"{self.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
+
     # ── AI / LiteLLM ─────────────────────────────────────────────────────────
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL_DEFAULT: str = "qwen2.5"
