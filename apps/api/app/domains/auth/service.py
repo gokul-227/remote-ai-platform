@@ -16,7 +16,7 @@ from app.core.exceptions import AuthenticationError
 from app.core.logging import get_logger
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
-from app.domains.auth.schemas import TokenPayload, UserCreate, UserUpdate
+from app.domains.auth.schemas import TokenPayload, UserCreate
 
 logger = get_logger("auth.service")
 
