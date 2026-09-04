@@ -18,7 +18,6 @@ from app.domains.auth.dependencies import get_auth_service, get_current_user
 from app.domains.auth.models import PasswordResetToken, User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import (
-    AuthSyncRequest,
     ChangePasswordRequest,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
@@ -361,16 +360,6 @@ async def get_me(
 ) -> UserResponse:
     """Return currently authenticated user information."""
     return UserResponse.model_validate(current_user)
-
-
-@router.post("/sync", response_model=UserResponse)
-async def sync_user(
-    sync_req: AuthSyncRequest,
-    auth_service: AuthService = Depends(get_auth_service),
-) -> UserResponse:
-    """Sync Keycloak user data into database."""
-    user = await auth_service.sync_user(sync_req)
-    return UserResponse.model_validate(user)
 
 
 @router.get("/login-url", response_model=LoginUrlResponse)

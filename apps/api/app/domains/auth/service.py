@@ -16,7 +16,7 @@ from app.core.exceptions import AuthenticationError
 from app.core.logging import get_logger
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
-from app.domains.auth.schemas import AuthSyncRequest, TokenPayload, UserCreate, UserUpdate
+from app.domains.auth.schemas import TokenPayload, UserCreate, UserUpdate
 
 logger = get_logger("auth.service")
 
@@ -111,26 +111,6 @@ class AuthService:
             full_name=payload.name or "Remote AI Platform User",
             role=role,
             is_active=True,
-        )
-        return await self.user_repo.create(user_create)
-
-    async def sync_user(self, sync_req: AuthSyncRequest) -> User:
-        """Explicit sync of Keycloak user into database."""
-        user = await self.user_repo.get_by_keycloak_id(sync_req.keycloak_id)
-        if user:
-            user_update = UserUpdate(
-                full_name=sync_req.full_name,
-                role=sync_req.role,
-                avatar_url=sync_req.avatar_url,
-            )
-            return await self.user_repo.update(user, user_update)
-
-        user_create = UserCreate(
-            keycloak_id=sync_req.keycloak_id,
-            email=sync_req.email,
-            full_name=sync_req.full_name,
-            role=sync_req.role,
-            avatar_url=sync_req.avatar_url,
         )
         return await self.user_repo.create(user_create)
 

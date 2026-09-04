@@ -58,13 +58,20 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         from app.core.rate_limiter import check_rate_limit
 
+        # This API isn't sat behind Cloudflare (only the frontend Worker is),
+        # so cf-connecting-ip would be a client-supplied, unverified header
+        # here -- trusting it (or a client-suppliable User-Agent, previously
+        # folded into this identifier) let an attacker reset their own rate
+        # limit bucket on every request. x-forwarded-for's first entry is the
+        # client-supplied one too, but Render's own edge appends the real
+        # peer IP as the *last* hop, which a client can't forge.
+        forwarded_for = request.headers.get("x-forwarded-for", "")
         client_ip = (
-            request.headers.get("cf-connecting-ip")
-            or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-            or (request.client.host if request.client else "unknown")
+            forwarded_for.split(",")[-1].strip()
+            if forwarded_for
+            else (request.client.host if request.client else "unknown")
         )
-        user_agent = request.headers.get("user-agent", "")
-        identifier = f"{client_ip}_{hash(user_agent) % 100000}"
+        identifier = client_ip
 
         is_allowed, remaining, retry_after = await check_rate_limit(
             identifier=identifier,

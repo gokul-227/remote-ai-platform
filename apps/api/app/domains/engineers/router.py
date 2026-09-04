@@ -140,24 +140,26 @@ async def search_engineers(
     return [EngineerPublicProfileResponse.model_validate(p) for p in results]
 
 
-@router.get("/{profile_id}", response_model=EngineerProfileResponse)
+@router.get("/{profile_id}", response_model=EngineerProfileResponse | EngineerPublicProfileResponse)
 async def get_engineer_by_id(
     profile_id: uuid.UUID,
     current_user: User | None = Depends(get_optional_user),
     service: EngineerService = Depends(get_engineer_service),
-) -> EngineerProfileResponse:
+) -> EngineerProfileResponse | EngineerPublicProfileResponse:
     """Get public engineer profile by ID.
 
     The profile itself is visible to anonymous callers (public directory
-    browsing), but resume_url/parsed_resume_data are only included for
-    authenticated callers — a fully anonymous request must never be able to
-    harvest permanent resume storage URLs at scale.
+    browsing), but resume_url/parsed_resume_data are private -- only the
+    profile owner or an admin may see them, matching EngineerPublicProfileResponse's
+    use everywhere else (list/search). Any other caller, authenticated or not,
+    must never be able to harvest another engineer's resume data this way.
     """
     profile = await service.get_by_id(profile_id)
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Engineer profile not found")
-    response = EngineerProfileResponse.model_validate(profile)
-    if current_user is None:
-        response.resume_url = None
-        response.parsed_resume_data = None
-    return response
+    is_owner_or_admin = current_user is not None and (
+        current_user.id == profile.user_id or current_user.role == UserRole.ADMIN
+    )
+    if is_owner_or_admin:
+        return EngineerProfileResponse.model_validate(profile)
+    return EngineerPublicProfileResponse.model_validate(profile)
