@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "main": ".open-next/worker.js",
-  "name": "remote-ai-platform-web",
+  "name": "remote-ai-platform",
   "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -13,7 +13,7 @@
       // Self-reference service binding, the service name must match "name" above
       // -- see https://opennext.js.org/cloudflare/caching
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "remote-ai-platform-web"
+      "service": "remote-ai-platform"
     }
   ],
   // No r2_buckets binding for now -- R2 needs a one-time manual "enable" in
