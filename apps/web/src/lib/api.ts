@@ -1,4 +1,5 @@
 import axios from "axios";
+import { supabase } from "@/lib/supabase";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -47,20 +48,22 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const config = error.config as (typeof error.config & { _retry?: boolean }) | undefined;
-    const refreshToken = typeof window !== "undefined" ? localStorage.getItem("remote_ai_platform_refresh_token") : null;
 
-    // On 401 with a refresh token available — attempt silent token refresh
-    if (error.response?.status === 401 && config && !config._retry && refreshToken && !config.url?.includes("/auth/")) {
+    // On 401 — attempt a silent Supabase session refresh, since Supabase
+    // (not this app) issues and owns the token lifecycle now.
+    if (error.response?.status === 401 && config && !config._retry && !config.url?.includes("/auth/")) {
       config._retry = true;
       try {
-        const refresh = await axios.post(`${API_URL}/api/v1/auth/refresh`, { refresh_token: refreshToken });
-        const { access_token, refresh_token } = refresh.data;
+        const { data, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !data.session) throw refreshError || new Error("No session");
+        const { access_token, refresh_token } = data.session;
         localStorage.setItem("remote_ai_platform_token", access_token);
-        if (refresh_token) localStorage.setItem("remote_ai_platform_refresh_token", refresh_token);
+        localStorage.setItem("remote_ai_platform_refresh_token", refresh_token);
         if (config.headers) config.headers.Authorization = `Bearer ${access_token}`;
         return api(config);
       } catch {
         // Refresh failed — session fully revoked, clear all credentials and redirect to login
+        await supabase.auth.signOut();
         localStorage.removeItem("remote_ai_platform_token");
         localStorage.removeItem("remote_ai_platform_refresh_token");
         localStorage.removeItem("remote_ai_platform_user");

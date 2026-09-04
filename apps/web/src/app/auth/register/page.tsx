@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Mail, Lock, User, Eye, EyeOff, Building2, AlertCircle, ArrowRight, ArrowLeft, Check } from "lucide-react";
-import api, { extractErrorMessage } from "@/lib/api";
+import { extractErrorMessage } from "@/lib/api";
+import { supabase, fetchBackendUser } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -44,6 +45,7 @@ export default function RegisterPage() {
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkEmail, setCheckEmail] = useState(false);
   const {
     register,
     handleSubmit,
@@ -55,6 +57,14 @@ export default function RegisterPage() {
   } = useForm<RegisterForm>();
   const password = useWatch({ control, name: "password" }) ?? "";
   const strength = passwordStrength(password);
+
+  const signUpWithProvider = async (provider: "google" | "azure") => {
+    setError(null);
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
 
   const goToStep2 = async () => {
     const valid = await trigger(["fullName", "email", "password"]);
@@ -77,18 +87,34 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      await api.post("/auth/register", {
-        full_name: parsed.data.fullName,
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
-        role,
+        options: { data: { full_name: parsed.data.fullName } },
       });
-      const loginRes = await api.post("/auth/login", { email: parsed.data.email, password: parsed.data.password });
-      const { access_token, refresh_token, user: userData } = loginRes.data;
-      login(access_token, userData, refresh_token);
-      router.push("/onboarding");
+      if (signUpError) throw signUpError;
+
+      // Role/name aren't concepts Supabase Auth knows about -- this app's
+      // own backend owns them (see PATCH /auth/role, /auth/me). Stash the
+      // choice so the login page can apply it right after the user's first
+      // successful sign-in, whether that's immediate or after confirming
+      // their email first.
+      localStorage.setItem(
+        "pending_registration",
+        JSON.stringify({ email: parsed.data.email, fullName: parsed.data.fullName, role }),
+      );
+
+      if (data.session) {
+        const userData = await fetchBackendUser(data.session);
+        login(data.session.access_token, userData, data.session.refresh_token);
+        router.push("/onboarding");
+      } else {
+        // Email confirmation required before a session exists.
+        setCheckEmail(true);
+      }
     } catch (err: unknown) {
-      const msg = extractErrorMessage(err, "Registration failed. Please try again.");
+      const supabaseMessage = (err as { message?: string })?.message;
+      const msg = supabaseMessage || extractErrorMessage(err, "Registration failed. Please try again.");
       setError(msg);
     } finally {
       setLoading(false);
@@ -140,8 +166,35 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {checkEmail ? (
+            <div className="text-center space-y-3 py-4">
+              <div className="mx-auto h-12 w-12 rounded-full bg-[var(--color-brand-light)] flex items-center justify-center">
+                <Mail className="h-6 w-6 text-[#B54A2C]" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900">Check your email</p>
+              <p className="text-sm text-slate-600">
+                We sent a confirmation link to your inbox. Click it, then come back and sign in.
+              </p>
+              <Link href="/auth/login" className="inline-block pt-2">
+                <Button variant="secondary">Go to sign in</Button>
+              </Link>
+            </div>
+          ) : (
+          <>
           {step === 1 && (
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="secondary" fullWidth onClick={() => signUpWithProvider("google")} type="button">
+                  Google
+                </Button>
+                <Button variant="secondary" fullWidth onClick={() => signUpWithProvider("azure")} type="button">
+                  Microsoft
+                </Button>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
+                <div className="relative flex justify-center text-xs"><span className="bg-white px-3 text-slate-500">or</span></div>
+              </div>
               <div className="relative">
                 <User className="absolute left-3 top-[38px] h-4 w-4 text-slate-400 pointer-events-none" />
                 <Input
@@ -255,6 +308,8 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </p>
+          </>
+          )}
         </div>
       </div>
     </div>

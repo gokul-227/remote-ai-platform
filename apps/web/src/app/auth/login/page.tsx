@@ -7,7 +7,8 @@ import { z } from "zod";
 import { Lock, Mail, Eye, EyeOff, Sparkles, Network, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
-import api, { extractErrorMessage } from "@/lib/api";
+import { extractErrorMessage } from "@/lib/api";
+import { supabase, fetchBackendUser, applyPendingRegistration } from "@/lib/supabase";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -49,25 +50,40 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await api.post("/auth/login", parsed.data);
-      const { access_token, refresh_token, user: userData } = res.data;
-      login(access_token, userData, remember ? refresh_token : undefined);
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: parsed.data.email,
+        password: parsed.data.password,
+      });
+      if (signInError || !data.session) {
+        throw signInError || new Error("Sign in failed");
+      }
+      let userData = await fetchBackendUser(data.session);
+      userData = await applyPendingRegistration(data.session, userData);
+      login(data.session.access_token, userData, remember ? data.session.refresh_token : undefined);
       const dest = userData.role === "COMPANY" ? "/company/dashboard" : userData.role === "ADMIN" ? "/admin/dashboard" : "/engineer/dashboard";
       router.push(dest);
     } catch (err: unknown) {
-      const response = (err as { response?: { status?: number } }).response;
-      if (!response) {
-        setError("Can't reach the server right now. Check your connection and try again.");
-      } else if (response.status === 429) {
-        setError("Too many attempts. Please wait a moment and try again.");
-      } else if (response.status === 401 || response.status === 422) {
-        setError(extractErrorMessage(err, "Invalid email or password. Please try again."));
+      const supabaseMessage = (err as { message?: string })?.message;
+      if (supabaseMessage?.includes("Invalid login credentials")) {
+        setError("Invalid email or password. Please try again.");
+      } else if (supabaseMessage?.includes("Email not confirmed")) {
+        setError("Please confirm your email before signing in — check your inbox.");
+      } else if (supabaseMessage) {
+        setError(supabaseMessage);
       } else {
         setError(extractErrorMessage(err, "Something went wrong signing you in. Please try again."));
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const signInWithProvider = async (provider: "google" | "azure") => {
+    setError(null);
+    await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
   };
 
   return (
@@ -170,6 +186,20 @@ export default function LoginPage() {
               Sign In
             </Button>
           </form>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
+            <div className="relative flex justify-center text-xs"><span className="bg-white px-3 text-slate-500">or continue with</span></div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Button variant="secondary" fullWidth onClick={() => signInWithProvider("google")} type="button">
+              Google
+            </Button>
+            <Button variant="secondary" fullWidth onClick={() => signInWithProvider("azure")} type="button">
+              Microsoft
+            </Button>
+          </div>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200" /></div>
