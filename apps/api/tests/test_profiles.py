@@ -113,12 +113,16 @@ async def test_public_engineer_profile_hides_resume_url_from_anonymous_callers(
 
     # Anonymous (no token) request must NOT see resume_url — this is the
     # actual public directory-browsing path (GET /engineers/{id} has no auth
-    # dependency at all).
+    # dependency at all). The public schema omits the field entirely rather
+    # than including it as null.
     anon_res = await client.get(f"/api/v1/engineers/{profile_id}")
     assert anon_res.status_code == 200
-    assert anon_res.json()["resume_url"] is None
+    assert "resume_url" not in anon_res.json()
 
-    # An authenticated caller (any logged-in user) may see it.
+    # A DIFFERENT authenticated user (not the profile owner, not an admin)
+    # must not see it either -- this was the actual PII leak a security
+    # audit found: any logged-in user, not just companies/self, could pull
+    # another engineer's resume data via this exact endpoint.
     other_reg = await client.post("/api/v1/auth/register", json={
         "email": "another_authenticated_user@example.com",
         "password": "Password123!",
@@ -128,7 +132,34 @@ async def test_public_engineer_profile_hides_resume_url_from_anonymous_callers(
     other_headers = {"Authorization": f"Bearer {other_reg.json()['access_token']}"}
     auth_res = await client.get(f"/api/v1/engineers/{profile_id}", headers=other_headers)
     assert auth_res.status_code == 200
-    assert auth_res.json()["resume_url"] is not None
+    assert "resume_url" not in auth_res.json()
+
+    # The profile owner sees their own resume_url.
+    own_res = await client.get(f"/api/v1/engineers/{profile_id}", headers=headers)
+    assert own_res.status_code == 200
+    assert own_res.json()["resume_url"] is not None
+
+    # An admin sees it too.
+    from conftest import TestingSessionLocal
+    from app.domains.auth.models import User, UserRole
+    from app.domains.auth.router import create_access_token
+
+    async with TestingSessionLocal() as admin_db:
+        admin = User(
+            email="resume_privacy_admin@example.com",
+            password_hash="hashed",
+            full_name="Resume Privacy Admin",
+            role=UserRole.ADMIN,
+        )
+        admin_db.add(admin)
+        await admin_db.flush()
+        admin_token = create_access_token(admin)
+        await admin_db.commit()
+    admin_res = await client.get(
+        f"/api/v1/engineers/{profile_id}", headers={"Authorization": f"Bearer {admin_token}"}
+    )
+    assert admin_res.status_code == 200
+    assert admin_res.json()["resume_url"] is not None
 
     # Bulk listing/search endpoints never include resume_url, authenticated or not.
     list_res = await client.get("/api/v1/engineers", headers=other_headers)
