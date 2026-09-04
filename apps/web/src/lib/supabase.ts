@@ -2,8 +2,14 @@ import axios from "axios";
 import { createClient, type Session } from "@supabase/supabase-js";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
+// @supabase/supabase-js's createClient() throws synchronously on an empty
+// URL, which crashes the entire static build (every page that imports this
+// module, even transitively) rather than just failing the auth calls that
+// actually need it. A syntactically-valid placeholder keeps module
+// evaluation safe everywhere except real Supabase network calls, which
+// simply fail cleanly if this ever ships genuinely unconfigured.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "placeholder";
 
 // The publishable key is safe to expose client-side by design -- it only
 // grants what Supabase's Row Level Security policies allow for anonymous/

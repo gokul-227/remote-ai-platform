@@ -66,6 +66,9 @@ jobs:
 
       - name: Build
         working-directory: apps/web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://cvjypjsjmamoppwhuwdl.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_E9A2lRDUNRr8CI8RxpSWtA_Szi21la2
         run: npm run build
 
   e2e:
