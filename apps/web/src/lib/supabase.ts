@@ -67,7 +67,8 @@ export async function applyPendingRegistration(session: Session, currentUser: { 
   const headers = { Authorization: `Bearer ${session.access_token}` };
   try {
     if (pending.role !== currentUser.role) {
-      await axios.patch(`${API_URL}/api/v1/auth/role`, { role: pending.role }, { headers });
+      // /auth/role takes `role` as a query param, not a JSON body.
+      await axios.patch(`${API_URL}/api/v1/auth/role`, null, { headers, params: { role: pending.role } });
     }
     if (pending.fullName && pending.fullName !== currentUser.full_name) {
       await axios.patch(`${API_URL}/api/v1/auth/me`, { full_name: pending.fullName }, { headers });
