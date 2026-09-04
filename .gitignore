@@ -43,6 +43,7 @@ tsconfig.tsbuildinfo
 .env.staging
 .env.production
 !.env.example
+!**/.env.example
 
 # ─── Python ───────────────────────────────────────────────────────────────────
 .mypy_cache/

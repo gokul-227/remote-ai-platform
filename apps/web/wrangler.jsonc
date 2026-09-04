@@ -16,14 +16,10 @@
       "service": "remote-ai-platform-web"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "NEXT_INC_CACHE_R2_BUCKET",
-      // Create this bucket once (free tier) before the first deploy:
-      // npx wrangler r2 bucket create remote-ai-platform-web-opennext-cache
-      "bucket_name": "remote-ai-platform-web-opennext-cache"
-    }
-  ],
+  // No r2_buckets binding for now -- R2 needs a one-time manual "enable" in
+  // the Cloudflare dashboard first (Cloudflare requires this even for the
+  // free tier). Add it back, matching open-next.config.ts's incrementalCache
+  // override, once that's done and ISR caching is actually needed.
   "images": {
     "binding": "IMAGES"
   }
