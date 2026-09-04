@@ -2,13 +2,18 @@ name: Scheduled job source sync (production)
 
 # Replaces Celery beat's job-source sync cron for the $0 deployment, which
 # intentionally has no hosted Redis/worker (see infra/deploy/render.yaml and
-# docs/DEPLOYMENT_ZERO_COST.md). Logs in as the seeded admin account and hits
-# the same POST /jobs/sync endpoint Celery beat calls locally every 6h.
+# docs/DEPLOYMENT_ZERO_COST.md). Logs in as a dedicated Supabase Auth service
+# account (ci-service@remote-ai-platform.internal, promoted to ADMIN in the
+# app's own users table) and hits the same POST /jobs/sync endpoint Celery
+# beat calls locally every 6h.
 #
-# Requires two repository secrets (set in GitHub → Settings → Secrets →
-# Actions), matching whatever admin account exists on the deployed API:
-#   PROD_ADMIN_EMAIL
-#   PROD_ADMIN_PASSWORD
+# The production API now only verifies Supabase-issued tokens (AUTH_PROVIDER
+# =supabase) -- this workflow authenticates against Supabase's own token
+# endpoint, not this app's old (now dormant) /auth/login.
+#
+# Requires repository secrets (Settings → Secrets → Actions):
+#   PROD_ADMIN_EMAIL, PROD_ADMIN_PASSWORD  -- the service account's credentials
+#   SUPABASE_URL, SUPABASE_ANON_KEY        -- to call Supabase's token endpoint
 # and one repository variable (Settings → Secrets → Actions → Variables):
 #   PROD_API_URL   e.g. https://remote-ai-platform-api.onrender.com/api/v1
 
@@ -30,7 +35,8 @@ jobs:
             exit 0
           fi
 
-          TOKEN=$(curl -sf -X POST "$API_URL/auth/login" \
+          TOKEN=$(curl -sf -X POST "${{ secrets.SUPABASE_URL }}/auth/v1/token?grant_type=password" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json" \
             -d "{\"email\":\"${{ secrets.PROD_ADMIN_EMAIL }}\",\"password\":\"${{ secrets.PROD_ADMIN_PASSWORD }}\"}" \
             | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
