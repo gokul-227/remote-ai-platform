@@ -43,4 +43,5 @@ jobs:
       - name: Verify deploy
         run: |
           sleep 5
-          curl -sf https://remote-ai-platform.gokulraj22797.workers.dev/ -o /dev/null -w "homepage: %{http_code}\n"
+          curl -sf https://remoteaiplatform.com/ -o /dev/null -w "homepage (custom domain): %{http_code}\n"
+          curl -sf https://remote-ai-platform.gokulraj22797.workers.dev/ -o /dev/null -w "homepage (workers.dev): %{http_code}\n"
