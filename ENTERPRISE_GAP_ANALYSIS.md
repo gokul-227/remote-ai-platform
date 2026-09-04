@@ -3,7 +3,7 @@
 **Assessment Date**: 2026-08-26  
 **Auditor**: Principal Systems Architect, Staff Full-Stack Engineer, Security Engineer, SRE, QA & UX Systems Lead  
 **Target Repository**: `gokul-227/remote-ai-platform`  
-**Production Targets**: Frontend (Vercel: `remote-ai-platform.vercel.app`), Backend (Render: `remote-ai-platform-api.onrender.com`), Database (Supabase PostgreSQL / asyncpg), Storage (Supabase Storage / MinIO S3 API).
+**Production Targets**: Frontend (Cloudflare Workers), Backend (Render), Database (Supabase PostgreSQL / asyncpg), Storage (Supabase Storage / MinIO S3 API). See the internal deployment docs for live URLs and identifiers.
 
 ---
 

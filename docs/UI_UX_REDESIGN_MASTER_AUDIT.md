@@ -1,6 +1,6 @@
 # UI/UX REDESIGN MASTER AUDIT — REMOTE AI PLATFORM
 
-> **Audit Baseline**: 39 Web Application Routes, 19 Backend Domains, Production API at `https://remote-ai-platform-api.onrender.com`  
+> **Audit Baseline**: 39 Web Application Routes, 19 Backend Domains, production API (see internal deployment docs for the live URL)  
 > **Objective**: Comprehensive blueprint for transforming Remote AI Platform into an enterprise-grade professional operating system combining features of LinkedIn, Facebook, Upwork, Slack, Notion, Linear, and Stripe with a unified visual language.
 
 ---
