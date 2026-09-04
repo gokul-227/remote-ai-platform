@@ -129,6 +129,13 @@ jobs:
 
       - name: Run E2E suite
         working-directory: tests/e2e
+        env:
+          # registerAs() and the admin-journey non-admin test create/confirm
+          # users directly against Supabase Auth (see helpers.ts) since
+          # production requires email confirmation and there's no inbox in CI.
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npx playwright test
 
       - name: Stack logs on failure

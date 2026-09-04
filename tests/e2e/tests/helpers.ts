@@ -1,24 +1,56 @@
 import { Page, expect } from "@playwright/test";
 
 /**
- * Drives the real 2-step /auth/register wizard: step 1 collects name/email/
- * password behind a Terms checkbox, step 2 is a role-card picker that only
- * then reveals the "Create Account" submit. Mirrors src/app/auth/register.
+ * Registration in production requires confirming a real email (Supabase
+ * `mailer_autoconfirm=False`), which the register page surfaces as a "check
+ * your email" screen instead of an immediate session -- there's no inbox to
+ * check in CI. Create and confirm the user directly via the Supabase Admin
+ * API (same pattern as the "Seed demo data" CI step), stash the role/name
+ * choice the same way the real register page does, then drive the real
+ * /auth/login form -- which already knows how to apply that stashed choice
+ * (see applyPendingRegistration in src/lib/supabase.ts).
  */
 export async function registerAs(
   page: Page,
   opts: { name: string; email: string; password: string; role: "engineer" | "company" }
 ) {
-  await page.goto("/auth/register");
-  await page.locator("#fullName").fill(opts.name);
-  await page.locator("#regEmail").fill(opts.email);
-  await page.locator("#regPassword").fill(opts.password);
-  await page.getByLabel(/i agree to the terms/i).check();
-  await page.getByRole("button", { name: /^continue$/i }).click();
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set for registerAs()");
+  }
 
-  const roleName = opts.role === "engineer" ? /i am a professional/i : /i am hiring/i;
-  await page.getByRole("button", { name: roleName }).click();
-  await page.getByRole("button", { name: /create account/i }).click();
+  const createRes = await page.request.post(`${supabaseUrl}/auth/v1/admin/users`, {
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+    },
+    data: {
+      email: opts.email,
+      password: opts.password,
+      email_confirm: true,
+      user_metadata: { full_name: opts.name },
+    },
+  });
+  expect(createRes.ok()).toBeTruthy();
+
+  await page.goto("/auth/login");
+  await page.evaluate(
+    ([email, fullName, role]) => {
+      localStorage.setItem("pending_registration", JSON.stringify({ email, fullName, role }));
+    },
+    [opts.email, opts.name, opts.role === "engineer" ? "ENGINEER" : "COMPANY"]
+  );
+
+  await page.locator("#email").fill(opts.email);
+  await page.locator("#password").fill(opts.password);
+  await page.getByRole("button", { name: /sign in/i }).click();
+
+  // The login page always lands on the role's dashboard, never /onboarding
+  // (that redirect only exists on the register page's happy path) -- since
+  // the profile hasn't been created yet, go there directly.
+  await expect(page).not.toHaveURL(/\/auth\/login$/, { timeout: 30_000 });
+  await page.goto("/onboarding");
 }
 
 /**
