@@ -89,6 +89,15 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Start stack
+        env:
+          # Production now verifies Supabase-issued tokens exclusively
+          # (AUTH_PROVIDER=supabase) -- test against the same thing so E2E
+          # coverage matches what's actually deployed, not the old local-only
+          # auth path.
+          AUTH_PROVIDER: supabase
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: |
           cp .env.example .env
           npm run docker:up
@@ -96,7 +105,27 @@ jobs:
           timeout 60 sh -c 'until curl -sf http://localhost:3000/; do sleep 3; done'
 
       - name: Seed demo data (creates admin@workmesh.ai used by the admin journey test)
-        run: docker exec remote-ai-platform-api python -m app.scripts.seed_data
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          docker exec remote-ai-platform-api python -m app.scripts.seed_data
+
+          # seed_data.py creates admin@workmesh.ai as a LOCAL row only, with
+          # no Supabase Auth identity -- the frontend now logs in exclusively
+          # through Supabase, so create/confirm a matching Supabase user too.
+          # get_or_create_user_from_token() links it to the existing local
+          # row by email match on first authenticated request -- no manual
+          # DB linking needed here.
+          # Idempotent: runs on every push, so a 422 "already registered" on
+          # later runs is expected and fine -- the account persists as a
+          # stable CI fixture, created fresh only on the first-ever run.
+          curl -s -X POST "$SUPABASE_URL/auth/v1/admin/users" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"admin@workmesh.ai","password":"admin123","email_confirm":true}' \
+            -o /dev/null -w "Supabase admin user: %{http_code}\n"
 
       - name: Run E2E suite
         working-directory: tests/e2e

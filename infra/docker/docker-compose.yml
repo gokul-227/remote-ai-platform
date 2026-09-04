@@ -176,6 +176,12 @@ services:
       LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
       AI_FALLBACK_PROVIDERS: ${AI_FALLBACK_PROVIDERS:-ollama/qwen2.5}
       APP_ENV: ${APP_ENV:-development}
+      # Defaults to this app's own self-issued JWT auth so local dev doesn't
+      # require real Supabase credentials just to run docker-compose. CI's
+      # E2E job overrides both to test against real Supabase Auth, matching
+      # what's actually deployed in production.
+      AUTH_PROVIDER: ${AUTH_PROVIDER:-custom_jwt}
+      SUPABASE_URL: ${SUPABASE_URL:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -201,6 +207,12 @@ services:
     build:
       context: ../../apps/web
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* vars are baked in at build time -- must be build args,
+      # not just the `environment:` block below (which has no effect on them).
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
     container_name: remote-ai-platform-web
     restart: unless-stopped
     # Production image — no bind mount so the built .next output is used.
