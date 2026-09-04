@@ -1,0 +1,46 @@
+name: Deploy frontend (Cloudflare)
+
+# Runs only after CI has passed on main, not on every raw push -- broken
+# code never gets deployed just because it merged.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for Cloudflare Workers
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_API_URL: https://remote-ai-platform-api.onrender.com
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run cf:build
+
+      - name: Deploy
+        working-directory: apps/web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
+
+      - name: Verify deploy
+        run: |
+          sleep 5
+          curl -sf https://remote-ai-platform.gokulraj22797.workers.dev/ -o /dev/null -w "homepage: %{http_code}\n"
