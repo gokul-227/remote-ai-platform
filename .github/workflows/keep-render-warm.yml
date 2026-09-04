@@ -14,7 +14,11 @@ name: Keep Render API warm
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # Offset from round minute marks (:00/:10/:20...) on purpose -- GitHub's
+    # own docs warn schedules on exact interval boundaries hit the highest
+    # queue congestion and can be delayed arbitrarily. Firing at :03/:13/:23
+    # etc. avoids that contention.
+    - cron: "3-59/10 * * * *"
   workflow_dispatch: {}
 
 jobs:
