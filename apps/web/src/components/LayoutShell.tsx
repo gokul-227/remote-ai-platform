@@ -76,10 +76,10 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
             <span>© 2026 Remote AI Platform. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-4 text-[var(--text-muted)]">
-            <a href="/privacy" className="hover:text-[#B54A2C]">Privacy</a>
-            <a href="/terms" className="hover:text-[#B54A2C]">Terms</a>
-            <a href="/impressum" className="hover:text-[#B54A2C]">Impressum</a>
-            <a href="/security" className="hover:text-[#B54A2C]">Security</a>
+            <a href="/privacy" className="hover:text-[#0552CC]">Privacy</a>
+            <a href="/terms" className="hover:text-[#0552CC]">Terms</a>
+            <a href="/impressum" className="hover:text-[#0552CC]">Impressum</a>
+            <a href="/security" className="hover:text-[#0552CC]">Security</a>
           </div>
         </div>
       </footer>

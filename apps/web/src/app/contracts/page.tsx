@@ -78,14 +78,14 @@ function ContractsPageContent() {
   return (
     <div className="max-w-6xl mx-auto py-6 px-4 space-y-6">
       {/* Header Banner */}
-      <div className="card-enterprise p-6 bg-gradient-to-r from-white via-blue-50/20 to-white dark:from-slate-900 dark:to-slate-900 border-l-4 border-l-[#B54A2C] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="card-enterprise p-6 bg-gradient-to-r from-white via-blue-50/20 to-white dark:from-slate-900 dark:to-slate-900 border-l-4 border-l-[#0552CC] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="badge-ent badge-ent-brand text-[10px]">Agreements Hub</span>
             <span className="badge-ent badge-ent-success text-[10px]">Digital Sign-Off</span>
           </div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            Contracts & Agreements <FileText className="h-5 w-5 text-[#B54A2C]" />
+            Contracts & Agreements <FileText className="h-5 w-5 text-[#0552CC]" />
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Digital work agreements between organizations and remote talent, with timestamped sign-off from both parties.

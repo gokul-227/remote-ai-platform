@@ -75,7 +75,7 @@ function ProjectCard({ project }: { project: ProjectRecord }) {
         ) : (
           <span className="text-xs text-slate-300">No timeline set</span>
         )}
-        <span className="flex items-center gap-1 text-xs font-semibold text-[#B54A2C]">View Details <ChevronRight className="h-3.5 w-3.5" /></span>
+        <span className="flex items-center gap-1 text-xs font-semibold text-[#0552CC]">View Details <ChevronRight className="h-3.5 w-3.5" /></span>
       </div>
     </Link>
   );
@@ -168,7 +168,7 @@ function ProjectsContent() {
             <button
               key={mode}
               onClick={() => setViewMode(mode)}
-              className={cn("p-2", viewMode === mode ? "bg-[var(--color-brand-light)] text-[#B54A2C]" : "text-slate-400")}
+              className={cn("p-2", viewMode === mode ? "bg-[var(--color-brand-light)] text-[#0552CC]" : "text-slate-400")}
             >
               <Icon className="h-4 w-4" />
             </button>

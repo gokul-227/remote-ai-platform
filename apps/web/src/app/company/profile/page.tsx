@@ -145,7 +145,7 @@ function CompanyProfileContent() {
 
       {/* Header Card with Rich Gradient Banner */}
       <div className="card-enterprise overflow-hidden">
-        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-[#2B1D14] via-[#4D4033] to-[#B54A2C]">
+        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-[#0B1E3D] via-[#4D4033] to-[#0552CC]">
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
           <div className="absolute bottom-4 left-6 flex items-center gap-2">
             <span className="text-xs font-bold text-white/80 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1 flex items-center gap-1">
@@ -157,7 +157,7 @@ function CompanyProfileContent() {
         <div className="px-6 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 mb-4">
             <div className="flex items-end gap-4">
-              <div className="h-24 w-24 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md flex items-center justify-center text-3xl font-black text-[#B54A2C] overflow-hidden shrink-0">
+              <div className="h-24 w-24 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-800 shadow-md flex items-center justify-center text-3xl font-black text-[#0552CC] overflow-hidden shrink-0">
                 {profile.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={profile.logo_url} alt={profile.name} className="h-full w-full object-cover" />
@@ -203,7 +203,7 @@ function CompanyProfileContent() {
                 href={profile.website}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 text-[#B54A2C] hover:underline font-semibold transition-colors"
+                className="flex items-center gap-1.5 text-[#0552CC] hover:underline font-semibold transition-colors"
               >
                 <Globe2 className="h-3.5 w-3.5" />
                 {profile.website.replace(/^https?:\/\//, "")}
@@ -232,7 +232,7 @@ function CompanyProfileContent() {
           {/* About Company */}
           <div className="card-enterprise p-6 space-y-3">
             <h2 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-[#B54A2C]" /> About {profile.name}
+              <Building2 className="h-4 w-4 text-[#0552CC]" /> About {profile.name}
             </h2>
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
               {profile.description || "No organization description provided yet. Add an overview to showcase your engineering culture and goals to candidates."}
@@ -248,7 +248,7 @@ function CompanyProfileContent() {
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">Live listings published on Remote AI Platform marketplace</p>
               </div>
-              <Link href="/jobs/new" className="text-xs font-semibold text-[#B54A2C] hover:underline flex items-center gap-1">
+              <Link href="/jobs/new" className="text-xs font-semibold text-[#0552CC] hover:underline flex items-center gap-1">
                 Post Role <PlusCircle className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -269,7 +269,7 @@ function CompanyProfileContent() {
                 {jobs.slice(0, 6).map((job) => (
                   <div
                     key={job.id}
-                    className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-[#B54A2C] transition-colors"
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-[#0552CC] transition-colors"
                   >
                     <div>
                       <h3 className="font-semibold text-slate-900 dark:text-white text-xs">{job.title}</h3>
@@ -279,7 +279,7 @@ function CompanyProfileContent() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Link href={`/jobs/${job.id}`} className="text-xs text-[#B54A2C] hover:underline font-semibold flex items-center gap-1">
+                      <Link href={`/jobs/${job.id}`} className="text-xs text-[#0552CC] hover:underline font-semibold flex items-center gap-1">
                         View <ExternalLink className="h-3 w-3" />
                       </Link>
                     </div>

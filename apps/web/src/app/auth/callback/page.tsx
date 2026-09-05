@@ -63,13 +63,13 @@ export default function OAuthCallbackPage() {
           <>
             <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
             <p className="text-sm text-slate-700">{error}</p>
-            <a href="/auth/login" className="text-sm text-[#B54A2C] hover:underline font-medium">
+            <a href="/auth/login" className="text-sm text-[#0552CC] hover:underline font-medium">
               Back to sign in
             </a>
           </>
         ) : (
           <>
-            <Loader2 className="h-8 w-8 text-[#B54A2C] mx-auto animate-spin" />
+            <Loader2 className="h-8 w-8 text-[#0552CC] mx-auto animate-spin" />
             <p className="text-sm text-slate-600">Finishing sign-in…</p>
           </>
         )}

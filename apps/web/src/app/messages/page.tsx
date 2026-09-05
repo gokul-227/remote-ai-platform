@@ -155,7 +155,7 @@ function MessageBubbleItem({
       <div className={cn(
         "px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed shadow-[var(--shadow-xs)]",
         isOwn
-          ? "bg-[var(--color-brand)] text-white rounded-br-sm"
+          ? "bg-[var(--color-brand)] text-white dark:text-[#0B1E3D] rounded-br-sm"
           : "bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-main)] rounded-bl-sm"
       )}>
         <p>{content}</p>
@@ -233,7 +233,7 @@ function MessagesContent() {
               <h1 className="text-base font-bold text-[var(--text-main)]">Messages</h1>
               <button
                 onClick={() => setShowNew(true)}
-                className="h-8 w-8 flex items-center justify-center rounded-lg bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)] transition-colors"
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-[var(--color-brand)] text-white dark:text-[#0B1E3D] hover:bg-[var(--color-brand-hover)] transition-colors"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -380,7 +380,7 @@ function MessagesContent() {
                   <button
                     disabled={!draft.trim()}
                     onClick={handleSend}
-                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg bg-[var(--color-brand)] text-white dark:text-[#0B1E3D] hover:bg-[var(--color-brand-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <Send className="h-4 w-4" />
                   </button>

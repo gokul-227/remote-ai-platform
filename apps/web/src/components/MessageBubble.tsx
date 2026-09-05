@@ -14,7 +14,7 @@ export function MessageBubble({
       <div
         className={cn(
           "px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed",
-          isOwn ? "bg-[var(--color-brand)] text-white rounded-br-sm" : "bg-[var(--bg-subtle)] text-[var(--text-main)] rounded-bl-sm"
+          isOwn ? "bg-[var(--color-brand)] text-white dark:text-[#0B1E3D] rounded-br-sm" : "bg-[var(--bg-subtle)] text-[var(--text-main)] rounded-bl-sm"
         )}
       >
         {content}

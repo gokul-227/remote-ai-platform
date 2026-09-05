@@ -51,7 +51,7 @@ function CompanyCard({ company }: { company: Company }) {
     >
       <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white text-xl font-black text-[#B54A2C] shadow-sm overflow-hidden">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-white text-xl font-black text-[#0552CC] shadow-sm overflow-hidden">
             {company.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={company.logo_url} alt={company.name} className="h-full w-full object-cover" />
@@ -59,11 +59,11 @@ function CompanyCard({ company }: { company: Company }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
-              <h2 className="truncate text-sm font-semibold text-slate-900 group-hover:text-[#B54A2C]">
+              <h2 className="truncate text-sm font-semibold text-slate-900 group-hover:text-[#0552CC]">
                 {company.name}
               </h2>
               {company.is_verified && (
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#B54A2C]" aria-label="Verified" />
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-[#0552CC]" aria-label="Verified" />
               )}
             </div>
             <p className="truncate text-xs text-slate-500">
@@ -115,7 +115,7 @@ function CompanyCard({ company }: { company: Company }) {
               {company.hiring_status.replace(/_/g, " ")}
             </Badge>
           )}
-          <span className="flex items-center gap-1 text-xs font-semibold text-[#B54A2C] opacity-0 transition-opacity group-hover:opacity-100 ml-auto">
+          <span className="flex items-center gap-1 text-xs font-semibold text-[#0552CC] opacity-0 transition-opacity group-hover:opacity-100 ml-auto">
             View organization <ArrowRight className="h-3 w-3" />
           </span>
         </div>
@@ -259,7 +259,7 @@ export default function CompaniesDiscoveryPage() {
                   type="checkbox"
                   checked={verifiedOnly}
                   onChange={(e) => setVerifiedOnly(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 accent-[#B54A2C]"
+                  className="h-4 w-4 rounded border-slate-300 accent-[#0552CC]"
                 />
                 <span className="text-xs font-medium text-slate-700">Verified organizations only</span>
               </label>
