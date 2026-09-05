@@ -160,6 +160,15 @@ class Settings(BaseSettings):
     FEATURE_AI_MATCHING: bool = True
     FEATURE_JOB_AGGREGATOR: bool = True
     FEATURE_KEYCLOAK_AUTH: bool = True
+    # These two gate genuinely-incomplete backend logic (see
+    # app/workers/tasks/jobs.py::refresh_trending_skills and
+    # app/workers/tasks/matching.py::compute_stale_matches, both still
+    # literal stubs). Unlike the always-on flags above, these default to
+    # False -- there is nothing real behind them yet, so an env var wipe or a
+    # forgotten default must not silently expose them as live features.
+    # See app.core.feature_flags for the read-side helper.
+    FEATURE_TRENDING_SKILLS: bool = False
+    FEATURE_STALE_MATCH_RECOMPUTE: bool = False
     SEED_DEMO_DATA: bool = False
 
     # ── Social login (direct OAuth2, no identity-broker service) ────────────────
