@@ -205,8 +205,11 @@ services:
   # ─── Web (Next.js) ────────────────────────────────────────────────────────────
   web:
     build:
-      context: ../../apps/web
-      dockerfile: Dockerfile
+      # Root context (not apps/web) -- this is an npm workspaces monorepo,
+      # the lockfile lives at the root, and the Dockerfile needs every
+      # workspace's package.json present to resolve `npm ci` correctly.
+      context: ../..
+      dockerfile: apps/web/Dockerfile
       # NEXT_PUBLIC_* vars are baked in at build time -- must be build args,
       # not just the `environment:` block below (which has no effect on them).
       args:
