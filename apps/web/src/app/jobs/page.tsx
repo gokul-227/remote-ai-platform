@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useJobs } from "@/hooks/useJobs";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/lib/auth";
+import { trackEvent } from "@/lib/analytics";
 import type { JobPost } from "@/types";
 
 const SORT_OPTIONS = [
@@ -165,6 +166,14 @@ function JobsContent() {
           onSubmit={(e) => {
             e.preventDefault();
             setPage(0);
+            // Minimal, non-identifying context only — query length, not the
+            // query text itself, to avoid capturing free-text search input.
+            trackEvent("search_performed", {
+              has_query: !!searchQuery,
+              query_length: searchQuery.length,
+              has_location: !!locationQuery,
+              active_filter_count: activeFilterCount,
+            });
           }}
           className="flex flex-col md:flex-row gap-3"
         >

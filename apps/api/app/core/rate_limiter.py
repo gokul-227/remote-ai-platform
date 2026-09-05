@@ -85,6 +85,13 @@ def get_route_tier(path: str, method: str = "GET") -> tuple[int, int] | None:
     ):
         return (base_limit * 3, window)
 
+    # Unauthenticated-callable ingestion endpoint (visitor funnel events) —
+    # tighter than the general-purpose default so it can't be used to
+    # flood the DB, but looser than the auth tier since normal page usage
+    # can legitimately fire several events per session.
+    if path.startswith("/api/v1/analytics/events"):
+        return (base_limit * 5, window)
+
     return (base_limit * 10, window)
 
 

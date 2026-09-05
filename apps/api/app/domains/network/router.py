@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import AsyncSessionFactory, get_db
+from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.auth.repository import UserRepository
@@ -249,6 +250,9 @@ async def send_message(
     )
     await db.flush()
     await db.refresh(message)
+    await emit_analytics_event(
+        db, "message_sent", current_user.id, {"conversation_id": str(conversation_id)}
+    )
     await manager.broadcast(
         conversation_id,
         {

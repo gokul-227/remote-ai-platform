@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.quality_engine import QualityEngineAgent
 from app.core.config import settings
 from app.core.database import get_db
+from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
@@ -240,6 +241,9 @@ async def create_project(
     for member_id in data.member_ids:
         db.add(ProjectMember(project_id=project.id, user_id=member_id))
     await record_activity(db, project.id, current_user.id, "PROJECT_CREATED")
+    await emit_analytics_event(
+        db, "project_created", current_user.id, {"project_id": str(project.id)}
+    )
     return project
 
 
