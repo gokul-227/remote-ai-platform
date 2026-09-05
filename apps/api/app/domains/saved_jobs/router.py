@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,13 +15,18 @@ router = APIRouter(prefix="/saved-jobs", tags=["Saved Jobs"])
 
 @router.get("")
 async def list_saved_jobs(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ):
     result = await db.execute(
         select(JobPost)
         .join(SavedJob, SavedJob.job_id == JobPost.id)
         .where(SavedJob.user_id == current_user.id)
         .order_by(SavedJob.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     return result.scalars().all()
 
