@@ -22,5 +22,22 @@
   // override, once that's done and ISR caching is actually needed.
   "images": {
     "binding": "IMAGES"
+  },
+  // `wrangler deploy --env dev` deploys a second, independent Worker for the
+  // dev branch's environment -- separate name means separate workers.dev
+  // hostname, separate binding, no risk of a dev deploy overwriting prod.
+  "env": {
+    "dev": {
+      "name": "remote-ai-platform-dev",
+      "services": [
+        {
+          "binding": "WORKER_SELF_REFERENCE",
+          "service": "remote-ai-platform-dev"
+        }
+      ],
+      "images": {
+        "binding": "IMAGES"
+      }
+    }
   }
 }
