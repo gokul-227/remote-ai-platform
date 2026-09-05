@@ -1,8 +1,10 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.models import User, UserRole
+from conftest import engine
 
 
 @pytest.mark.asyncio
@@ -95,3 +97,68 @@ async def test_digital_sign_contract(client: AsyncClient, test_user: User, auth_
     assert worker_sign_res.status_code == 200
     assert worker_sign_res.json()["worker_signed_at"] is not None
     assert worker_sign_res.json()["status"] == "ACTIVE"
+
+
+@pytest.mark.asyncio
+async def test_list_my_contracts_query_count_is_not_n_plus_one(
+    client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession
+):
+    """Regression test for the N+1 previously in GET /contracts/me.
+
+    Each _enrich_contract() call used to issue a refresh + 2 User gets + a
+    milestone SELECT per contract, so listing N contracts cost ~4N queries.
+    The fixed handler batch-fetches users and milestones, so the query count
+    should stay flat as the number of contracts grows.
+    """
+    test_user.role = UserRole.COMPANY
+    await db.commit()
+
+    contract_count = 6
+    for i in range(contract_count):
+        worker_res = await client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": f"worker_nplus1_{i}@example.com",
+                "password": "Password123!",
+                "full_name": f"Worker {i}",
+                "role": "ENGINEER",
+            },
+        )
+        worker_id = worker_res.json()["user"]["id"]
+        create_res = await client.post(
+            "/api/v1/contracts",
+            json={
+                "worker_id": worker_id,
+                "title": f"Contract {i}",
+                "scope_description": "Scope",
+                "rate_amount": 1000.0,
+                "milestones": [
+                    {"title": "M1", "amount": 500.0},
+                    {"title": "M2", "amount": 500.0},
+                ],
+            },
+            headers=auth_headers,
+        )
+        assert create_res.status_code == 201
+
+    queries: list[str] = []
+
+    def _count_query(conn, cursor, statement, parameters, context, executemany):
+        queries.append(statement)
+
+    event.listen(engine.sync_engine, "before_cursor_execute", _count_query)
+    try:
+        res = await client.get("/api/v1/contracts/me", headers=auth_headers)
+    finally:
+        event.remove(engine.sync_engine, "before_cursor_execute", _count_query)
+
+    assert res.status_code == 200
+    assert len(res.json()) == contract_count
+    # Fixed handler: 1 query for contracts + 1 for users + 1 for milestones
+    # (plus a small, fixed overhead for auth/session lookups), regardless of
+    # contract_count. A regression back to per-row queries would scale with
+    # contract_count (~4 queries per contract).
+    assert len(queries) <= 8, (
+        f"expected a small, constant number of queries, got {len(queries)} for "
+        f"{contract_count} contracts -- looks like an N+1 regression"
+    )

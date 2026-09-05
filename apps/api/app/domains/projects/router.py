@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -182,7 +182,10 @@ async def record_activity(
 
 @router.get("")
 async def list_projects(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ):
     if current_user.role == UserRole.COMPANY:
         company = await db.scalar(
@@ -190,20 +193,21 @@ async def list_projects(
         )
         if not company:
             return []
-        result = await db.execute(
+        query = (
             select(Project)
             .where(Project.company_id == company.id)
             .order_by(Project.created_at.desc())
         )
     elif current_user.role == UserRole.ADMIN:
-        result = await db.execute(select(Project).order_by(Project.created_at.desc()))
+        query = select(Project).order_by(Project.created_at.desc())
     else:
-        result = await db.execute(
+        query = (
             select(Project)
             .join(ProjectMember, ProjectMember.project_id == Project.id)
             .where(ProjectMember.user_id == current_user.id)
             .order_by(Project.created_at.desc())
         )
+    result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
 
 
@@ -294,20 +298,32 @@ async def list_my_assigned_tasks(
         .where(ProjectTask.assigned_user_id == current_user.id)
         .order_by(ProjectTask.created_at.desc())
     )
-    items = []
-    for task, project in result.all():
-        # Get latest submission if any
-        submission = await db.scalar(
+    rows = result.all()
+
+    # Batch-fetch the latest submission per task in one query instead of
+    # one query per task (previously N+1 across the whole list).
+    task_ids = [task.id for task, _ in rows]
+    latest_by_task: dict[uuid.UUID, WorkSubmission] = {}
+    if task_ids:
+        submissions_res = await db.execute(
             select(WorkSubmission)
-            .where(WorkSubmission.task_id == task.id)
-            .order_by(WorkSubmission.version.desc())
+            .where(WorkSubmission.task_id.in_(task_ids))
+            .order_by(WorkSubmission.task_id, WorkSubmission.version.desc())
         )
+        for submission in submissions_res.scalars().all():
+            # First row seen per task_id is the highest version, since rows
+            # are ordered by (task_id, version desc).
+            if submission.task_id not in latest_by_task:
+                latest_by_task[submission.task_id] = submission
+
+    items = []
+    for task, project in rows:
         items.append(
             {
                 "task": task,
                 "project_id": str(project.id),
                 "project_title": project.title,
-                "latest_submission": submission,
+                "latest_submission": latest_by_task.get(task.id),
             }
         )
     return items
@@ -1534,6 +1550,8 @@ async def list_project_activity(
     project_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ):
     await require_project_access(project_id, current_user, db)
     return (
@@ -1542,6 +1560,8 @@ async def list_project_activity(
                 select(ProjectActivity)
                 .where(ProjectActivity.project_id == project_id)
                 .order_by(ProjectActivity.created_at.desc())
+                .offset(skip)
+                .limit(limit)
             )
         )
         .scalars()

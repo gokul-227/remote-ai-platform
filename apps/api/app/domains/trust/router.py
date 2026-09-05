@@ -7,7 +7,7 @@ and managing verification badges.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -62,12 +62,16 @@ async def get_user_trust_score(
 async def get_user_reviews(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ) -> list[ProjectReviewResponse]:
     """Get project reviews received by a user."""
     result = await db.execute(
         select(ProjectReview)
         .where(ProjectReview.reviewee_id == user_id)
         .order_by(ProjectReview.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     reviews = result.scalars().all()
 
@@ -173,11 +177,15 @@ async def submit_review(
 async def get_verifications(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ) -> list[VerificationResponse]:
     result = await db.execute(
         select(UserVerification)
         .where(UserVerification.user_id == user_id)
         .order_by(UserVerification.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     verifications = result.scalars().all()
     return [VerificationResponse.model_validate(v) for v in verifications]

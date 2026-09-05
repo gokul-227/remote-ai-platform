@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -49,13 +49,18 @@ ALLOWED_TRANSITIONS = {
 
 @router.get("/me")
 async def list_applications(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ):
     result = await db.execute(
         select(JobApplication, JobPost)
         .join(JobPost, JobPost.id == JobApplication.job_id)
         .where(JobApplication.user_id == current_user.id)
         .order_by(JobApplication.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     return [{"application": application, "job": job} for application, job in result.all()]
 
@@ -104,6 +109,8 @@ async def withdraw_application(
 async def list_company_applications(
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ):
     """List applications for jobs owned by the current company."""
     company = await db.scalar(
@@ -120,6 +127,8 @@ async def list_company_applications(
         query.join(User, User.id == JobApplication.user_id)
         .outerjoin(EngineerProfile, EngineerProfile.user_id == User.id)
         .order_by(JobApplication.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     return [
         {
