@@ -68,6 +68,10 @@ jobs:
         working-directory: apps/web
         run: npx tsc --noEmit
 
+      - name: Unit/component tests
+        working-directory: apps/web
+        run: npm test
+
       - name: Build
         working-directory: apps/web
         env:
