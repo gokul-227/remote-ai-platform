@@ -8,7 +8,7 @@ milestone management, and contract lifecycle status updates.
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,17 +41,12 @@ def _user_summary(user: User) -> UserPartySummary:
     )
 
 
-async def _enrich_contract(contract: Contract, db: AsyncSession) -> ContractResponse:
-    await db.refresh(contract)
-    client = await db.get(User, contract.client_id)
-    worker = await db.get(User, contract.worker_id)
-    milestones_res = await db.execute(
-        select(ContractMilestone)
-        .where(ContractMilestone.contract_id == contract.id)
-        .order_by(ContractMilestone.created_at.asc())
-    )
-    milestones = milestones_res.scalars().all()
-
+def _build_contract_response(
+    contract: Contract,
+    client: User | None,
+    worker: User | None,
+    milestones: list[ContractMilestone],
+) -> ContractResponse:
     return ContractResponse(
         id=contract.id,
         project_id=contract.project_id,
@@ -74,6 +69,24 @@ async def _enrich_contract(contract: Contract, db: AsyncSession) -> ContractResp
         updated_at=contract.updated_at,
         milestones=[ContractMilestoneResponse.model_validate(m) for m in milestones],
     )
+
+
+async def _enrich_contract(contract: Contract, db: AsyncSession) -> ContractResponse:
+    # Refresh to pick up server-side defaults (created_at/updated_at) right
+    # after a flush(); callers that already loaded the contract via SELECT
+    # (e.g. list endpoints) should build the response directly instead of
+    # going through this per-row helper.
+    await db.refresh(contract)
+    client = await db.get(User, contract.client_id)
+    worker = await db.get(User, contract.worker_id)
+    milestones_res = await db.execute(
+        select(ContractMilestone)
+        .where(ContractMilestone.contract_id == contract.id)
+        .order_by(ContractMilestone.created_at.asc())
+    )
+    milestones = list(milestones_res.scalars().all())
+
+    return _build_contract_response(contract, client, worker, milestones)
 
 
 @router.post(
@@ -149,18 +162,47 @@ async def create_contract(
 async def list_my_contracts(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ) -> list[ContractResponse]:
     """List contracts where current user is Client or Worker."""
     result = await db.execute(
         select(Contract)
         .where(or_(Contract.client_id == current_user.id, Contract.worker_id == current_user.id))
         .order_by(Contract.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
-    contracts = result.scalars().all()
-    enriched = []
-    for c in contracts:
-        enriched.append(await _enrich_contract(c, db))
-    return enriched
+    contracts = list(result.scalars().all())
+    if not contracts:
+        return []
+
+    # Batch-fetch related users and milestones instead of one query per
+    # contract (previously N+1: a refresh + 2 user gets + a milestone
+    # select for every row in the list).
+    user_ids = {c.client_id for c in contracts} | {c.worker_id for c in contracts}
+    users_res = await db.execute(select(User).where(User.id.in_(user_ids)))
+    users_by_id = {u.id: u for u in users_res.scalars().all()}
+
+    contract_ids = [c.id for c in contracts]
+    milestones_res = await db.execute(
+        select(ContractMilestone)
+        .where(ContractMilestone.contract_id.in_(contract_ids))
+        .order_by(ContractMilestone.created_at.asc())
+    )
+    milestones_by_contract: dict[uuid.UUID, list[ContractMilestone]] = {}
+    for m in milestones_res.scalars().all():
+        milestones_by_contract.setdefault(m.contract_id, []).append(m)
+
+    return [
+        _build_contract_response(
+            c,
+            users_by_id.get(c.client_id),
+            users_by_id.get(c.worker_id),
+            milestones_by_contract.get(c.id, []),
+        )
+        for c in contracts
+    ]
 
 
 @router.get("/{contract_id}", response_model=ContractResponse, summary="Get contract details")

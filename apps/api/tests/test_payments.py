@@ -1,10 +1,12 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.projects.models import Project
+from conftest import engine
 
 
 @pytest.mark.asyncio
@@ -70,6 +72,76 @@ async def test_wallet_overview_and_escrow_workflow(client: AsyncClient, test_use
     txs_res = await client.get("/api/v1/payments/transactions", headers=auth_headers)
     assert txs_res.status_code == 200
     assert len(txs_res.json()) >= 1
+
+
+@pytest.mark.asyncio
+async def test_list_transactions_query_count_is_not_n_plus_one(
+    client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession
+):
+    """Regression test for the N+1 previously in GET /payments/transactions.
+
+    Each _enrich_transaction() call used to issue 2 User gets per
+    transaction, so listing N transactions cost ~2N queries. The fixed
+    handler batch-fetches payer/payee users, so the query count should stay
+    flat as the number of transactions grows.
+    """
+    test_user.role = UserRole.COMPANY
+    await db.commit()
+
+    company = CompanyProfile(user_id=test_user.id, name="N+1 Test Corp")
+    db.add(company)
+    await db.flush()
+
+    project = Project(
+        company_id=company.id, title="N+1 Project", description="Description", status="ACTIVE"
+    )
+    db.add(project)
+    await db.flush()
+
+    tx_count = 6
+    for i in range(tx_count):
+        worker_res = await client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": f"payee_nplus1_{i}@example.com",
+                "password": "Password123!",
+                "full_name": f"Payee {i}",
+                "role": "ENGINEER",
+            },
+        )
+        worker_id = worker_res.json()["user"]["id"]
+        escrow_res = await client.post(
+            "/api/v1/payments/escrow",
+            json={
+                "project_id": str(project.id),
+                "payee_id": worker_id,
+                "amount": 100.0,
+                "currency": "USD",
+            },
+            headers=auth_headers,
+        )
+        assert escrow_res.status_code == 201
+
+    queries: list[str] = []
+
+    def _count_query(conn, cursor, statement, parameters, context, executemany):
+        queries.append(statement)
+
+    event.listen(engine.sync_engine, "before_cursor_execute", _count_query)
+    try:
+        res = await client.get("/api/v1/payments/transactions", headers=auth_headers)
+    finally:
+        event.remove(engine.sync_engine, "before_cursor_execute", _count_query)
+
+    assert res.status_code == 200
+    assert len(res.json()) == tx_count
+    # Fixed handler: 1 query for transactions + 1 for users (plus a small,
+    # fixed overhead for auth/session lookups), regardless of tx_count. A
+    # regression back to per-row gets would scale with tx_count instead.
+    assert len(queries) <= 6, (
+        f"expected a small, constant number of queries, got {len(queries)} for "
+        f"{tx_count} transactions -- looks like an N+1 regression"
+    )
 
 
 @pytest.mark.asyncio

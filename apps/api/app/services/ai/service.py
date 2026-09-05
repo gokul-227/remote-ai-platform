@@ -3,7 +3,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agents.llm_client import LLMClient
+from app.agents.llm_client import AIProviderError, LLMClient
 from app.services.ai.models import AIUsageLog
 from app.services.ai.prompts import get_prompt
 from app.services.ai.schemas import AIResponse
@@ -23,8 +23,23 @@ class AIService:
         prompt_key: str | None = None,
         prompt_version: str | None = None,
     ) -> AIResponse:
+        """Run an AI completion and normalize it into the provider-neutral `AIResponse` shape.
+
+        Raises `AIProviderError` when every configured provider/fallback failed -- callers must
+        not catch this and substitute a look-like-real placeholder `AIResponse`; the honest
+        behavior is to propagate it (or catch it explicitly and surface a clear "AI unavailable,
+        please retry" error/fallback, as `QualityEngineAgent` does).
+        """
         started = time.perf_counter()
-        raw: dict[str, Any] = await self.client.complete_structured_json(prompt, system_prompt)
+        try:
+            raw: dict[str, Any] = await self.client.complete_structured_json(prompt, system_prompt)
+        except AIProviderError as exc:
+            # Don't rely solely on LLMClient's internal last_error bookkeeping to mark this
+            # usage row FAILED -- record the failure directly from the exception we actually
+            # caught, so a FAILED row is never silently mislabeled SUCCESS.
+            self.client.last_error = self.client.last_error or str(exc)
+            await self._record_usage(started, prompt_key=prompt_key, prompt_version=prompt_version)
+            raise
         await self._record_usage(started, prompt_key=prompt_key, prompt_version=prompt_version)
         reason = raw.get("reason", raw.get("summary", ""))
         if isinstance(reason, str):

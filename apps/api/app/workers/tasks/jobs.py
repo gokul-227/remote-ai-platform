@@ -44,6 +44,17 @@ def sync_source(source: str):
 
 @shared_task(name="app.workers.tasks.jobs.refresh_trending_skills", queue="jobs")
 def refresh_trending_skills():
-    """Recompute trending skills from recent job data."""
+    """Recompute trending skills from recent job data.
+
+    STUB: this does not compute anything real yet -- it only logs and
+    returns a static "ok" status. No table/cache is populated, so nothing
+    should read this task's output as live data. Once real trending-skills
+    logic is implemented here, gate it (and any endpoint/UI that surfaces
+    it) behind `is_feature_enabled("trending_skills")` from
+    app.core.feature_flags (backed by `FEATURE_TRENDING_SKILLS`, default
+    False) so it can be shipped dark and enabled deliberately, instead of a
+    half-working feature going live the moment this function stops being a
+    no-op.
+    """
     logger.info("Refreshing trending skills...")
     return {"status": "ok"}

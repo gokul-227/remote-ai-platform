@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { use } from "react";
+import { use, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import Link from "next/link";
 import {
   MapPin, DollarSign, Briefcase, ExternalLink, ArrowLeft,
@@ -61,6 +62,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     enabled: isEngineer,
     retry: false,
   });
+
+  useEffect(() => {
+    if (matchQuery.data) {
+      trackEvent("match_viewed", { job_id: id });
+    }
+    // Only re-fire if the underlying match result itself changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchQuery.data]);
 
   const job = jobQuery.data || null;
   const loading = jobQuery.isLoading;

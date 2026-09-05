@@ -10,18 +10,20 @@ from datetime import UTC, datetime
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from redis.asyncio import Redis
-from sqlalchemy import Integer, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.domains.admin.models import ActivityLog, AuditEvent
+from app.core.feature_flags import get_all_flags
+from app.domains.admin.models import AuditEvent
 from app.domains.admin.repository import AdminRepository
 from app.domains.admin.schemas import (
     ActivityLogResponse,
     AIUsageStatsResponse,
     ApiSyncLogResponse,
     AuditEventResponse,
+    FeatureFlagsResponse,
     JobStatusUpdate,
     PlatformStatsResponse,
     ServiceHealthStatus,
@@ -35,6 +37,7 @@ from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import UserResponse
 from app.domains.jobs.models import JobPost
+from app.services.ai.models import AIUsageLog
 
 router = APIRouter(prefix="/admin", tags=["Admin Operations"])
 
@@ -283,28 +286,67 @@ async def reclean_job_text(
     return {"scanned": len(jobs), "changed": changed}
 
 
+@router.get("/feature-flags", response_model=FeatureFlagsResponse)
+async def get_feature_flags(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> FeatureFlagsResponse:
+    """Current on/off state of every registered feature flag (Admin only).
+
+    Read-only: flag values come from process env vars / `.env` only (see
+    app.core.feature_flags) -- there is no runtime toggle endpoint yet. Lets
+    an admin confirm what's actually enabled without redeploying or reading
+    server env vars directly.
+    """
+    return FeatureFlagsResponse(flags=get_all_flags())
+
+
 @router.get("/ai-usage", response_model=AIUsageStatsResponse)
 async def get_ai_usage_stats(
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> AIUsageStatsResponse:
-    """Get aggregated AI LLM usage metrics, token counts, model distribution, and cost estimates (Admin only)."""
+    """Get aggregated AI LLM usage metrics, token counts, model distribution, and cost estimates (Admin only).
+
+    Reads `app.services.ai.models.AIUsageLog` -- the row `AIService._record_usage` writes for
+    every completion attempt made through `LLMClient` -- rather than `ActivityLog`. The
+    ActivityLog-based version of this endpoint queried `details["prompt_tokens"]` on
+    "AI_%"-prefixed activity rows, but nothing ever wrote that field onto those rows, so it
+    always reported ~0 tokens/cost, and its `model_breakdown`/`feature_breakdown` were
+    hardcoded literals (`{"qwen2.5": total_calls}`, `{"resume_parser": ..., "project_planner": 2}`)
+    unrelated to any actual call -- a dashboard number that looked real but wasn't.
+    """
     result = await db.execute(
         select(
-            func.count(ActivityLog.id),
-            func.coalesce(
-                func.sum(func.cast(ActivityLog.details["prompt_tokens"].as_string(), Integer)), 0
-            ),
-            func.coalesce(
-                func.sum(func.cast(ActivityLog.details["completion_tokens"].as_string(), Integer)),
-                0,
-            ),
-        ).where(ActivityLog.action.like("AI_%"))
+            func.count(AIUsageLog.id),
+            func.coalesce(func.sum(AIUsageLog.prompt_tokens), 0),
+            func.coalesce(func.sum(AIUsageLog.completion_tokens), 0),
+        )
     )
     total_calls, prompt_tokens, completion_tokens = result.one()
     total_tokens = prompt_tokens + completion_tokens
-    # Estimate cost @ $0.002 per 1k tokens baseline
+    # Blended flat-rate estimate (@ $0.002/1k tokens) -- AIUsageLog doesn't persist the
+    # per-call LiteLLM cost (that's logged, not stored -- see LLMClient.complete()'s
+    # "AI completion succeeded" log line), so this is a conservative aggregate, not an
+    # exact bill.
     estimated_cost = round((total_tokens / 1000.0) * 0.002, 4)
+
+    model_rows = (
+        await db.execute(
+            select(AIUsageLog.provider_model, func.count(AIUsageLog.id)).group_by(
+                AIUsageLog.provider_model
+            )
+        )
+    ).all()
+    model_breakdown = {(model or "unknown"): count for model, count in model_rows}
+
+    feature_rows = (
+        await db.execute(
+            select(AIUsageLog.prompt_key, func.count(AIUsageLog.id)).group_by(
+                AIUsageLog.prompt_key
+            )
+        )
+    ).all()
+    feature_breakdown = {(key or "uncategorized"): count for key, count in feature_rows}
 
     return AIUsageStatsResponse(
         total_calls=total_calls or 0,
@@ -312,8 +354,8 @@ async def get_ai_usage_stats(
         total_completion_tokens=completion_tokens or 0,
         total_tokens=total_tokens or 0,
         estimated_cost_usd=estimated_cost,
-        model_breakdown={"qwen2.5": total_calls or 0},
-        feature_breakdown={"resume_parser": max(0, total_calls - 2), "project_planner": 2},
+        model_breakdown=model_breakdown,
+        feature_breakdown=feature_breakdown,
     )
 
 

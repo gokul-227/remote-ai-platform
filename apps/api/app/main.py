@@ -5,11 +5,15 @@ Remote AI Platform — FastAPI Application Factory
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+from sentry_sdk.types import Event, Hint
 
 from app.core.config import settings
 from app.core.database import engine
@@ -19,6 +23,7 @@ from app.core.logging import configure_logging
 from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware
 from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.router import router as admin_router
+from app.domains.analytics.router import router as analytics_router
 from app.domains.applications.router import router as applications_router
 
 # Domain routers — imported as they are implemented
@@ -40,6 +45,73 @@ from app.domains.social.router import router as social_router
 from app.domains.trust.router import router as trust_router
 
 logger = structlog.get_logger(__name__)
+
+
+def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
+    """Best-effort scrub of common sensitive fields before an event is sent.
+
+    Sentry's SDK does NOT scrub payload bodies by default -- it only avoids
+    attaching PII (user IP, cookies, request body) unless send_default_pii is
+    turned on, which we never do (see init_sentry below). This hook is a
+    defense-in-depth pass over whatever headers/extra data integrations do
+    attach, in case request bodies are ever added via with_scope/set_context.
+    """
+    sensitive_keys = {
+        "authorization",
+        "cookie",
+        "set-cookie",
+        "password",
+        "token",
+        "access_token",
+        "refresh_token",
+        "secret",
+        "api_key",
+        "stripe_secret_key",
+        "client_secret",
+    }
+
+    def _scrub(value: object) -> object:
+        if isinstance(value, dict):
+            return {
+                k: ("[Filtered]" if k.lower() in sensitive_keys else _scrub(v))
+                for k, v in value.items()
+            }
+        if isinstance(value, list):
+            return [_scrub(v) for v in value]
+        return value
+
+    request = event.get("request")
+    if isinstance(request, dict):
+        for field in ("headers", "cookies", "data"):
+            if field in request:
+                request[field] = _scrub(request[field])
+
+    return event
+
+
+def init_sentry() -> None:
+    """Initialize Sentry error monitoring, or do nothing at all.
+
+    No-op by design when SENTRY_DSN is unset/empty: no network calls, no log
+    lines, no warnings. This lets the SDK ship in every environment (including
+    ones without a Sentry project yet) with zero behavioral change until a
+    real DSN is configured.
+    """
+    if not settings.SENTRY_DSN:
+        return
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.APP_ENV,
+        release=settings.GIT_SHA,
+        traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+        # Off by default in recent SDK versions; set explicitly so this stays
+        # true even if the SDK's own default ever changes. PII (request IP,
+        # cookies, request/response bodies) must never be sent to Sentry.
+        send_default_pii=False,
+        before_send=_sentry_before_send,
+        integrations=[StarletteIntegration(), FastApiIntegration()],
+    )
 
 
 @asynccontextmanager
@@ -97,6 +169,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 def create_app() -> FastAPI:
+    init_sentry()
+
     app = FastAPI(
         title="Remote AI Platform",
         description=(
@@ -161,6 +235,7 @@ def create_app() -> FastAPI:
     app.include_router(payments_router, prefix=prefix)
     app.include_router(groups_router, prefix=prefix)
     app.include_router(quality_router, prefix=prefix)
+    app.include_router(analytics_router, prefix=prefix)
 
     return app
 

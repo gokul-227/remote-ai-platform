@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // API_URL/SUPABASE_URL vary per environment (prod vs dev) -- baked in at
 // build time via NEXT_PUBLIC_* the same way the rest of the app consumes
@@ -55,4 +56,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Only wrap with Sentry's build plugin when a DSN is actually configured.
+// Left unwrapped otherwise, so a DSN-less build (every build until the
+// user's Sentry projects exist, and every build in this repo's CI today)
+// gets zero Sentry-related build behavior -- no source-map processing, no
+// attempt to talk to Sentry's API, no extra webpack plugin at all.
+export default process.env.NEXT_PUBLIC_SENTRY_DSN
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      // No SENTRY_AUTH_TOKEN exists yet either -- disable source map upload
+      // rather than let the plugin fail/warn trying to authenticate.
+      sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+      silent: !process.env.CI,
+      widenClientFileUpload: true,
+      disableLogger: true,
+    })
+  : nextConfig;

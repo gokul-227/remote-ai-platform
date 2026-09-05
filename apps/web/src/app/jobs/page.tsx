@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useJobs } from "@/hooks/useJobs";
 import { useSavedJobs } from "@/hooks/useSavedJobs";
 import { useAuth } from "@/lib/auth";
+import { trackEvent } from "@/lib/analytics";
 import type { JobPost } from "@/types";
 
 const SORT_OPTIONS = [
@@ -165,6 +166,14 @@ function JobsContent() {
           onSubmit={(e) => {
             e.preventDefault();
             setPage(0);
+            // Minimal, non-identifying context only — query length, not the
+            // query text itself, to avoid capturing free-text search input.
+            trackEvent("search_performed", {
+              has_query: !!searchQuery,
+              query_length: searchQuery.length,
+              has_location: !!locationQuery,
+              active_filter_count: activeFilterCount,
+            });
           }}
           className="flex flex-col md:flex-row gap-3"
         >
@@ -207,7 +216,7 @@ function JobsContent() {
 
         {/* Quick Skill Tags */}
         <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-          <span className="text-[11px] font-semibold text-slate-400 mr-1">Popular:</span>
+          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 mr-1">Popular:</span>
           {POPULAR_SKILLS.map((skill) => {
             const isSelected = selectedSkills.includes(skill);
             return (
@@ -370,7 +379,7 @@ function JobsContent() {
           </div>
 
           {/* Results Summary Header */}
-          <div className="flex items-center justify-between gap-3 text-xs text-slate-500 px-1">
+          <div className="flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400 px-1">
             <span>
               {loading ? (
                 <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-amber-400 animate-pulse" />Searching verified opportunities...</span>

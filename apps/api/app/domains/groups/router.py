@@ -274,6 +274,8 @@ async def list_members(
     group_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
 ):
     """List all active members of a group."""
     group = await _get_group_or_404(group_id, db)
@@ -290,11 +292,13 @@ async def list_members(
             GroupMembership.status == "active",
         )
         .order_by(GroupMembership.joined_at)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
     )
+    # Rows just came straight off a fresh SELECT, so there is nothing
+    # stale to refresh -- the previous per-row db.refresh() was a pure N+1
+    # (one extra SELECT per member) with no effect on the returned data.
     memberships = result.scalars().all()
-    # Refresh each to ensure server-default columns are loaded
-    for m in memberships:
-        await db.refresh(m)
     return [MembershipResponse.model_validate(m) for m in memberships]
 
 

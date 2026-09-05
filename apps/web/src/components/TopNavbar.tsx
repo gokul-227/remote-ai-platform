@@ -149,7 +149,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                 type="button"
                 onClick={onSearchClick}
                 title="Open command palette"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-0.5 hover:border-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-6 min-w-6 flex items-center justify-center text-[10px] text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-0.5 hover:border-slate-400 hover:text-slate-800 dark:hover:text-slate-300"
               >
                 ⌘K
               </button>

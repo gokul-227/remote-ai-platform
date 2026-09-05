@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import AsyncSessionFactory, get_db
+from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.auth.repository import UserRepository
@@ -44,7 +45,10 @@ async def notify(db: AsyncSession, user_id: uuid.UUID, title: str, body: str, ki
 
 @router.get("/connections")
 async def list_connections(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ):
     result = await db.execute(
         select(Connection)
@@ -55,6 +59,8 @@ async def list_connections(
             )
         )
         .order_by(Connection.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     return result.scalars().all()
 
@@ -141,6 +147,8 @@ async def remove_connection(
 async def list_conversations(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ):
     result = await db.execute(
         select(Conversation)
@@ -151,6 +159,8 @@ async def list_conversations(
             )
         )
         .order_by(Conversation.updated_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     return result.scalars().all()
 
@@ -195,14 +205,20 @@ async def message_history(
     conversation_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ):
     await get_conversation(conversation_id, current_user.id, db)
+    # Fetch the most recent `limit` messages (bounded, instead of the whole
+    # conversation history), then restore ascending order for display.
     result = await db.execute(
         select(Message)
         .where(Message.conversation_id == conversation_id)
-        .order_by(Message.created_at.asc())
+        .order_by(Message.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
-    return result.scalars().all()
+    return list(reversed(result.scalars().all()))
 
 
 @router.post("/conversations/{conversation_id}/messages", status_code=status.HTTP_201_CREATED)
@@ -234,6 +250,9 @@ async def send_message(
     )
     await db.flush()
     await db.refresh(message)
+    await emit_analytics_event(
+        db, "message_sent", current_user.id, {"conversation_id": str(conversation_id)}
+    )
     await manager.broadcast(
         conversation_id,
         {
