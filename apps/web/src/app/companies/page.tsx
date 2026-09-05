@@ -194,7 +194,7 @@ export default function CompaniesDiscoveryPage() {
       {/* Header */}
       <div className="space-y-1">
         <h1 className="text-2xl font-bold text-slate-900">Discover Organizations</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Explore remote-first organizations and startups actively hiring remote professionals.
         </p>
       </div>
@@ -281,7 +281,7 @@ export default function CompaniesDiscoveryPage() {
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 {companies.length} organization{companies.length !== 1 ? "s" : ""} found
               </p>
               {verifiedOnly && (
@@ -298,7 +298,7 @@ export default function CompaniesDiscoveryPage() {
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-600 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading organizations…
         </div>
       )}

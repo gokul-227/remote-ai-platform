@@ -110,7 +110,7 @@ export default function LoginPage() {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-white/40">© 2026 Remote AI Platform. All rights reserved.</p>
+          <p className="text-xs text-white/70">© 2026 Remote AI Platform. All rights reserved.</p>
         </div>
 
         {/* Right: form */}
@@ -165,7 +165,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-[38px] text-slate-400 hover:text-slate-600"
+                className="absolute right-2 top-[34px] p-1 text-slate-400 hover:text-slate-600"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

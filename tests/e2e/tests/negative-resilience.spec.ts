@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { scanForA11yViolations } from "./a11y-helpers";
 
 test.describe("Negative Resilience & Error State Handling", () => {
   test("handles non-existent job ID gracefully with 404 or empty state without crashing", async ({ page }) => {
@@ -20,8 +21,14 @@ test.describe("Negative Resilience & Error State Handling", () => {
     await expect(page.locator("body")).not.toContainText(/uncaught exception/i);
   });
 
-  test("rejects invalid login credentials with user-friendly error message", async ({ page }) => {
+  test("rejects invalid login credentials with user-friendly error message", async ({ page }, testInfo) => {
     await page.goto("/auth/login");
+    const loginViolations = await scanForA11yViolations(page, testInfo, "login-page");
+    expect(
+      loginViolations,
+      loginViolations.map((v) => `${v.id} (${v.impact}): ${v.help} — ${v.nodes.length} node(s)`).join("\n")
+    ).toEqual([]);
+
     await page.getByPlaceholder(/you@company.com/i).fill("nonexistent-user@doesnotexist-e2e.com");
     await page.getByPlaceholder(/••••••••/i).fill("WrongPassword123!");
     await page.getByRole("button", { name: /sign in/i }).click();
