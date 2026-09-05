@@ -37,6 +37,7 @@ function useNavItems(): NavItem[] {
       { name: "My Job Postings", href: "/company/jobs", icon: Briefcase },
       { name: "Candidate Discovery", href: "/company/candidates", icon: Users },
       { name: "Wallet & Payments", href: "/payments", icon: Wallet },
+      { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
     ];
   }
 
