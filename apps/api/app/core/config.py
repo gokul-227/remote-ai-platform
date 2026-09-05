@@ -185,6 +185,13 @@ class Settings(BaseSettings):
     MICROSOFT_OAUTH_CLIENT_SECRET: str | None = None
     MICROSOFT_OAUTH_TENANT: str = "common"
 
+    # ── Error monitoring (Sentry) ────────────────────────────────────────────
+    # Empty string (default) means Sentry is never initialized -- a complete
+    # no-op with no network calls, warnings, or overhead. Only set SENTRY_DSN
+    # (Render env var / secret) once a real Sentry project exists.
+    SENTRY_DSN: str = ""
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.1
+
     # ── Pagination ────────────────────────────────────────────────────────────
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100
