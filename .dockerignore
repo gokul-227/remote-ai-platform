@@ -1,0 +1,10 @@
+.git
+node_modules
+**/node_modules
+.next
+**/.next
+apps/api/.venv
+apps/api/.venv_local
+apps/web/.open-next
+apps/web/.wrangler
+.claude/worktrees
