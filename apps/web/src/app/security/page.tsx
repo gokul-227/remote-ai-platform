@@ -4,7 +4,7 @@ export default function SecurityPage() {
       <h1 className="text-2xl font-bold text-[var(--text-main)] mb-6">Security</h1>
       <p className="text-[var(--text-main)] mb-4">
         If you believe you&apos;ve found a security vulnerability in Remote AI Platform, please report
-        it to <a href="mailto:security@remoteaiplatform.com" className="underline hover:text-[#0866FF]">security@remoteaiplatform.com</a>.
+        it to <a href="mailto:security@remoteaiplatform.com" className="underline hover:text-[#0552CC]">security@remoteaiplatform.com</a>.
         Please include enough detail to reproduce the issue, and avoid accessing or modifying
         other users&apos; data beyond what&apos;s needed to demonstrate the vulnerability.
       </p>

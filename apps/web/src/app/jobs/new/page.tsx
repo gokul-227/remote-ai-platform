@@ -124,7 +124,7 @@ function NewJobWizard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Briefcase className="h-6 w-6 text-[#0866FF]" /> Post Engineering Position
+            <Briefcase className="h-6 w-6 text-[#0552CC]" /> Post Engineering Position
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Structured job posting wizard with AI candidate matching and instant remote marketplace syndication.
@@ -157,9 +157,9 @@ function NewJobWizard() {
                   className={cn(
                     "h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold border shrink-0 transition-colors",
                     step > i
-                      ? "bg-[#0866FF] text-white border-[#0866FF]"
+                      ? "bg-[#0552CC] text-white border-[#0552CC]"
                       : step === i
-                      ? "border-[#0866FF] bg-blue-50 text-[#0866FF] dark:bg-blue-950/40"
+                      ? "border-[#0552CC] bg-blue-50 text-[#0552CC] dark:bg-blue-950/40"
                       : "border-slate-300 text-slate-400"
                   )}
                 >
@@ -178,7 +178,7 @@ function NewJobWizard() {
                 <div
                   className={cn(
                     "h-0.5 flex-1 mx-2 transition-colors",
-                    step > i ? "bg-[#0866FF]" : "bg-slate-200 dark:bg-slate-700"
+                    step > i ? "bg-[#0552CC]" : "bg-slate-200 dark:bg-slate-700"
                   )}
                 />
               )}
@@ -195,27 +195,27 @@ function NewJobWizard() {
             {step === 0 && (
               <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
                 <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="h-3 w-3 text-[#0866FF]" /> Quick Start Role Templates:
+                  <Sparkles className="h-3 w-3 text-[#0552CC]" /> Quick Start Role Templates:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
                     onClick={() => applyTemplate("frontend")}
-                    className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-1 rounded-lg hover:border-[#0866FF] font-medium transition-colors"
+                    className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-1 rounded-lg hover:border-[#0552CC] font-medium transition-colors"
                   >
                     ⚡ Full-Stack React
                   </button>
                   <button
                     type="button"
                     onClick={() => applyTemplate("backend")}
-                    className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-1 rounded-lg hover:border-[#0866FF] font-medium transition-colors"
+                    className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-1 rounded-lg hover:border-[#0552CC] font-medium transition-colors"
                   >
                     ⚡ Python / Go Backend
                   </button>
                   <button
                     type="button"
                     onClick={() => applyTemplate("devops")}
-                    className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-1 rounded-lg hover:border-[#0866FF] font-medium transition-colors"
+                    className="text-xs bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2.5 py-1 rounded-lg hover:border-[#0552CC] font-medium transition-colors"
                   >
                     ⚡ AWS Cloud / DevOps
                   </button>
@@ -307,7 +307,7 @@ function NewJobWizard() {
                           className={cn(
                             "text-xs px-2.5 py-1 rounded-md font-medium transition-all",
                             selected
-                              ? "bg-[#0866FF] text-white"
+                              ? "bg-[#0552CC] text-white"
                               : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
                           )}
                         >
@@ -421,9 +421,9 @@ function NewJobWizard() {
         {/* Live Marketplace Preview Pane */}
         {showPreview && (
           <div className="lg:col-span-5 space-y-4">
-            <div className="card-enterprise p-5 space-y-4 sticky top-6 border-[#0866FF]/30 shadow-md">
+            <div className="card-enterprise p-5 space-y-4 sticky top-6 border-[#0552CC]/30 shadow-md">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0866FF] flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0552CC] flex items-center gap-1.5">
                   <Eye className="h-3.5 w-3.5" /> Marketplace Live Card Preview
                 </span>
                 <span className="badge-ent badge-ent-brand text-[10px]">Live Render</span>
@@ -435,7 +435,7 @@ function NewJobWizard() {
                     <span className="badge-ent badge-ent-neutral uppercase font-mono text-[10px] mr-1.5">Direct</span>
                     <span className="badge-ent badge-ent-brand font-semibold">100% Remote</span>
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm mt-1.5">{form.title || "Senior Software Engineer"}</h4>
-                    <p className="text-xs text-[#0866FF] font-semibold mt-0.5 flex items-center gap-1">
+                    <p className="text-xs text-[#0552CC] font-semibold mt-0.5 flex items-center gap-1">
                       <Building2 className="h-3 w-3" /> Your Organization
                     </p>
                   </div>

@@ -93,7 +93,7 @@ export default function LoginPage() {
         <div className="hidden lg:flex flex-col justify-between bg-[#0B1E3D] text-white p-10">
           <div>
             <Link href="/" className="inline-flex items-center gap-2 font-black text-2xl tracking-tight text-white">
-              <div className="h-9 w-9 rounded-xl bg-[#0866FF] flex items-center justify-center text-white font-black text-xl shadow-xs">
+              <div className="h-9 w-9 rounded-xl bg-[#0552CC] flex items-center justify-center text-white font-black text-xl shadow-xs">
                 R
               </div>
               Remote <span className="text-[#4C9AFF]">AI Platform</span>
@@ -117,10 +117,10 @@ export default function LoginPage() {
         <div className="p-8 sm:p-10 space-y-6">
           <div className="lg:hidden text-center">
             <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
-              <div className="h-8 w-8 rounded-lg bg-[#0866FF] flex items-center justify-center text-white font-black text-lg">
+              <div className="h-8 w-8 rounded-lg bg-[#0552CC] flex items-center justify-center text-white font-black text-lg">
                 R
               </div>
-              Remote <span className="text-[#0866FF]">AI Platform</span>
+              Remote <span className="text-[#0552CC]">AI Platform</span>
             </Link>
           </div>
           <div>
@@ -177,7 +177,7 @@ export default function LoginPage() {
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="rounded border-slate-300" />
                 Remember me
               </label>
-              <Link href="/auth/forgot-password" className="text-[#0866FF] hover:underline font-medium">
+              <Link href="/auth/forgot-password" className="text-[#0552CC] hover:underline font-medium">
                 Forgot password?
               </Link>
             </div>

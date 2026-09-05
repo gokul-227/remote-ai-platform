@@ -168,7 +168,7 @@ function CompanyDashboardContent() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/jobs/new">
-              <Button size="sm" className="bg-[#0866FF] hover:bg-[#0552CC] border-transparent text-white" icon={<PlusCircle className="h-3.5 w-3.5" />}>
+              <Button size="sm" className="bg-[#0552CC] hover:bg-[#033D8F] border-transparent text-white" icon={<PlusCircle className="h-3.5 w-3.5" />}>
                 Post Position
               </Button>
             </Link>

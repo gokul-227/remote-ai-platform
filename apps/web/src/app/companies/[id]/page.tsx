@@ -93,7 +93,7 @@ export default function PublicCompanyProfilePage({
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-500">
-        <Link href="/companies" className="hover:text-[#0866FF] hover:underline">Organizations</Link>
+        <Link href="/companies" className="hover:text-[#0552CC] hover:underline">Organizations</Link>
         <span>/</span>
         <span className="text-slate-700">{company.name}</span>
       </nav>
@@ -106,7 +106,7 @@ export default function PublicCompanyProfilePage({
           <div className="-mt-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
             {/* Logo + name */}
             <div className="flex items-end gap-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-white text-3xl font-black text-[#0866FF] shadow-md overflow-hidden">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-white text-3xl font-black text-[#0552CC] shadow-md overflow-hidden">
                 {company.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={company.logo_url} alt={company.name} className="h-full w-full object-cover" />
@@ -160,7 +160,7 @@ export default function PublicCompanyProfilePage({
                 href={company.website}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 hover:text-[#0866FF] transition-colors"
+                className="flex items-center gap-1.5 hover:text-[#0552CC] transition-colors"
               >
                 <Globe2 className="h-4 w-4 shrink-0" />
                 {company.website.replace(/^https?:\/\//, "")}
@@ -216,7 +216,7 @@ export default function PublicCompanyProfilePage({
               </h2>
               <Link
                 href={`/jobs?company_id=${id}`}
-                className="text-xs font-semibold text-[#0866FF] hover:underline"
+                className="text-xs font-semibold text-[#0552CC] hover:underline"
               >
                 See all jobs →
               </Link>
@@ -229,10 +229,10 @@ export default function PublicCompanyProfilePage({
                   <Link
                     key={job.id}
                     href={`/jobs/${job.id}`}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 transition-colors hover:border-[#0866FF] hover:bg-slate-50 group"
+                    className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 transition-colors hover:border-[#0552CC] hover:bg-slate-50 group"
                   >
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 group-hover:text-[#0866FF]">
+                      <p className="text-sm font-semibold text-slate-900 group-hover:text-[#0552CC]">
                         {job.title}
                       </p>
                       <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
@@ -240,7 +240,7 @@ export default function PublicCompanyProfilePage({
                         {job.location && <span>{job.location}</span>}
                       </div>
                     </div>
-                    <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#0866FF]" />
+                    <ExternalLink className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#0552CC]" />
                   </Link>
                 ))}
               </div>
@@ -275,7 +275,7 @@ export default function PublicCompanyProfilePage({
           {company.is_verified && (
             <section className="card-enterprise p-5">
               <div className="flex items-start gap-3">
-                <ShieldCheck className="h-8 w-8 shrink-0 text-[#0866FF]" />
+                <ShieldCheck className="h-8 w-8 shrink-0 text-[#0552CC]" />
                 <div>
                   <p className="text-sm font-semibold text-slate-900">Verified Organization</p>
                   <p className="mt-0.5 text-xs text-slate-500">

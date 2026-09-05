@@ -168,7 +168,7 @@ function OnboardingContent() {
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 text-[#0866FF] font-extrabold text-2xl">
+          <div className="inline-flex items-center gap-2 text-[#0552CC] font-extrabold text-2xl">
             {isCompany ? <Building2 className="h-7 w-7" /> : <Sparkles className="h-7 w-7" />}
             Remote AI Platform Onboarding
           </div>
@@ -192,16 +192,16 @@ function OnboardingContent() {
                   className={cn(
                     "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
                     step > s
-                      ? "bg-[#0866FF] text-white border-[#0866FF]"
+                      ? "bg-[#0552CC] text-white border-[#0552CC]"
                       : step === s
-                        ? "border-[#0866FF] text-[#0866FF] bg-blue-50 dark:bg-blue-950/30"
+                        ? "border-[#0552CC] text-[#0552CC] bg-blue-50 dark:bg-blue-950/30"
                         : "border-slate-300 text-slate-400 bg-white"
                   )}
                 >
                   {step > s ? <Check className="h-4 w-4" /> : s}
                 </div>
                 {s < totalSteps && (
-                  <div className={cn("h-0.5 w-12 sm:w-16 transition-colors", step > s ? "bg-[#0866FF]" : "bg-slate-200")} />
+                  <div className={cn("h-0.5 w-12 sm:w-16 transition-colors", step > s ? "bg-[#0552CC]" : "bg-slate-200")} />
                 )}
               </div>
             );
@@ -238,11 +238,11 @@ function OnboardingContent() {
                         setStep(2);
                       }}
                       className={cn(
-                        "p-6 rounded-2xl border-2 text-left space-y-3 transition-all hover:border-[#0866FF] hover:shadow-md",
-                        method === "ai" ? "border-[#0866FF] bg-blue-50/50" : "border-slate-200 bg-white"
+                        "p-6 rounded-2xl border-2 text-left space-y-3 transition-all hover:border-[#0552CC] hover:shadow-md",
+                        method === "ai" ? "border-[#0552CC] bg-blue-50/50" : "border-slate-200 bg-white"
                       )}
                     >
-                      <div className="h-10 w-10 rounded-xl bg-blue-100 text-[#0866FF] flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-xl bg-blue-100 text-[#0552CC] flex items-center justify-center">
                         <Wand2 className="h-5 w-5" />
                       </div>
                       <div>
@@ -262,8 +262,8 @@ function OnboardingContent() {
                         setStep(3);
                       }}
                       className={cn(
-                        "p-6 rounded-2xl border-2 text-left space-y-3 transition-all hover:border-[#0866FF] hover:shadow-md",
-                        method === "manual" ? "border-[#0866FF] bg-blue-50/50" : "border-slate-200 bg-white"
+                        "p-6 rounded-2xl border-2 text-left space-y-3 transition-all hover:border-[#0552CC] hover:shadow-md",
+                        method === "manual" ? "border-[#0552CC] bg-blue-50/50" : "border-slate-200 bg-white"
                       )}
                     >
                       <div className="h-10 w-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
@@ -301,18 +301,18 @@ function OnboardingContent() {
 
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-300 hover:border-[#0866FF] hover:bg-slate-50 rounded-2xl p-10 cursor-pointer transition-colors space-y-3 flex flex-col items-center justify-center"
+                    className="border-2 border-dashed border-slate-300 hover:border-[#0552CC] hover:bg-slate-50 rounded-2xl p-10 cursor-pointer transition-colors space-y-3 flex flex-col items-center justify-center"
                   >
                     {uploading || enhancing ? (
                       <div className="space-y-3 flex flex-col items-center">
-                        <Loader2 className="h-10 w-10 text-[#0866FF] animate-spin" />
+                        <Loader2 className="h-10 w-10 text-[#0552CC] animate-spin" />
                         <p className="text-sm font-semibold text-slate-800">
                           {enhancing ? "AI is extracting skills & experience..." : "Uploading resume..."}
                         </p>
                       </div>
                     ) : (
                       <>
-                        <div className="h-12 w-12 rounded-full bg-blue-50 text-[#0866FF] flex items-center justify-center">
+                        <div className="h-12 w-12 rounded-full bg-blue-50 text-[#0552CC] flex items-center justify-center">
                           <Upload className="h-6 w-6" />
                         </div>
                         <div>

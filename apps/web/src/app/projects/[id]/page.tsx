@@ -188,7 +188,7 @@ function ProjectDetailContent() {
             {project.technologies && project.technologies.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {project.technologies.map((tech: string) => (
-                  <span key={tech} className="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--color-brand-light)] text-[#0866FF] border border-blue-100">
+                  <span key={tech} className="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--color-brand-light)] text-[#0552CC] border border-blue-100">
                     {tech}
                   </span>
                 ))}

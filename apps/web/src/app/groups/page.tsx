@@ -216,7 +216,7 @@ function CreateGroupModal({ open, onClose }: { open: boolean; onClose: () => voi
                   onClick={() => setForm((f) => ({ ...f, is_private: v }))}
                   className={cn(
                     "flex-1 py-2 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5",
-                    form.is_private === v ? "border-[#0866FF] bg-[var(--color-brand-light)] text-[#0866FF]" : "border-[var(--border-color)] text-slate-500"
+                    form.is_private === v ? "border-[#0552CC] bg-[var(--color-brand-light)] text-[#0552CC]" : "border-[var(--border-color)] text-slate-500"
                   )}
                 >
                   <Icon className="h-3.5 w-3.5" />{label}

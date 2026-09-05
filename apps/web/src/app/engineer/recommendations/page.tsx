@@ -70,7 +70,7 @@ function MatchCard({ match, onSave, onDismiss, updating }: { match: JobMatch; on
             </Badge>
             {isSaved && <Badge tone="ai">Saved</Badge>}
           </div>
-          <Link href={`/jobs/${match.job_id}`} className="font-semibold text-slate-900 text-sm hover:text-[#0866FF] truncate block">
+          <Link href={`/jobs/${match.job_id}`} className="font-semibold text-slate-900 text-sm hover:text-[#0552CC] truncate block">
             {job?.title ?? "Unknown Position"}
           </Link>
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
@@ -139,7 +139,7 @@ function MatchCard({ match, onSave, onDismiss, updating }: { match: JobMatch; on
               {match.reasoning}
             </p>
             {match.missing_skills.length > 0 && (
-              <Link href="/engineer/profile" className="text-xs font-semibold text-[#0866FF] hover:underline mt-2 inline-block">
+              <Link href="/engineer/profile" className="text-xs font-semibold text-[#0552CC] hover:underline mt-2 inline-block">
                 Improve my match →
               </Link>
             )}
