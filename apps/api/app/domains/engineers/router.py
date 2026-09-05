@@ -54,7 +54,7 @@ async def get_my_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Profile not found. Please create a profile.",
         )
-    return EngineerProfileResponse.model_validate(profile)
+    return service.to_response(profile)
 
 
 @router.post("/me", response_model=EngineerProfileResponse, status_code=status.HTTP_201_CREATED)
@@ -65,7 +65,7 @@ async def create_my_profile(
 ) -> EngineerProfileResponse:
     """Create or replace profile for current engineer."""
     profile = await service.create_or_update_profile(current_user.id, data)
-    return EngineerProfileResponse.model_validate(profile)
+    return service.to_response(profile)
 
 
 @router.put("/me", response_model=EngineerProfileResponse)
@@ -76,7 +76,7 @@ async def update_my_profile(
 ) -> EngineerProfileResponse:
     """Update profile fields for current engineer."""
     profile = await service.update_profile(current_user.id, data)
-    return EngineerProfileResponse.model_validate(profile)
+    return service.to_response(profile)
 
 
 @router.post("/me/ai-enhance", response_model=EngineerProfileResponse)
@@ -86,7 +86,7 @@ async def enhance_my_profile(
 ) -> EngineerProfileResponse:
     """Analyze the saved profile through the provider-neutral AI service."""
     profile = await service.enhance_profile(current_user.id)
-    return EngineerProfileResponse.model_validate(profile)
+    return service.to_response(profile)
 
 
 @router.post("/me/resume", response_model=ResumeUploadResponse)
@@ -161,5 +161,5 @@ async def get_engineer_by_id(
         current_user.id == profile.user_id or current_user.role == UserRole.ADMIN
     )
     if is_owner_or_admin:
-        return EngineerProfileResponse.model_validate(profile)
+        return service.to_response(profile)
     return EngineerPublicProfileResponse.model_validate(profile)

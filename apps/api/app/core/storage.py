@@ -58,7 +58,7 @@ def ensure_bucket_exists(bucket_name: str) -> None:
 def generate_presigned_url(
     bucket_name: str,
     object_name: str,
-    expires_hours: int = 1,
+    expires_hours: float = 1,
 ) -> str | None:
     """Generate a presigned GET URL for temporary file access."""
     client = get_s3_client()
@@ -66,7 +66,7 @@ def generate_presigned_url(
         return client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket_name, "Key": object_name},
-            ExpiresIn=expires_hours * 3600,
+            ExpiresIn=int(expires_hours * 3600),
         )
     except ClientError as e:
         logger.error(
