@@ -15,7 +15,9 @@ from app.core.audit import record_audit_event
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
-from app.domains.projects.models import Project, ProjectReview
+from app.domains.companies.models import CompanyProfile
+from app.domains.projects.models import ProjectMember, ProjectReview
+from app.domains.projects.router import require_project_access
 from app.domains.trust.models import UserVerification
 from app.domains.trust.schemas import (
     ProjectReviewResponse,
@@ -104,19 +106,54 @@ async def submit_review(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectReviewResponse:
-    """Submit a peer review for a completed project or engagement."""
+    """Submit a peer review for a completed project or engagement.
+
+    Reviews feed directly into TrustService.calculate_trust_score, so this endpoint
+    must only accept reviews from someone who actually participated in the project,
+    about someone who was actually on the other side of it — otherwise any
+    authenticated user could inflate or deflate an arbitrary user's trust score.
+    These checks mirror POST /projects/{project_id}/reviews.
+    """
     if data.reviewee_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot review yourself"
         )
 
-    project = await db.get(Project, data.project_id)
-    if not project:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+    # current_user must actually be a participant of the project (company owner,
+    # admin, or a project member) — not just any authenticated user.
+    project = await require_project_access(data.project_id, current_user, db)
+
+    if project.status != "COMPLETED":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Reviews are available after project completion",
+        )
 
     reviewee = await db.get(User, data.reviewee_id)
     if not reviewee:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reviewee user not found")
+
+    # The reviewee must also actually be part of this project, not an arbitrary user.
+    if reviewee.role == UserRole.COMPANY:
+        reviewee_company = await db.scalar(
+            select(CompanyProfile).where(
+                CompanyProfile.user_id == reviewee.id, CompanyProfile.id == project.company_id
+            )
+        )
+        if not reviewee_company:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Review recipient is not part of this project",
+            )
+    elif not await db.scalar(
+        select(ProjectMember).where(
+            ProjectMember.project_id == project.id, ProjectMember.user_id == reviewee.id
+        )
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Review recipient is not part of this project",
+        )
 
     # Check for duplicate review
     existing = await db.scalar(
