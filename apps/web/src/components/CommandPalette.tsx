@@ -90,6 +90,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             { id: "company-jobs", label: "My Job Postings", icon: Briefcase, action: () => go("/company/jobs") },
             { id: "company-candidates", label: "Candidate Discovery", icon: Users, action: () => go("/company/candidates") },
             { id: "post-job", label: "Post a Job", icon: Sparkles, action: () => go("/jobs/new") },
+            { id: "quality", label: "AI Quality Engine", icon: Sparkles, action: () => go("/quality") },
           ]
         : user.role === "ADMIN"
           ? [
