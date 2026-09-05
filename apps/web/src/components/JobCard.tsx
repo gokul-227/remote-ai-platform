@@ -65,7 +65,7 @@ export function JobCard({
             <div className="flex items-center gap-2 mt-0.5">
               <span className="text-xs font-medium text-[var(--text-muted)] truncate">{job.company_name}</span>
               {job.source && job.source !== "DIRECT" && (
-                <span className="text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded">
+                <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.2 rounded">
                   {job.source}
                 </span>
               )}

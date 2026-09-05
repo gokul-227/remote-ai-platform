@@ -354,7 +354,7 @@ export default function EngineersDiscoveryPage() {
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 {engineers.length} professional{engineers.length !== 1 ? "s" : ""} found
               </p>
               {openOnly && (
@@ -371,7 +371,7 @@ export default function EngineersDiscoveryPage() {
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-600 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading professionals…
         </div>
       )}

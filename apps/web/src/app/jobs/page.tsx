@@ -207,7 +207,7 @@ function JobsContent() {
 
         {/* Quick Skill Tags */}
         <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-          <span className="text-[11px] font-semibold text-slate-400 mr-1">Popular:</span>
+          <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 mr-1">Popular:</span>
           {POPULAR_SKILLS.map((skill) => {
             const isSelected = selectedSkills.includes(skill);
             return (
@@ -370,7 +370,7 @@ function JobsContent() {
           </div>
 
           {/* Results Summary Header */}
-          <div className="flex items-center justify-between gap-3 text-xs text-slate-500 px-1">
+          <div className="flex items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400 px-1">
             <span>
               {loading ? (
                 <span className="flex items-center gap-1.5"><Zap className="h-3.5 w-3.5 text-amber-400 animate-pulse" />Searching verified opportunities...</span>
