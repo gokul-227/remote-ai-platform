@@ -54,7 +54,17 @@ def compute_match(engineer_id: str, job_id: str):
 
 @shared_task(name="app.workers.tasks.matching.compute_stale_matches", queue="matching")
 def compute_stale_matches():
-    """Recompute match scores for engineers with stale data."""
+    """Recompute match scores for engineers with stale data.
+
+    STUB: this does not identify or recompute anything real yet -- it only
+    logs and returns a static "ok" status. No "staleness" concept is
+    defined or queried, so match scores are never actually refreshed by
+    this task. Once real stale-match logic is implemented here, gate it
+    (and any UI implying match freshness is actively maintained) behind
+    `is_feature_enabled("stale_match_recompute")` from
+    app.core.feature_flags (backed by `FEATURE_STALE_MATCH_RECOMPUTE`,
+    default False) so it ships dark until it's actually doing something.
+    """
     logger.info("Recomputing stale matches...")
     return {"status": "ok"}
 
