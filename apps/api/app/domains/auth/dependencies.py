@@ -4,6 +4,7 @@ FastAPI authentication and authorization dependencies.
 
 from collections.abc import Callable
 
+import structlog
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,8 @@ from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import TokenPayload
 from app.domains.auth.service import AuthService
+
+logger = structlog.get_logger(__name__)
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -73,10 +76,26 @@ async def get_current_user(
         return user
     except HTTPException:
         raise
-    except (AuthenticationError, Exception) as e:
+    except AuthenticationError as e:
+        # AuthenticationError messages are authored by this app's own code
+        # (see app.domains.auth.service) -- e.g. "Invalid token: missing
+        # subject (sub)" -- so they're safe to return to the client verbatim.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from e
+    except Exception as e:
+        # Anything else here (a raw jwt/jose decode error on a malformed
+        # token, a SQLAlchemy error surfaced from get_or_create_user_from_token
+        # or db.refresh, ...) is NOT authored by this app and must never be
+        # echoed to the client: those messages can carry SQL fragments, table/
+        # column names, driver/connection details, or library-internal state.
+        # Log the real exception server-side; return a generic 401 detail.
+        logger.warning("Authentication failed with an unexpected error", error=str(e), exc_info=e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
 
