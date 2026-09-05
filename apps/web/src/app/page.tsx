@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackedLink } from "@/components/TrackedLink";
 import {
   ArrowRight,
   Building2,
@@ -36,12 +37,22 @@ export default function Home() {
 
             {/* Dual Action Paths */}
             <div className="flex flex-wrap gap-4 pt-2">
-              <Link href="/jobs" className="btn-primary-brand text-base py-3 px-6 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+              <TrackedLink
+                href="/jobs"
+                eventName="cta_clicked"
+                eventProperties={{ cta: "find_your_next_role", placement: "hero" }}
+                className="btn-primary-brand text-base py-3 px-6 shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+              >
                 <Search className="h-5 w-5" /> Find Your Next Role <ArrowRight className="h-5 w-5" />
-              </Link>
-              <Link href="/auth/register" className="btn-secondary-brand text-base py-3 px-6 flex items-center gap-2">
+              </TrackedLink>
+              <TrackedLink
+                href="/auth/register"
+                eventName="cta_clicked"
+                eventProperties={{ cta: "hire_professionals", placement: "hero" }}
+                className="btn-secondary-brand text-base py-3 px-6 flex items-center gap-2"
+              >
                 <Building2 className="h-5 w-5 text-[#B54A2C]" /> Hire Exceptional Professionals
-              </Link>
+              </TrackedLink>
             </div>
 
             {/* Platform Highlights */}
@@ -339,9 +350,14 @@ export default function Home() {
           Create your account today, import your resume with AI, and start connecting with exceptional remote organizations and professionals.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-          <Link href="/auth/register" className="btn-primary-brand bg-white text-[#B54A2C] hover:bg-blue-50 py-3 px-8 text-sm font-bold shadow-md">
+          <TrackedLink
+            href="/auth/register"
+            eventName="cta_clicked"
+            eventProperties={{ cta: "get_started_free", placement: "final_banner" }}
+            className="btn-primary-brand bg-white text-[#B54A2C] hover:bg-blue-50 py-3 px-8 text-sm font-bold shadow-md"
+          >
             Get Started Free
-          </Link>
+          </TrackedLink>
           <Link href="/auth/login" className="btn-secondary-brand border-white/40 text-white hover:bg-white/10 py-3 px-8 text-sm font-semibold">
             Sign In to Account
           </Link>

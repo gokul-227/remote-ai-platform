@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domains.analytics.service import emit_analytics_event
 from app.domains.applications.models import JobApplication
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
@@ -81,6 +82,9 @@ async def apply_to_job(
     )
     db.add(application)
     await db.flush()
+    await emit_analytics_event(
+        db, "application_submitted", current_user.id, {"job_id": str(job_id)}
+    )
     return application
 
 

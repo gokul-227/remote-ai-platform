@@ -13,6 +13,7 @@ from app.core.audit import record_audit_event
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import pwd_context
+from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth import oauth
 from app.domains.auth.dependencies import get_auth_service, get_current_user
 from app.domains.auth.models import PasswordResetToken, User, UserRole
@@ -94,6 +95,7 @@ async def register(
     )
     user = await repo.create(user_create)
     token = create_access_token(user)
+    await emit_analytics_event(db, "signup_completed", user.id, {"role": data.role.value})
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -434,6 +436,9 @@ async def oauth_callback(
             actor_id=user.id,
             actor_role=user.role.value,
             payload={"provider": provider},
+        )
+        await emit_analytics_event(
+            db, "signup_completed", user.id, {"role": user.role.value, "provider": provider}
         )
     elif not user.is_active:
         return RedirectResponse(f"{settings.FRONTEND_URL}/auth/login?error=account_suspended")
