@@ -9,6 +9,7 @@ import uuid
 from collections.abc import Sequence
 
 from app.agents.job_enricher import JobEnricherAgent
+from app.agents.llm_client import AIProviderError
 from app.core.cache import RedisCache
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
@@ -54,19 +55,35 @@ class JobService:
         if not data.company_name:
             raise ValueError("company_name is required to create a job post")
         job = await self.repo.create(data)
-        analysis = await JobEnricherAgent().enrich_job(job.title, job.description)
-        job.ai_analysis = {
-            "improved_description": analysis.get("summary", job.description),
-            "required_skills": analysis.get("skills", []),
-            "technology_stack": analysis.get("tech_stack", []),
-            "difficulty_level": analysis.get("experience_level", job.experience_level),
-            "estimated_timeline": analysis.get("estimated_timeline"),
-            "milestones": analysis.get("milestones", []),
-            "tasks": analysis.get("tasks", []),
-        }
-        self.repo.db.add(
-            AIReport(job_id=job.id, report_type="job_analysis", payload=job.ai_analysis)
-        )
+        try:
+            analysis = await JobEnricherAgent().enrich_job(job.title, job.description)
+            job.ai_analysis = {
+                "status": "completed",
+                "improved_description": analysis.get("summary", job.description),
+                "required_skills": analysis.get("skills", []),
+                "technology_stack": analysis.get("tech_stack", []),
+                "difficulty_level": analysis.get("experience_level", job.experience_level),
+                "estimated_timeline": analysis.get("estimated_timeline"),
+                "milestones": analysis.get("milestones", []),
+                "tasks": analysis.get("tasks", []),
+            }
+            self.repo.db.add(
+                AIReport(job_id=job.id, report_type="job_analysis", payload=job.ai_analysis)
+            )
+        except AIProviderError as exc:
+            # Never fail job creation just because AI enrichment is down (the job post itself
+            # is already valid and stored) -- but never fake the analysis either: record an
+            # honest "unavailable" status rather than writing placeholder skills/experience
+            # data that would look like a real AI extraction.
+            logger.warning(
+                "Job AI enrichment failed; job created without AI analysis",
+                job_id=str(job.id),
+                error=str(exc),
+            )
+            job.ai_analysis = {
+                "status": "unavailable",
+                "error": "AI enrichment temporarily unavailable; please retry analysis later.",
+            }
         await self.repo.db.flush()
         await self.repo.db.refresh(job)
         return job

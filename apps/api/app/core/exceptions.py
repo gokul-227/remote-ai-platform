@@ -48,6 +48,17 @@ class ConflictException(PlatformException):
         super().__init__(message, status.HTTP_409_CONFLICT, "CONFLICT")
 
 
+class AIUnavailableException(PlatformException):
+    """Raised when an AI-powered action fails because every LLM provider/fallback is down.
+
+    Maps to 503 so the client can distinguish "AI genuinely unavailable, please retry" from a
+    real validation/auth error -- never present as a 200 with placeholder data.
+    """
+
+    def __init__(self, message: str = "AI service is temporarily unavailable. Please retry shortly."):
+        super().__init__(message, status.HTTP_503_SERVICE_UNAVAILABLE, "AI_UNAVAILABLE")
+
+
 # Aliases for domain code compatibility
 NotFoundError = NotFoundException
 AuthenticationError = UnauthorizedException
