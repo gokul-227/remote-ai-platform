@@ -27,4 +27,4 @@ jobs:
     steps:
       - name: Ping health endpoint
         run: |
-          curl -fsS --max-time 20 https://remote-ai-platform-api.onrender.com/health/live || true
+          curl -fsS --max-time 20 "${{ vars.PROD_API_BASE_URL }}/health/live" || true

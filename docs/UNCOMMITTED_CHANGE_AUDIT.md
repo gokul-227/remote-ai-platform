@@ -16,7 +16,7 @@
 | **Local Git HEAD** | `a72d12f` | Up to date with `origin/main` | Matches remote before new transformation commit |
 | **GitHub `origin/main`** | `a72d12f` | Clean | Awaiting reviewed and verified atomic push |
 | **Vercel Frontend** | `https://remote-ai-platform.vercel.app` | LIVE (HTTP 200) | Static & dynamic marketing + candidate/job UI |
-| **Render Backend** | `https://remote-ai-platform-api.onrender.com` | PENDING REDEPLOY | Needs new build with lazy Celery initialization to resolve 503 broker cold-start |
+| **Render Backend** | (see internal deployment docs) | PENDING REDEPLOY | Needs new build with lazy Celery initialization to resolve 503 broker cold-start |
 
 ---
 
