@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [prod, dev]
   pull_request:
 
 jobs:
@@ -67,8 +67,8 @@ jobs:
       - name: Build
         working-directory: apps/web
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://cvjypjsjmamoppwhuwdl.supabase.co
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_E9A2lRDUNRr8CI8RxpSWtA_Szi21la2
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
   e2e:

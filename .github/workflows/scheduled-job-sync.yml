@@ -15,7 +15,8 @@ name: Scheduled job source sync (production)
 #   PROD_ADMIN_EMAIL, PROD_ADMIN_PASSWORD  -- the service account's credentials
 #   SUPABASE_URL, SUPABASE_ANON_KEY        -- to call Supabase's token endpoint
 # and one repository variable (Settings → Secrets → Actions → Variables):
-#   PROD_API_URL   e.g. https://remote-ai-platform-api.onrender.com/api/v1
+#   PROD_API_URL   the production API's base URL + /api/v1 (see the internal
+#                  deployment-topology doc for the actual live value)
 
 on:
   schedule:

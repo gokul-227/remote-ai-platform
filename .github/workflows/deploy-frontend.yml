@@ -5,7 +5,7 @@ name: Deploy frontend (Cloudflare)
 on:
   workflow_run:
     workflows: ["CI"]
-    branches: [main]
+    branches: [prod]
     types: [completed]
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
       - name: Build for Cloudflare Workers
         working-directory: apps/web
         env:
-          NEXT_PUBLIC_API_URL: https://remote-ai-platform-api.onrender.com
+          NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_BASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run cf:build
@@ -43,5 +43,5 @@ jobs:
       - name: Verify deploy
         run: |
           sleep 5
-          curl -sf https://remoteaiplatform.com/ -o /dev/null -w "homepage (custom domain): %{http_code}\n"
-          curl -sf https://remote-ai-platform.gokulraj22797.workers.dev/ -o /dev/null -w "homepage (workers.dev): %{http_code}\n"
+          curl -sf "${{ vars.PROD_FRONTEND_URL }}/" -o /dev/null -w "homepage (custom domain): %{http_code}\n"
+          curl -sf "${{ vars.PROD_FRONTEND_WORKERSDEV_URL }}/" -o /dev/null -w "homepage (workers.dev): %{http_code}\n"
