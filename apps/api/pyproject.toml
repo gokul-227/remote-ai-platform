@@ -45,6 +45,10 @@ dependencies = [
     # AI (litellm pulls in openai + aiohttp transitively)
     "litellm==1.84.0",
 
+    # Resume text extraction (PDF/DOCX -> plain text, ahead of AI parsing)
+    "pypdf==5.1.0",
+    "python-docx==1.1.2",
+
     # Caching
     "redis[hiredis]==5.2.1",
 
