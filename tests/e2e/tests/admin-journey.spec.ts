@@ -1,14 +1,15 @@
 import { test, expect } from "@playwright/test";
+import { loginWithOtp } from "./helpers";
 
 // Real E2E journey against the live stack: log in as the seeded admin user
 // and confirm the dashboard renders real backend-driven data.
 // Requires `python -m app.scripts.seed_data` to have been run against the
-// stack under test (creates admin@workmesh.ai / admin123).
+// stack under test (creates admin@workmesh.ai, confirmed in Supabase Auth).
+// Login is passwordless OTP -- see loginWithOtp() in helpers.ts for how a
+// real, verifiable code is minted via the Supabase Admin API in place of an
+// inbox no CI run has access to.
 test("admin can log in and view platform stats, users, and sync status", async ({ page }) => {
-  await page.goto("/auth/login");
-  await page.locator("#email").fill("admin@workmesh.ai");
-  await page.locator("#password").fill("admin123");
-  await page.getByRole("button", { name: /sign in/i }).click();
+  await loginWithOtp(page, "admin@workmesh.ai");
 
   await expect(page).not.toHaveURL(/\/auth\/login$/, { timeout: 30_000 });
 
