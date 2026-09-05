@@ -1,0 +1,21 @@
+name: Enforce branch flow
+
+# This repo's promotion path is feature-branch -> dev -> prod, no exceptions --
+# prod only ever receives code that already went through dev. A PR opened
+# directly from a feature branch into prod is rejected here regardless of who
+# opened it; the fix is to retarget it at dev instead.
+on:
+  pull_request:
+    branches: [prod]
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify this PR's source is dev
+        run: |
+          if [ "${{ github.head_ref }}" != "dev" ]; then
+            echo "::error::PRs into 'prod' must come from 'dev', not '${{ github.head_ref }}'. Merge into dev first, then open a dev -> prod PR."
+            exit 1
+          fi
+          echo "OK: prod is receiving from dev."

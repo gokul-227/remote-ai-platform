@@ -154,6 +154,16 @@ async def exchange_code_for_userinfo(provider: str, code: str) -> OAuthUserInfo:
             )
             info_resp.raise_for_status()
             info = info_resp.json()
+            # Google's userinfo response carries its own verification flag --
+            # without this check, an unverified email claim could get
+            # auto-linked (in the router) to a pre-existing password account
+            # of the same address, logging the caller into someone else's
+            # account with no password challenge.
+            if not info.get("email_verified", False):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Google account email is not verified",
+                )
             return OAuthUserInfo(
                 email=info["email"],
                 full_name=info.get("name") or info["email"].split("@")[0],
