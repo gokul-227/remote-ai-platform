@@ -72,7 +72,7 @@ export function RightSidebar() {
               className="badge-ent badge-ent-neutral hover:border-[#B54A2C] hover:text-[#B54A2C] transition-colors text-[11px] py-1 px-2 flex items-center gap-1"
             >
               <span>{skill.name}</span>
-              <span className="text-emerald-600 font-bold text-[10px]">{skill.growth}</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold text-[10px]">{skill.growth}</span>
             </Link>
           ))}
         </div>

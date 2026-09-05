@@ -163,7 +163,7 @@ export default function Home() {
                 <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-[#B54A2C] flex items-center justify-center font-bold">
                   <item.icon className="h-5 w-5" />
                 </div>
-                <span className="text-2xl font-black text-slate-200 dark:text-slate-800">{item.step}</span>
+                <span className="text-2xl font-black text-slate-200 dark:text-slate-800" aria-hidden="true">{item.step}</span>
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">{item.title}</h3>
               <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">{item.body}</p>
@@ -297,7 +297,7 @@ export default function Home() {
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-[#B54A2C]">Aggregated Job Engine</span>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mt-1">Live Positions Across 5 Major Aggregators</h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
               Synchronized periodically from RemoteOK, Remotive, Arbeitnow, USAJobs, and The Muse.
             </p>
           </div>
@@ -323,7 +323,7 @@ export default function Home() {
               </div>
               <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <span>{job.location}</span>
-                <span className="font-bold text-emerald-600">{job.salary}</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-400">{job.salary}</span>
               </div>
             </div>
           ))}
