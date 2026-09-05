@@ -10,14 +10,6 @@ import {
 import { useJobs } from "@/hooks/useJobs";
 import type { JobPost } from "@/types";
 
-const TRENDING_SKILLS = [
-  { name: "TypeScript", growth: "+24%" },
-  { name: "Python / FastAPI", growth: "+38%" },
-  { name: "React / Next.js", growth: "+19%" },
-  { name: "Rust", growth: "+42%" },
-  { name: "PyTorch / LLMs", growth: "+65%" },
-];
-
 export function RightSidebar() {
   const jobsQuery = useJobs({ limit: 4 });
   const jobs: JobPost[] = jobsQuery.data || [];
@@ -58,24 +50,18 @@ export function RightSidebar() {
         </div>
       </div>
 
-      {/* Trending Market Skills */}
-      <div className="card-enterprise p-4 space-y-3">
+      {/* High-Demand Skills: not a live feature yet -- the backend task that
+          would compute this (refresh_trending_skills) is still a stub with
+          no real logic behind it, gated off by FEATURE_TRENDING_SKILLS. This
+          previously rendered a hardcoded, always-the-same skills list as if
+          it were live market data; showing an honest "coming soon" state
+          instead of fabricated growth numbers. */}
+      <div className="card-enterprise p-4 space-y-2">
         <div className="font-semibold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-2">
           <TrendingUp className="h-4 w-4 text-emerald-600" />
           High-Demand Skills
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {TRENDING_SKILLS.map((skill) => (
-            <Link
-              key={skill.name}
-              href={`/jobs?query=${encodeURIComponent(skill.name)}`}
-              className="badge-ent badge-ent-neutral hover:border-[#B54A2C] hover:text-[#B54A2C] transition-colors text-[11px] py-1 px-2 flex items-center gap-1"
-            >
-              <span>{skill.name}</span>
-              <span className="text-emerald-600 font-bold text-[10px]">{skill.growth}</span>
-            </Link>
-          ))}
-        </div>
+        <p className="text-[11px] text-slate-500">Coming soon — we&apos;re still building this.</p>
       </div>
 
       {/* Verified Companies */}

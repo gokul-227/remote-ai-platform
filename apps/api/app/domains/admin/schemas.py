@@ -83,6 +83,10 @@ class SystemHealthDetailResponse(BaseModel):
     timestamp: datetime
 
 
+class FeatureFlagsResponse(BaseModel):
+    flags: dict[str, bool]
+
+
 class DisputeResolveRequest(BaseModel):
     decision: str  # RELEASE_TO_WORKER, REFUND_TO_CLIENT, SPLIT
     worker_amount: float | None = None
