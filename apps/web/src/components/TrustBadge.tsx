@@ -30,7 +30,7 @@ export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: str
   const getScoreTier = (val: number) => {
     if (val >= 90) return { label: "Top Rated Plus", color: "bg-amber-500 text-white border-amber-600" };
     if (val >= 80) return { label: "Verified Top Talent", color: "bg-emerald-600 text-white border-emerald-700" };
-    if (val >= 70) return { label: "Verified Professional", color: "bg-[#B54A2C] text-white border-[#8F3A21]" };
+    if (val >= 70) return { label: "Verified Professional", color: "bg-[#0866FF] text-white border-[#0552CC]" };
     return { label: "Member", color: "bg-slate-700 text-white border-slate-800" };
   };
 
@@ -51,7 +51,7 @@ export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: str
         {showBreakdownToggle && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-xs text-slate-500 hover:text-[#B54A2C] font-semibold inline-flex items-center gap-0.5"
+            className="text-xs text-slate-500 hover:text-[#0866FF] font-semibold inline-flex items-center gap-0.5"
           >
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
@@ -63,7 +63,7 @@ export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: str
         <div className="card-enterprise p-4 max-w-sm space-y-3 bg-white shadow-lg border border-slate-200 rounded-xl text-xs text-left">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <span className="font-bold text-slate-900 flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-[#B54A2C]" /> Explainable Trust Factors
+              <Sparkles className="h-4 w-4 text-[#0866FF]" /> Explainable Trust Factors
             </span>
             <span className="text-[10px] font-bold text-slate-500">{trust.review_count} Reviews</span>
           </div>
@@ -73,7 +73,7 @@ export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: str
               <div key={idx} className="space-y-0.5">
                 <div className="flex justify-between font-semibold text-slate-800">
                   <span>{factor.category}</span>
-                  <span className="text-[#B54A2C]">{factor.points} / {factor.max} pts</span>
+                  <span className="text-[#0866FF]">{factor.points} / {factor.max} pts</span>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-tight">{factor.detail}</p>
               </div>
@@ -109,7 +109,7 @@ export function TrustBadge({ userId, showBreakdownToggle = true }: { userId: str
               <button
                 onClick={() => addVerification.mutate({ verification_type: "IDENTITY" })}
                 disabled={addVerification.isPending}
-                className="text-[10px] font-semibold bg-sky-50 text-[#B54A2C] hover:bg-sky-100 px-2 py-1 rounded"
+                className="text-[10px] font-semibold bg-sky-50 text-[#0866FF] hover:bg-sky-100 px-2 py-1 rounded"
               >
                 Submit ID for review
               </button>

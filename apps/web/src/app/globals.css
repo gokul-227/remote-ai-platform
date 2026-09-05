@@ -19,14 +19,14 @@
   --border-hover: #D9CBB6;
   --border-strong: #B3A38C;
 
-  /* Brand / primary — terracotta, replacing the prior brand blue */
-  --color-brand: #B54A2C;
-  --color-brand-hover: #8F3A21;
-  --color-brand-light: #FBEAE1;
+  /* Brand / primary — Facebook-style blue */
+  --color-brand: #0866FF;
+  --color-brand-hover: #0552CC;
+  --color-brand-light: #F5F9FF;
   --primary-soft: var(--color-brand-light);
 
   /* Status */
-  --color-accent: #B54A2C;
+  --color-accent: #0866FF;
   --color-info: #0284C7;
   --color-info-soft: #E0F2FE;
   --color-success: #12B76A;
@@ -59,7 +59,7 @@
   --shadow-lg: 0 12px 24px -4px rgba(16, 24, 40, 0.12), 0 4px 8px -2px rgba(16, 24, 40, 0.06);
 
   /* Focus ring */
-  --focus-ring: 0 0 0 3px rgba(181, 74, 44, 0.25);
+  --focus-ring: 0 0 0 3px rgba(8, 102, 255, 0.25);
 
   /* Skeleton loading placeholder */
   --skeleton-bg: #E8DFD2;
@@ -96,9 +96,9 @@
   --border-hover: #4D4033;
   --border-strong: #6B5B48;
 
-  --color-brand: #E08659;
-  --color-brand-hover: #F0A075;
-  --color-brand-light: #3D2A1F;
+  --color-brand: #4C9AFF;
+  --color-brand-hover: #5B9DF7;
+  --color-brand-light: #12294A;
 
   --color-info: #38BDF8;
   --color-info-soft: #0C2840;
@@ -121,7 +121,7 @@
   --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.7);
 
-  --focus-ring: 0 0 0 3px rgba(224, 134, 89, 0.35);
+  --focus-ring: 0 0 0 3px rgba(76, 154, 255, 0.35);
   --skeleton-bg: #3A2F26;
 
   --badge-info-bg: #0C2840;   --badge-info-text: #7DD3FC;
@@ -245,6 +245,13 @@ h1 {
 .btn-primary-brand:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
+}
+/* Dark theme's --color-brand is a bright blue tuned for text/border contrast
+   against the dark surface; white button text on top of it fails WCAG AA
+   (2.85:1), so swap to a dark navy foreground that meets AA (5.8:1) instead —
+   a targeted fix for this one usage, not a change to the shared brand token. */
+:root[data-theme="dark"] .btn-primary-brand {
+  color: #0B1E3D;
 }
 
 .btn-secondary-brand {

@@ -127,10 +127,10 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
-            <div className="h-8 w-8 rounded-lg bg-[#B54A2C] flex items-center justify-center text-white font-black text-lg">
+            <div className="h-8 w-8 rounded-lg bg-[#0866FF] flex items-center justify-center text-white font-black text-lg">
               R
             </div>
-            Remote <span className="text-[#B54A2C]">AI Platform</span>
+            Remote <span className="text-[#0866FF]">AI Platform</span>
           </Link>
           <h1 className="text-xl font-bold text-slate-900">Create your account</h1>
           <p className="text-sm text-slate-600">Join the professional remote engineering network</p>
@@ -144,15 +144,15 @@ export default function RegisterPage() {
                 className={cn(
                   "h-7 w-7 rounded-full flex items-center justify-center text-xs font-semibold border",
                   step > s
-                    ? "bg-[#B54A2C] text-white border-[#B54A2C]"
+                    ? "bg-[#0866FF] text-white border-[#0866FF]"
                     : step === s
-                      ? "border-[#B54A2C] text-[#B54A2C]"
+                      ? "border-[#0866FF] text-[#0866FF]"
                       : "border-slate-300 text-slate-400"
                 )}
               >
                 {step > s ? <Check className="h-3.5 w-3.5" /> : s}
               </div>
-              {s < 2 && <div className={cn("h-px w-10", step > s ? "bg-[#B54A2C]" : "bg-slate-300")} />}
+              {s < 2 && <div className={cn("h-px w-10", step > s ? "bg-[#0866FF]" : "bg-slate-300")} />}
             </div>
           ))}
         </div>
@@ -169,7 +169,7 @@ export default function RegisterPage() {
           {checkEmail ? (
             <div className="text-center space-y-3 py-4">
               <div className="mx-auto h-12 w-12 rounded-full bg-[var(--color-brand-light)] flex items-center justify-center">
-                <Mail className="h-6 w-6 text-[#B54A2C]" />
+                <Mail className="h-6 w-6 text-[#0866FF]" />
               </div>
               <p className="text-sm font-semibold text-slate-900">Check your email</p>
               <p className="text-sm text-slate-600">
@@ -275,17 +275,17 @@ export default function RegisterPage() {
                       onClick={() => setRole(opt.value)}
                       className={cn(
                         "w-full flex items-start gap-3 p-4 rounded-xl border text-left transition-colors",
-                        selected ? "border-[#B54A2C] bg-[var(--color-brand-light)]" : "border-[var(--border-color)] hover:border-slate-300"
+                        selected ? "border-[#0866FF] bg-[var(--color-brand-light)]" : "border-[var(--border-color)] hover:border-slate-300"
                       )}
                     >
-                      <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", selected ? "bg-[#B54A2C] text-white" : "bg-slate-100 text-slate-500")}>
+                      <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center shrink-0", selected ? "bg-[#0866FF] text-white" : "bg-slate-100 text-slate-500")}>
                         <Icon className="h-4.5 w-4.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className={cn("text-sm font-semibold", selected ? "text-[#B54A2C]" : "text-slate-900")}>{opt.title}</p>
+                        <p className={cn("text-sm font-semibold", selected ? "text-[#0866FF]" : "text-slate-900")}>{opt.title}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{opt.description}</p>
                       </div>
-                      {selected && <Check className="h-4 w-4 text-[#B54A2C] shrink-0 ml-auto mt-1" />}
+                      {selected && <Check className="h-4 w-4 text-[#0866FF] shrink-0 ml-auto mt-1" />}
                     </button>
                   );
                 })}
@@ -304,7 +304,7 @@ export default function RegisterPage() {
 
           <p className="text-center text-xs text-slate-500">
             Already have an account?{" "}
-            <Link href="/auth/login" className="text-[#B54A2C] hover:underline font-medium">
+            <Link href="/auth/login" className="text-[#0866FF] hover:underline font-medium">
               Sign in
             </Link>
           </p>

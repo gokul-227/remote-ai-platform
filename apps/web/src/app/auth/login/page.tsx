@@ -90,13 +90,13 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-4xl grid lg:grid-cols-2 rounded-2xl overflow-hidden shadow-[var(--shadow-md)] border border-[var(--border-color)] bg-white">
         {/* Left: brand / value */}
-        <div className="hidden lg:flex flex-col justify-between bg-[#2B1D14] text-white p-10">
+        <div className="hidden lg:flex flex-col justify-between bg-[#0B1E3D] text-white p-10">
           <div>
             <Link href="/" className="inline-flex items-center gap-2 font-black text-2xl tracking-tight text-white">
-              <div className="h-9 w-9 rounded-xl bg-[#B54A2C] flex items-center justify-center text-white font-black text-xl shadow-xs">
+              <div className="h-9 w-9 rounded-xl bg-[#0866FF] flex items-center justify-center text-white font-black text-xl shadow-xs">
                 R
               </div>
-              Remote <span className="text-[#E08659]">AI Platform</span>
+              Remote <span className="text-[#4C9AFF]">AI Platform</span>
             </Link>
             <h2 className="text-2xl font-bold mt-10 leading-snug text-white">
               The professional network for remote engineering work.
@@ -105,7 +105,7 @@ export default function LoginPage() {
           <ul className="space-y-4">
             {VALUE_POINTS.map((p, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-white/80">
-                <p.icon className="h-4 w-4 mt-0.5 text-[#E08659] shrink-0" />
+                <p.icon className="h-4 w-4 mt-0.5 text-[#4C9AFF] shrink-0" />
                 {p.text}
               </li>
             ))}
@@ -117,10 +117,10 @@ export default function LoginPage() {
         <div className="p-8 sm:p-10 space-y-6">
           <div className="lg:hidden text-center">
             <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
-              <div className="h-8 w-8 rounded-lg bg-[#B54A2C] flex items-center justify-center text-white font-black text-lg">
+              <div className="h-8 w-8 rounded-lg bg-[#0866FF] flex items-center justify-center text-white font-black text-lg">
                 R
               </div>
-              Remote <span className="text-[#B54A2C]">AI Platform</span>
+              Remote <span className="text-[#0866FF]">AI Platform</span>
             </Link>
           </div>
           <div>
@@ -177,7 +177,7 @@ export default function LoginPage() {
                 <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="rounded border-slate-300" />
                 Remember me
               </label>
-              <Link href="/auth/forgot-password" className="text-[#B54A2C] hover:underline font-medium">
+              <Link href="/auth/forgot-password" className="text-[#0866FF] hover:underline font-medium">
                 Forgot password?
               </Link>
             </div>

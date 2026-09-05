@@ -146,12 +146,12 @@ function CompanyDashboardContent() {
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 space-y-6">
       {/* Top command header — dark premium band */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2B1D14] via-[#4D3626] to-[#2B1D14] p-6 text-white">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 70% 30%, #E08659 0%, transparent 60%)" }} />
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0B1E3D] via-[#14345C] to-[#0B1E3D] p-6 text-white">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 70% 30%, #4C9AFF 0%, transparent 60%)" }} />
         <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#F0A075] border border-[#E08659]/40 rounded-full px-2.5 py-0.5">Hiring Command Center</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#5B9DF7] border border-[#4C9AFF]/40 rounded-full px-2.5 py-0.5">Hiring Command Center</span>
               {needsAction > 0 && (
                 <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-400/30 rounded-full px-2.5 py-0.5 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" /> {needsAction} need review
@@ -168,7 +168,7 @@ function CompanyDashboardContent() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Link href="/jobs/new">
-              <Button size="sm" className="bg-[#B54A2C] hover:bg-[#8F3A21] border-transparent text-white" icon={<PlusCircle className="h-3.5 w-3.5" />}>
+              <Button size="sm" className="bg-[#0866FF] hover:bg-[#0552CC] border-transparent text-white" icon={<PlusCircle className="h-3.5 w-3.5" />}>
                 Post Position
               </Button>
             </Link>

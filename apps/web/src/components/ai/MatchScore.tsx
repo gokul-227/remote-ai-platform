@@ -100,7 +100,7 @@ export function AIMatchPanel({ match, loading, emptyHint }: { match: JobMatch | 
         <p className="text-xs text-slate-500 pt-1 leading-relaxed">
           {emptyHint || "Complete your professional profile to see personalized compatibility explanations and skill gap analysis."}
         </p>
-        <Link href="/engineer/profile" className="inline-flex items-center gap-1 text-xs font-semibold text-[#B54A2C] hover:underline">
+        <Link href="/engineer/profile" className="inline-flex items-center gap-1 text-xs font-semibold text-[#0866FF] hover:underline">
           Complete Profile Setup <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
@@ -127,7 +127,7 @@ export function AIMatchPanel({ match, loading, emptyHint }: { match: JobMatch | 
       {match.reasoning && (
         <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
           <span className="font-semibold block mb-1 text-slate-900 dark:text-white flex items-center gap-1">
-            <TrendingUp className="h-3 w-3 text-[#B54A2C]" /> Why This Position Matches:
+            <TrendingUp className="h-3 w-3 text-[#0866FF]" /> Why This Position Matches:
           </span>
           {match.reasoning}
         </div>

@@ -40,10 +40,10 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <Link href="/" className="inline-flex items-center gap-2 text-2xl font-black text-slate-900 tracking-tight">
-            <div className="h-8 w-8 rounded-lg bg-[#B54A2C] flex items-center justify-center text-white font-black text-lg">
+            <div className="h-8 w-8 rounded-lg bg-[#0866FF] flex items-center justify-center text-white font-black text-lg">
               W
             </div>
-            Remote <span className="text-[#B54A2C]">AI Platform</span>
+            Remote <span className="text-[#0866FF]">AI Platform</span>
           </Link>
           <h1 className="text-xl font-bold text-slate-900">Reset your password</h1>
           <p className="text-xs text-slate-500">Enter your email and we&apos;ll send recovery instructions</p>
@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
                     <p className="font-semibold text-amber-800">Development Mode Reset Token:</p>
                     <Link
                       href={`/auth/reset-password?token=${devToken}`}
-                      className="text-[#B54A2C] underline font-mono text-[11px] break-all block"
+                      className="text-[#0866FF] underline font-mono text-[11px] break-all block"
                     >
                       Click here to reset password directly →
                     </Link>
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
               />
 
               <div className="text-xs text-slate-500 flex items-start gap-2 bg-blue-50/60 p-3 rounded-lg border border-blue-100">
-                <ShieldCheck className="h-4 w-4 text-[#B54A2C] shrink-0 mt-0.5" />
+                <ShieldCheck className="h-4 w-4 text-[#0866FF] shrink-0 mt-0.5" />
                 <span>For enterprise security, password resets expire 15 minutes after issuance.</span>
               </div>
 
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
               </Button>
 
               <div className="text-center pt-2">
-                <Link href="/auth/login" className="text-xs text-[#B54A2C] hover:underline font-semibold inline-flex items-center gap-1">
+                <Link href="/auth/login" className="text-xs text-[#0866FF] hover:underline font-semibold inline-flex items-center gap-1">
                   <ArrowLeft className="h-3 w-3" /> Back to Sign In
                 </Link>
               </div>
