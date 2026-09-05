@@ -29,6 +29,7 @@ def _make_token(**overrides) -> str:
         "email": "supabase-user@example.com",
         "aud": "authenticated",
         "role": "authenticated",
+        "iss": "https://test-project.supabase.co/auth/v1",
         "iat": now,
         "exp": now + 3600,
         **overrides,
@@ -90,6 +91,16 @@ def test_missing_sub_claim_rejected():
     token = jwt.encode(
         {"aud": "authenticated", "iat": now, "exp": now + 3600}, _PRIVATE_KEY, algorithm="ES256"
     )
+    with pytest.raises(HTTPException) as exc_info:
+        supabase_auth.verify_supabase_token(token)
+    assert exc_info.value.status_code == 401
+
+
+def test_wrong_issuer_rejected():
+    """A token that verifies against this project's own JWKS key but claims
+    a different project's issuer URL must still be rejected -- defense in
+    depth alongside the JWKS-derived-from-SUPABASE_URL signature check."""
+    token = _make_token(iss="https://a-different-project.supabase.co/auth/v1")
     with pytest.raises(HTTPException) as exc_info:
         supabase_auth.verify_supabase_token(token)
     assert exc_info.value.status_code == 401
