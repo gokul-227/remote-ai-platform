@@ -215,7 +215,20 @@ class EngineerService:
         # Update profile with the private object key
         profile.resume_url = filename
         await self.repo.db.flush()
-        logger.info("Uploaded resume for engineer", user_id=str(user_id), object_key=filename)
+        # Deliberately don't log the object key (nor any resume_url derived
+        # from it): the key embeds an unguessable secret token (see
+        # build_private_resume_object_name) that is the only thing standing
+        # between "private MinIO bucket" and "anyone with this string can
+        # fetch the resume" -- treat it as a capability/secret, not a
+        # loggable identifier, regardless of which kwarg name it's under.
+        # Log metadata only.
+        logger.info(
+            "Uploaded resume for engineer",
+            user_id=str(user_id),
+            bucket=settings.MINIO_BUCKET_RESUMES,
+            content_type=content_type,
+            size_bytes=len(file_bytes),
+        )
 
         # AI-parse inline rather than dispatching a Celery task: this
         # deployment runs no Celery worker (see docs/architecture -- the
