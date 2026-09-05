@@ -219,6 +219,15 @@ class Settings(BaseSettings):
         errors = []
         if self.DATABASE_URL.startswith("postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost"):
             errors.append("DATABASE_URL is still the local development default")
+        elif "localhost" in self.DATABASE_URL or "127.0.0.1" in self.DATABASE_URL:
+            # Broader than the exact-default check above: catches any
+            # locally-pointed DATABASE_URL, even one with different
+            # credentials, which can never be reachable from production.
+            errors.append("DATABASE_URL must not point at localhost/127.0.0.1 in production")
+        if self.DEBUG:
+            errors.append(
+                "DEBUG must not be enabled in production (it exposes verbose tracebacks/internals to clients)"
+            )
         if self.SEED_DEMO_DATA:
             errors.append("SEED_DEMO_DATA must not be enabled in production environments")
         if len(self.JWT_SECRET_KEY) < 32 or "dev_secret" in self.JWT_SECRET_KEY:
@@ -227,6 +236,14 @@ class Settings(BaseSettings):
             errors.append("KEYCLOAK_CLIENT_SECRET must be configured")
         if self.MINIO_SECRET_KEY in {"minioadmin", "minioadmin_dev_password", ""}:
             errors.append("MINIO_SECRET_KEY must be configured")
+        # MINIO_ENDPOINT/MINIO_PUBLIC_ENDPOINT double as the real object-storage
+        # endpoint in production (Supabase Storage's S3-compatible endpoint --
+        # see storage.py), so a localhost value here is never correct in prod,
+        # not just a "still using MinIO" smell.
+        if "localhost" in self.MINIO_ENDPOINT or "127.0.0.1" in self.MINIO_ENDPOINT:
+            errors.append("MINIO_ENDPOINT must not point at localhost/127.0.0.1 in production")
+        if "localhost" in self.MINIO_PUBLIC_ENDPOINT or "127.0.0.1" in self.MINIO_PUBLIC_ENDPOINT:
+            errors.append("MINIO_PUBLIC_ENDPOINT must not point at localhost/127.0.0.1 in production")
         if "*" in self.CORS_ORIGINS:
             errors.append(
                 "CORS_ORIGINS must not contain a wildcard in production (combined with allow_credentials=True, this permits credentialed cross-origin requests from any site)"

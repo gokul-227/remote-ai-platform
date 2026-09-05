@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: [prod]
 
+# Only inspects github.head_ref -- never checks out the repo or calls the
+# GitHub API, so it doesn't need any GITHUB_TOKEN permission at all.
+permissions: {}
+
 jobs:
   check-source-branch:
     runs-on: ubuntu-latest
