@@ -90,7 +90,7 @@ function CommentSection({ postId, currentUserId }: { postId: string; currentUser
           <button
             type="submit"
             disabled={addComment.isPending}
-            className="h-7 w-7 flex items-center justify-center rounded-full bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)] transition-colors disabled:opacity-50"
+            className="h-7 w-7 flex items-center justify-center rounded-full bg-[var(--color-brand)] text-white dark:text-[#0B1E3D] hover:bg-[var(--color-brand-hover)] transition-colors disabled:opacity-50"
           >
             <Send className="h-3.5 w-3.5" />
           </button>
