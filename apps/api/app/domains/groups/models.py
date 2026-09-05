@@ -18,11 +18,15 @@ class Group(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     slug: Mapped[str] = mapped_column(String(120), nullable=False, unique=True, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    category: Mapped[str] = mapped_column(String(80), nullable=False, default="general")
+    # Indexed: list_groups() filters on this when the `category` query param
+    # is passed.
+    category: Mapped[str] = mapped_column(String(80), nullable=False, default="general", index=True)
     tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     banner_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    is_private: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Indexed: list_groups() applies `is_private.is_(False)` as its
+    # unconditional base filter on every public groups listing.
+    is_private: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     member_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     post_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -50,7 +50,9 @@ class CompanyProfile(Base):
     tech_stack: Mapped[list[str]] = mapped_column(
         JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False
     )
-    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Indexed: CompanyRepository.list_companies() filters on this when the
+    # `is_verified` query param is passed.
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
