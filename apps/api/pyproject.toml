@@ -58,6 +58,9 @@ dependencies = [
 
     # Payments
     "stripe==11.4.1",
+
+    # Error monitoring (no-op until SENTRY_DSN is configured -- see app/main.py)
+    "sentry-sdk[fastapi]==2.68.1",
 ]
 
 [project.optional-dependencies]
