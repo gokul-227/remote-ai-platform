@@ -16,6 +16,18 @@ TIER_AUTH = (10, 60)
 TIER_AI = (30, 60)
 TIER_GENERAL = (120, 60)
 
+# Path prefixes whose *every* request triggers a real per-call LLM completion (real $ cost),
+# so they must never share the loose default/general tier with routine CRUD/read endpoints.
+# "/quality" (unprefixed) is kept for backward compatibility with any client hitting the
+# router without the versioned prefix.
+AI_CALL_ROUTE_PREFIXES = (
+    "/api/v1/quality",
+    "/quality",
+    "/api/v1/matching",
+    "/api/v1/engineers/me/resume",
+    "/api/v1/engineers/me/ai-enhance",
+)
+
 # In-memory fallback state
 _fallback_windows: dict[str, deque[float]] = defaultdict(deque)
 
@@ -25,7 +37,7 @@ def reset_fallback_state() -> None:
     _fallback_windows.clear()
 
 
-def get_route_tier(path: str) -> tuple[int, int] | None:
+def get_route_tier(path: str, method: str = "GET") -> tuple[int, int] | None:
     # Exempt internal/diagnostic routes
     if path in {
         "/health",
@@ -42,6 +54,7 @@ def get_route_tier(path: str) -> tuple[int, int] | None:
 
     base_limit = settings.RATE_LIMIT_MAX_REQUESTS
     window = settings.RATE_LIMIT_WINDOW_SECONDS
+    method = method.upper()
 
     if any(
         path.startswith(p)
@@ -54,7 +67,22 @@ def get_route_tier(path: str) -> tuple[int, int] | None:
     ):
         return (base_limit, window)
 
-    if any(path.startswith(p) for p in ("/api/v1/quality", "/api/v1/matching", "/quality")):
+    if any(path.startswith(p) for p in AI_CALL_ROUTE_PREFIXES):
+        return (base_limit * 3, window)
+
+    # Job creation synchronously triggers JobEnricherAgent (an LLM call); job reads (GET/list)
+    # don't and should stay on the general tier -- hence the method check rather than a bare
+    # prefix match, which would otherwise also throttle routine job browsing.
+    if method == "POST" and path == "/api/v1/jobs":
+        return (base_limit * 3, window)
+
+    # Submission AI review (/api/v1/projects/submissions/{id}/ai-review) synchronously triggers
+    # QualityEngineAgent; every other /projects/submissions/* route is plain CRUD.
+    if (
+        method == "POST"
+        and path.startswith("/api/v1/projects/submissions/")
+        and path.endswith("/ai-review")
+    ):
         return (base_limit * 3, window)
 
     return (base_limit * 10, window)
@@ -63,12 +91,13 @@ def get_route_tier(path: str) -> tuple[int, int] | None:
 async def check_rate_limit(
     identifier: str,
     path: str,
+    method: str = "GET",
 ) -> tuple[bool, int, int]:
     """
     Check rate limit for client identifier on path.
     Returns: (is_allowed, remaining_requests, retry_after_seconds)
     """
-    tier = get_route_tier(path)
+    tier = get_route_tier(path, method)
     if tier is None:
         return True, 9999, 0
 

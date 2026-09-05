@@ -76,6 +76,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         is_allowed, remaining, retry_after = await check_rate_limit(
             identifier=identifier,
             path=request.url.path,
+            method=request.method,
         )
 
         if not is_allowed:

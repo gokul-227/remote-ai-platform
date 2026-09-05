@@ -7,9 +7,10 @@ from collections.abc import Sequence
 
 from fastapi import UploadFile
 
+from app.agents.llm_client import AIProviderError
 from app.agents.resume_parser import ResumeParserAgent
 from app.core.config import settings
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import AIUnavailableException, NotFoundError
 from app.core.logging import get_logger
 from app.core.security import build_private_resume_object_name, validate_resume_upload
 from app.core.storage import get_storage
@@ -96,7 +97,21 @@ class EngineerService:
                 str(profile.experience or []),
             ]
         )
-        response = await AIService().improve_profile(profile_text)
+        try:
+            response = await AIService().improve_profile(profile_text)
+        except AIProviderError as exc:
+            # This endpoint is an explicit, user-requested AI action (unlike resume-upload's
+            # best-effort background parse) -- on total AI failure, surface a clear 503 rather
+            # than silently writing placeholder ai_summary/missing_skills that would look like
+            # a real enhancement.
+            logger.warning(
+                "Profile AI enhancement failed; all providers unavailable",
+                user_id=str(user_id),
+                error=str(exc),
+            )
+            raise AIUnavailableException(
+                "AI profile enhancement is temporarily unavailable. Please retry shortly."
+            ) from exc
         summary = response.data.get("summary") or (
             response.reason[0] if response.reason else profile.ai_summary
         )
