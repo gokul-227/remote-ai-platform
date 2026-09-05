@@ -43,14 +43,6 @@ const POST_TYPES = [
   { id: "article", label: "Write article", icon: FileText, color: "text-purple-600" },
 ];
 
-const TRENDING_SKILLS = [
-  { skill: "Rust", change: "+38%", hot: true },
-  { skill: "LLM Integration", change: "+65%", hot: true },
-  { skill: "dbt / Data Eng.", change: "+24%" },
-  { skill: "Next.js 15", change: "+19%" },
-  { skill: "Kubernetes", change: "+11%" },
-];
-
 const SUGGESTED_COMPANIES = [
   { name: "Linear", role: "Senior Professionals", count: 4 },
   { name: "Vercel", role: "Full Stack Devs", count: 7 },
@@ -519,27 +511,19 @@ function ProfileWidget({ user }: { user: { full_name?: string; email?: string; r
 }
 
 function TrendingPanel() {
+  // Trending Skills is not a live feature yet -- the backend task that would
+  // compute it (refresh_trending_skills, see app/workers/tasks/jobs.py) is
+  // still a stub with no real logic, gated off by FEATURE_TRENDING_SKILLS.
+  // This previously rendered a hardcoded, always-the-same skills list as if
+  // it were live market data; showing an honest "coming soon" state instead
+  // of fabricated numbers.
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--text-main)] flex items-center gap-1.5">
-          <TrendingUp className="h-4 w-4 text-[var(--color-brand)]" />
-          Trending Skills
-        </h3>
-      </div>
-      <div className="space-y-2">
-        {TRENDING_SKILLS.map((s) => (
-          <div key={s.skill} className="flex items-center justify-between">
-            <span className="text-xs text-[var(--text-main)] font-medium">{s.skill}</span>
-            <span className={cn(
-              "text-[10px] font-semibold px-1.5 py-0.5 rounded-md",
-              s.hot ? "text-emerald-700 bg-emerald-50" : "text-[var(--text-muted)] bg-[var(--bg-subtle)]"
-            )}>
-              {s.change}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] p-4 space-y-2">
+      <h3 className="text-sm font-semibold text-[var(--text-main)] flex items-center gap-1.5">
+        <TrendingUp className="h-4 w-4 text-[var(--color-brand)]" />
+        Trending Skills
+      </h3>
+      <p className="text-xs text-[var(--text-muted)]">Coming soon — we&apos;re still building this.</p>
     </div>
   );
 }

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.feature_flags import get_all_flags
 from app.domains.admin.models import ActivityLog, AuditEvent
 from app.domains.admin.repository import AdminRepository
 from app.domains.admin.schemas import (
@@ -22,6 +23,7 @@ from app.domains.admin.schemas import (
     AIUsageStatsResponse,
     ApiSyncLogResponse,
     AuditEventResponse,
+    FeatureFlagsResponse,
     JobStatusUpdate,
     PlatformStatsResponse,
     ServiceHealthStatus,
@@ -281,6 +283,20 @@ async def reclean_job_text(
     )
     await db.commit()
     return {"scanned": len(jobs), "changed": changed}
+
+
+@router.get("/feature-flags", response_model=FeatureFlagsResponse)
+async def get_feature_flags(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+) -> FeatureFlagsResponse:
+    """Current on/off state of every registered feature flag (Admin only).
+
+    Read-only: flag values come from process env vars / `.env` only (see
+    app.core.feature_flags) -- there is no runtime toggle endpoint yet. Lets
+    an admin confirm what's actually enabled without redeploying or reading
+    server env vars directly.
+    """
+    return FeatureFlagsResponse(flags=get_all_flags())
 
 
 @router.get("/ai-usage", response_model=AIUsageStatsResponse)
