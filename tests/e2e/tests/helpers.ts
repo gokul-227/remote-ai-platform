@@ -7,9 +7,9 @@ import { Page, expect } from "@playwright/test";
  * (returns an `email_otp` field alongside the action link; it does NOT send
  * an email, it just mints the same code Supabase would otherwise deliver).
  * We still drive the real login UI (email -> "Send code" -> code input ->
- * "Verify") end to end -- the UI's own signInWithOtp() call sends a real
- * (unread) code first, then we mint and type in the one we actually know,
- * which supersedes it as the current valid code for that email.
+ * "Verify") end to end -- but see loginWithOtp() below for why the UI's own
+ * signInWithOtp() *network call* is stubbed out rather than left to hit
+ * Supabase for real.
  */
 export async function getEmailOtp(
   page: Page,
@@ -40,8 +40,30 @@ export async function getEmailOtp(
  * Drives the real /auth/login OTP UI to a signed-in session for `email`,
  * using getEmailOtp() above to obtain a real, verifiable code instead of
  * reading one from an inbox.
+ *
+ * The UI's "Send code" button calls Supabase's signInWithOtp(), which hits
+ * `POST /auth/v1/otp` and actually sends an email. Supabase's own built-in
+ * mailer enforces a very low, project-wide send-rate limit (independent of
+ * which address is being emailed), and this suite (like the app's own
+ * "Resend code" button) never reads that email anyway -- getEmailOtp() above
+ * mints the real, verifiable code we actually type in via the Admin API's
+ * `generate_link`, which does NOT count against that send limit. Running the
+ * full suite repeatedly exhausts the mailer's quota within minutes and then
+ * every single test that logs in fails at this step with a 429
+ * `over_email_send_rate_limit` before ever reaching the code input --
+ * something that was mistaken for a post-verifyOtp redirect bug until the
+ * trace evidence (a captured `POST .../auth/v1/otp` -> 429 network entry)
+ * showed the real failure was here, one step earlier. Stubbing out just this
+ * one network call keeps the rest of the flow (verifyOtp, /auth/me, the
+ * redirect) fully real while making the test hermetic against Supabase's
+ * mailer quota.
  */
 export async function loginWithOtp(page: Page, email: string, type: "signup" | "magiclink" = "magiclink") {
+  await page.route("**/auth/v1/otp", (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+
   await page.goto("/auth/login");
   await page.locator("#email").fill(email);
   await page.getByRole("button", { name: /send code/i }).click();

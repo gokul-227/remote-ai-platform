@@ -148,12 +148,19 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-        # TEMP DEBUG: scoped to the one failing admin-journey login test while
-        # root-causing the passwordless-OTP redirect bug -- restore to the
-        # full `npx playwright test` before merging.
-        run: npx playwright test tests/admin-journey.spec.ts --retries=0
+        # TEMP DEBUG: scoped to the one admin-journey login test while
+        # confirming whether a real bug remains downstream of the OTP-send
+        # stub added in the previous commit -- restore to the full
+        # `npx playwright test` before merging.
+        run: npx playwright test tests/admin-journey.spec.ts
 
-      - name: Upload Playwright trace/report on failure (TEMP DEBUG)
+      # Keeping this permanently (not just for this investigation): it's what
+      # actually surfaced the real root cause of a prior E2E failure -- a
+      # captured `POST .../auth/v1/otp` -> 429 network entry in trace.zip --
+      # after `docker compose logs` alone (below) had scrolled the relevant
+      # request off screen. Playwright only writes these files on failure, so
+      # the upload step costs nothing on green runs.
+      - name: Upload Playwright trace/report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
@@ -163,9 +170,7 @@ jobs:
 
       - name: Stack logs on failure
         if: failure()
-        # TEMP DEBUG: api-only, untruncated -- the default --tail=200 across
-        # all services was scrolling the actual auth/me request off screen.
-        run: docker compose -f infra/docker/docker-compose.yml logs api
+        run: docker compose -f infra/docker/docker-compose.yml logs --tail=200
 
   migrations:
     name: Migration validation
