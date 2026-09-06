@@ -151,7 +151,7 @@ jobs:
         # TEMP DEBUG: scoped to the one failing admin-journey login test while
         # root-causing the passwordless-OTP redirect bug -- restore to the
         # full `npx playwright test` before merging.
-        run: npx playwright test tests/admin-journey.spec.ts
+        run: npx playwright test tests/admin-journey.spec.ts --retries=0
 
       - name: Upload Playwright trace/report on failure (TEMP DEBUG)
         if: failure()
