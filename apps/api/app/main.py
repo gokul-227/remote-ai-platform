@@ -20,7 +20,7 @@ from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
-from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware
+from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
 from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.router import router as admin_router
 from app.domains.analytics.router import router as analytics_router
@@ -171,6 +171,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     init_sentry()
 
+    # /docs, /redoc and /openapi.json map the entire API surface (every route,
+    # request/response schema, auth requirements) for whoever requests them --
+    # a fine dev convenience, but in production it's a free recon tool for
+    # attackers and was previously enabled unconditionally regardless of
+    # environment. Gate them on the same is_production check already used
+    # elsewhere (validate_production_settings, seed-data auto-run) so a single
+    # Render env var (or the RENDER=true fallback) can't leave this mismatched.
+    docs_enabled = not settings.is_production
     app = FastAPI(
         title="Remote AI Platform",
         description=(
@@ -178,9 +186,9 @@ def create_app() -> FastAPI:
             "Aggregate remote jobs, match engineers with AI, and connect talent with companies."
         ),
         version=settings.APP_VERSION,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
         lifespan=lifespan,
     )
 
@@ -194,6 +202,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestIDMiddleware)
 
     # ── Exception handlers ────────────────────────────────────────────────────
