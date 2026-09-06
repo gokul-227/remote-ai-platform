@@ -61,6 +61,18 @@ def verify_supabase_token(token: str) -> SupabaseIdentity:
             signing_key.key,
             algorithms=["ES256", "RS256", "EdDSA"],
             audience=settings.SUPABASE_JWT_AUDIENCE,
+            # Belt-and-suspenders: the signing key itself is already fetched
+            # from *this* project's own JWKS endpoint (derived from
+            # SUPABASE_URL), so a token from a different Supabase project
+            # would already fail signature verification above. Checking
+            # `iss` too costs nothing and guards against any future JWKS
+            # client change (e.g. a shared/cached client across projects)
+            # that might otherwise accept a same-algorithm token signed by
+            # a different Supabase project.
+            issuer=(
+                f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1" if settings.SUPABASE_URL else None
+            ),
+            options={"verify_iss": bool(settings.SUPABASE_URL)},
         )
     except jwt.PyJWTError as exc:
         raise HTTPException(

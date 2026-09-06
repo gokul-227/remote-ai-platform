@@ -37,7 +37,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 const POST_TYPES = [
-  { id: "update", label: "Share an update", icon: Globe, color: "text-[#B54A2C]" },
+  { id: "update", label: "Share an update", icon: Globe, color: "text-[#0552CC]" },
   { id: "project", label: "Project update", icon: Briefcase, color: "text-emerald-600" },
   { id: "achievement", label: "Celebrate achievement", icon: Trophy, color: "text-amber-500" },
   { id: "article", label: "Write article", icon: FileText, color: "text-purple-600" },
@@ -90,7 +90,7 @@ function CommentSection({ postId, currentUserId }: { postId: string; currentUser
           <button
             type="submit"
             disabled={addComment.isPending}
-            className="h-7 w-7 flex items-center justify-center rounded-full bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)] transition-colors disabled:opacity-50"
+            className="h-7 w-7 flex items-center justify-center rounded-full bg-[var(--color-brand)] text-white dark:text-[#0B1E3D] hover:bg-[var(--color-brand-hover)] transition-colors disabled:opacity-50"
           >
             <Send className="h-3.5 w-3.5" />
           </button>
@@ -488,7 +488,7 @@ function ProfileWidget({ user }: { user: { full_name?: string; email?: string; r
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] overflow-hidden">
       {/* Banner */}
-      <div className="h-14 bg-gradient-to-br from-[#B54A2C] via-[#C97B2E] to-[#7A3B4A]" />
+      <div className="h-14 bg-gradient-to-br from-[#0552CC] via-[#1D6FE0] to-[#1D4ED8]" />
       <div className="px-4 pb-4">
         <div className="-mt-6 mb-2">
           <Avatar name={user?.full_name || "You"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />

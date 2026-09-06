@@ -20,7 +20,7 @@ from app.core.database import engine
 from app.core.exceptions import register_exception_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
-from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware
+from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
 from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.router import router as admin_router
 from app.domains.analytics.router import router as analytics_router
@@ -50,30 +50,39 @@ logger = structlog.get_logger(__name__)
 def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
     """Best-effort scrub of common sensitive fields before an event is sent.
 
-    Sentry's SDK does NOT scrub payload bodies by default -- it only avoids
-    attaching PII (user IP, cookies, request body) unless send_default_pii is
-    turned on, which we never do (see init_sentry below). This hook is a
-    defense-in-depth pass over whatever headers/extra data integrations do
-    attach, in case request bodies are ever added via with_scope/set_context.
+    IMPORTANT: `send_default_pii=False` (set in init_sentry below) does NOT
+    stop request bodies from being attached to events -- that gate only
+    covers things like the client IP and cookies (via
+    RequestExtractor.extract_into_event in the SDK's WSGI/ASGI integrations,
+    `attach_request_body` defaults to True independent of send_default_pii).
+    So a JSON body posted to e.g. /auth/login, /auth/register, or
+    /auth/reset-password *is* captured under event["request"]["data"] when an
+    unhandled exception occurs during that request, up to
+    `max_request_body_size` -- this scrub is not defense-in-depth, it is the
+    only thing standing between "user submits a password" and "that password
+    sits in Sentry in cleartext." Matching is substring-based (not exact-key)
+    so field-name variants -- new_password, current_password, reset_token,
+    password_hash, stripe_secret_key, client_secret, etc. -- are all caught
+    without having to enumerate every schema field by name.
     """
-    sensitive_keys = {
+    sensitive_key_substrings = (
         "authorization",
         "cookie",
-        "set-cookie",
         "password",
         "token",
-        "access_token",
-        "refresh_token",
         "secret",
         "api_key",
-        "stripe_secret_key",
-        "client_secret",
-    }
+        "apikey",
+    )
+
+    def _is_sensitive_key(key: str) -> bool:
+        lowered = key.lower()
+        return any(marker in lowered for marker in sensitive_key_substrings)
 
     def _scrub(value: object) -> object:
         if isinstance(value, dict):
             return {
-                k: ("[Filtered]" if k.lower() in sensitive_keys else _scrub(v))
+                k: ("[Filtered]" if _is_sensitive_key(k) else _scrub(v))
                 for k, v in value.items()
             }
         if isinstance(value, list):
@@ -82,9 +91,17 @@ def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
 
     request = event.get("request")
     if isinstance(request, dict):
-        for field in ("headers", "cookies", "data"):
+        for field in ("headers", "data"):
             if field in request:
                 request[field] = _scrub(request[field])
+        # Cookie *values* are inherently sensitive (session IDs, CSRF
+        # tokens, ...) regardless of what the cookie happens to be named --
+        # unlike headers/data, name-based key matching isn't the right
+        # check here, so redact every cookie value outright. Belt-and-braces
+        # alongside send_default_pii=False, which already keeps cookies out
+        # of the event in the current SDK.
+        if "cookies" in request and isinstance(request["cookies"], dict):
+            request["cookies"] = dict.fromkeys(request["cookies"], "[Filtered]")
 
     return event
 
@@ -107,8 +124,18 @@ def init_sentry() -> None:
         traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
         # Off by default in recent SDK versions; set explicitly so this stays
         # true even if the SDK's own default ever changes. PII (request IP,
-        # cookies, request/response bodies) must never be sent to Sentry.
+        # cookies) must never be sent to Sentry.
         send_default_pii=False,
+        # Defaults to True in the SDK: it captures a snapshot of every local
+        # variable in every frame of a captured exception's stack trace.
+        # send_default_pii=False does NOT gate this -- it's a fully separate
+        # option -- so without this explicit override, an unhandled exception
+        # raised while a plaintext password, JWT, or resume text is sitting
+        # in a local variable (e.g. inside AuthService.verify_token or
+        # EngineerService.upload_resume) would ship that value to Sentry in
+        # cleartext, bypassing _sentry_before_send entirely (it only scrubs
+        # event["request"], never event["exception"]["values"][*]["stacktrace"]).
+        include_local_variables=False,
         before_send=_sentry_before_send,
         integrations=[StarletteIntegration(), FastApiIntegration()],
     )
@@ -171,6 +198,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     init_sentry()
 
+    # /docs, /redoc and /openapi.json map the entire API surface (every route,
+    # request/response schema, auth requirements) for whoever requests them --
+    # a fine dev convenience, but in production it's a free recon tool for
+    # attackers and was previously enabled unconditionally regardless of
+    # environment. Gate them on the same is_production check already used
+    # elsewhere (validate_production_settings, seed-data auto-run) so a single
+    # Render env var (or the RENDER=true fallback) can't leave this mismatched.
+    docs_enabled = not settings.is_production
     app = FastAPI(
         title="Remote AI Platform",
         description=(
@@ -178,9 +213,9 @@ def create_app() -> FastAPI:
             "Aggregate remote jobs, match engineers with AI, and connect talent with companies."
         ),
         version=settings.APP_VERSION,
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url="/docs" if docs_enabled else None,
+        redoc_url="/redoc" if docs_enabled else None,
+        openapi_url="/openapi.json" if docs_enabled else None,
         lifespan=lifespan,
     )
 
@@ -194,6 +229,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestIDMiddleware)
 
     # ── Exception handlers ────────────────────────────────────────────────────

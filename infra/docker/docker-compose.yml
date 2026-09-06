@@ -295,7 +295,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
       MINIO_SECURE: "false"
-      JWT_SECRET_KEY: test-secret-key-at-least-32-chars-long
+      JWT_SECRET_KEY: test-secret-key-at-least-32-chars-long # gitleaks:allow -- local/CI test fixture, not a real secret
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-remote-ai-platform}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-remote-ai-platform-api}

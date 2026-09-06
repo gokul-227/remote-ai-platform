@@ -11,14 +11,17 @@ from datetime import UTC, datetime
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.logging import get_logger
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.marketplace.models import ProjectTask
+from app.domains.payments.models import StripeWebhookEvent
 from app.domains.payments.schemas import (
     DirectEscrowCreate,
     PaymentPartySummary,
@@ -28,6 +31,8 @@ from app.domains.payments.schemas import (
 from app.domains.projects.models import PaymentTransaction, Project
 from app.services.notifications import notify_user
 from app.services.payments import get_payment_provider
+
+logger = get_logger("payments.router")
 
 router = APIRouter(prefix="/payments", tags=["Payments & Financial Ledger"])
 
@@ -197,7 +202,7 @@ async def create_escrow_payment(
         task = await db.get(ProjectTask, data.task_id)
         if not task or task.project_id != project.id:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Task must belong to project",
             )
 
@@ -310,6 +315,15 @@ _WEBHOOK_STATUS_MAP = {
     "payment_intent.payment_failed": "FAILED",
 }
 
+# Once a payment reaches one of these, it's done -- funds have either moved
+# to the payee (RELEASED) or moved back / never captured (REFUNDED/FAILED).
+# An out-of-order webhook replay (still validly signed, e.g. a captured and
+# resent request within Stripe's signature timestamp tolerance, or events
+# delivered out of order) must never be allowed to move a terminal payment
+# backward -- e.g. an old payment_intent.canceled arriving after the escrow
+# was already released must not silently revert it to REFUNDED.
+_TERMINAL_STATUSES = {"RELEASED", "REFUNDED", "FAILED"}
+
 
 @router.post("/webhooks/stripe", include_in_schema=False)
 async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
@@ -330,8 +344,27 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -
     except (ValueError, stripe.SignatureVerificationError) as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature") from exc
 
+    event_id = event.get("id")
+    if not event_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing event id")
+
+    # Dedup ledger: event_id is the table's primary key, so a second
+    # delivery of the same event -- Stripe's own retries, or a
+    # captured-and-replayed request -- raises IntegrityError here and is
+    # treated as an already-processed no-op, even if it arrives concurrently
+    # with the first (the unique constraint is enforced by Postgres, not by
+    # this process's in-memory state).
+    try:
+        async with db.begin_nested():
+            db.add(StripeWebhookEvent(event_id=event_id, event_type=event["type"]))
+            await db.flush()
+    except IntegrityError:
+        logger.info("Duplicate Stripe webhook event ignored", event_id=event_id, event_type=event["type"])
+        return {"received": True, "duplicate": True}
+
     new_status = _WEBHOOK_STATUS_MAP.get(event["type"])
     if not new_status:
+        await db.commit()
         return {"received": True}  # event type we don't act on
 
     intent_id = event["data"]["object"]["id"]
@@ -339,7 +372,22 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -
         select(PaymentTransaction).where(PaymentTransaction.provider_reference == intent_id)
     )
     if not payment:
+        await db.commit()
         return {"received": True}  # not one of ours (or already deleted) -- not an error
+
+    if payment.status in _TERMINAL_STATUSES and payment.status != new_status:
+        # Already reached a terminal state; an older event replayed out of
+        # order must never move it backward.
+        logger.warning(
+            "Ignoring Stripe webhook that would move a terminal payment backward",
+            event_id=event_id,
+            event_type=event["type"],
+            payment_id=str(payment.id),
+            current_status=payment.status,
+            attempted_status=new_status,
+        )
+        await db.commit()
+        return {"received": True}
 
     # Idempotent by construction: re-delivering the same event just sets the
     # same status again. Only notify on an actual transition so a webhook
@@ -357,6 +405,6 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -
                 f"An escrow payment of {payment.amount:.2f} {payment.currency} has been funded.",
                 "escrow_funded",
             )
-        await db.commit()
 
+    await db.commit()
     return {"received": True}

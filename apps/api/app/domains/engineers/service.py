@@ -13,12 +13,13 @@ from app.core.config import settings
 from app.core.exceptions import AIUnavailableException, NotFoundError
 from app.core.logging import get_logger
 from app.core.security import build_private_resume_object_name, validate_resume_upload
-from app.core.storage import get_storage
+from app.core.storage import generate_presigned_url, get_storage
 from app.domains.engineers.models import EngineerProfile
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.resume_extraction import extract_resume_text
 from app.domains.engineers.schemas import (
     EngineerProfileCreate,
+    EngineerProfileResponse,
     EngineerProfileUpdate,
     EngineerSearchQuery,
 )
@@ -27,11 +28,59 @@ from app.services.ai import AIService
 
 logger = get_logger("engineers.service")
 
+# How long a presigned resume-download link stays valid. Short enough that a
+# link leaked via browser history, a referrer header, or a shared screenshot
+# is useless soon after; long enough for the page that just requested it to
+# actually load the file.
+RESUME_URL_EXPIRES_HOURS = 0.25  # 15 minutes
+
+
+def _resume_object_key(stored_value: str) -> str:
+    """Extract the MinIO/S3 object key from a resume_url column value.
+
+    New uploads store the bare object key (see upload_resume() below), but
+    existing rows written before presigned URLs were introduced may still
+    hold the old permanent, publicly-reachable URL
+    (f"{MINIO_PUBLIC_ENDPOINT}/{bucket}/{key}") -- recover the key from
+    either shape so both old and new rows can be presigned.
+    """
+    if stored_value.startswith("http://") or stored_value.startswith("https://"):
+        marker = f"/{settings.MINIO_BUCKET_RESUMES}/"
+        idx = stored_value.find(marker)
+        if idx != -1:
+            return stored_value[idx + len(marker) :]
+    return stored_value
+
 
 class EngineerService:
     def __init__(self, repo: EngineerRepository):
         self.repo = repo
         self.storage = get_storage()
+
+    def resume_download_url(self, profile: EngineerProfile) -> str | None:
+        """Return a short-lived presigned URL for this profile's resume.
+
+        The object itself lives in a private bucket -- the returned URL is
+        the only credential needed to fetch it, so it must be generated
+        fresh per request rather than stored/reused indefinitely.
+        """
+        if not profile.resume_url:
+            return None
+        key = _resume_object_key(profile.resume_url)
+        return generate_presigned_url(
+            settings.MINIO_BUCKET_RESUMES, key, expires_hours=RESUME_URL_EXPIRES_HOURS
+        )
+
+    def to_response(self, profile: EngineerProfile) -> EngineerProfileResponse:
+        """Build the private (owner/admin) profile response.
+
+        Always routes resume_url through resume_download_url() rather than
+        serializing the stored column value directly, since the column now
+        holds a private object key, not a directly fetchable URL.
+        """
+        response = EngineerProfileResponse.model_validate(profile)
+        response.resume_url = self.resume_download_url(profile)
+        return response
 
     async def get_by_user_id(self, user_id: uuid.UUID) -> EngineerProfile | None:
         return await self.repo.get_by_user_id(user_id)
@@ -151,18 +200,35 @@ class EngineerService:
         filename = build_private_resume_object_name(user_id, suffix)
         content_type = file.content_type or "application/pdf"
 
-        # Upload to MinIO
-        resume_url = await self.storage.upload_file(
+        # Upload to MinIO. The bucket is private -- callers must never get a
+        # permanent, unauthenticated link to someone's resume, so only the
+        # object key (not upload_file()'s public-endpoint URL) is persisted;
+        # access always goes through a freshly generated, short-lived
+        # presigned URL (see resume_download_url()).
+        await self.storage.upload_file(
             bucket_name=settings.MINIO_BUCKET_RESUMES,
             object_name=filename,
             data=file_bytes,
             content_type=content_type,
         )
 
-        # Update profile with resume URL
-        profile.resume_url = resume_url
+        # Update profile with the private object key
+        profile.resume_url = filename
         await self.repo.db.flush()
-        logger.info("Uploaded resume for engineer", user_id=str(user_id), url=resume_url)
+        # Deliberately don't log the object key (nor any resume_url derived
+        # from it): the key embeds an unguessable secret token (see
+        # build_private_resume_object_name) that is the only thing standing
+        # between "private MinIO bucket" and "anyone with this string can
+        # fetch the resume" -- treat it as a capability/secret, not a
+        # loggable identifier, regardless of which kwarg name it's under.
+        # Log metadata only.
+        logger.info(
+            "Uploaded resume for engineer",
+            user_id=str(user_id),
+            bucket=settings.MINIO_BUCKET_RESUMES,
+            content_type=content_type,
+            size_bytes=len(file_bytes),
+        )
 
         # AI-parse inline rather than dispatching a Celery task: this
         # deployment runs no Celery worker (see docs/architecture -- the
@@ -195,7 +261,7 @@ class EngineerService:
                     error=str(exc),
                 )
 
-        return resume_url
+        return self.resume_download_url(profile) or filename
 
     async def search_engineers(self, params: EngineerSearchQuery) -> Sequence[EngineerProfile]:
         return await self.repo.search(

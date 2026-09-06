@@ -20,10 +20,10 @@ export function RightSidebar() {
       <div className="card-enterprise p-4 space-y-3">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
           <h3 className="font-semibold text-slate-900 dark:text-white text-xs flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-[#B54A2C]" />
+            <Sparkles className="h-4 w-4 text-[#0552CC]" />
             AI Matched Roles
           </h3>
-          <Link href="/jobs" className="text-[11px] font-semibold text-[#B54A2C] hover:underline">
+          <Link href="/jobs" className="text-[11px] font-semibold text-[#0552CC] hover:underline">
             View all
           </Link>
         </div>
@@ -33,9 +33,9 @@ export function RightSidebar() {
               <Link
                 key={job.id}
                 href={`/jobs/${job.id}`}
-                className="block p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-[#B54A2C] hover:bg-blue-50/30 transition-all group"
+                className="block p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-[#0552CC] hover:bg-blue-50/30 transition-all group"
               >
-                <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-white group-hover:text-[#B54A2C]">
+                <div className="flex items-center justify-between font-semibold text-slate-900 dark:text-white group-hover:text-[#0552CC]">
                   <span className="truncate">{job.title}</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
@@ -68,9 +68,9 @@ export function RightSidebar() {
       <div className="card-enterprise p-4 space-y-3">
         <div className="font-semibold text-slate-900 dark:text-white text-xs flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
           <span className="flex items-center gap-1.5">
-            <Building2 className="h-4 w-4 text-[#B54A2C]" /> Verified Employers
+            <Building2 className="h-4 w-4 text-[#0552CC]" /> Verified Employers
           </span>
-          <Link href="/companies" className="text-[11px] text-[#B54A2C] font-semibold hover:underline">
+          <Link href="/companies" className="text-[11px] text-[#0552CC] font-semibold hover:underline">
             Browse
           </Link>
         </div>
@@ -80,7 +80,7 @@ export function RightSidebar() {
           </p>
           <Link
             href="/companies"
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B54A2C] hover:gap-1.5 transition-all"
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0552CC] hover:gap-1.5 transition-all"
           >
             Explore Directory <ArrowRight className="h-3 w-3" />
           </Link>

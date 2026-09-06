@@ -58,7 +58,7 @@ class AnalyticsService:
         if event_name not in EVENT_NAMES:
             raise PlatformException(
                 f"Unknown event_name '{event_name}'. Must be one of: {sorted(EVENT_NAMES)}",
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
                 "INVALID_EVENT_NAME",
             )
         clean_properties = _sanitize_properties(properties or {})

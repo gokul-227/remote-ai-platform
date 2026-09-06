@@ -54,7 +54,7 @@ function CreateProfileForm() {
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4 text-[#B54A2C]" /> Auto-build with AI Resume Import
+            <Sparkles className="h-4 w-4 text-[#0552CC]" /> Auto-build with AI Resume Import
           </h2>
           <p className="text-xs text-slate-600">
             Upload your PDF resume to extract skills, experience, and headline automatically.
@@ -199,7 +199,7 @@ function EngineerProfileContent() {
       {/* Profile Hero */}
       <section className="card-enterprise overflow-hidden">
         {/* Dynamic banner — gradient based on role identity */}
-        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-[#B54A2C] via-[#C97B2E] to-[#7A3B4A]">
+        <div className="h-36 relative overflow-hidden bg-gradient-to-br from-[#0552CC] via-[#1D6FE0] to-[#1D4ED8]">
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
           <div className="absolute bottom-4 left-6 flex items-center gap-2">
             {profile.primary_role && (
@@ -238,9 +238,9 @@ function EngineerProfileContent() {
             {profile.location && <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{profile.location}</span>}
             {profile.timezone && <span className="flex items-center gap-1.5"><Globe className="h-4 w-4" />{profile.timezone}</span>}
             {profile.hourly_rate ? <span className="font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-0.5 text-xs">${profile.hourly_rate}/hr</span> : null}
-            {profile.github_url && <a className="flex items-center gap-1.5 hover:text-[#B54A2C] transition-colors" href={profile.github_url} target="_blank" rel="noreferrer"><Github className="h-4 w-4" />GitHub</a>}
-            {profile.linkedin_url && <a className="flex items-center gap-1.5 hover:text-[#B54A2C] transition-colors" href={profile.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-4 w-4" />LinkedIn</a>}
-            {profile.portfolio_url && <a className="flex items-center gap-1.5 hover:text-[#B54A2C] transition-colors" href={profile.portfolio_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" />Portfolio</a>}
+            {profile.github_url && <a className="flex items-center gap-1.5 hover:text-[#0552CC] transition-colors" href={profile.github_url} target="_blank" rel="noreferrer"><Github className="h-4 w-4" />GitHub</a>}
+            {profile.linkedin_url && <a className="flex items-center gap-1.5 hover:text-[#0552CC] transition-colors" href={profile.linkedin_url} target="_blank" rel="noreferrer"><Linkedin className="h-4 w-4" />LinkedIn</a>}
+            {profile.portfolio_url && <a className="flex items-center gap-1.5 hover:text-[#0552CC] transition-colors" href={profile.portfolio_url} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" />Portfolio</a>}
           </div>
           <p className="mt-2 text-xs font-medium text-slate-500">Availability: {profile.availability || (profile.is_open_to_work ? "Open to work" : "Not specified")}</p>
         </div>
@@ -383,7 +383,7 @@ function EngineerProfileContent() {
                 <Button variant="secondary" size="sm" icon={<Upload className="h-4 w-4" />} loading={uploading} onClick={() => fileInput.current?.click()}>
                   {profile.resume_url ? "Replace resume" : "Upload resume"}
                 </Button>
-                {profile.resume_url && <a className="text-sm text-[#B54A2C] hover:underline flex items-center gap-1" href={profile.resume_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3.5 w-3.5" />View resume</a>}
+                {profile.resume_url && <a className="text-sm text-[#0552CC] hover:underline flex items-center gap-1" href={profile.resume_url} target="_blank" rel="noreferrer"><ExternalLink className="h-3.5 w-3.5" />View resume</a>}
               </div>
             </section>
           )}

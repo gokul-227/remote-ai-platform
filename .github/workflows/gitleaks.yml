@@ -1,0 +1,40 @@
+name: Secret scan (gitleaks)
+
+# Scans commits introduced by a push or PR for hardcoded secrets. Free for
+# public repos / personal-account owners (no GITLEAKS_LICENSE needed --
+# licensing is only required for scanning multiple repos owned by a GitHub
+# Organization; see https://github.com/gitleaks/gitleaks-action/blob/v2/v2.md).
+#
+# This scans only the commits in the current push/PR (gitleaks-action's own
+# default behavior), not the full repository history -- a full-history sweep
+# is a one-time audit task, handled separately, not something that should
+# re-flag the same already-fixed historical commits on every future PR.
+#
+# Complements (does not replace) the pre-existing GitGuardian integration --
+# this repo cannot verify from the workflow files alone whether that
+# integration is still active, so this job is a self-contained, in-repo
+# safety net that doesn't depend on an external app install.
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # only used to comment on a PR when a leak is found
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
