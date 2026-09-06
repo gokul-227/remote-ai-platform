@@ -10,10 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionFactory, get_db
 from app.core.ws_manager import ws_manager
-from app.domains.auth.dependencies import get_current_user
+from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
-from app.domains.auth.repository import UserRepository
-from app.domains.auth.service import AuthService
 from app.domains.notifications.models import Notification
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
@@ -116,12 +114,15 @@ async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID, token
     """
     async with AsyncSessionFactory() as db:
         try:
-            service = AuthService(UserRepository(db))
-            token_payload = await service.verify_token(token)
-            user = await db.scalar(select(User).where(User.keycloak_id == token_payload.sub))
-            if not user and token_payload.email:
-                user = await db.scalar(select(User).where(User.email == token_payload.email))
-            if not user or user.id != user_id:
+            # Provider-aware (see authenticate_bearer_token's docstring in
+            # app.domains.auth.dependencies): previously this called
+            # AuthService.verify_token directly, which only understands this
+            # app's own HS256 tokens -- with AUTH_PROVIDER=supabase (the
+            # production setting), every real user's Supabase-issued (ES256)
+            # token would fail here and this endpoint would 4401 every
+            # legitimate connection.
+            user = await authenticate_bearer_token(token, db)
+            if user.id != user_id:
                 await websocket.close(code=4401)
                 return
         except Exception:

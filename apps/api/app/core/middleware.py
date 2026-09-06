@@ -89,3 +89,36 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-RateLimit-Remaining"] = str(remaining)
         return response
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Baseline security headers on every API response.
+
+    This is a JSON API, not an HTML site, but /docs and /redoc (dev-only,
+    see create_app()) do render HTML, and any client -- including one that
+    doesn't correctly validate Content-Type -- benefits from these being
+    unconditional rather than conditioned on which route responded. CSP is
+    deliberately NOT set here: FastAPI's default Swagger UI at /docs loads its
+    JS/CSS from a CDN, and a CSP restrictive enough to matter would break that
+    dev-only page for zero production benefit (it's disabled in production --
+    see create_app()). The frontend (apps/web/next.config.ts) is the one
+    surface actually rendering arbitrary HTML and already sets a real CSP.
+    """
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault(
+            "Permissions-Policy", "camera=(), microphone=(), geolocation=()"
+        )
+        # Browsers ignore HSTS on a plain-http response (local dev, Render's
+        # internal health checks), so this is safe to send unconditionally --
+        # it only takes effect once a browser actually loads the API over
+        # https, which is exactly when it should.
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=63072000; includeSubDomains"
+        )
+        return response

@@ -14,7 +14,7 @@ from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
-from app.domains.contracts.models import ContractMilestone
+from app.domains.contracts.models import Contract, ContractMilestone
 from app.domains.engineers.models import EngineerProfile
 from app.domains.marketplace.models import AIReport, ProjectTask
 from app.domains.projects.models import (
@@ -461,6 +461,39 @@ async def create_milestone(
     db: AsyncSession = Depends(get_db),
 ):
     project = await require_project_access(data.project_id, current_user, db)
+    if data.contract_milestone_id:
+        # Without this check, any project member (an engineer just added to
+        # the project counts) could link this project's Milestone to an
+        # arbitrary ContractMilestone UUID belonging to a completely
+        # unrelated company's contract -- update_milestone_status below
+        # would then let them flip that other company's contract milestone
+        # to APPROVED/PAID with no relationship to it at all (IDOR).
+        contract_milestone = await db.get(ContractMilestone, data.contract_milestone_id)
+        contract = (
+            await db.get(Contract, contract_milestone.contract_id)
+            if contract_milestone
+            else None
+        )
+        contract_ok = False
+        if contract:
+            if contract.project_id:
+                # Contract explicitly tied to a project: must be *this* one.
+                contract_ok = contract.project_id == project.id
+            else:
+                # Contract not tied to any project (a common, legitimate
+                # pattern -- contracts can be created standalone and linked
+                # to a project's milestones after the fact): fall back to
+                # verifying it belongs to the same company as this project,
+                # which is the actual tenant boundary that matters here.
+                client_company = await db.scalar(
+                    select(CompanyProfile).where(CompanyProfile.user_id == contract.client_id)
+                )
+                contract_ok = bool(client_company and client_company.id == project.company_id)
+        if not contract_milestone or not contract_ok:
+            raise HTTPException(
+                status_code=422,
+                detail="contract_milestone_id must belong to a contract for this project's company",
+            )
     milestone = Milestone(**data.model_dump())
     db.add(milestone)
     await db.flush()
@@ -501,6 +534,25 @@ async def update_milestone_status(
     if not milestone:
         raise HTTPException(status_code=404, detail="Milestone not found")
     project = await require_project_access(milestone.project_id, current_user, db)
+
+    # DONE/COMPLETED synchronizes a *linked* ContractMilestone to APPROVED
+    # (see status_map below) -- the equivalent contracts endpoint
+    # (PATCH /contracts/{id}/milestones/{id}/status) restricts APPROVED to
+    # the client/admin specifically so a worker can't self-approve their own
+    # paid deliverable. Enforce the same split here when a contract is
+    # actually linked, rather than letting any project member (including
+    # the assigned worker) flip the linked contract's approval themselves.
+    # Milestones with no contract link are unaffected -- any member may
+    # still update their own project's plain task-tracking status.
+    if (
+        milestone.contract_milestone_id
+        and data.status in {"DONE", "COMPLETED"}
+        and current_user.role == UserRole.ENGINEER
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the client company or an admin can approve/complete a milestone",
+        )
 
     milestone.status = data.status
 

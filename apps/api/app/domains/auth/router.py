@@ -192,7 +192,19 @@ async def refresh_token(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
         ) from exc
     repo = UserRepository(db)
-    user = await repo.get_by_keycloak_id(claims.get("sub", ""))
+    sub = claims.get("sub", "")
+    user = await repo.get_by_keycloak_id(sub)
+    if not user:
+        # sub is keycloak_id for password-registered users, but the user's
+        # own id for OAuth-created users (they have no keycloak_id) -- same
+        # ambiguity as create_token's own `str(user.keycloak_id or user.id)`.
+        # Without this fallback, every OAuth-only account's refresh token
+        # silently failed to resolve to any user (functional session-handling
+        # bug: those users got signed out early with no way to refresh).
+        try:
+            user = await repo.get_by_id(uuid.UUID(sub))
+        except (ValueError, TypeError):
+            user = None
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
