@@ -13,10 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import AsyncSessionFactory, get_db
 from app.domains.analytics.service import emit_analytics_event
-from app.domains.auth.dependencies import get_current_user
+from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
-from app.domains.auth.repository import UserRepository
-from app.domains.auth.service import AuthService
 from app.domains.network.models import Connection, Conversation, Message
 from app.services.notifications import notify_user as send_notification
 
@@ -376,20 +374,21 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+MAX_WS_MESSAGE_LENGTH = 10_000  # matches MessageCreate.content's REST-path limit
+
+
 @router.websocket("/messages/ws/{conversation_id}")
 async def websocket_messages(
     websocket: WebSocket, conversation_id: uuid.UUID, token: str = Query(...)
 ):
     async with AsyncSessionFactory() as db:
         try:
-            service = AuthService(UserRepository(db))
-            token_payload = await service.verify_token(token)
-            user = await db.scalar(select(User).where(User.keycloak_id == token_payload.sub))
-            if not user and token_payload.email:
-                user = await db.scalar(select(User).where(User.email == token_payload.email))
-            if not user:
-                await websocket.close(code=4401)
-                return
+            # Provider-aware: respects AUTH_PROVIDER the same way the HTTP
+            # get_current_user dependency does (see authenticate_bearer_token's
+            # docstring) -- using AuthService.verify_token directly here would
+            # only ever accept this app's own HS256 tokens, rejecting every
+            # real Supabase-issued token in production.
+            user = await authenticate_bearer_token(token, db)
             await get_conversation(conversation_id, user.id, db)
         except Exception:
             await websocket.close(code=4401)
@@ -397,8 +396,17 @@ async def websocket_messages(
         await manager.connect(conversation_id, websocket)
         try:
             while True:
-                data = json.loads(await websocket.receive_text())
-                content = str(data.get("content", "")).strip()
+                raw = await websocket.receive_text()
+                if len(raw) > MAX_WS_MESSAGE_LENGTH * 2:
+                    # A generous slack over the eventual content-length check
+                    # below (JSON framing overhead) -- reject oversized frames
+                    # outright rather than parsing them, so a client can't use
+                    # this socket to push arbitrarily large payloads at the
+                    # server/DB.
+                    await websocket.close(code=1009)
+                    return
+                data = json.loads(raw)
+                content = str(data.get("content", "")).strip()[:MAX_WS_MESSAGE_LENGTH]
                 if not content:
                     continue
                 message = Message(

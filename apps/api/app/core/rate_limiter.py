@@ -16,16 +16,31 @@ TIER_AUTH = (10, 60)
 TIER_AI = (30, 60)
 TIER_GENERAL = (120, 60)
 
-# Path prefixes whose *every* request triggers a real per-call LLM completion (real $ cost),
-# so they must never share the loose default/general tier with routine CRUD/read endpoints.
-# "/quality" (unprefixed) is kept for backward compatibility with any client hitting the
-# router without the versioned prefix.
+# Path prefixes whose *every* request triggers a real per-call LLM completion
+# (real $ cost), so they must never share the loose default/general tier with
+# routine CRUD/read endpoints. "/quality" (unprefixed) is kept for backward
+# compatibility with any client hitting the router without the versioned prefix.
 AI_CALL_ROUTE_PREFIXES = (
     "/api/v1/quality",
     "/quality",
     "/api/v1/matching",
     "/api/v1/engineers/me/resume",
     "/api/v1/engineers/me/ai-enhance",
+)
+
+# projects/* AI endpoints have a variable {project_id}/{submission_id} segment
+# in the middle of the path, so they're matched by suffix (+ POST) rather than
+# prefix -- generate_project_plan, generate_progress_summary,
+# generate_risk_analysis, generate_documentation and ai_review_submission in
+# app/domains/projects/router.py, all of which call AIService()/an AI agent.
+# (This also covers /api/v1/projects/submissions/{id}/ai-review via the
+# "/ai-review" suffix, so that path doesn't need its own separate check.)
+AI_CALL_ROUTE_SUFFIXES = (
+    "/plan",
+    "/ai/progress-summary",
+    "/ai/risk-analysis",
+    "/ai/documentation",
+    "/ai-review",
 )
 
 # In-memory fallback state
@@ -70,19 +85,15 @@ def get_route_tier(path: str, method: str = "GET") -> tuple[int, int] | None:
     if any(path.startswith(p) for p in AI_CALL_ROUTE_PREFIXES):
         return (base_limit * 3, window)
 
+    if method == "POST" and path.startswith("/api/v1/projects/") and path.endswith(
+        AI_CALL_ROUTE_SUFFIXES
+    ):
+        return (base_limit * 3, window)
+
     # Job creation synchronously triggers JobEnricherAgent (an LLM call); job reads (GET/list)
     # don't and should stay on the general tier -- hence the method check rather than a bare
     # prefix match, which would otherwise also throttle routine job browsing.
     if method == "POST" and path == "/api/v1/jobs":
-        return (base_limit * 3, window)
-
-    # Submission AI review (/api/v1/projects/submissions/{id}/ai-review) synchronously triggers
-    # QualityEngineAgent; every other /projects/submissions/* route is plain CRUD.
-    if (
-        method == "POST"
-        and path.startswith("/api/v1/projects/submissions/")
-        and path.endswith("/ai-review")
-    ):
         return (base_limit * 3, window)
 
     # Unauthenticated-callable ingestion endpoint (visitor funnel events) —
