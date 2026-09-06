@@ -152,7 +152,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         environment=settings.APP_ENV,
     )
 
-    # Startup: verify DB connectivity, run migrations, seed data
+    # Startup: verify DB connectivity, seed data
+    #
+    # NOTE: migrations are intentionally NOT run here. `alembic upgrade head`
+    # already runs once, pre-boot, in start-production.sh (see docker-compose's
+    # comment on the `api` service) before this process's uvicorn is even
+    # exec'd -- and local dev/CI run `alembic upgrade head` as an explicit
+    # manual/CI step (see CLAUDE.md). Re-running it here via a `subprocess.run`
+    # child process was pure duplication: that child re-imports alembic +
+    # the entire SQLAlchemy model graph (via alembic/env.py's model imports)
+    # a SECOND time, on top of everything this same parent process already
+    # imported to build the FastAPI app (all 20+ domain routers, LiteLLM,
+    # boto3, Sentry, prometheus-fastapi-instrumentator, ...). On Render's
+    # free tier (512MB), running parent + this migration child concurrently
+    # was enough to exceed the memory limit and get OOM-killed a few seconds
+    # into every fresh boot -- reproduced locally via
+    # `docker run --memory=512m --memory-swap=512m` against the production
+    # Docker target: OOMKilled=true right after "Database connection
+    # verified", with no further log output (subprocess output is buffered
+    # via capture_output=True and only logged after the child exits, which
+    # it never got to). Removing this redundant re-run fixes the OOM without
+    # touching migration correctness -- migrations still run exactly once,
+    # just before uvicorn starts instead of after.
     try:
         async with engine.begin() as conn:
             await conn.run_sync(lambda c: c.execute(__import__("sqlalchemy").text("SELECT 1")))
@@ -160,24 +181,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.error("Database connection failed", error=str(e))
         raise
-
-    # Auto-run alembic migrations on startup (safe: idempotent)
-    try:
-        import subprocess
-        import sys as _sys
-
-        result = subprocess.run(
-            [_sys.executable, "-m", "alembic", "upgrade", "head"],
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
-        if result.returncode == 0:
-            logger.info("Alembic migrations applied", output=result.stdout.strip().split("\n")[-1])
-        else:
-            logger.warning("Alembic migration warning", stderr=result.stderr.strip())
-    except Exception as e:
-        logger.warning("Alembic migration skipped", error=str(e))
 
     # Auto-seed demo data only in development or if explicitly requested via configuration
     if settings.is_development or settings.SEED_DEMO_DATA:
