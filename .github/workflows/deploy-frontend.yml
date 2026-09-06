@@ -2,22 +2,40 @@ name: Deploy frontend (Cloudflare)
 
 # Runs only after CI has passed on main, not on every raw push -- broken
 # code never gets deployed just because it merged.
+#
+# workflow_run's `branches` filter matches on the *head* branch name of the
+# workflow run it's reacting to. CI also runs on `pull_request` (including
+# from forks), and for a pull_request-triggered run, head_branch is the
+# contributor's own branch name in their fork -- so an attacker who names a
+# fork branch "prod" and opens a PR would otherwise produce a completed "CI"
+# workflow_run with branches: [prod] matching, letting this job check out
+# and deploy their fork commit using this repo's real Cloudflare/Sentry/
+# Supabase secrets. Restricting to `event == 'push'` closes that: a push
+# event to this exact branch can only originate from someone with write
+# access to this repository, never from a fork's pull_request run. The
+# head_repository check is redundant with that but kept as defense in depth.
 on:
   workflow_run:
     workflows: ["CI"]
     branches: [prod]
     types: [completed]
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: "npm"

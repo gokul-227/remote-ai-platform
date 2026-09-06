@@ -15,7 +15,13 @@ requires-python = ">=3.11"
 
 dependencies = [
     # Web framework
-    "fastapi==0.115.5",
+    "fastapi==0.141.1",
+    # Pinned explicitly (not just left to fastapi's own transitive range) to
+    # force in the fix for several starlette CVEs (host-header/path request.url
+    # reconstruction, unbounded urlencoded form parsing, HTTPEndpoint method
+    # dispatch) that aren't closed until 1.0.1/1.1.0/1.3.0/1.3.1 respectively --
+    # fastapi==0.141.1 alone would still resolve to an older, vulnerable 0.5x.
+    "starlette==1.6.0",
     "uvicorn[standard]==0.32.1",
     "python-multipart==0.0.31",
 
@@ -30,7 +36,7 @@ dependencies = [
     "email-validator==2.2.0",
 
     # Auth & Security
-    "python-jose[cryptography]==3.4.0",
+    "python-jose[cryptography]==3.5.0",
     "pyjwt[crypto]==2.13.0",
     "passlib[bcrypt]==1.7.4",
     "httpx>=0.28.0",
@@ -53,7 +59,7 @@ dependencies = [
     "redis[hiredis]==5.2.1",
 
     # Monitoring & Logging
-    "prometheus-fastapi-instrumentator==7.0.0",
+    "prometheus-fastapi-instrumentator==8.1.0",
     "structlog==24.4.0",
 
     # Payments

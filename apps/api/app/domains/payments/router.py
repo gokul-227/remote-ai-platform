@@ -202,7 +202,7 @@ async def create_escrow_payment(
         task = await db.get(ProjectTask, data.task_id)
         if not task or task.project_id != project.id:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Task must belong to project",
             )
 
