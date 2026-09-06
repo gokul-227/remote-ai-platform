@@ -8,7 +8,7 @@ include = ["app*"]
 
 [project]
 name = "remote-ai-platform-api"
-version = "0.1.0"
+version = "0.1.1"
 description = "Remote AI Platform — FastAPI Backend"
 readme = "README.md"
 requires-python = ">=3.11"
