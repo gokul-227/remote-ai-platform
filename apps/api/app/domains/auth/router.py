@@ -14,7 +14,6 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import pwd_context
 from app.domains.analytics.service import emit_analytics_event
-from app.domains.auth import oauth
 from app.domains.auth.dependencies import get_auth_service, get_current_user
 from app.domains.auth.models import PasswordResetToken, User, UserRole
 from app.domains.auth.repository import UserRepository
@@ -382,108 +381,6 @@ async def get_logout_url(
     """Get Keycloak logout URL."""
     url = auth_service.get_logout_url(redirect_uri)
     return LogoutUrlResponse(logout_url=url)
-
-
-@router.get("/oauth/{provider}/login-url")
-async def get_oauth_login_url(provider: str) -> dict:
-    """Return the URL to redirect the browser to for Google/Microsoft sign-in."""
-    if provider not in ("google", "microsoft"):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown OAuth provider")
-    return {"url": oauth.get_authorization_url(provider)}
-
-
-@router.get("/oauth/{provider}/callback", include_in_schema=False)
-async def oauth_callback(
-    provider: str,
-    code: str | None = None,
-    state: str | None = None,
-    error: str | None = None,
-    db: AsyncSession = Depends(get_db),
-):
-    """Google/Microsoft redirects the browser here after the user approves
-    (or denies) access. Exchanges the code, upserts the local user, issues
-    this app's own JWTs, then redirects the browser to the frontend with a
-    one-time handoff code (never the real tokens -- those would leak into
-    browser history and server access logs via the URL).
-    """
-    from fastapi.responses import RedirectResponse
-
-    if provider not in ("google", "microsoft"):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown OAuth provider")
-
-    if error or not code or not state:
-        return RedirectResponse(f"{settings.FRONTEND_URL}/auth/login?error=oauth_denied")
-
-    oauth.consume_state(state)  # raises 400 on invalid/expired/replayed state
-    info = await oauth.exchange_code_for_userinfo(provider, code)
-
-    repo = UserRepository(db)
-    user = await repo.get_by_email(info.email)
-    if not user:
-        user = await repo.create(
-            UserCreate(
-                email=info.email,
-                full_name=info.full_name,
-                avatar_url=info.avatar_url,
-                role=UserRole.ENGINEER,  # same default as email/password signup; changeable via onboarding
-            )
-        )
-        await record_audit_event(
-            db=db,
-            action="OAUTH_ACCOUNT_CREATED",
-            resource_type="USER",
-            resource_id=str(user.id),
-            actor_id=user.id,
-            actor_role=user.role.value,
-            payload={"provider": provider},
-        )
-        await emit_analytics_event(
-            db, "signup_completed", user.id, {"role": user.role.value, "provider": provider}
-        )
-    elif not user.is_active:
-        return RedirectResponse(f"{settings.FRONTEND_URL}/auth/login?error=account_suspended")
-
-    access_token = create_access_token(user)
-    refresh_token = create_refresh_token(user)
-    await record_audit_event(
-        db=db,
-        action="OAUTH_LOGIN",
-        resource_type="USER",
-        resource_id=str(user.id),
-        actor_id=user.id,
-        actor_role=user.role.value,
-        payload={"provider": provider},
-    )
-    await db.commit()
-
-    handoff = oauth.create_handoff(access_token, refresh_token)
-    return RedirectResponse(f"{settings.FRONTEND_URL}/auth/oauth-callback?handoff={handoff}")
-
-
-@router.post("/oauth/exchange")
-async def oauth_exchange(
-    handoff: str = Body(..., embed=True), db: AsyncSession = Depends(get_db)
-) -> TokenResponse:
-    """Frontend calls this immediately after the OAuth redirect to trade the
-    one-time handoff code for the real access/refresh tokens."""
-    access_token, refresh_token = oauth.consume_handoff(handoff)
-    payload = jwt.get_unverified_claims(access_token)
-    repo = UserRepository(db)
-    # sub is keycloak_id for password-registered users, but the user's own id
-    # for OAuth-created users (they have no keycloak_id) -- same ambiguity as
-    # the JWT's "sub" claim itself (see create_token above).
-    user = await repo.get_by_keycloak_id(payload["sub"]) or await repo.get_by_id(
-        uuid.UUID(payload["sub"])
-    )
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        user=UserResponse.model_validate(user),
-    )
 
 
 @router.patch("/role", response_model=UserResponse)

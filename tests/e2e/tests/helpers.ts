@@ -1,14 +1,88 @@
 import { Page, expect } from "@playwright/test";
 
 /**
- * Registration in production requires confirming a real email (Supabase
- * `mailer_autoconfirm=False`), which the register page surfaces as a "check
- * your email" screen instead of an immediate session -- there's no inbox to
- * check in CI. Create and confirm the user directly via the Supabase Admin
- * API (same pattern as the "Seed demo data" CI step), stash the role/name
- * choice the same way the real register page does, then drive the real
- * /auth/login form -- which already knows how to apply that stashed choice
- * (see applyPendingRegistration in src/lib/supabase.ts).
+ * Login/registration are now passwordless (email OTP) -- there's no inbox to
+ * read a real code from in CI, so we fetch a genuine, verifiable OTP
+ * ourselves via the Supabase Admin API's `admin/generate_link` endpoint
+ * (returns an `email_otp` field alongside the action link; it does NOT send
+ * an email, it just mints the same code Supabase would otherwise deliver).
+ * We still drive the real login UI (email -> "Send code" -> code input ->
+ * "Verify") end to end -- but see loginWithOtp() below for why the UI's own
+ * signInWithOtp() *network call* is stubbed out rather than left to hit
+ * Supabase for real.
+ */
+export async function getEmailOtp(
+  page: Page,
+  email: string,
+  type: "signup" | "magiclink" = "magiclink",
+  data?: Record<string, unknown>
+): Promise<string> {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set for getEmailOtp()");
+  }
+  const res = await page.request.post(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      Authorization: `Bearer ${supabaseServiceRoleKey}`,
+    },
+    data: { type, email, ...(data ? { data } : {}) },
+  });
+  expect(res.ok()).toBeTruthy();
+  const body = await res.json();
+  const otp = body.email_otp || body.properties?.email_otp;
+  if (!otp) throw new Error(`generate_link response had no email_otp: ${JSON.stringify(body)}`);
+  return otp as string;
+}
+
+/**
+ * Drives the real /auth/login OTP UI to a signed-in session for `email`,
+ * using getEmailOtp() above to obtain a real, verifiable code instead of
+ * reading one from an inbox.
+ *
+ * The UI's "Send code" button calls Supabase's signInWithOtp(), which hits
+ * `POST /auth/v1/otp` and actually sends an email. Supabase's own built-in
+ * mailer enforces a very low, project-wide send-rate limit (independent of
+ * which address is being emailed), and this suite (like the app's own
+ * "Resend code" button) never reads that email anyway -- getEmailOtp() above
+ * mints the real, verifiable code we actually type in via the Admin API's
+ * `generate_link`, which does NOT count against that send limit. Running the
+ * full suite repeatedly exhausts the mailer's quota within minutes and then
+ * every single test that logs in fails at this step with a 429
+ * `over_email_send_rate_limit` before ever reaching the code input --
+ * something that was mistaken for a post-verifyOtp redirect bug until the
+ * trace evidence (a captured `POST .../auth/v1/otp` -> 429 network entry)
+ * showed the real failure was here, one step earlier. Stubbing out just this
+ * one network call keeps the rest of the flow (verifyOtp, /auth/me, the
+ * redirect) fully real while making the test hermetic against Supabase's
+ * mailer quota.
+ */
+export async function loginWithOtp(page: Page, email: string, type: "signup" | "magiclink" = "magiclink") {
+  await page.route("**/auth/v1/otp", (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+
+  await page.goto("/auth/login");
+  await page.locator("#email").fill(email);
+  await page.getByRole("button", { name: /send code/i }).click();
+  await expect(page.locator("#code")).toBeVisible({ timeout: 30_000 });
+
+  const otp = await getEmailOtp(page, email, type);
+  await page.locator("#code").fill(otp);
+  await page.getByRole("button", { name: /verify/i }).click();
+}
+
+/**
+ * Registration in production requires confirming a real email, which the
+ * register page now folds into the OTP verification step itself (no
+ * separate confirmation link/screen). Create and confirm the user directly
+ * via the Supabase Admin API (same pattern as the "Seed demo data" CI
+ * step), stash the role/name choice the same way the real register page
+ * does, then drive the real /auth/login OTP form -- which already knows
+ * how to apply that stashed choice (see applyPendingRegistration in
+ * src/lib/supabase.ts).
  */
 export async function registerAs(
   page: Page,
@@ -42,9 +116,7 @@ export async function registerAs(
     [opts.email, opts.name, opts.role === "engineer" ? "ENGINEER" : "COMPANY"]
   );
 
-  await page.locator("#email").fill(opts.email);
-  await page.locator("#password").fill(opts.password);
-  await page.getByRole("button", { name: /sign in/i }).click();
+  await loginWithOtp(page, opts.email);
 
   // The login page always lands on the role's dashboard, never /onboarding
   // (that redirect only exists on the register page's happy path) -- since
