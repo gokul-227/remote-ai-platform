@@ -20,8 +20,12 @@ const detailsSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
 });
 
+// See apps/web/src/app/auth/login/page.tsx's codeSchema for why this isn't
+// pinned to exactly 6 characters -- Supabase's own email_otp isn't reliably
+// 6 digits, and a hardcoded max() here silently truncates a longer, valid
+// code before it reaches verifyOtp().
 const codeSchema = z.object({
-  code: z.string().min(6, "Enter the 6-digit code").max(6, "Enter the 6-digit code"),
+  code: z.string().min(6, "Enter the code we emailed you").max(12, "That code looks too long"),
 });
 
 type DetailsForm = z.infer<typeof detailsSchema>;
@@ -288,16 +292,15 @@ export default function RegisterPage() {
 
           {step === 3 && (
             <form onSubmit={codeForm.handleSubmit(verifyCode)} noValidate className="space-y-4">
-              <p className="text-sm text-slate-600">We emailed a 6-digit code to <span className="font-medium text-slate-900">{email}</span>.</p>
+              <p className="text-sm text-slate-600">We emailed a sign-in code to <span className="font-medium text-slate-900">{email}</span>.</p>
               <div className="relative">
                 <KeyRound className="absolute left-3 top-[38px] h-4 w-4 text-slate-400 pointer-events-none" />
                 <Input
                   id="code"
                   type="text"
-                  inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
-                  label="6-digit code"
+                  maxLength={12}
+                  label="Sign-in code"
                   placeholder="123456"
                   className="pl-10 tracking-widest"
                   error={codeForm.formState.errors.code?.message}

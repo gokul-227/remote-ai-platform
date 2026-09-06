@@ -16,8 +16,16 @@ const emailSchema = z.object({
   email: z.string().min(1, "Email is required").email("Enter a valid email address"),
 });
 
+// Supabase's own `email_otp` isn't reliably 6 digits -- it's longer for some
+// link types (e.g. magic-link-style sign-in on this project mints an 8-char
+// code) -- so this deliberately doesn't pin an exact length. A hardcoded
+// min(6).max(6) here previously meant a real, valid code from Supabase could
+// be silently truncated by the input's maxLength before it ever reached
+// verifyOtp(), which then rejected the truncated value as expired/invalid --
+// i.e. login would appear to "hang" on this screen for any code longer than
+// 6 characters.
 const codeSchema = z.object({
-  code: z.string().min(6, "Enter the 6-digit code").max(6, "Enter the 6-digit code"),
+  code: z.string().min(6, "Enter the code we emailed you").max(12, "That code looks too long"),
 });
 
 type EmailForm = z.infer<typeof emailSchema>;
@@ -176,7 +184,7 @@ export default function LoginPage() {
             <p className="text-sm text-slate-600 mt-1">
               {stage === "email"
                 ? "We'll email you a one-time sign-in code — no password needed."
-                : `Enter the 6-digit code we sent to ${email}.`}
+                : `Enter the sign-in code we sent to ${email}.`}
             </p>
           </div>
 
@@ -214,10 +222,9 @@ export default function LoginPage() {
                 <Input
                   id="code"
                   type="text"
-                  inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
-                  label="6-digit code"
+                  maxLength={12}
+                  label="Sign-in code"
                   placeholder="123456"
                   className="pl-10 tracking-widest"
                   error={codeForm.formState.errors.code?.message}
