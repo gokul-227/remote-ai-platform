@@ -27,6 +27,7 @@ def _make_token(sub: str, email: str) -> str:
         "email": email,
         "aud": "authenticated",
         "role": "authenticated",
+        "iss": "https://test-project.supabase.co/auth/v1",
         "iat": now,
         "exp": now + 3600,
     }
