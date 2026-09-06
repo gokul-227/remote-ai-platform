@@ -64,3 +64,44 @@ jobs:
           sleep 5
           curl -sf "${{ vars.PROD_FRONTEND_URL }}/" -o /dev/null -w "homepage (custom domain): %{http_code}\n"
           curl -sf "${{ vars.PROD_FRONTEND_WORKERSDEV_URL }}/" -o /dev/null -w "homepage (workers.dev): %{http_code}\n"
+
+  deploy-backend:
+    # Render's own GitHub-integration auto-deploy has been unreliable (real
+    # incident: several merges to prod/dev sat undeployed for hours with no
+    # error surfaced anywhere). A deploy hook is a plain authenticated URL
+    # Render exposes per-service specifically to be called by external CI --
+    # calling it here makes the backend deploy an explicit, verifiable step
+    # in the same pipeline as the frontend deploy, instead of an invisible
+    # dependency on a webhook we can't inspect or debug.
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Trigger Render deploy
+        run: curl -sf -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
+
+      - name: Wait for the new version to actually be live
+        # A plain "is /health up" check would pass instantly against the OLD
+        # instance Render keeps serving while the new one builds -- that
+        # would make this step useless for catching a failed deploy. Instead
+        # poll for the specific version this commit ships, so the check only
+        # passes once the NEW build is actually the one answering requests.
+        run: |
+          expected_version=$(grep -m1 '^version' apps/api/pyproject.toml | sed -E 's/version = "(.*)"/\1/')
+          echo "Waiting for backend to report version ${expected_version}..."
+          for i in $(seq 1 40); do
+            live_version=$(curl -sf "${{ vars.PROD_API_BASE_URL }}/api/v1/health" | python3 -c "import json,sys; print(json.load(sys.stdin).get('version',''))" 2>/dev/null || echo "")
+            if [ "$live_version" = "$expected_version" ]; then
+              echo "Backend live at version ${live_version} after ${i} attempts."
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "Backend never reported version ${expected_version} within 10 minutes (last saw: ${live_version:-no response})"
+          exit 1
