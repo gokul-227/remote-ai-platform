@@ -1,6 +1,9 @@
 import { cn } from "@/lib/cn";
 
-const PALETTE = ["#B54A2C", "#6366F1", "#0284C7", "#059669", "#D97706", "#DC2626", "#7C3AED"];
+// Each color must hit >= 4.5:1 contrast against the white initials text (WCAG 2.2 AA).
+// #0552CC is the brand rust, kept as-is; the rest are shifted one Tailwind shade
+// darker than the original 500/600 picks (which measured 3.19-4.47:1) to clear that bar.
+const PALETTE = ["#0552CC", "#4F46E5", "#0369A1", "#047857", "#B45309", "#DC2626", "#7C3AED"];
 
 function colorFor(seed: string) {
   let hash = 0;

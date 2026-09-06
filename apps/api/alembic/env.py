@@ -26,6 +26,11 @@ import app.domains.admin.models  # noqa: F401
 import app.domains.applications.models  # noqa: F401
 import app.domains.notifications.models  # noqa: F401
 import app.domains.saved_jobs.models  # noqa: F401
+import app.domains.contracts.models  # noqa: F401
+import app.domains.social.models  # noqa: F401
+import app.domains.trust.models  # noqa: F401
+import app.domains.groups.models  # noqa: F401
+import app.domains.billing.models  # noqa: F401
 
 config = context.config
 

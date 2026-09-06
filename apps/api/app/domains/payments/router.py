@@ -41,12 +41,12 @@ def _party_summary(user: User) -> PaymentPartySummary:
     )
 
 
-async def _enrich_transaction(
-    p: PaymentTransaction, db: AsyncSession, client_secret: str | None = None
+def _build_transaction_response(
+    p: PaymentTransaction,
+    payer: User | None,
+    payee: User | None,
+    client_secret: str | None = None,
 ) -> PaymentTransactionResponse:
-    payer = await db.get(User, p.payer_id)
-    payee = await db.get(User, p.payee_id)
-
     return PaymentTransactionResponse(
         id=p.id,
         project_id=p.project_id,
@@ -64,6 +64,14 @@ async def _enrich_transaction(
         released_at=p.released_at,
         client_secret=client_secret,
     )
+
+
+async def _enrich_transaction(
+    p: PaymentTransaction, db: AsyncSession, client_secret: str | None = None
+) -> PaymentTransactionResponse:
+    payer = await db.get(User, p.payer_id)
+    payee = await db.get(User, p.payee_id)
+    return _build_transaction_response(p, payer, payee, client_secret)
 
 
 @router.get(
@@ -111,6 +119,8 @@ async def get_wallet_balance(
 async def list_transactions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ) -> list[PaymentTransactionResponse]:
     """List all financial transactions involving the current user."""
     result = await db.execute(
@@ -122,9 +132,23 @@ async def list_transactions(
             )
         )
         .order_by(PaymentTransaction.created_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
-    txs = result.scalars().all()
-    return [await _enrich_transaction(t, db) for t in txs]
+    txs = list(result.scalars().all())
+    if not txs:
+        return []
+
+    # Batch-fetch payer/payee users in one query instead of two gets per
+    # transaction (previously N+1 across the whole list).
+    user_ids = {t.payer_id for t in txs} | {t.payee_id for t in txs}
+    users_res = await db.execute(select(User).where(User.id.in_(user_ids)))
+    users_by_id = {u.id: u for u in users_res.scalars().all()}
+
+    return [
+        _build_transaction_response(t, users_by_id.get(t.payer_id), users_by_id.get(t.payee_id))
+        for t in txs
+    ]
 
 
 @router.post(

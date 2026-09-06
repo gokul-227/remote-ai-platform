@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [prod, dev]
   pull_request:
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: package-lock.json
 
@@ -54,7 +54,11 @@ jobs:
       # existing package-lock.json" (confirmed live against Vercel's build,
       # same underlying cause — see docs/ACTUAL_SYSTEM_AUDIT.md).
       - name: Install dependencies
-        run: npm ci
+        # The npm bundled with actions/setup-node hard-fails `npm ci` on an
+        # unsupported-platform *optional* dependency (e.g. an esbuild
+        # AIX/ppc64 binary) instead of skipping it as it's supposed to -- a
+        # known npm bug, fixed in newer npm releases.
+        run: npm install -g npm@latest && npm ci
 
       - name: Lint
         working-directory: apps/web
@@ -64,11 +68,15 @@ jobs:
         working-directory: apps/web
         run: npx tsc --noEmit
 
+      - name: Unit/component tests
+        working-directory: apps/web
+        run: npm test
+
       - name: Build
         working-directory: apps/web
         env:
-          NEXT_PUBLIC_SUPABASE_URL: https://cvjypjsjmamoppwhuwdl.supabase.co
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_E9A2lRDUNRr8CI8RxpSWtA_Szi21la2
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
   e2e:
@@ -79,11 +87,15 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        # The npm bundled with actions/setup-node hard-fails `npm ci` on an
+        # unsupported-platform *optional* dependency (e.g. an esbuild
+        # AIX/ppc64 binary) instead of skipping it as it's supposed to -- a
+        # known npm bug, fixed in newer npm releases.
+        run: npm install -g npm@latest && npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -137,6 +149,20 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npx playwright test
+
+      # Keeping this permanently (not just for this investigation): it's what
+      # actually surfaced the real root cause of a prior E2E failure -- a
+      # captured `POST .../auth/v1/otp` -> 429 network entry in trace.zip --
+      # after `docker compose logs` alone (below) had scrolled the relevant
+      # request off screen. Playwright only writes these files on failure, so
+      # the upload step costs nothing on green runs.
+      - name: Upload Playwright trace/report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/e2e/test-results/
+          retention-days: 3
 
       - name: Stack logs on failure
         if: failure()

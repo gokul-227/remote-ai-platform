@@ -36,7 +36,7 @@ function AdminJobsContent() {
   return (
     <div className="max-w-5xl mx-auto space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2"><Briefcase className="h-5 w-5 text-[#B54A2C]" />Job Listings</h1>
+        <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2"><Briefcase className="h-5 w-5 text-[#0552CC]" />Job Listings</h1>
         <p className="text-xs text-slate-500 mt-1">Manage aggregated job postings across sources. Paused jobs are removed from public listings.</p>
       </div>
 

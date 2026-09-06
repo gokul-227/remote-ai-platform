@@ -115,9 +115,9 @@ function PaymentsWalletContent() {
           <div className="card-enterprise p-5 space-y-2 border-blue-200/60 dark:border-blue-900/40">
             <div className="flex items-center justify-between text-xs text-slate-500">
               <span className="font-semibold">Total Settled</span>
-              <ShieldCheck className="h-4 w-4 text-[#B54A2C]" />
+              <ShieldCheck className="h-4 w-4 text-[#0552CC]" />
             </div>
-            <p className="text-2xl font-extrabold text-[#B54A2C]">
+            <p className="text-2xl font-extrabold text-[#0552CC]">
               {walletLoading ? "..." : `$${(wallet?.total_released ?? 0).toLocaleString()}`}{" "}
               <span className="text-xs font-normal text-slate-500">USD</span>
             </p>
@@ -128,11 +128,11 @@ function PaymentsWalletContent() {
         {/* Escrow Workflow Visual Guide */}
         <div className="card-enterprise p-5 space-y-3 bg-slate-50/50 dark:bg-slate-900/40">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-            <HelpCircle className="h-3.5 w-3.5 text-[#B54A2C]" /> Remote AI Platform Escrow Protection Lifecycle
+            <HelpCircle className="h-3.5 w-3.5 text-[#0552CC]" /> Remote AI Platform Escrow Protection Lifecycle
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
             <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              <span className="font-bold text-[#B54A2C] block mb-1">1. Fund Escrow</span>
+              <span className="font-bold text-[#0552CC] block mb-1">1. Fund Escrow</span>
               <span className="text-slate-500 text-[11px]">Organization deposits budget into sandbox escrow before task begins.</span>
             </div>
             <div className="p-3 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">

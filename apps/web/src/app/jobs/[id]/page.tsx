@@ -1,7 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { use } from "react";
+import { use, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import Link from "next/link";
 import {
   MapPin, DollarSign, Briefcase, ExternalLink, ArrowLeft,
@@ -61,6 +62,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     enabled: isEngineer,
     retry: false,
   });
+
+  useEffect(() => {
+    if (matchQuery.data) {
+      trackEvent("match_viewed", { job_id: id });
+    }
+    // Only re-fire if the underlying match result itself changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchQuery.data]);
 
   const job = jobQuery.data || null;
   const loading = jobQuery.isLoading;
@@ -122,7 +131,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-5">
-      <Link href="/jobs" className="inline-flex items-center gap-2 text-xs font-semibold text-[#B54A2C] hover:underline">
+      <Link href="/jobs" className="inline-flex items-center gap-2 text-xs font-semibold text-[#0552CC] hover:underline">
         <ArrowLeft className="h-4 w-4" /> Back to Jobs Marketplace
       </Link>
 
@@ -148,7 +157,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
                   <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{job.title}</h1>
 
-                  <p className="text-sm text-[#B54A2C] font-semibold mt-1 flex items-center gap-2">
+                  <p className="text-sm text-[#0552CC] font-semibold mt-1 flex items-center gap-2">
                     <Building2 className="h-4 w-4" /> {job.company_name}
                   </p>
 
@@ -178,12 +187,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   onClick={() => user && (saved ? savedJobs.remove.mutate(id) : savedJobs.save.mutate(id))}
                   className={`p-2.5 rounded-lg border transition-colors ${
                     saved
-                      ? "bg-sky-50 border-sky-200 text-[#B54A2C] dark:bg-sky-950/40"
+                      ? "bg-sky-50 border-sky-200 text-[#0552CC] dark:bg-sky-950/40"
                       : "border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                   title={saved ? "Saved" : "Save Job"}
                 >
-                  <Bookmark className={`h-4 w-4 ${saved ? "fill-[#B54A2C]" : ""}`} />
+                  <Bookmark className={`h-4 w-4 ${saved ? "fill-[#0552CC]" : ""}`} />
                 </button>
 
                 <button
@@ -300,7 +309,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           {/* Company Snapshot Card */}
           <div className="card-enterprise p-5 space-y-3">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5 text-[#B54A2C]" /> About {job.company_name}
+              <Building2 className="h-3.5 w-3.5 text-[#0552CC]" /> About {job.company_name}
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               Verified remote employer hiring professionals through Remote AI Platform.

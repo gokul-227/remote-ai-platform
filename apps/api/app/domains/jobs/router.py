@@ -69,6 +69,8 @@ async def list_jobs(
 async def list_company_jobs(
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     service: JobService = Depends(get_job_service),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ) -> list[JobPostResponse]:
     company = await service.repo.db.scalar(
         select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
@@ -78,6 +80,7 @@ async def list_company_jobs(
     query = select(JobPost).order_by(JobPost.posted_at.desc())
     if company:
         query = query.where(JobPost.company_id == company.id)
+    query = query.offset(skip).limit(limit)
     result = await service.repo.db.execute(query)
     return [JobPostResponse.model_validate(job) for job in result.scalars().all()]
 
@@ -86,12 +89,16 @@ async def list_company_jobs(
 async def list_public_company_jobs(
     company_id: uuid.UUID,
     service: JobService = Depends(get_job_service),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ) -> list[JobPostResponse]:
     """Get public job listings for a specific company profile (no auth required)."""
     result = await service.repo.db.execute(
         select(JobPost)
         .where(JobPost.company_id == company_id, JobPost.is_active.is_(True))
         .order_by(JobPost.posted_at.desc())
+        .offset(skip)
+        .limit(limit)
     )
     return [JobPostResponse.model_validate(job) for job in result.scalars().all()]
 

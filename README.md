@@ -25,7 +25,7 @@ flowchart LR
     API --> Agents["AI Agents (LiteLLM)"] -.-> LLM["Groq / Ollama / OpenAI / Gemini"]
 ```
 
-Full write-up: [docs/architecture.md](docs/architecture.md).
+See `CLAUDE.md` for a fuller tour of the domain layout and AI pipeline.
 
 ## 3. Features
 
@@ -72,8 +72,8 @@ uvicorn app.main:app --reload            # terminal 1 — API on :8000
 
 cd apps/web && npm run dev                # terminal 2 — web on :3000
 ```
-Full walkthrough, including running Postgres/Redis/MinIO/Keycloak without Docker for the backend to
-connect to: [docs/development.md](docs/development.md).
+See "Commands" in `CLAUDE.md` for the full command reference (migrations, Celery, seeding demo data,
+running without Docker, etc).
 
 ## 6. Docker setup
 
@@ -108,8 +108,8 @@ set real high-entropy secrets for any non-local deployment.
 ## 8. AI configuration
 
 All AI calls go through LiteLLM — no direct provider SDK usage in application code. Configure via
-`AI_PROVIDER`, `AI_MODEL`, `AI_FALLBACK_PROVIDERS`. Details and Groq/Ollama setup:
-[docs/ai-providers.md](docs/ai-providers.md).
+`AI_PROVIDER`, `AI_MODEL`, `AI_FALLBACK_PROVIDERS`. Dev default is Groq with local Ollama fallback models
+(see `.env.example` for the exact variables).
 
 ## 9. Database migrations
 
@@ -134,16 +134,9 @@ docker run --rm -v "$(pwd)/apps/api:/app" -w /app remote-ai-api:dev pytest -q
 
 ## 11. Deployment
 
-Production topology (Vercel + Render/Fly.io + Neon/Supabase) and step-by-step instructions:
-[docs/deployment.md](docs/deployment.md). API reference: [docs/api.md](docs/api.md).
-
-## Documentation index
-
-- [docs/architecture.md](docs/architecture.md) — system design, domain layout, AI pipeline
-- [docs/api.md](docs/api.md) — API domains, auth model, example requests
-- [docs/development.md](docs/development.md) — local dev, testing, migrations
-- [docs/deployment.md](docs/deployment.md) — production deployment guide
-- [docs/ai-providers.md](docs/ai-providers.md) — LiteLLM provider configuration
+Deployment target is Vercel/Cloudflare (frontend) + Render/Fly.io (backend) + Neon/Supabase (database).
+Operational deployment details (live URLs, project IDs, rotation procedures) are kept out of this public
+repo; ask the repo owner if you need them.
 
 ## License
 

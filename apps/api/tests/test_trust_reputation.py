@@ -1,10 +1,12 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
-from app.domains.projects.models import Project
+from app.domains.projects.models import Project, ProjectMember
 
 
 @pytest.mark.asyncio
@@ -103,7 +105,7 @@ async def test_submit_project_review(client: AsyncClient, test_user: User, auth_
         company_id=company.id,
         title="Trust Test Project",
         description="Description for trust testing",
-        status="ACTIVE",
+        status="COMPLETED",
     )
     db.add(project)
     await db.flush()
@@ -119,6 +121,10 @@ async def test_submit_project_review(client: AsyncClient, test_user: User, auth_
         },
     )
     worker_id = worker_res.json()["user"]["id"]
+
+    # Worker must actually be a member of the project to be reviewable
+    db.add(ProjectMember(project_id=project.id, user_id=uuid.UUID(worker_id)))
+    await db.flush()
 
     # Submit review
     review_res = await client.post(
@@ -139,3 +145,62 @@ async def test_submit_project_review(client: AsyncClient, test_user: User, auth_
     assert worker_score_res.status_code == 200
     assert worker_score_res.json()["rating_avg"] == 5.0
     assert worker_score_res.json()["review_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_cannot_review_uninvolved_user_on_unrelated_project(
+    client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession
+):
+    """A user with no relationship to a project must not be able to submit a
+    review for it — this would otherwise let anyone manipulate an arbitrary
+    user's trust score (IDOR)."""
+    # test_user stays ENGINEER and has no membership on this project at all.
+    other_company_owner = User(
+        email="unrelated_company_owner@example.com",
+        password_hash="x",
+        full_name="Unrelated Company Owner",
+        role=UserRole.COMPANY,
+    )
+    db.add(other_company_owner)
+    await db.flush()
+
+    company = CompanyProfile(user_id=other_company_owner.id, name="Unrelated Corp")
+    db.add(company)
+    await db.flush()
+
+    project = Project(
+        company_id=company.id,
+        title="Unrelated Project",
+        description="A project test_user has no relation to",
+        status="COMPLETED",
+    )
+    db.add(project)
+    await db.flush()
+
+    # An uninvolved reviewee, also with no membership on this project.
+    victim_res = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "uninvolved_victim@example.com",
+            "password": "Password123!",
+            "full_name": "Uninvolved Victim",
+            "role": "ENGINEER",
+        },
+    )
+    victim_id = victim_res.json()["user"]["id"]
+
+    review_res = await client.post(
+        "/api/v1/trust/reviews",
+        json={
+            "project_id": str(project.id),
+            "reviewee_id": victim_id,
+            "rating": 1,
+            "comment": "Trying to tank a stranger's trust score.",
+        },
+        headers=auth_headers,
+    )
+    assert review_res.status_code == 403
+
+    # No review was recorded and the victim's trust score is unaffected.
+    victim_score_res = await client.get(f"/api/v1/trust/scores/{victim_id}")
+    assert victim_score_res.json()["review_count"] == 0

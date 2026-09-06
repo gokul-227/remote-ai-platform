@@ -37,6 +37,7 @@ function useNavItems(): NavItem[] {
       { name: "My Job Postings", href: "/company/jobs", icon: Briefcase },
       { name: "Candidate Discovery", href: "/company/candidates", icon: Users },
       { name: "Wallet & Payments", href: "/payments", icon: Wallet },
+      { name: "AI Quality Engine", href: "/quality", icon: BrainCircuit },
     ];
   }
 
@@ -89,7 +90,7 @@ export function Sidebar() {
       <div className="card-enterprise overflow-hidden text-center">
         <div className="h-14 bg-slate-200" />
         <div className="px-4 pb-4 -mt-7">
-          <div className="h-14 w-14 rounded-full bg-[#B54A2C] text-white flex items-center justify-center font-bold text-lg ring-4 ring-white mx-auto shadow-xs">
+          <div className="h-14 w-14 rounded-full bg-[#0552CC] text-white flex items-center justify-center font-bold text-lg ring-4 ring-white mx-auto shadow-xs">
             {user.full_name?.charAt(0).toUpperCase() || "U"}
           </div>
           <h3 className="font-semibold text-slate-900 dark:text-white text-sm mt-2 truncate">
@@ -103,7 +104,7 @@ export function Sidebar() {
             <div className="border-t border-slate-100 dark:border-slate-800 mt-3 pt-3 text-left text-xs">
               <div className="flex justify-between text-slate-600 dark:text-slate-400">
                 <span>Applications</span>
-                <span className="font-semibold text-[#B54A2C]">{applications.data?.length ?? 0}</span>
+                <span className="font-semibold text-[#0552CC]">{applications.data?.length ?? 0}</span>
               </div>
             </div>
           )}
@@ -125,16 +126,16 @@ export function Sidebar() {
                 href={item.href}
                 className={`flex items-center justify-between px-3 py-2 rounded-md text-xs font-medium transition-colors ${
                   isActive
-                    ? "bg-slate-100 dark:bg-slate-800 text-[#B54A2C] font-semibold"
+                    ? "bg-slate-100 dark:bg-slate-800 text-[#0552CC] font-semibold"
                     : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon className={`h-4 w-4 ${isActive ? "text-[#B54A2C]" : "text-slate-400"}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? "text-[#0552CC]" : "text-slate-400"}`} />
                   <span>{item.name}</span>
                 </div>
                 {item.count !== undefined && (
-                  <span className="text-[10px] font-bold text-[#B54A2C] bg-sky-50 px-1.5 py-0.5 rounded-full border border-sky-100">
+                  <span className="text-[10px] font-bold text-[#0552CC] bg-sky-50 px-1.5 py-0.5 rounded-full border border-sky-100">
                     {item.count}
                   </span>
                 )}

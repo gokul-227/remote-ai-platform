@@ -37,18 +37,10 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 
 const POST_TYPES = [
-  { id: "update", label: "Share an update", icon: Globe, color: "text-[#B54A2C]" },
+  { id: "update", label: "Share an update", icon: Globe, color: "text-[#0552CC]" },
   { id: "project", label: "Project update", icon: Briefcase, color: "text-emerald-600" },
   { id: "achievement", label: "Celebrate achievement", icon: Trophy, color: "text-amber-500" },
   { id: "article", label: "Write article", icon: FileText, color: "text-purple-600" },
-];
-
-const TRENDING_SKILLS = [
-  { skill: "Rust", change: "+38%", hot: true },
-  { skill: "LLM Integration", change: "+65%", hot: true },
-  { skill: "dbt / Data Eng.", change: "+24%" },
-  { skill: "Next.js 15", change: "+19%" },
-  { skill: "Kubernetes", change: "+11%" },
 ];
 
 const SUGGESTED_COMPANIES = [
@@ -98,7 +90,7 @@ function CommentSection({ postId, currentUserId }: { postId: string; currentUser
           <button
             type="submit"
             disabled={addComment.isPending}
-            className="h-7 w-7 flex items-center justify-center rounded-full bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-hover)] transition-colors disabled:opacity-50"
+            className="h-7 w-7 flex items-center justify-center rounded-full bg-[var(--color-brand)] text-white dark:text-[#0B1E3D] hover:bg-[var(--color-brand-hover)] transition-colors disabled:opacity-50"
           >
             <Send className="h-3.5 w-3.5" />
           </button>
@@ -496,7 +488,7 @@ function ProfileWidget({ user }: { user: { full_name?: string; email?: string; r
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] overflow-hidden">
       {/* Banner */}
-      <div className="h-14 bg-gradient-to-br from-[#B54A2C] via-[#C97B2E] to-[#7A3B4A]" />
+      <div className="h-14 bg-gradient-to-br from-[#0552CC] via-[#1D6FE0] to-[#1D4ED8]" />
       <div className="px-4 pb-4">
         <div className="-mt-6 mb-2">
           <Avatar name={user?.full_name || "You"} size="lg" className="ring-2 ring-[var(--bg-surface)]" />
@@ -519,27 +511,19 @@ function ProfileWidget({ user }: { user: { full_name?: string; email?: string; r
 }
 
 function TrendingPanel() {
+  // Trending Skills is not a live feature yet -- the backend task that would
+  // compute it (refresh_trending_skills, see app/workers/tasks/jobs.py) is
+  // still a stub with no real logic, gated off by FEATURE_TRENDING_SKILLS.
+  // This previously rendered a hardcoded, always-the-same skills list as if
+  // it were live market data; showing an honest "coming soon" state instead
+  // of fabricated numbers.
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-[var(--text-main)] flex items-center gap-1.5">
-          <TrendingUp className="h-4 w-4 text-[var(--color-brand)]" />
-          Trending Skills
-        </h3>
-      </div>
-      <div className="space-y-2">
-        {TRENDING_SKILLS.map((s) => (
-          <div key={s.skill} className="flex items-center justify-between">
-            <span className="text-xs text-[var(--text-main)] font-medium">{s.skill}</span>
-            <span className={cn(
-              "text-[10px] font-semibold px-1.5 py-0.5 rounded-md",
-              s.hot ? "text-emerald-700 bg-emerald-50" : "text-[var(--text-muted)] bg-[var(--bg-subtle)]"
-            )}>
-              {s.change}
-            </span>
-          </div>
-        ))}
-      </div>
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-[var(--shadow-xs)] p-4 space-y-2">
+      <h3 className="text-sm font-semibold text-[var(--text-main)] flex items-center gap-1.5">
+        <TrendingUp className="h-4 w-4 text-[var(--color-brand)]" />
+        Trending Skills
+      </h3>
+      <p className="text-xs text-[var(--text-muted)]">Coming soon — we&apos;re still building this.</p>
     </div>
   );
 }

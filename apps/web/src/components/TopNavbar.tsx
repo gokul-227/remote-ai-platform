@@ -117,11 +117,11 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
           </button>
 
           <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="h-9 w-9 rounded-lg bg-[#B54A2C] flex items-center justify-center text-white font-black text-xl shadow-xs">
+            <div className="h-9 w-9 rounded-lg bg-[#0552CC] flex items-center justify-center text-white font-black text-xl shadow-xs">
               R
             </div>
             <span className="hidden sm:inline font-bold text-lg text-slate-900 dark:text-white tracking-tight">
-              Remote <span className="text-[#B54A2C]">AI Platform</span>
+              Remote <span className="text-[#0552CC]">AI Platform</span>
             </span>
           </Link>
 
@@ -143,13 +143,13 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                 onFocus={() => setSearchOpen(true)}
                 onBlur={() => setTimeout(() => setSearchOpen(false), 120)}
                 placeholder="Search jobs, people, organizations, skills..."
-                className="input-enterprise pl-10 pr-12 py-1.5 text-xs bg-slate-100 dark:bg-[var(--bg-subtle)] focus:bg-white dark:focus:bg-[var(--bg-surface)] border-transparent focus:border-[#B54A2C]"
+                className="input-enterprise pl-10 pr-12 py-1.5 text-xs bg-slate-100 dark:bg-[var(--bg-subtle)] focus:bg-white dark:focus:bg-[var(--bg-surface)] border-transparent focus:border-[#0552CC]"
               />
               <button
                 type="button"
                 onClick={onSearchClick}
                 title="Open command palette"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-0.5 hover:border-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-6 min-w-6 flex items-center justify-center text-[10px] text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1.5 py-0.5 hover:border-slate-400 hover:text-slate-800 dark:hover:text-slate-300"
               >
                 ⌘K
               </button>
@@ -180,7 +180,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                     <button
                       type="submit"
                       onMouseDown={() => setSearchOpen(false)}
-                      className="w-full text-left px-4 py-2 text-xs font-semibold text-[#B54A2C] hover:bg-slate-50 border-t border-slate-100"
+                      className="w-full text-left px-4 py-2 text-xs font-semibold text-[#0552CC] hover:bg-slate-50 border-t border-slate-100"
                     >
                       See all results for &ldquo;{searchVal}&rdquo;
                     </button>
@@ -202,7 +202,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                 href={item.href}
                 className={`flex flex-col items-center px-3 py-1 text-[11px] font-medium transition-colors relative ${
                   isActive
-                    ? "text-[#B54A2C] border-b-2 border-[#B54A2C]"
+                    ? "text-[#0552CC] border-b-2 border-[#0552CC]"
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
@@ -232,18 +232,18 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
               title="Notifications"
             >
               <Bell className="h-5 w-5" />
-              {(notifications.unread.data?.count ?? 0) > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#B54A2C]" />}
+              {(notifications.unread.data?.count ?? 0) > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#0552CC]" />}
             </button>
             {notifOpen && (
               <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-[var(--surface-elevated)] rounded-xl shadow-lg border border-slate-200 dark:border-[var(--border-color)] p-4 z-50 animate-fade-in">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100 dark:border-[var(--border-color)] mb-3">
                   <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h4>
-                  <button onClick={() => notifications.markAllRead.mutate()} className="text-xs text-[#B54A2C] cursor-pointer hover:underline">Mark all read</button>
+                  <button onClick={() => notifications.markAllRead.mutate()} className="text-xs text-[#0552CC] cursor-pointer hover:underline">Mark all read</button>
                 </div>
                 <div className="space-y-2.5">
                   {notifications.data?.length ? notifications.data.map((n: { id: string; title: string; body: string; is_read?: boolean }) => (
                     <button onClick={() => notifications.markRead.mutate(n.id)} key={n.id} className={`flex w-full items-start gap-2.5 p-2 rounded-lg text-left hover:bg-slate-50 dark:hover:bg-[var(--bg-subtle)] cursor-pointer ${n.is_read ? "opacity-60" : ""}`}>
-                      <div className="h-2 w-2 rounded-full bg-[#B54A2C] mt-1.5 flex-shrink-0" />
+                      <div className="h-2 w-2 rounded-full bg-[#0552CC] mt-1.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-slate-800 dark:text-slate-200 font-medium">{n.title}</p>
                         <p className="text-[10px] text-slate-400 mt-0.5">{n.body}</p>
@@ -254,7 +254,7 @@ export function TopNavbar({ onMenuClick, onSearchClick }: TopNavbarProps) {
                 <Link
                   href="/notifications"
                   onClick={() => setNotifOpen(false)}
-                  className="block text-center text-xs font-semibold text-[#B54A2C] hover:underline mt-3 pt-3 border-t border-slate-100 dark:border-[var(--border-color)]"
+                  className="block text-center text-xs font-semibold text-[#0552CC] hover:underline mt-3 pt-3 border-t border-slate-100 dark:border-[var(--border-color)]"
                 >
                   View all notifications
                 </Link>

@@ -7,13 +7,16 @@ from collections.abc import Sequence
 
 from fastapi import UploadFile
 
+from app.agents.llm_client import AIProviderError
+from app.agents.resume_parser import ResumeParserAgent
 from app.core.config import settings
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import AIUnavailableException, NotFoundError
 from app.core.logging import get_logger
 from app.core.security import build_private_resume_object_name, validate_resume_upload
 from app.core.storage import get_storage
 from app.domains.engineers.models import EngineerProfile
 from app.domains.engineers.repository import EngineerRepository
+from app.domains.engineers.resume_extraction import extract_resume_text
 from app.domains.engineers.schemas import (
     EngineerProfileCreate,
     EngineerProfileUpdate,
@@ -94,7 +97,21 @@ class EngineerService:
                 str(profile.experience or []),
             ]
         )
-        response = await AIService().improve_profile(profile_text)
+        try:
+            response = await AIService().improve_profile(profile_text)
+        except AIProviderError as exc:
+            # This endpoint is an explicit, user-requested AI action (unlike resume-upload's
+            # best-effort background parse) -- on total AI failure, surface a clear 503 rather
+            # than silently writing placeholder ai_summary/missing_skills that would look like
+            # a real enhancement.
+            logger.warning(
+                "Profile AI enhancement failed; all providers unavailable",
+                user_id=str(user_id),
+                error=str(exc),
+            )
+            raise AIUnavailableException(
+                "AI profile enhancement is temporarily unavailable. Please retry shortly."
+            ) from exc
         summary = response.data.get("summary") or (
             response.reason[0] if response.reason else profile.ai_summary
         )
@@ -146,6 +163,38 @@ class EngineerService:
         profile.resume_url = resume_url
         await self.repo.db.flush()
         logger.info("Uploaded resume for engineer", user_id=str(user_id), url=resume_url)
+
+        # AI-parse inline rather than dispatching a Celery task: this
+        # deployment runs no Celery worker (see docs/architecture -- the
+        # scheduled-job-sync workflow replaced Celery beat, but nothing ever
+        # replaced the worker for on-demand tasks like this one), so a task
+        # enqueued via .delay() would sit in Redis forever. Parsing a resume
+        # is a single LLM call, already bounded by LLMClient's own
+        # timeout/fallback handling, so doing it inline before responding is
+        # the honest choice over queuing work nothing will ever pick up.
+        # Never let a parsing failure fail the upload itself -- the file is
+        # already safely stored at this point.
+        resume_text = extract_resume_text(file_bytes, suffix)
+        if resume_text:
+            try:
+                parser = ResumeParserAgent()
+                parsed_data = await parser.parse_resume_text(resume_text)
+                profile.parsed_resume_data = parsed_data
+                if parsed_data.get("headline"):
+                    profile.headline = parsed_data["headline"]
+                if parsed_data.get("bio"):
+                    profile.bio = parsed_data["bio"]
+                if parsed_data.get("skills"):
+                    profile.skills = list(set((profile.skills or []) + parsed_data["skills"]))
+                await self.repo.db.flush()
+                logger.info("AI-parsed resume for engineer", user_id=str(user_id))
+            except Exception as exc:
+                logger.warning(
+                    "Resume AI parsing failed; resume upload still succeeded",
+                    user_id=str(user_id),
+                    error=str(exc),
+                )
+
         return resume_url
 
     async def search_engineers(self, params: EngineerSearchQuery) -> Sequence[EngineerProfile]:

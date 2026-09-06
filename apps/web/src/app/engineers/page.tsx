@@ -48,7 +48,7 @@ function ScoreRing({ score }: { score: number }) {
   const r = 18;
   const circumference = 2 * Math.PI * r;
   const offset = circumference - (clamped / 100) * circumference;
-  const color = clamped >= 75 ? "#059669" : clamped >= 50 ? "#D97706" : "#B54A2C";
+  const color = clamped >= 75 ? "#059669" : clamped >= 50 ? "#D97706" : "#0552CC";
 
   return (
     <div className="relative flex h-12 w-12 items-center justify-center">
@@ -97,7 +97,7 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-bold text-slate-900 group-hover:text-[#B54A2C] transition-colors">
+            <h2 className="truncate text-sm font-bold text-slate-900 group-hover:text-[#0552CC] transition-colors">
               {displayName}
             </h2>
             <p className="truncate text-xs text-slate-500 mt-0.5">
@@ -152,7 +152,7 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
         {engineer.matching_keywords && engineer.matching_keywords.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {engineer.matching_keywords.slice(0, 3).map((kw) => (
-              <span key={kw} className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[var(--color-brand-light)] text-[#B54A2C]">
+              <span key={kw} className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[var(--color-brand-light)] text-[#0552CC]">
                 ✓ {kw}
               </span>
             ))}
@@ -169,7 +169,7 @@ function EngineerCard({ engineer }: { engineer: Engineer }) {
         )}
         <Link
           href={`/engineers/${engineer.id}`}
-          className="text-xs font-semibold text-[#B54A2C] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="text-xs font-semibold text-[#0552CC] flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
         >
           View profile <ArrowRight className="h-3 w-3" />
         </Link>
@@ -239,7 +239,7 @@ export default function EngineersDiscoveryPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-[#0A3A6E] to-[#B54A2C] px-8 py-10 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-[#0A3A6E] to-[#0552CC] px-8 py-10 text-white shadow-xl">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 30% 50%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
@@ -332,7 +332,7 @@ export default function EngineersDiscoveryPage() {
                   type="checkbox"
                   checked={openOnly}
                   onChange={(e) => setOpenOnly(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 accent-[#B54A2C]"
+                  className="h-4 w-4 rounded border-slate-300 accent-[#0552CC]"
                 />
                 <span className="text-xs font-medium text-slate-700">Open to work only</span>
               </label>
@@ -354,7 +354,7 @@ export default function EngineersDiscoveryPage() {
         ) : (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 {engineers.length} professional{engineers.length !== 1 ? "s" : ""} found
               </p>
               {openOnly && (
@@ -371,7 +371,7 @@ export default function EngineersDiscoveryPage() {
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-600 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading professionals…
         </div>
       )}
