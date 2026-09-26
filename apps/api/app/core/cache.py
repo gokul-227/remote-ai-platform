@@ -13,7 +13,7 @@ class RedisCache:
         self.namespace = namespace
 
     def _client(self) -> Redis:
-        return Redis.from_url(settings.REDIS_URL, socket_connect_timeout=1, socket_timeout=1)
+        return Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
 
     def _key(self, key: str) -> str:
         return f"{self.namespace}:{key}"

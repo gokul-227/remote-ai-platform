@@ -10,13 +10,11 @@ from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AuthenticationError
 from app.domains.auth import supabase_auth
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
-from app.domains.auth.schemas import TokenPayload
 from app.domains.auth.service import AuthService
 from app.services.ai.metering import set_ai_actor
 
@@ -31,42 +29,21 @@ async def get_auth_service(db: AsyncSession = Depends(get_db)) -> AuthService:
 
 
 async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
-    """Resolve a raw bearer token string to an active, non-revoked User.
+    """Resolve a raw Supabase access token to an active, non-revoked User.
 
-    Shared by the HTTP `get_current_user` dependency below AND every
-    WebSocket endpoint (which cannot use FastAPI's `Security`/`HTTPBearer`
-    machinery since the token arrives as a query param, not a header).
-    Respects `settings.AUTH_PROVIDER` exactly the same way in both places --
-    previously the WebSocket endpoints called `AuthService.verify_token`
-    directly, which only ever understands this app's own HS256 tokens. That
-    meant that with AUTH_PROVIDER=supabase (the production setting -- see
-    CI's E2E job), every WebSocket connection using a real Supabase-issued
-    (ES256) access token would fail signature verification and get rejected
-    with 4401, breaking real-time messaging/notifications outright. Fails
-    closed either way: an unrecognized or invalid token never resolves to a
-    user, regardless of which provider's format it fails to match.
+    Shared by the HTTP `get_current_user` dependency and every WebSocket
+    endpoint (where the token arrives as a query parameter). Fails closed: a
+    token that doesn't verify never resolves to a user.
     """
+    identity = supabase_auth.verify_supabase_token(token)
     repo = UserRepository(db)
-    service = AuthService(repo)
-
-    if settings.AUTH_PROVIDER == "supabase":
-        identity = supabase_auth.verify_supabase_token(token)
-        # Supabase's own `role` JWT claim is the Postgres RLS role, not
-        # this app's business role -- role is decided by this backend
-        # (defaulted on first sight, changed only through its own admin
-        # endpoints), never read off the identity provider's token.
-        payload = TokenPayload(
-            sub=identity.user_id, email=identity.email, roles=[], iat=identity.issued_at
-        )
-    else:
-        payload = await service.verify_token(token)
-    user = await service.get_or_create_user_from_token(payload)
+    user = await AuthService(repo).get_or_create_user(identity)
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
         )
-    if _session_revoked(user, payload):
+    if _session_revoked(user, identity.issued_at):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session has been revoked. Please log in again.",
@@ -80,22 +57,19 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
     return user
 
 
-def _session_revoked(user: User, payload: TokenPayload) -> bool:
-    # Self-issued tokens carry a version claim; that is authoritative.
-    if payload.v is not None:
-        return user.token_version > payload.v
-    # Identity-provider tokens (Supabase) have no version: use issue time.
+def _session_revoked(user: User, issued_at: int | None) -> bool:
+    """True if the token predates the user's last sign-out-everywhere."""
     revoked_at = user.sessions_revoked_at
     if revoked_at is None:
         return False
-    if payload.iat is None:
+    if issued_at is None:
         # Cannot prove the token postdates the revocation.
         return True
     if revoked_at.tzinfo is None:  # SQLite in tests drops the offset
         revoked_at = revoked_at.replace(tzinfo=UTC)
     # iat has whole-second precision; a token minted in the same second as
     # the revocation is treated as revoked.
-    return payload.iat <= int(revoked_at.timestamp())
+    return issued_at <= int(revoked_at.timestamp())
 
 
 async def get_current_user(

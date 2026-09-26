@@ -7,10 +7,10 @@ from httpx import AsyncClient
 async def test_admin_console_exposes_metrics_and_audit_logs(client: AsyncClient):
     from conftest import TestingSessionLocal
     from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
 
     async with TestingSessionLocal() as db:
-        admin = User(email="console-admin@example.com", password_hash="hashed", full_name="Console Admin", role=UserRole.ADMIN)
+        admin = User(email="console-admin@example.com", full_name="Console Admin", role=UserRole.ADMIN)
         db.add(admin)
         await db.flush()
         token = create_access_token(admin)
@@ -27,7 +27,7 @@ async def test_admin_console_exposes_metrics_and_audit_logs(client: AsyncClient)
     assert suspended.status_code == 200
     # The test admin is intentionally suspended last; use a fresh admin identity for the audit read.
     async with TestingSessionLocal() as db:
-        admin = User(email="console-admin-2@example.com", password_hash="hashed", full_name="Console Admin 2", role=UserRole.ADMIN)
+        admin = User(email="console-admin-2@example.com", full_name="Console Admin 2", role=UserRole.ADMIN)
         db.add(admin)
         await db.flush()
         audit_token = create_access_token(admin)

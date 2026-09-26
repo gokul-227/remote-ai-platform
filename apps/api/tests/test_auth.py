@@ -1,5 +1,5 @@
 """
-Tests for Auth domain, registration, login, and authorization.
+Tests for the signed-in user endpoints and token error handling.
 """
 
 import uuid
@@ -7,24 +7,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-
-
-@pytest.mark.asyncio
-async def test_register_user_success(client: AsyncClient):
-    payload = {
-        "email": "engineer1@example.com",
-        "password": "SecurePassword123!",
-        "full_name": "Test Engineer",
-        "role": "engineer",
-    }
-    response = await client.post("/api/v1/auth/register", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert "refresh_token" in data
-    assert data["user"]["email"] == "engineer1@example.com"
-    # API role values are uppercase to match the frontend authorization contract.
-    assert data["user"]["role"] == "ENGINEER"
 
 
 @pytest.mark.asyncio
@@ -52,101 +34,9 @@ async def test_update_me_requires_auth(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_register_admin_forbidden(client: AsyncClient):
-    payload = {
-        "email": "hacker@example.com",
-        "password": "SecurePassword123!",
-        "full_name": "Fake Admin",
-        "role": "admin",
-    }
-    response = await client.post("/api/v1/auth/register", json=payload)
-    assert response.status_code == 403
-    assert "Cannot self-assign admin role" in response.json()["detail"]
-
-
-@pytest.mark.asyncio
-async def test_login_success(client: AsyncClient):
-    # Register first
-    reg_payload = {
-        "email": "loginuser@example.com",
-        "password": "MyPassword123!",
-        "full_name": "Login User",
-        "role": "engineer",
-    }
-    await client.post("/api/v1/auth/register", json=reg_payload)
-
-    # Login
-    login_payload = {
-        "email": "loginuser@example.com",
-        "password": "MyPassword123!",
-    }
-    response = await client.post("/api/v1/auth/login", json=login_payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert data["user"]["email"] == "loginuser@example.com"
-
-
-@pytest.mark.asyncio
-async def test_login_invalid_credentials(client: AsyncClient):
-    login_payload = {
-        "email": "nonexistent@example.com",
-        "password": "WrongPassword",
-    }
-    response = await client.post("/api/v1/auth/login", json=login_payload)
-    assert response.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_refresh_token_resolves_user_with_no_keycloak_id(
-    client: AsyncClient, db: AsyncSession
-):
-    """Regression for a refresh-token bug affecting any user record with no
-    keycloak_id (e.g. an account created directly against a raw user id
-    rather than through the password/register flow, which always stamps a
-    keycloak_id -- the previous OAuth-broker's own /oauth/exchange endpoint
-    used to create exactly such accounts before that broker was removed in
-    favor of Supabase-hosted OAuth; the "sub" ambiguity it worked around is
-    unchanged: a refresh token's "sub" claim is the user's own id whenever
-    keycloak_id is None, per create_token's `str(user.keycloak_id or user.id)`).
-
-    /auth/refresh previously resolved "sub" ONLY via get_by_keycloak_id,
-    which can never match a raw user id -- such an account's refresh token
-    would silently fail to resolve to any user, signing them out early with
-    no way to refresh the session.
-    """
-    from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_refresh_token
-
-    user = User(
-        id=uuid.uuid4(),
-        keycloak_id=None,
-        email="no-keycloak-user@example.com",
-        full_name="No Keycloak User",
-        role=UserRole.ENGINEER,
-        is_active=True,
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-
-    refresh_token = create_refresh_token(user)
-    response = await client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
-    assert response.status_code == 200
-    assert response.json()["user"]["email"] == "no-keycloak-user@example.com"
-
-
-@pytest.mark.asyncio
 async def test_malformed_bearer_token_returns_generic_401(client: AsyncClient):
     """A garbage bearer token must not leak the raw JWT-library decode error
-    (e.g. python-jose's "Not enough segments" / codec messages) to the client.
-
-    AuthService.verify_token already wraps python-jose's JWTError into an
-    app-authored AuthenticationError("Invalid or expired authentication
-    token"), so this specific path was already safe; this test locks that
-    behavior in as a regression guard alongside the fix below, which covers
-    exceptions that are *not* pre-wrapped into a safe AuthenticationError.
-    """
+    (e.g. "Not enough segments" / codec messages) to the client."""
     response = await client.get(
         "/api/v1/auth/me",
         headers={"Authorization": "Bearer not-a-real-jwt-at-all"},
@@ -185,7 +75,7 @@ async def test_unexpected_error_during_auth_does_not_leak_internals(client: Asyn
         raise RuntimeError(sensitive_text)
 
     monkeypatch.setattr(
-        auth_service_module.AuthService, "get_or_create_user_from_token", _boom
+        auth_service_module.AuthService, "get_or_create_user", _boom
     )
 
     response = await client.get(

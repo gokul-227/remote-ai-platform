@@ -406,7 +406,7 @@ class ConnectionManager:
     @staticmethod
     def _redis() -> aioredis.Redis:
         return aioredis.from_url(
-            settings.REDIS_URL,
+            settings.redis_url,
             socket_connect_timeout=2,
             socket_timeout=2,
             socket_keepalive=True,
@@ -503,11 +503,7 @@ async def websocket_messages(
 ):
     async with AsyncSessionFactory() as db:
         try:
-            # Provider-aware: respects AUTH_PROVIDER the same way the HTTP
-            # get_current_user dependency does (see authenticate_bearer_token's
-            # docstring) -- using AuthService.verify_token directly here would
-            # only ever accept this app's own HS256 tokens, rejecting every
-            # real Supabase-issued token in production.
+            # Same Supabase token verification as HTTP requests.
             user = await authenticate_bearer_token(token, db)
             await get_conversation(conversation_id, user.id, db)
         except Exception:

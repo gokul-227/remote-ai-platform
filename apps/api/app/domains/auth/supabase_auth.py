@@ -1,8 +1,7 @@
 """Supabase Auth JWT verification.
 
-Not yet the default identity path (see settings.AUTH_PROVIDER) -- built and
-tested standalone so it can be validated against a real Supabase project
-before the existing self-issued-JWT auth system is retired.
+The only identity path: every API request and WebSocket connection is
+authenticated by verifying a Supabase-issued access token.
 
 Supabase Auth signs tokens asymmetrically (ES256 by default on new/rotated
 projects) and publishes the verification keys at a JWKS endpoint, so this

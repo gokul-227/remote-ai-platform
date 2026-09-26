@@ -71,7 +71,6 @@ async def test_notify_user_without_email_html_never_touches_email_provider(monke
     async with TestingSessionLocal() as db:
         user = User(
             email="no-email-notif@example.com",
-            password_hash="hashed",
             full_name="No Email",
             role=UserRole.ENGINEER,
         )
@@ -98,7 +97,6 @@ async def test_notify_user_with_email_html_sends_email(monkeypatch):
     async with TestingSessionLocal() as db:
         user = User(
             email="with-email-notif@example.com",
-            password_hash="hashed",
             full_name="With Email",
             role=UserRole.ENGINEER,
         )

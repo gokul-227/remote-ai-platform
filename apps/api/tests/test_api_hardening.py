@@ -103,11 +103,6 @@ def test_production_settings_reject_wildcard_cors(monkeypatch):
         "DATABASE_URL",
         "postgresql+asyncpg://user:pass@real-host:5432/db",
     )
-    monkeypatch.setattr(settings, "SEED_DEMO_DATA", False)
-    monkeypatch.setattr(
-        settings, "JWT_SECRET_KEY", "a" * 40
-    )
-    monkeypatch.setattr(settings, "KEYCLOAK_CLIENT_SECRET", "a-real-secret")
     monkeypatch.setattr(settings, "MINIO_SECRET_KEY", "a-real-secret")
 
     with pytest.raises(RuntimeError, match="CORS_ORIGINS"):

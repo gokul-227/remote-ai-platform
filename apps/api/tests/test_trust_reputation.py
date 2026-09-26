@@ -157,7 +157,6 @@ async def test_cannot_review_uninvolved_user_on_unrelated_project(
     # test_user stays ENGINEER and has no membership on this project at all.
     other_company_owner = User(
         email="unrelated_company_owner@example.com",
-        password_hash="x",
         full_name="Unrelated Company Owner",
         role=UserRole.COMPANY,
     )

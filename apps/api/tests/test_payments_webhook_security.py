@@ -52,13 +52,11 @@ async def _make_escrowed_payment(
 
     payee = User(
         id=uuid.uuid4(),
-        keycloak_id=str(uuid.uuid4()),
+        auth_subject=str(uuid.uuid4()),
         email=f"payee_{uuid.uuid4().hex[:8]}@example.com",
         full_name="Payee",
-        password_hash="x",
         role=UserRole.ENGINEER,
         is_active=True,
-        token_version=1,
     )
     db.add(payee)
     await db.flush()

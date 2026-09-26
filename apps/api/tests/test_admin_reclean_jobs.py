@@ -18,11 +18,11 @@ async def test_reclean_requires_admin(client: AsyncClient):
 async def test_reclean_fixes_stale_html_entities(client: AsyncClient):
     from conftest import TestingSessionLocal
     from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
     from app.domains.jobs.models import JobPost
 
     async with TestingSessionLocal() as db:
-        admin = User(email="reclean-admin@example.com", password_hash="hashed", full_name="Reclean Admin", role=UserRole.ADMIN)
+        admin = User(email="reclean-admin@example.com", full_name="Reclean Admin", role=UserRole.ADMIN)
         job = JobPost(
             title="Smokemart &amp; GiftBox Sales Assistant",
             slug="smokemart-sales-assistant",

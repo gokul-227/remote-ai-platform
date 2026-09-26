@@ -412,7 +412,7 @@ async def _check_postgres(db: AsyncSession) -> ServiceHealthStatus:
 async def _check_redis() -> ServiceHealthStatus:
     started = time.monotonic()
     client: Redis = Redis.from_url(
-        settings.CELERY_BROKER_URL, socket_connect_timeout=1, socket_timeout=1
+        settings.redis_url, socket_connect_timeout=1, socket_timeout=1
     )
     try:
         await client.ping()
@@ -500,70 +500,15 @@ async def _check_supabase_auth() -> ServiceHealthStatus:
         )
 
 
-async def _check_keycloak() -> ServiceHealthStatus:
-    started = time.monotonic()
-    if not settings.FEATURE_KEYCLOAK_AUTH:
-        return ServiceHealthStatus(
-            service="Keycloak Identity Provider", status="UNKNOWN", latency_ms=0.0
-        )
-    try:
-        realm_url = f"{settings.KEYCLOAK_URL}/realms/{settings.KEYCLOAK_REALM}"
-        async with httpx.AsyncClient(timeout=1.5) as client:
-            resp = await client.get(realm_url)
-        status_str = "OPERATIONAL" if resp.status_code == 200 else "DOWN"
-        return ServiceHealthStatus(
-            service="Keycloak Identity Provider",
-            status=status_str,
-            latency_ms=round((time.monotonic() - started) * 1000, 1),
-        )
-    except Exception:
-        return ServiceHealthStatus(
-            service="Keycloak Identity Provider",
-            status="DOWN",
-            latency_ms=round((time.monotonic() - started) * 1000, 1),
-        )
-
-
-async def _check_celery_queues() -> ServiceHealthStatus:
-    """Check broker connectivity directly with a real PING.
-
-    Previously delegated to queue_monitor.get_queue_depths(), which is
-    designed for its own caller (a metrics endpoint that should always
-    return *something*) to swallow every Redis error and return
-    {queue: 0} rather than raise -- so this check could never observe a
-    broker outage and always reported OPERATIONAL, the exact hardcoded-
-    health failure mode this endpoint's other checks were fixed to avoid.
-    """
-    started = time.monotonic()
-    client: Redis = Redis.from_url(
-        settings.CELERY_BROKER_URL, socket_connect_timeout=1, socket_timeout=1
-    )
-    try:
-        await client.ping()
-        return ServiceHealthStatus(
-            service="Celery Background Task Queue",
-            status="OPERATIONAL",
-            latency_ms=round((time.monotonic() - started) * 1000, 1),
-        )
-    except Exception:
-        return ServiceHealthStatus(
-            service="Celery Background Task Queue",
-            status="DOWN",
-            latency_ms=round((time.monotonic() - started) * 1000, 1),
-        )
-    finally:
-        await client.aclose()
-
-
 @router.get("/health/details", response_model=SystemHealthDetailResponse)
 async def get_system_health_details(
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> SystemHealthDetailResponse:
-    """Detailed health check for all core platform subsystems (Postgres, Redis, MinIO, the identity provider, Celery).
+    """Detailed health check for all core platform subsystems (Postgres, Redis, object storage, Supabase Auth).
 
     Each subsystem is checked directly (a real Postgres query, a real Redis PING,
-    a real S3 list-buckets call, a real Keycloak realm fetch) rather than reported
+    a real S3 list-buckets call, a real Supabase Auth health call) rather than reported
     as a static value — a prior version of this endpoint hardcoded every non-Postgres
     row to "OPERATIONAL", which meant it could never reflect a real outage.
     """
@@ -571,14 +516,7 @@ async def get_system_health_details(
         ("PostgreSQL Database Pool", _check_postgres(db)),
         ("Redis Cache & Session Broker", _check_redis()),
         ("MinIO Object Storage S3", _check_minio()),
-        # Check the identity provider actually in use: Supabase in production,
-        # Keycloak only for the legacy custom-JWT setup.
-        (
-            ("Supabase Auth", _check_supabase_auth())
-            if settings.AUTH_PROVIDER == "supabase"
-            else ("Keycloak Identity Provider", _check_keycloak())
-        ),
-        ("Celery Background Task Queue", _check_celery_queues()),
+        ("Supabase Auth", _check_supabase_auth()),
     ]
     # Belt-and-suspenders cap on top of each check's own internal timeout —
     # a slow/misbehaving dependency should never be able to push this

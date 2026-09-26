@@ -142,12 +142,11 @@ async def test_public_engineer_profile_hides_resume_url_from_anonymous_callers(
     # An admin sees it too.
     from conftest import TestingSessionLocal
     from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
 
     async with TestingSessionLocal() as admin_db:
         admin = User(
             email="resume_privacy_admin@example.com",
-            password_hash="hashed",
             full_name="Resume Privacy Admin",
             role=UserRole.ADMIN,
         )

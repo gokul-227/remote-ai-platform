@@ -28,12 +28,9 @@ from app.core.config import settings
 # every call (not cached) so tests can `monkeypatch.setattr(settings, ...)`
 # the same way the rest of the test suite already does for other settings.
 _FLAG_SETTINGS_ATTR: dict[str, str] = {
-    "trending_skills": "FEATURE_TRENDING_SKILLS",
-    "stale_match_recompute": "FEATURE_STALE_MATCH_RECOMPUTE",
     "ai_resume_parsing": "FEATURE_AI_RESUME_PARSING",
     "ai_matching": "FEATURE_AI_MATCHING",
     "job_aggregator": "FEATURE_JOB_AGGREGATOR",
-    "keycloak_auth": "FEATURE_KEYCLOAK_AUTH",
 }
 
 

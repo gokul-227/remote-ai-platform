@@ -238,16 +238,9 @@ class EngineerService:
             size_bytes=len(file_bytes),
         )
 
-        # AI-parse inline rather than dispatching a Celery task: this
-        # deployment runs no Celery worker (see docs/architecture -- the
-        # scheduled-job-sync workflow replaced Celery beat, but nothing ever
-        # replaced the worker for on-demand tasks like this one), so a task
-        # enqueued via .delay() would sit in Redis forever. Parsing a resume
-        # is a single LLM call, already bounded by LLMClient's own
-        # timeout/fallback handling, so doing it inline before responding is
-        # the honest choice over queuing work nothing will ever pick up.
-        # Never let a parsing failure fail the upload itself -- the file is
-        # already safely stored at this point.
+        # AI-parse inline (there is no background worker), bounded by the
+        # parse budget below. Never let a parsing failure fail the upload
+        # itself -- the file is already safely stored at this point.
         # PDF/DOCX parsing is CPU-bound; keep it off the event loop.
         resume_text = await asyncio.to_thread(extract_resume_text, file_bytes, suffix)
         status = "no_text"

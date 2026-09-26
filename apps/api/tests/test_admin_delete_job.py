@@ -18,11 +18,11 @@ async def test_delete_job_requires_admin_role(client: AsyncClient):
 async def test_admin_can_delete_job(client: AsyncClient):
     from conftest import TestingSessionLocal
     from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
     from app.domains.jobs.models import JobPost
 
     async with TestingSessionLocal() as db:
-        admin = User(email="delete-job-admin@example.com", password_hash="hashed", full_name="Delete Job Admin", role=UserRole.ADMIN)
+        admin = User(email="delete-job-admin@example.com", full_name="Delete Job Admin", role=UserRole.ADMIN)
         db.add(admin)
         await db.flush()
         job = JobPost(title="Test Role To Delete", slug="test-role-to-delete", description="temp", company_name="Test Co", source="DIRECT")

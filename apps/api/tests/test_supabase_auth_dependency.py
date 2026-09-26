@@ -1,5 +1,5 @@
-"""Tests for the (not-yet-default) Supabase Auth path through get_current_user,
-gated by settings.AUTH_PROVIDER = "supabase". Uses a real generated EC keypair
+"""Tests for the Supabase Auth path through get_current_user.
+Uses a real generated EC keypair
 in place of a real Supabase project's JWKS -- no network dependency.
 """
 
@@ -37,7 +37,6 @@ def _make_token(sub: str, email: str) -> str:
 
 @pytest.fixture(autouse=True)
 def _supabase_auth_mode(monkeypatch):
-    monkeypatch.setattr(settings, "AUTH_PROVIDER", "supabase")
     monkeypatch.setattr(settings, "SUPABASE_URL", "https://test-project.supabase.co")
     fake_client = SimpleNamespace(
         get_signing_key_from_jwt=lambda token: SimpleNamespace(key=_PUBLIC_KEY)

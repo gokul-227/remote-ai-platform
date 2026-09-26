@@ -137,7 +137,7 @@ async def test_summary_returns_counts_grouped_by_event_and_day(
 ):
     test_user.role = UserRole.ADMIN
     await db.commit()
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
 
     admin_headers = {"Authorization": f"Bearer {create_access_token(test_user)}"}
 

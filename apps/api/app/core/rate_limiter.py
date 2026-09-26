@@ -126,7 +126,7 @@ async def check_rate_limit(
     # 1. Attempt distributed Redis sliding window
     try:
         client: Redis = Redis.from_url(
-            settings.CELERY_BROKER_URL,
+            settings.redis_url,
             socket_connect_timeout=0.5,
             socket_timeout=0.5,
         )

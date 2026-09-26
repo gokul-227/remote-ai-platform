@@ -114,13 +114,7 @@ async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID, token
     """
     async with AsyncSessionFactory() as db:
         try:
-            # Provider-aware (see authenticate_bearer_token's docstring in
-            # app.domains.auth.dependencies): previously this called
-            # AuthService.verify_token directly, which only understands this
-            # app's own HS256 tokens -- with AUTH_PROVIDER=supabase (the
-            # production setting), every real user's Supabase-issued (ES256)
-            # token would fail here and this endpoint would 4401 every
-            # legitimate connection.
+            # Same Supabase token verification as HTTP requests.
             user = await authenticate_bearer_token(token, db)
             if user.id != user_id:
                 await websocket.close(code=4401)

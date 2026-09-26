@@ -137,7 +137,6 @@ async def test_notification_ws_accepts_supabase_token_when_auth_provider_is_supa
     AUTH_PROVIDER=supabase (the production setting) a real Supabase-issued
     token would always be rejected here, breaking real-time notifications
     for every production user."""
-    monkeypatch.setattr(settings, "AUTH_PROVIDER", "supabase")
     monkeypatch.setattr(settings, "SUPABASE_URL", "https://test-project.supabase.co")
     fake_jwks = SimpleNamespace(get_signing_key_from_jwt=lambda token: SimpleNamespace(key=_PUBLIC_KEY))
 

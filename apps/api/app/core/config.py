@@ -50,8 +50,9 @@ class Settings(BaseSettings):
 
     # ── Redis ─────────────────────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
-    CELERY_BROKER_URL: str = "redis://localhost:6379/1"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
+    # Legacy name for the Redis URL, from when Celery used Redis as a broker.
+    # Only read as a fallback when REDIS_URL is not configured (see redis_url).
+    CELERY_BROKER_URL: str | None = None
 
     # ── MinIO ─────────────────────────────────────────────────────────────────
     MINIO_ENDPOINT: str = "localhost:9000"
@@ -62,28 +63,10 @@ class Settings(BaseSettings):
     MINIO_BUCKET_ASSETS: str = "remote-ai-platform-assets"
     MINIO_SECURE: bool = False
 
-    # ── Keycloak ──────────────────────────────────────────────────────────────
-    KEYCLOAK_URL: str = "http://localhost:8080"
-    KEYCLOAK_PUBLIC_URL: str = "http://localhost:8080"
-    KEYCLOAK_REALM: str = "remote-ai-platform"
-    KEYCLOAK_CLIENT_ID: str = "remote-ai-platform-api"
-    KEYCLOAK_WEB_CLIENT_ID: str = "remote-ai-platform-web"
-    KEYCLOAK_CLIENT_SECRET: str = "change-me-in-production"
-
-    # ── JWT (Internal) ────────────────────────────────────────────────────────
-    JWT_SECRET_KEY: str = "dev_secret_key_change_in_prod_to_32_chars_min"
-    JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-
-    # ── Supabase Auth (target IdP -- not yet the default) ───────────────────────
-    # AUTH_PROVIDER="custom_jwt" (default, current behavior: this app issues and
-    # verifies its own HS256 tokens) or "supabase" (verifies Supabase Auth's own
-    # asymmetric-signed tokens via JWKS; this app no longer issues tokens at all
-    # -- signup/login happens entirely against Supabase from the frontend). Kept
-    # switchable so the Supabase path can be built and tested without touching
-    # the currently-working custom auth until it's verified end-to-end.
-    AUTH_PROVIDER: str = "custom_jwt"
+    # ── Supabase Auth (the only identity provider) ──────────────────────────────
+    # Sign-in happens entirely against Supabase from the frontend; this API
+    # verifies Supabase's asymmetrically signed access tokens via JWKS and
+    # never issues tokens itself.
     SUPABASE_URL: str | None = None
     SUPABASE_JWT_AUDIENCE: str = "authenticated"
     # JWKS responses are cached in-process for this long (Supabase's own edge
@@ -193,31 +176,6 @@ class Settings(BaseSettings):
     FEATURE_AI_RESUME_PARSING: bool = True
     FEATURE_AI_MATCHING: bool = True
     FEATURE_JOB_AGGREGATOR: bool = True
-    FEATURE_KEYCLOAK_AUTH: bool = True
-    # These two gate genuinely-incomplete backend logic (see
-    # app/workers/tasks/jobs.py::refresh_trending_skills and
-    # app/workers/tasks/matching.py::compute_stale_matches, both still
-    # literal stubs). Unlike the always-on flags above, these default to
-    # False -- there is nothing real behind them yet, so an env var wipe or a
-    # forgotten default must not silently expose them as live features.
-    # See app.core.feature_flags for the read-side helper.
-    FEATURE_TRENDING_SKILLS: bool = False
-    FEATURE_STALE_MATCH_RECOMPUTE: bool = False
-    SEED_DEMO_DATA: bool = False
-
-    # ── Social login (direct OAuth2, no identity-broker service) ────────────────
-    # Keycloak was evaluated for this and rejected: its JVM cannot boot in
-    # Render's free 512MB tier (confirmed by testing), and a lighter broker
-    # like Ory Hydra solves a different problem (being an OAuth *provider*,
-    # not a *client* consuming Google/Microsoft) -- it would still require
-    # writing this exact integration, just behind an extra service. Each
-    # provider's *_CLIENT_ID is not secret; the matching *_CLIENT_SECRET is.
-    FRONTEND_URL: str = "http://localhost:3000"
-    GOOGLE_OAUTH_CLIENT_ID: str | None = None
-    GOOGLE_OAUTH_CLIENT_SECRET: str | None = None
-    MICROSOFT_OAUTH_CLIENT_ID: str | None = None
-    MICROSOFT_OAUTH_CLIENT_SECRET: str | None = None
-    MICROSOFT_OAUTH_TENANT: str = "common"
 
     # ── Error monitoring (Sentry) ────────────────────────────────────────────
     # Empty string (default) means Sentry is never initialized -- a complete
@@ -229,6 +187,13 @@ class Settings(BaseSettings):
     # ── Pagination ────────────────────────────────────────────────────────────
     DEFAULT_PAGE_SIZE: int = 20
     MAX_PAGE_SIZE: int = 100
+
+    @property
+    def redis_url(self) -> str:
+        """REDIS_URL, or the legacy CELERY_BROKER_URL when only that is set."""
+        if self.REDIS_URL.startswith("redis://localhost") and self.CELERY_BROKER_URL:
+            return self.CELERY_BROKER_URL
+        return self.REDIS_URL
 
     @property
     def is_development(self) -> bool:
@@ -262,12 +227,8 @@ class Settings(BaseSettings):
             errors.append(
                 "DEBUG must not be enabled in production (it exposes verbose tracebacks/internals to clients)"
             )
-        if self.SEED_DEMO_DATA:
-            errors.append("SEED_DEMO_DATA must not be enabled in production environments")
-        if len(self.JWT_SECRET_KEY) < 32 or "dev_secret" in self.JWT_SECRET_KEY:
-            errors.append("JWT_SECRET_KEY must be a high-entropy production secret")
-        if self.KEYCLOAK_CLIENT_SECRET in {"change-me-in-production", ""}:
-            errors.append("KEYCLOAK_CLIENT_SECRET must be configured")
+        if not self.SUPABASE_URL:
+            errors.append("SUPABASE_URL must be configured (it is the only sign-in path)")
         if self.MINIO_SECRET_KEY in {"minioadmin", "minioadmin_dev_password", ""}:
             errors.append("MINIO_SECRET_KEY must be configured")
         # MINIO_ENDPOINT/MINIO_PUBLIC_ENDPOINT double as the real object-storage
@@ -284,15 +245,11 @@ class Settings(BaseSettings):
             )
         # Warn (non-fatal) if Redis is pointing at localhost — the app will boot but
         # rate limiting, caching and the job queue will silently degrade to in-memory
-        # fallbacks.  Operators should set REDIS_URL / CELERY_BROKER_URL to a real
+        # fallbacks.  Operators should set REDIS_URL to a real
         # Redis instance (e.g. Upstash free tier) or accept the degraded behaviour.
         _redis_localhost_warning: list[str] = []
-        if self.REDIS_URL.startswith("redis://localhost"):
+        if self.redis_url.startswith("redis://localhost"):
             _redis_localhost_warning.append("REDIS_URL")
-        if self.CELERY_BROKER_URL.startswith("redis://localhost"):
-            _redis_localhost_warning.append("CELERY_BROKER_URL")
-        if self.CELERY_RESULT_BACKEND.startswith("redis://localhost"):
-            _redis_localhost_warning.append("CELERY_RESULT_BACKEND")
         if _redis_localhost_warning:
             import warnings
 

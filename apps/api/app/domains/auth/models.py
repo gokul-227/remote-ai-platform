@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, String, Text, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -34,7 +34,8 @@ class User(Base):
         default=uuid.uuid4,
         index=True,
     )
-    keycloak_id: Mapped[str | None] = mapped_column(
+    # Subject ("sub") of the user's identity in Supabase Auth.
+    auth_subject: Mapped[str | None] = mapped_column(
         String(255),
         unique=True,
         nullable=True,
@@ -46,7 +47,6 @@ class User(Base):
         nullable=False,
         index=True,
     )
-    password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     full_name: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
@@ -61,13 +61,7 @@ class User(Base):
         default=True,
         nullable=False,
     )
-    token_version: Mapped[int] = mapped_column(
-        Integer,
-        default=1,
-        nullable=False,
-    )
-    # Tokens issued at or before this instant are rejected (sign out
-    # everywhere). Unlike token_version this also covers Supabase tokens.
+    # Access tokens issued at or before this instant are rejected (sign out everywhere).
     sessions_revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
@@ -105,27 +99,3 @@ class User(Base):
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email} role={self.role}>"
 
-
-class PasswordResetToken(Base):
-    __tablename__ = "password_reset_tokens"
-
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-        index=True,
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    token_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-    )

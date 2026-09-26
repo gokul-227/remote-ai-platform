@@ -142,27 +142,3 @@ async def test_admin_verification_queue_and_job_list(client: AsyncClient, test_u
     await db.commit()
     jobs = (await client.get("/api/v1/admin/jobs", headers=auth_headers, params={"q": "hidden"})).json()
     assert [j["title"] for j in jobs] == ["Hidden role"] and jobs[0]["is_active"] is False
-
-
-@pytest.mark.asyncio
-async def test_health_checks_supabase_not_keycloak_when_supabase_is_the_provider(client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession, monkeypatch):
-    from app.core.config import settings
-    from app.domains.admin import router as admin_router
-    from app.domains.admin.schemas import ServiceHealthStatus
-
-    test_user.role = UserRole.ADMIN
-    await db.commit()
-
-    async def fake_supabase() -> ServiceHealthStatus:
-        return ServiceHealthStatus(service="Supabase Auth", status="OPERATIONAL", latency_ms=1.0)
-
-    async def boom() -> ServiceHealthStatus:
-        raise AssertionError("Keycloak must not be checked when Supabase is the provider")
-
-    # Only the admin router sees Supabase as the provider; the test client keeps its own JWT auth.
-    monkeypatch.setattr(admin_router, "settings", settings.model_copy(update={"AUTH_PROVIDER": "supabase"}))
-    monkeypatch.setattr(admin_router, "_check_supabase_auth", fake_supabase)
-    monkeypatch.setattr(admin_router, "_check_keycloak", boom)
-    body = (await client.get("/api/v1/admin/health/details", headers=auth_headers)).json()
-    names = [s["service"] for s in body["services"]]
-    assert "Supabase Auth" in names and not any("Keycloak" in n for n in names)

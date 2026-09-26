@@ -25,7 +25,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.queue_monitor import get_queue_depths
 
 router = APIRouter(tags=["Health & Operations"])
 
@@ -95,7 +94,7 @@ async def _check_redis() -> ServiceCheckResult:
     client: Redis | None = None
     try:
         client = Redis.from_url(
-            settings.CELERY_BROKER_URL,
+            settings.redis_url,
             socket_connect_timeout=1.5,
             socket_timeout=1.5,
         )
@@ -344,13 +343,3 @@ async def health_check_legacy(
             for k, v in ready_resp.services.items()
         },
     }
-
-
-@router.get("/health/queues", summary="Queue depths overview")
-async def queue_health():
-    """Return current approximate Celery queue depths for operational checks."""
-    try:
-        depths = await get_queue_depths()
-        return {"status": "HEALTHY", "queues": depths}
-    except Exception as exc:
-        return {"status": "DEGRADED", "queues": {}, "error": str(exc)[:100]}

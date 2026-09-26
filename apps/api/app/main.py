@@ -182,15 +182,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error("Database connection failed", error=str(e))
         raise
 
-    # Auto-seed demo data only in development or if explicitly requested via configuration
-    if settings.is_development or settings.SEED_DEMO_DATA:
-        try:
-            from app.scripts.seed_data import seed_demo_data
-
-            await seed_demo_data()
-        except Exception as e:
-            logger.warning("Seed data skipped", error=str(e))
-
     yield
 
     # Shutdown

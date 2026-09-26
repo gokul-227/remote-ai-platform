@@ -26,16 +26,15 @@ class UserRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_keycloak_id(self, keycloak_id: str) -> User | None:
-        stmt = select(User).where(User.keycloak_id == keycloak_id)
+    async def get_by_auth_subject(self, subject: str) -> User | None:
+        stmt = select(User).where(User.auth_subject == subject)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(self, data: UserCreate) -> User:
         user = User(
-            keycloak_id=data.keycloak_id,
+            auth_subject=data.auth_subject,
             email=data.email,
-            password_hash=data.password_hash,
             full_name=data.full_name,
             role=data.role,
             avatar_url=data.avatar_url,

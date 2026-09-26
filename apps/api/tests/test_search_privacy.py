@@ -12,7 +12,6 @@ async def test_global_search_never_leaks_resume_fields(client: AsyncClient):
     async with TestingSessionLocal() as db:
         user = User(
             email="searchable-engineer@example.com",
-            password_hash="hashed",
             full_name="Searchable Engineer",
             role=UserRole.ENGINEER,
         )

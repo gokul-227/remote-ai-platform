@@ -12,7 +12,6 @@ from sqlalchemy import select
 
 from app.main import app
 from app.core.database import Base, get_db
-from app.core.security import get_password_hash
 from app.domains.auth.models import User, UserRole
 
 from sqlalchemy.ext.compiler import compiles
@@ -64,6 +63,21 @@ async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
 
 app.dependency_overrides[get_db] = override_get_db
 
+# Test-only sign-up/sign-in that mint Supabase-style tokens (see auth_support).
+from auth_support import FAKE_JWKS_CLIENT, TEST_SUPABASE_URL, test_auth_router  # noqa: E402
+
+app.include_router(test_auth_router)
+
+
+@pytest.fixture(autouse=True)
+def supabase_test_keys(monkeypatch):
+    """Verify tokens with the test key instead of Supabase's JWKS."""
+    from app.core.config import settings
+    from app.domains.auth import supabase_auth
+
+    monkeypatch.setattr(settings, "SUPABASE_URL", TEST_SUPABASE_URL)
+    monkeypatch.setattr(supabase_auth, "_jwks_client", FAKE_JWKS_CLIENT)
+
 
 @pytest.fixture(autouse=True)
 def isolate_rate_limiting():
@@ -96,16 +110,13 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture
 async def test_user(db: AsyncSession) -> User:
     """Create a test user with ENGINEER role."""
-    keycloak_id = str(uuid.uuid4())
     user = User(
         id=uuid.uuid4(),
-        keycloak_id=keycloak_id,
+        auth_subject=str(uuid.uuid4()),
         email="test@example.com",
         full_name="Test User",
-        password_hash=get_password_hash("TestPassword123!"),
         role=UserRole.ENGINEER,
         is_active=True,
-        token_version=1,
     )
     db.add(user)
     await db.commit()
@@ -114,10 +125,9 @@ async def test_user(db: AsyncSession) -> User:
 
 @pytest.fixture
 async def auth_headers(test_user: User) -> dict[str, str]:
-    """Generate JWT auth headers for the test user."""
-    from app.domains.auth.router import create_access_token
-    token = create_access_token(test_user)
-    return {"Authorization": f"Bearer {token}"}
+    """Supabase-style bearer headers for the test user."""
+    from auth_support import token_for
+    return {"Authorization": f"Bearer {token_for(test_user)}"}
 
 
 @pytest.fixture

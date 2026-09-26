@@ -194,8 +194,8 @@ async def test_candidate_search_considers_more_than_the_first_30_profiles(client
     db.add(job)
     old = dt.datetime(2026, 1, 1, tzinfo=dt.UTC)
     for i in range(40):
-        user = User(id=uuid.uuid4(), keycloak_id=str(uuid.uuid4()), email=f"pool{i}@visibility-example.com",
-                    full_name=f"Pool {i}", role=UserRole.ENGINEER, is_active=True, token_version=1)
+        user = User(id=uuid.uuid4(), auth_subject=str(uuid.uuid4()), email=f"pool{i}@visibility-example.com",
+                    full_name=f"Pool {i}", role=UserRole.ENGINEER, is_active=True)
         db.add(user)
         await db.flush()
         # The one strong match is the least recently updated, i.e. outside the first 30.

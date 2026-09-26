@@ -44,7 +44,7 @@ async def test_worker_company_marketplace_journey(client: AsyncClient):
 async def test_admin_control_and_moderation_journey(client: AsyncClient):
     from conftest import TestingSessionLocal
     from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
 
     target = await client.post("/api/v1/auth/register", json={
         "email": "e2e-target@example.com", "password": "secure-pass", "full_name": "E2E Target", "role": "ENGINEER",
@@ -52,7 +52,7 @@ async def test_admin_control_and_moderation_journey(client: AsyncClient):
     target_headers = {"Authorization": f"Bearer {target.json()['access_token']}"}
 
     async with TestingSessionLocal() as db:
-        admin = User(email="e2e-admin@example.com", password_hash="hashed", full_name="E2E Admin", role=UserRole.ADMIN)
+        admin = User(email="e2e-admin@example.com", full_name="E2E Admin", role=UserRole.ADMIN)
         db.add(admin)
         await db.flush()
         admin_headers = {"Authorization": f"Bearer {create_access_token(admin)}"}

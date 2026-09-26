@@ -18,10 +18,10 @@ async def test_delete_user_requires_admin_role(client: AsyncClient):
 async def test_admin_cannot_delete_own_account(client: AsyncClient):
     from conftest import TestingSessionLocal
     from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
 
     async with TestingSessionLocal() as db:
-        admin = User(email="self-delete-admin@example.com", password_hash="hashed", full_name="Self Delete Admin", role=UserRole.ADMIN)
+        admin = User(email="self-delete-admin@example.com", full_name="Self Delete Admin", role=UserRole.ADMIN)
         db.add(admin)
         await db.flush()
         admin_id = admin.id
@@ -37,12 +37,12 @@ async def test_admin_cannot_delete_own_account(client: AsyncClient):
 async def test_admin_can_delete_user_and_cascades_dependent_data(client: AsyncClient):
     from conftest import TestingSessionLocal
     from app.domains.auth.models import User, UserRole
-    from app.domains.auth.router import create_access_token
+    from auth_support import token_for as create_access_token
     from app.domains.engineers.models import EngineerProfile
 
     async with TestingSessionLocal() as db:
-        admin = User(email="delete-admin@example.com", password_hash="hashed", full_name="Delete Admin", role=UserRole.ADMIN)
-        target = User(email="delete-target@example.com", password_hash="hashed", full_name="Delete Target", role=UserRole.ENGINEER)
+        admin = User(email="delete-admin@example.com", full_name="Delete Admin", role=UserRole.ADMIN)
+        target = User(email="delete-target@example.com", full_name="Delete Target", role=UserRole.ENGINEER)
         db.add_all([admin, target])
         await db.flush()
         target_id = target.id
