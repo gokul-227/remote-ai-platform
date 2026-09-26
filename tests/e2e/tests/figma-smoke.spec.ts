@@ -28,3 +28,11 @@ test("deploy verification endpoints respond", async ({ request }) => {
   expect((await request.get("/health/version")).ok()).toBeTruthy();
   expect((await request.get("/api/version")).ok()).toBeTruthy();
 });
+
+test("sign-in is real: an unregistered email gets a friendly error, not a code screen", async ({ page }) => {
+  await page.goto("/#login");
+  await page.locator("#email").fill("nonexistent-user@doesnotexist-e2e.com");
+  await page.getByRole("button", { name: /email me a sign-in code/i }).click();
+  await expect(page.locator("p[role=alert]")).toContainText(/couldn't find an account|invalid|error|failed/i, { timeout: 15_000 });
+  await expect(page.locator("#code")).not.toBeVisible();
+});

@@ -23,7 +23,8 @@ export default function LegacyRedirect({ params }: { params: Promise<{ slug: str
     const path = slug.join("/");
     const hit = ROUTES.find(([re]) => re.test(path));
     const route = hit ? hit[1] || path : "notfound";
-    window.location.replace(`/#${route}`);
+    // Keep the query (e.g. ?token= on password-reset links) for the Figma screen.
+    window.location.replace(`/${window.location.search}#${route}`);
   }, [slug]);
   return null;
 }
