@@ -1,5 +1,6 @@
 // @ts-nocheck -- Figma Make export, kept verbatim (never type-checked upstream).
 import { useState, useEffect } from "react";
+import api, { extractErrorMessage } from "@/lib/api";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
 
 const nav = (h: string) => { window.location.hash = h; };
@@ -206,10 +207,31 @@ export function Search() {
 }
 
 export function CoProfile() {
+  // Live: loads and saves the real company profile (creates it on first save).
+  const [f, setF] = useState({ name: "", industry: "", company_size: "11-50", location: "", website: "", description: "", logo_url: "" });
+  const [exists, setExists] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [logoEdit, setLogoEdit] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const set = (k: string, v: string) => setF((c) => ({ ...c, [k]: v }));
+  useEffect(() => {
+    api.get("/companies/me").then((r) => { const d = r.data; setExists(true); setF({ name: d.name || "", industry: d.industry || "", company_size: d.company_size || "11-50", location: d.location || "", website: d.website || "", description: d.description || "", logo_url: d.logo_url || "" }); })
+      .catch(() => {}).finally(() => setLoading(false));
+  }, []);
+  const save = async () => {
+    if (!f.name.trim()) { setMsg({ ok: false, text: "Enter your organization’s name." }); return; }
+    setBusy(true); setMsg(null);
+    const body = { name: f.name.trim(), industry: f.industry.trim() || null, company_size: f.company_size, location: f.location.trim() || null, website: f.website.trim() || null, description: f.description.trim() || null, logo_url: f.logo_url.trim() || null };
+    try { await (exists ? api.put("/companies/me", body) : api.post("/companies/me", body)); setExists(true); setMsg({ ok: true, text: "Company profile saved." }); }
+    catch (e) { setMsg({ ok: false, text: extractErrorMessage(e, "We couldn't save your company profile.") }); }
+    finally { setBusy(false); }
+  };
   return (
     <Wrap w="max-w-[900px]">
-      <div className="mb-4"><h1>Company profile</h1><p className="text-sm text-slate-500">This is how candidates see your organization</p></div>
-      <Card c="rounded-xl"><div className="mb-4 flex items-center gap-4"><Lg name="Northstar Cloud" s={72} r={14} /><Btn v="outline">Change logo</Btn></div><div className="grid gap-3 grid-cols-1 md:grid-cols-2"><Field label="Organization name"><input defaultValue="Northstar Cloud" className={inputCls} /></Field><Field label="Industry"><input defaultValue="Cloud infrastructure" className={inputCls} /></Field><Field label="Size"><select className={inputCls}><option>201-500</option><option>51-200</option></select></Field><Field label="Location"><input defaultValue="Remote (US/EU)" className={inputCls} /></Field><Field label="Website"><input defaultValue="northstar.example" className={inputCls} /></Field></div><div className="mt-3"><Field label="Description"><textarea rows={4} className={cx(inputCls, "h-auto py-2")} defaultValue="We build production AI infrastructure for remote-first teams." /></Field></div><Btn v="primary" c="mt-4">Save profile</Btn></Card>
+      <div className="mb-4"><h1>Company profile</h1><p className="text-sm text-slate-500">{exists ? "This is how candidates see your organization" : "Set up your organization so candidates can learn about your team"}</p></div>
+      {loading ? <Card c="rounded-xl"><p className="text-slate-500">Loading…</p></Card> :
+      <Card c="rounded-xl"><div className="mb-4 flex flex-wrap items-center gap-4">{f.logo_url ? <img src={f.logo_url} alt="" className="h-[72px] w-[72px] rounded-[14px] object-contain" /> : <Lg name={f.name || "Company"} s={72} r={14} />}<Btn v="outline" onClick={() => setLogoEdit(!logoEdit)}>Change logo</Btn>{logoEdit && <input aria-label="Logo URL" placeholder="https://… logo image URL" value={f.logo_url} onChange={(e) => set("logo_url", e.target.value)} className={cx(inputCls, "max-w-sm")} />}</div><div className="grid gap-3 grid-cols-1 md:grid-cols-2"><Field label="Organization name"><input value={f.name} onChange={(e) => set("name", e.target.value)} className={inputCls} /></Field><Field label="Industry"><input value={f.industry} onChange={(e) => set("industry", e.target.value)} className={inputCls} /></Field><Field label="Size"><select value={f.company_size} onChange={(e) => set("company_size", e.target.value)} className={inputCls}>{["1-10", "11-50", "51-200", "201-500", "500+"].map((x) => <option key={x}>{x}</option>)}</select></Field><Field label="Location"><input value={f.location} onChange={(e) => set("location", e.target.value)} className={inputCls} /></Field><Field label="Website"><input value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" className={inputCls} /></Field></div><div className="mt-3"><Field label="Description"><textarea rows={4} value={f.description} onChange={(e) => set("description", e.target.value)} className={cx(inputCls, "h-auto py-2")} /></Field></div>{msg && <p role={msg.ok ? "status" : "alert"} className={cx("mt-3 text-sm", msg.ok ? "text-green-700" : "text-red-600")}>{msg.text}</p>}<Btn v="primary" c="mt-4" onClick={save}>{busy ? "Saving…" : exists ? "Save profile" : "Create company profile"}</Btn></Card>}
     </Wrap>
   );
 }
