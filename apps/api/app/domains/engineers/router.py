@@ -5,12 +5,15 @@ API Router for Engineer Profile domain.
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.security import ALLOWED_RESUME_TYPES
+from app.domains.applications.models import JobApplication
 from app.domains.auth.dependencies import get_current_user, get_optional_user, require_role
 from app.domains.auth.models import User, UserRole
+from app.domains.companies.models import CompanyProfile
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import (
     EngineerProfileCreate,
@@ -21,6 +24,7 @@ from app.domains.engineers.schemas import (
     ResumeUploadResponse,
 )
 from app.domains.engineers.service import EngineerService
+from app.domains.jobs.models import JobPost
 
 router = APIRouter(prefix="/engineers", tags=["Engineer Profiles"])
 
@@ -145,6 +149,7 @@ async def get_engineer_by_id(
     profile_id: uuid.UUID,
     current_user: User | None = Depends(get_optional_user),
     service: EngineerService = Depends(get_engineer_service),
+    db: AsyncSession = Depends(get_db),
 ) -> EngineerProfileResponse | EngineerPublicProfileResponse:
     """Get public engineer profile by ID.
 
@@ -162,4 +167,26 @@ async def get_engineer_by_id(
     )
     if is_owner_or_admin:
         return service.to_response(profile)
+    # A hidden profile answers 404 (not 403) so its existence isn't revealed,
+    # except to a company the engineer chose to apply to.
+    if not profile.is_public and not (
+        current_user is not None and await _engineer_applied_to_company(db, profile.user_id, current_user.id)
+    ):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Engineer profile not found")
     return EngineerPublicProfileResponse.model_validate(profile)
+
+
+async def _engineer_applied_to_company(
+    db: AsyncSession, engineer_user_id: uuid.UUID, company_user_id: uuid.UUID
+) -> bool:
+    application_id = await db.scalar(
+        select(JobApplication.id)
+        .join(JobPost, JobPost.id == JobApplication.job_id)
+        .join(CompanyProfile, CompanyProfile.id == JobPost.company_id)
+        .where(
+            JobApplication.user_id == engineer_user_id,
+            CompanyProfile.user_id == company_user_id,
+        )
+        .limit(1)
+    )
+    return application_id is not None

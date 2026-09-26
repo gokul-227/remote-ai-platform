@@ -13,7 +13,7 @@ from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.engineers.models import EngineerProfile
-from app.domains.matching.schemas import JobMatchResponse, MatchStatusUpdate
+from app.domains.matching.schemas import CandidateMatchResponse, JobMatchResponse, MatchStatusUpdate
 from app.domains.matching.service import MatchingService
 
 router = APIRouter(prefix="/matching", tags=["AI Matching Engine"])
@@ -49,14 +49,14 @@ async def get_my_match_for_job(
     return JobMatchResponse.model_validate(match)
 
 
-@router.get("/candidates/{job_id}", response_model=list[JobMatchResponse])
+@router.get("/candidates/{job_id}", response_model=list[CandidateMatchResponse])
 async def get_candidates_for_job(
     job_id: uuid.UUID,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     service: MatchingService = Depends(get_matching_service),
-) -> list[JobMatchResponse]:
+) -> list[CandidateMatchResponse]:
     """Get top matching engineer candidates for a company's job post."""
     if current_user.role == UserRole.COMPANY:
         job = await service.job_repo.get_by_id(job_id)
@@ -71,7 +71,7 @@ async def get_candidates_for_job(
                 detail="Not authorized to view candidates for this job",
             )
     matches = await service.get_top_candidates_for_job(job_id, skip=skip, limit=limit)
-    return [JobMatchResponse.model_validate(m) for m in matches]
+    return [CandidateMatchResponse.model_validate(m) for m in matches]
 
 
 @router.patch("/{match_id}/status", response_model=JobMatchResponse)

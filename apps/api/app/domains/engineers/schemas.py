@@ -118,7 +118,10 @@ class EngineerPublicProfileResponse(EngineerProfileBase):
 
     Deliberately omits resume_url and parsed_resume_data — those are private
     to the profile owner and must never be serialized to a public listing,
-    search, or by-id lookup.
+    search, or by-id lookup. Also omits the owner-facing AI review
+    (ai_summary, profile_score, missing_skills, matching_keywords): it is
+    coaching for the engineer, not an assessment to publish to others. The
+    salary floor is private too; the advertised hourly_rate stays public.
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -126,10 +129,7 @@ class EngineerPublicProfileResponse(EngineerProfileBase):
     id: uuid.UUID
     user_id: uuid.UUID
     full_name: str | None = None
-    ai_summary: str | None = None
-    profile_score: float | None = None
-    missing_skills: list[str] = []
-    matching_keywords: list[str] = []
+    desired_salary_min: float | None = Field(default=None, exclude=True)
     created_at: datetime
     updated_at: datetime
 

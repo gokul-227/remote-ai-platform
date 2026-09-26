@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.domains.engineers.models import EngineerProfile
 from app.domains.matching.models import JobMatch
 
 
@@ -107,7 +108,14 @@ class MatchingRepository:
         stmt = (
             select(JobMatch)
             .options(selectinload(JobMatch.engineer), selectinload(JobMatch.job))
-            .where(JobMatch.job_id == job_id, JobMatch.overall_score >= min_score)
+            .join(EngineerProfile, EngineerProfile.id == JobMatch.engineer_id)
+            # A match computed while a profile was public must not keep
+            # surfacing it to companies after the engineer hides it.
+            .where(
+                JobMatch.job_id == job_id,
+                JobMatch.overall_score >= min_score,
+                EngineerProfile.is_public.is_(True),
+            )
             .order_by(JobMatch.overall_score.desc())
             .offset(skip)
             .limit(limit)
