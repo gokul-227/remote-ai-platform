@@ -1,32 +1,53 @@
 // @ts-nocheck -- Figma Make export, kept verbatim (never type-checked upstream).
 import { useState, useEffect } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
+import { useAuth } from "@/lib/auth";
+import { useApi } from "./live";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
 
 const nav = (h: string) => { window.location.hash = h; };
 function Wrap({ children, w }: { children: any; w?: string }) { return <div className="bg-[#F0F2F5] py-6"><div className={cx("mx-auto px-4", w || "max-w-[1100px]")}>{children}</div></div>; }
 
 export function EngineerDetail() {
-  const p = PEOPLE[0];
+  // Live: /engineers/{id} (id from the directory/network/messenger), trust reviews & score, connect/message/invite.
+  const { user } = useAuth();
+  const [id] = useState(() => new URLSearchParams(window.location.search).get("id") || sessionStorage.getItem("rap-person-id") || "");
+  const q = useApi<any>(id ? `/engineers/${id}` : null);
+  const p0 = q.data;
+  const reviews = useApi<any[]>(p0?.user_id ? `/trust/reviews/${p0.user_id}` : null);
+  const trust = useApi<any>(p0?.user_id ? `/trust/scores/${p0.user_id}` : null);
+  const conns = useApi<any[]>(user ? "/connections" : null, { limit: 200 });
+  const myJobs = useApi<any[]>(user?.role === "COMPANY" ? "/jobs/company" : null, { limit: 100 });
   const [t, setT] = useState("About");
-  const [inv, setInv] = useState(false);
+  const [invOpen, setInvOpen] = useState(false);
+  const [notice, setNotice] = useState("");
+  if (!id || q.error) return <Wrap><Card c="rounded-xl p-10 text-center"><h2>Profile not found</h2><p className="mt-2 text-slate-500">This engineer profile isn’t available.</p><Btn c="mt-4" onClick={() => { window.location.hash = "engineers"; }}>Browse engineers</Btn></Card></Wrap>;
+  if (!p0) return <Wrap><Card c="rounded-xl p-10 text-center text-slate-500">Loading profile…</Card></Wrap>;
+  const p = { n: p0.full_name || "Engineer", t: p0.headline || p0.primary_role || "Engineer", loc: p0.location || "Remote", rate: p0.hourly_rate, skills: p0.skills || [], score: Math.round(p0.profile_score || 0) };
+  const conn = (conns.data ?? []).find((c: any) => [c.sender_id, c.receiver_id].includes(p0.user_id));
+  const connect = async () => { if (!user) { window.location.hash = "login"; return; } try { await api.post("/connections", { receiver_id: p0.user_id }); conns.reload(); setNotice("Connection request sent"); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that request.")); } };
+  const message = () => { if (!user) { window.location.hash = "login"; return; } sessionStorage.setItem("rap-contact-id", p0.user_id); window.location.hash = "messenger"; };
+  const invite = async (jobId: string) => { try { await api.post(`/applications/jobs/${jobId}/invite/${p0.id}`); setNotice(`${p.n} was invited to apply`); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that invitation.")); } setInvOpen(false); };
+  const self = p0.user_id === user?.id;
   return (
     <Wrap>
       <Card p={false} c="overflow-hidden rounded-xl">
         <div className="h-44 bg-gradient-to-r from-[#031B4E] via-[#0552CC] to-[#5B9BFF]" />
-        <div className="px-6 pb-4"><div className="-mt-14 flex flex-wrap items-end justify-between gap-3"><div className="rounded-full border-4 border-white"><Av name={p.n} s={112} dot /></div><div className="flex gap-2"><Btn v="primary" icon="plus">Connect</Btn><Btn v={inv ? "gray" : "outline"} onClick={() => setInv(true)}>{inv ? "Invited" : "Invite to job"}</Btn><Btn v="gray" icon="chat">Message</Btn></div></div>
-          <h1 className="mt-3">{p.n}</h1><p className="text-slate-700">{p.t}</p><p className="text-sm text-slate-500">{p.loc} - {"$" + p.rate}/hr - {p.jss}% job success</p></div>
+        <div className="px-6 pb-4"><div className="-mt-14 flex flex-wrap items-end justify-between gap-3"><div className="rounded-full border-4 border-white"><Av name={p.n} s={112} /></div>{!self && <div className="flex gap-2"><Btn v={conn ? "gray" : "primary"} icon={conn ? "check" : "plus"} onClick={() => !conn && connect()}>{conn ? (conn.status === "ACCEPTED" ? "Connected" : "Pending") : "Connect"}</Btn>{user?.role === "COMPANY" && <Btn v="outline" onClick={() => setInvOpen(true)}>Invite to job</Btn>}<Btn v="gray" icon="chat" onClick={message}>Message</Btn></div>}</div>
+          <h1 className="mt-3">{p.n}</h1><p className="text-slate-700">{p.t}</p><p className="text-sm text-slate-500">{[p.loc, p.rate != null ? `$${p.rate}/hr` : null, trust.data?.review_count ? `${trust.data.rating_avg.toFixed(1)}★ from ${trust.data.review_count} review${trust.data.review_count > 1 ? "s" : ""}` : null].filter(Boolean).join(" - ")}</p></div>
         <Tabs items={["About", "Experience", "Projects", "Reviews"]} v={t} set={setT} c="px-4" />
       </Card>
       <div className="mt-4 grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card c="rounded-xl">
-          {t === "About" && <><h3>About</h3><p className="mt-2 text-slate-700">Senior engineer focused on production ML platforms, retrieval systems and evaluation. Ships documented, testable work for remote teams across timezones.</p><h3 className="mt-5">Skills</h3><div className="mt-2 flex flex-wrap gap-2">{p.skills.map((s) => <Tag key={s} t="blue">{s}</Tag>)}</div></>}
-          {t === "Experience" && [["Staff ML Engineer", "Northstar Cloud", "2022 - Present"], ["Senior Engineer", "Helix Labs", "2019 - 2022"]].map((e) => <div key={e[0]} className="flex gap-3 border-b border-slate-200 py-3 last:border-0"><Lg name={e[1]} s={44} r={8} /><div><p className="font-semibold">{e[0]}</p><p className="text-sm text-slate-500">{e[1]} - {e[2]}</p></div></div>)}
-          {t === "Projects" && ["RAG evaluation harness", "Realtime feature store"].map((x) => <div key={x} className="border-b border-slate-200 py-3 last:border-0"><p className="font-semibold">{x}</p><p className="text-sm text-slate-500">Open source - Python, Kafka</p></div>)}
-          {t === "Reviews" && [["Brightpath", "Delivered ahead of schedule and documented everything."], ["Helix Labs", "Excellent communicator, sharp on evaluation design."]].map((r) => <div key={r[0]} className="border-b border-slate-200 py-3 last:border-0"><Stars v={5} /><p className="mt-1 text-sm text-slate-700">{r[1]}</p><p className="text-xs text-slate-500">{r[0]}</p></div>)}
+          {t === "About" && <><h3>About</h3><p className="mt-2 whitespace-pre-line text-slate-700">{p0.bio || "No summary yet."}</p><h3 className="mt-5">Skills</h3><div className="mt-2 flex flex-wrap gap-2">{p.skills.map((s: string) => <Tag key={s} t="blue">{s}</Tag>)}{!p.skills.length && <span className="text-sm text-slate-500">No skills listed.</span>}</div></>}
+          {t === "Experience" && ((p0.experience || []).length ? p0.experience.map((e: any, i: number) => <div key={i} className="flex gap-3 border-b border-slate-200 py-3 last:border-0"><Lg name={e.company} s={44} r={8} /><div><p className="font-semibold">{e.title}</p><p className="text-sm text-slate-500">{e.company} - {e.start_date} – {e.is_current ? "Present" : e.end_date || "Present"}</p>{e.description && <p className="mt-1 text-sm text-slate-700">{e.description}</p>}</div></div>) : <p className="text-sm text-slate-500">No work history listed.</p>)}
+          {t === "Projects" && ((p0.projects || []).length ? p0.projects.map((x: any, i: number) => <div key={i} className="border-b border-slate-200 py-3 last:border-0"><p className="font-semibold">{x.url ? <a href={x.url} target="_blank" rel="noopener noreferrer" className="text-[#0552CC] hover:underline">{x.title}</a> : x.title}</p><p className="text-sm text-slate-500">{x.description}</p>{(x.technologies || []).length > 0 && <p className="text-xs text-slate-500">{x.technologies.join(", ")}</p>}</div>) : <p className="text-sm text-slate-500">No projects listed.</p>)}
+          {t === "Reviews" && ((reviews.data ?? []).length ? (reviews.data ?? []).map((r: any) => <div key={r.id} className="border-b border-slate-200 py-3 last:border-0"><Stars v={r.rating} /><p className="mt-1 text-sm text-slate-700">{r.comment}</p><p className="text-xs text-slate-500">{r.reviewer?.full_name || "Project partner"}</p></div>) : <p className="text-sm text-slate-500">No reviews yet.</p>)}
         </Card>
-        <div className="space-y-4"><Card c="rounded-xl"><h3>AI match summary</h3><p className="mt-2 text-sm text-slate-600">Strong fit for ML platform and evaluation roles. Verified skills: Python, RAG, Kubernetes.</p><div className="mt-3"><Bar v={p.score} c="bg-[#0552CC]" /><p className="mt-1 text-xs text-slate-500">Profile score {p.score}/100</p></div></Card><Card c="rounded-xl"><h3>Availability</h3><p className="mt-1 text-sm text-slate-600">30+ hrs/week - responds within 2 hours</p></Card></div>
+        <div className="space-y-4"><Card c="rounded-xl"><h3>AI profile summary</h3><p className="mt-2 text-sm text-slate-600">{p0.ai_summary || "No AI summary yet."}</p><div className="mt-3"><Bar v={p.score} c="bg-[#0552CC]" /><p className="mt-1 text-xs text-slate-500">Profile score {p.score}/100{trust.data ? ` · Trust score ${Math.round(trust.data.overall_score)}` : ""}</p></div></Card><Card c="rounded-xl"><h3>Availability</h3><p className="mt-1 text-sm text-slate-600">{[p0.availability, p0.remote_preference, p0.timezone].filter(Boolean).join(" - ") || "Not specified"}</p></Card></div>
       </div>
+      <Modal open={invOpen} onClose={() => setInvOpen(false)} title={`Invite ${p.n} to apply`}>{(myJobs.data ?? []).filter((j: any) => j.is_active).length ? <div className="space-y-2">{(myJobs.data ?? []).filter((j: any) => j.is_active).map((j: any) => <button key={j.id} onClick={() => invite(j.id)} className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50"><b>{j.title}</b><Ic n="send" s={16} /></button>)}</div> : <p className="text-slate-500">Post a job first, then invite engineers to apply.</p>}</Modal>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </Wrap>
   );
 }

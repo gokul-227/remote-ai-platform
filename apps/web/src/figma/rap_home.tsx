@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useApi, toFigmaJob } from "./live";
+import { useAuth } from "@/lib/auth";
 const openJob=(id:string)=>{localStorage.setItem("rap-selected-job",id);window.location.hash="jobs";};
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, Stars, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
 
@@ -40,50 +41,66 @@ const ENGS = [
 ];
 
 export function Engineers() {
+  // Live: /engineers (or /engineers/search when searching); Connect and (for companies) Invite to a job are real.
+  const { user } = useAuth();
   const [q, setQ] = useState("");
+  const [term, setTerm] = useState("");
   const [avail, setAvail] = useState(false);
   const [tz, setTz] = useState("Any");
-  const [maxRate, setMaxRate] = useState(130);
+  const [maxRate, setMaxRate] = useState(0);
   const [sort, setSort] = useState("match");
-  const [conn, setConn] = useState<string[]>([]);
-  const [saved, setSaved] = useState<string[]>([]);
-  const list = ENGS.filter((e) => e.rate <= maxRate && (!avail || e.av === "Available now") && (tz === "Any" || e.tz === tz) && (e.n + e.r + e.sk.join(" ")).toLowerCase().includes(q.toLowerCase())).sort((x, y) => (sort === "match" ? y.sc - x.sc : sort === "rate" ? x.rate - y.rate : y.exp - x.exp));
-  const tog = (arr: string[], set: any, n: string) => set(arr.includes(n) ? arr.filter((x) => x !== n) : [...arr, n]);
+  const [notice, setNotice] = useState("");
+  const [inviting, setInviting] = useState<any>(null);
+  const q1 = useApi<any[]>(term ? "/engineers/search" : "/engineers", term ? { query: term, is_open_to_work: false, limit: 100 } : { limit: 100 });
+  const conns = useApi<any[]>(user ? "/connections" : null, { limit: 200 });
+  const myJobs = useApi<any[]>(user?.role === "COMPANY" ? "/jobs/company" : null, { limit: 100 });
+  const known = new Set((conns.data ?? []).flatMap((c: any) => [c.sender_id, c.receiver_id]));
+  const region = (t?: string | null) => (t || "").split("/")[0].replace("America", "Americas");
+  const ENGS = (q1.data ?? []).filter((e: any) => e.user_id !== user?.id).map((e: any) => ({ id: e.id, uid: e.user_id, n: e.full_name || "Engineer", r: e.headline || e.primary_role || "Engineer", loc: e.location || "Remote", rate: e.hourly_rate ?? 0, sk: e.skills || [], av: e.availability || (e.is_open_to_work ? "Open to work" : "Not available"), exp: e.years_of_experience || 0, sc: e.profile_score != null ? Math.round(e.profile_score) : null, tz: region(e.timezone), verified: e.is_verified }));
+  const topRate = Math.max(0, ...ENGS.map((e: any) => e.rate));
+  const cap = maxRate || topRate;
+  const regions = ["Any", ...Array.from(new Set(ENGS.map((e: any) => e.tz).filter(Boolean)))].slice(0, 6) as string[];
+  const list = ENGS.filter((e: any) => (!cap || e.rate <= cap) && (!avail || /now|open/i.test(e.av)) && (tz === "Any" || e.tz === tz) && (e.n + e.r + e.sk.join(" ")).toLowerCase().includes(q.toLowerCase())).sort((x: any, y: any) => (sort === "match" ? (y.sc ?? 0) - (x.sc ?? 0) : sort === "rate" ? x.rate - y.rate : y.exp - x.exp));
+  const connect = async (uid: string) => { if (!user) { window.location.hash = "login"; return; } try { await api.post("/connections", { receiver_id: uid }); conns.reload(); setNotice("Connection request sent"); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that request.")); } };
+  const invite = async (jobId: string) => { try { await api.post(`/applications/jobs/${jobId}/invite/${inviting.id}`); setNotice(`${inviting.n} was invited to apply`); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that invitation.")); } setInviting(null); };
+  const open = (id: string) => { sessionStorage.setItem("rap-person-id", id); window.location.hash = "engineer"; };
   return (
     <Page title="Engineer directory" sub="Discover engineers by skills, availability and experience" w="max-w-none">
       <div className="grid gap-4 grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)]">
         <Card c="h-fit rounded-xl" p="p-4">
           <p className="mb-3 text-[17px] font-bold">Filters</p>
           <label className="mb-1 block text-sm font-semibold">Keyword</label>
-          <div className="mb-4 flex h-10 items-center gap-2 rounded-full bg-slate-100 px-3"><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, role or skill" className="w-full bg-transparent text-sm outline-none" /></div>
+          <form onSubmit={(e) => { e.preventDefault(); setTerm(q.trim()); }} className="mb-4 flex h-10 items-center gap-2 rounded-full bg-slate-100 px-3"><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, role or skill" aria-label="Search engineers" className="w-full bg-transparent text-sm outline-none" /></form>
           <label className="mb-1 block text-sm font-semibold">Timezone</label>
-          <div className="mb-4 flex flex-wrap gap-2">{["Any", "Europe", "Asia", "Africa"].map((x) => <button key={x} onClick={() => setTz(x)} className={cx("rounded-full px-3 py-1 text-sm font-semibold", tz === x ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>{x}</button>)}</div>
-          <label className="mb-1 block text-sm font-semibold">Max hourly rate: USD {maxRate}</label>
-          <input type="range" min={60} max={130} value={maxRate} onChange={(e) => setMaxRate(Number(e.target.value))} className="mb-4 w-full" />
+          <div className="mb-4 flex flex-wrap gap-2">{regions.map((x) => <button key={x} onClick={() => setTz(x)} className={cx("rounded-full px-3 py-1 text-sm font-semibold", tz === x ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>{x}</button>)}</div>
+          {topRate > 0 && <><label className="mb-1 block text-sm font-semibold">Max hourly rate: USD {cap}</label>
+          <input type="range" min={0} max={topRate} value={cap} onChange={(e) => setMaxRate(Number(e.target.value))} className="mb-4 w-full" /></>}
           <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={avail} onChange={(e) => setAvail(e.target.checked)} />Available now only</label>
-          <div className="mt-4 rounded-lg bg-[#F3F0FF] p-3 text-sm"><p className="mb-1 flex items-center gap-1 font-bold text-[#5B4BDB]"><Ic n="spark" s={14} />AI tip</p><p className="text-slate-700">Sort by match to see engineers ranked against your open roles.</p></div>
+          <div className="mt-4 rounded-lg bg-[#F3F0FF] p-3 text-sm"><p className="mb-1 flex items-center gap-1 font-bold text-[#5B4BDB]"><Ic n="spark" s={14} />AI tip</p><p className="text-slate-700">{user?.role === "COMPANY" ? "Open a job’s Candidates view to see engineers ranked by match against that role." : "Keep your own profile complete so companies find you here."}</p></div>
         </Card>
         <div>
-          <Card c="mb-3 rounded-xl" p="p-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">{list.length} engineers</p><div className="flex items-center gap-2 text-sm"><span className="text-slate-500">Sort by</span>{[["match", "Best match"], ["rate", "Lowest rate"], ["exp", "Experience"]].map((x) => <button key={x[0]} onClick={() => setSort(x[0])} className={cx("rounded-full px-3 py-1.5 font-semibold", sort === x[0] ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>{x[1]}</button>)}</div></div></Card>
+          <Card c="mb-3 rounded-xl" p="p-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">{q1.loading ? "Loading…" : `${list.length} engineers`}</p><div className="flex items-center gap-2 text-sm"><span className="text-slate-500">Sort by</span>{[["match", "Profile strength"], ["rate", "Lowest rate"], ["exp", "Experience"]].map((x) => <button key={x[0]} onClick={() => setSort(x[0])} className={cx("rounded-full px-3 py-1.5 font-semibold", sort === x[0] ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>{x[1]}</button>)}</div></div></Card>
           <div className="space-y-3">
-            {list.map((e) => (
-              <Card key={e.n} c="rounded-xl" p="p-4">
+            {list.map((e: any) => (
+              <Card key={e.id} c="rounded-xl" p="p-4">
                 <div className="flex flex-wrap items-start gap-4">
-                  <Av name={e.n} s={64} dot={e.on} />
+                  <Av name={e.n} s={64} />
                   <div className="min-w-[220px] flex-1">
-                    <div className="flex flex-wrap items-center gap-2"><button onClick={() => { window.location.hash = "engineer"; }} className="text-[17px] font-bold text-[#0552CC] hover:underline">{e.n}</button><Tag v="blue">{e.sc}% match</Tag><Tag v="gray">Verified</Tag></div>
+                    <div className="flex flex-wrap items-center gap-2"><button onClick={() => open(e.id)} className="text-[17px] font-bold text-[#0552CC] hover:underline">{e.n}</button>{e.sc != null && <Tag v="blue">{e.sc}% profile</Tag>}{e.verified && <Tag v="gray">Verified</Tag>}</div>
                     <p className="text-sm text-slate-700">{e.r}</p>
-                    <p className="text-sm text-slate-500">{e.loc} - {e.exp} yrs - <span className={e.av === "Available now" ? "font-semibold text-emerald-700" : ""}>{e.av}</span></p>
-                    <div className="mt-2 flex flex-wrap gap-1">{e.sk.map((k) => <Tag key={k} v="gray">{k}</Tag>)}</div>
+                    <p className="text-sm text-slate-500">{e.loc} - {e.exp} yrs - <span className={/now|open/i.test(e.av) ? "font-semibold text-emerald-700" : ""}>{e.av}</span></p>
+                    <div className="mt-2 flex flex-wrap gap-1">{e.sk.slice(0, 8).map((k: string) => <Tag key={k} v="gray">{k}</Tag>)}</div>
                   </div>
-                  <div className="text-right"><p className="text-xl font-bold">USD {e.rate}<span className="text-sm font-medium text-slate-500">/hr</span></p><div className="mt-2 flex justify-end gap-2"><button onClick={() => tog(saved, setSaved, e.n)} className="rounded-full bg-slate-100 p-2 hover:bg-slate-200"><Ic n="bookmark" s={16} c={saved.includes(e.n) ? "text-[#0552CC]" : "text-slate-600"} /></button><Btn v={conn.includes(e.n) ? "gray" : "outline"} sm onClick={() => tog(conn, setConn, e.n)}>{conn.includes(e.n) ? "Requested" : "Connect"}</Btn><Btn v="primary" sm onClick={() => { window.location.hash = "engineer"; }}>Invite</Btn></div></div>
+                  <div className="text-right">{e.rate > 0 && <p className="text-xl font-bold">USD {e.rate}<span className="text-sm font-medium text-slate-500">/hr</span></p>}<div className="mt-2 flex justify-end gap-2"><Btn v={known.has(e.uid) ? "gray" : "outline"} sm onClick={() => !known.has(e.uid) && connect(e.uid)}>{known.has(e.uid) ? "Connected / pending" : "Connect"}</Btn>{user?.role === "COMPANY" && <Btn v="primary" sm onClick={() => setInviting(e)}>Invite</Btn>}</div></div>
                 </div>
               </Card>
             ))}
-            {list.length === 0 && <Card c="rounded-xl" p="p-10"><p className="text-center text-slate-500">No engineers match these filters. Try widening the rate or timezone.</p></Card>}
+            {!q1.loading && list.length === 0 && <Card c="rounded-xl" p="p-10"><p className="text-center text-slate-500">No engineers match these filters. Try a broader search.</p></Card>}
           </div>
         </div>
       </div>
+      <Modal open={!!inviting} onClose={() => setInviting(null)} title={`Invite ${inviting?.n ?? ""} to apply`}>{(myJobs.data ?? []).filter((j: any) => j.is_active).length ? <div className="space-y-2">{(myJobs.data ?? []).filter((j: any) => j.is_active).map((j: any) => <button key={j.id} onClick={() => invite(j.id)} className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50"><b>{j.title}</b><Ic n="send" s={16} /></button>)}</div> : <p className="text-slate-500">Post a job first, then invite engineers to apply. <button className="font-semibold text-[#0552CC]" onClick={() => { setInviting(null); window.location.hash = "postjob"; }}>Post a job</button></p>}</Modal>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </Page>
   );
 }
@@ -98,30 +115,34 @@ const COS = [
 ];
 
 export function Companies() {
+  // Live: /companies/public with open-role counts from real postings.
   const [q, setQ] = useState("");
   const [hiring, setHiring] = useState(false);
-  const [fol, setFol] = useState<string[]>(["Northstar Cloud"]);
-  const list = COS.filter((c) => (!hiring || c.hiring) && (c.n + c.ind + c.tag).toLowerCase().includes(q.toLowerCase()));
+  const cos = useApi<any[]>("/companies/public", { limit: 100 });
+  const jobs = useApi<any[]>("/jobs", { source: "DIRECT", limit: 100 });
+  const roles = (id: string) => (jobs.data ?? []).filter((j: any) => j.company_id === id).length;
+  const COS = (cos.data ?? []).map((c: any) => ({ id: c.id, n: c.name, ind: c.industry || "Technology", size: c.company_size || "—", loc: c.location || "Remote", jobs: roles(c.id), hiring: c.hiring_status === "actively_hiring" || roles(c.id) > 0, tag: (c.tech_stack || []).join(", "), verified: c.is_verified }));
+  const list = COS.filter((c: any) => (!hiring || c.hiring) && (c.n + c.ind + c.tag).toLowerCase().includes(q.toLowerCase()));
+  const open = (id: string) => { sessionStorage.setItem("rap-company-id", id); window.location.hash = "company"; };
   return (
-    <Page title="Companies" sub="Follow teams, read culture reviews and see who is hiring" w="max-w-none">
-      <Card c="mb-4 rounded-xl" p="p-3"><div className="flex flex-wrap items-center gap-2"><div className="flex h-10 flex-1 items-center gap-2 rounded-full bg-slate-100 px-3" style={{ minWidth: 220 }}><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies, industries or focus" className="w-full bg-transparent text-sm outline-none" /></div><button onClick={() => setHiring(!hiring)} className={cx("h-10 rounded-full px-4 text-sm font-semibold", hiring ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>Hiring now</button><span className="text-sm text-slate-500">{list.length} companies</span></div></Card>
+    <Page title="Companies" sub="Discover teams hiring remote engineers" w="max-w-none">
+      <Card c="mb-4 rounded-xl" p="p-3"><div className="flex flex-wrap items-center gap-2"><div className="flex h-10 flex-1 items-center gap-2 rounded-full bg-slate-100 px-3" style={{ minWidth: 220 }}><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies, industries or focus" aria-label="Search companies" className="w-full bg-transparent text-sm outline-none" /></div><button onClick={() => setHiring(!hiring)} className={cx("h-10 rounded-full px-4 text-sm font-semibold", hiring ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>Hiring now</button><span className="text-sm text-slate-500">{cos.loading ? "Loading…" : `${list.length} companies`}</span></div></Card>
       <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
-        {list.map((c) => (
-          <Card key={c.n} c="rounded-xl" p="p-4">
+        {list.map((c: any) => (
+          <Card key={c.id} c="rounded-xl" p="p-4">
             <div className="flex items-start gap-4">
               <Lg name={c.n} s={64} />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2"><p className="text-[17px] font-bold text-[#0552CC]">{c.n}</p>{c.hiring && <Tag v="blue">Hiring</Tag>}</div>
+                <div className="flex flex-wrap items-center gap-2"><p className="text-[17px] font-bold text-[#0552CC]">{c.n}</p>{c.hiring && <Tag v="blue">Hiring</Tag>}{c.verified && <Tag v="gray">Verified</Tag>}</div>
                 <p className="text-sm text-slate-700">{c.ind} - {c.size} employees</p>
-                <p className="text-sm text-slate-500">{c.loc} - {c.fol} followers</p>
-                <p className="mt-1 text-sm text-slate-500">Focus: {c.tag}</p>
+                <p className="text-sm text-slate-500">{c.loc}</p>
+                {c.tag && <p className="mt-1 text-sm text-slate-500">Focus: {c.tag}</p>}
               </div>
-              <div className="text-right"><p className="text-lg font-bold">{c.rating}</p><p className="text-xs text-slate-500">culture rating</p></div>
             </div>
-            <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span className="text-sm text-slate-600">{c.jobs} open roles</span><div className="flex gap-2"><Btn v={fol.includes(c.n) ? "gray" : "outline"} sm onClick={() => setFol(fol.includes(c.n) ? fol.filter((x) => x !== c.n) : [...fol, c.n])}>{fol.includes(c.n) ? "Following" : "Follow"}</Btn><Btn v="primary" sm onClick={() => { window.location.hash = "company"; }}>View page</Btn></div></div>
+            <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span className="text-sm text-slate-600">{c.jobs} open role{c.jobs === 1 ? "" : "s"}</span><div className="flex gap-2"><Btn v="primary" sm onClick={() => open(c.id)}>View page</Btn></div></div>
           </Card>
         ))}
-        {list.length === 0 && <Card c="rounded-xl" p="p-10"><p className="text-center text-slate-500">No companies match your search.</p></Card>}
+        {!cos.loading && list.length === 0 && <Card c="rounded-xl" p="p-10"><p className="text-center text-slate-500">No companies match your search.</p></Card>}
       </div>
     </Page>
   );
