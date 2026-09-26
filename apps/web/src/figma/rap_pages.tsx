@@ -1,5 +1,6 @@
 // @ts-nocheck -- Figma Make export, kept verbatim (never type-checked upstream).
 import { useState, useEffect } from "react";
+import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob } from "./live";
@@ -308,15 +309,17 @@ export function CoProfile() {
   );
 }
 
-const LEGAL: Record<string, [string, string[]]> = {
-  terms: ["Terms of Service", ["Using Remote-AI-Platform", "Accounts and eligibility", "Contracts, escrow and payments", "Acceptable use", "Termination", "Liability"]],
-  privacy: ["Privacy Policy", ["Data we collect", "How we use AI on your data", "Sharing and processors", "Retention", "Your rights (GDPR)", "Contact"]],
-  impressum: ["Impressum", ["Provider", "Contact", "Responsible for content", "Dispute resolution"]],
-};
+const LEGAL: Record<string, [string, Section[]]> = { terms: ["Terms of Service", TERMS], privacy: ["Privacy Policy", PRIVACY], impressum: ["Impressum", IMPRESSUM] };
+function LegalBlock({ b }: { b: Block }) {
+  if (typeof b === "string") return <p className="mt-2 text-slate-600">{b}</p>;
+  if (Array.isArray(b)) return <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">{b.map((x) => <li key={x}>{x}</li>)}</ul>;
+  // Operator-only facts are never guessed: until supplied they show as pending.
+  return b.fact ? <p className="mt-2 text-slate-600">{b.fact}</p> : <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">Pending: {b.label}.</p>;
+}
 export function Legal({ kind }: { kind: string }) {
-  const d = LEGAL[kind] || LEGAL.terms;
+  const [title, sections] = LEGAL[kind] || LEGAL.terms;
   return (
-    <Wrap w="max-w-[860px]"><Card c="rounded-xl"><h1>{d[0]}</h1><p className="mt-1 text-sm text-slate-500">Last updated September 2026</p>{d[1].map((s, i) => <div key={s} className="mt-5"><h3>{i + 1}. {s}</h3><p className="mt-1 text-slate-600">Remote-AI-Platform describes this section in plain language here. Replace with your final legal copy before launch.</p></div>)}</Card></Wrap>
+    <Wrap w="max-w-[860px]"><Card c="rounded-xl"><h1>{title}</h1><p className="mt-1 text-sm text-slate-500">Last updated {LAST_UPDATED}</p>{sections.map((s, i) => <section key={s.h} className="mt-5"><h3>{i + 1}. {s.h}</h3>{s.body.map((b, j) => <LegalBlock key={j} b={b} />)}</section>)}</Card></Wrap>
   );
 }
 export const Terms = () => <Legal kind="terms" />;
