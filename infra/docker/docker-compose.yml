@@ -62,8 +62,11 @@ services:
       retries: 5
 
   # ─── MinIO (Object Storage) ───────────────────────────────────────────────────
+  # MinIO stopped publishing images to Docker Hub/Quay in 2026; pgsty/* are the
+  # Pigsty-maintained builds of the same upstream binaries (drop-in: same
+  # entrypoint, same env vars, curl present for the healthcheck). Pinned.
   minio:
-    image: minio/minio:latest
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
     container_name: remote-ai-platform-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -85,7 +88,7 @@ services:
 
   # MinIO bucket init (one-shot)
   minio-init:
-    image: minio/mc:latest
+    image: pgsty/mc:RELEASE.2026-09-16T00-00-00Z
     container_name: remote-ai-platform-minio-init
     restart: "no"
     depends_on:
@@ -96,7 +99,7 @@ services:
         mc alias set local http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin_dev_password};
         mc mb --ignore-existing local/remote-ai-platform-resumes;
         mc mb --ignore-existing local/remote-ai-platform-assets;
-        mc policy set download local/remote-ai-platform-assets;
+        mc anonymous set download local/remote-ai-platform-assets;
         echo 'MinIO buckets initialized';
       "
     networks:

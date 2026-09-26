@@ -228,7 +228,7 @@ async def list_conversations(
         )
         .group_by(Message.conversation_id)
     )
-    unread_by_conv: dict[uuid.UUID, int] = {cid: n for cid, n in unread_rows.all()}
+    unread_by_conv: dict[uuid.UUID, int] = dict(unread_rows.tuples().all())
 
     out = []
     for c in conversations:
