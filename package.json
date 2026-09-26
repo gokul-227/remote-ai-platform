@@ -42,5 +42,10 @@
     "fsevents@2.3.3": true,
     "unrs-resolver@1.12.2": true,
     "workerd@1.20260903.1": true
+  },
+  "overrides": {
+    "miniflare": {
+      "sharp": "0.35.4"
+    }
   }
 }
