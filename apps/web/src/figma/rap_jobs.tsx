@@ -1,75 +1,94 @@
 import { useState } from "react";
+import api, { extractErrorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useApi, toFigmaJob, statusOf, type ApiJob } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, cx, grad, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
 
 const BL = "#0552CC";
 export function Jobs() {
-  const [sel, setSel] = useState(JOBS[0]);
-  const [saved, setSaved] = useState<number[]>([]);
+  // Live: real jobs, saved jobs, applications and AI match (markup is the Figma design).
+  const { user } = useAuth();
+  const engineer = user?.role === "ENGINEER";
   const [q, setQ] = useState("");
+  const [skill, setSkill] = useState("");
+  const [search, setSearch] = useState({ q: "", skill: "" });
   const [easy, setEasy] = useState(false);
+  const [selId, setSelId] = useState<string | null>(null);
   const [apply, setApply] = useState(false);
   const [step, setStep] = useState(0);
-  const list = JOBS.filter((j) => (j.t + j.co + j.tags.join()).toLowerCase().includes(q.toLowerCase()) && (!easy || j.easy));
+  const [note, setNote] = useState("");
+  const [notice, setNotice] = useState("");
+  const jobsQ = useApi<ApiJob[]>("/jobs", { query: search.q || undefined, skills: search.skill ? [search.skill] : undefined, limit: 50 });
+  const savedQ = useApi<ApiJob[]>(engineer ? "/saved-jobs" : null, { limit: 100 });
+  const appsQ = useApi<{ application: { status: string }; job: { id: string } }[]>(engineer ? "/applications/me" : null, { limit: 100 });
+  const jobs = (jobsQ.data ?? []).map(toFigmaJob);
+  const list = jobs.filter((j) => !easy || j.easy);
+  const sel = list.find((j) => j.id === selId) ?? list[0];
+  const saved = new Set((savedQ.data ?? []).map((j) => j.id));
+  const applied = new Set((appsQ.data ?? []).filter((a) => a.application.status !== "WITHDRAWN").map((a) => a.job.id));
+  const matchQ = useApi<{ overall_score: number; skill_score: number; experience_score: number; timezone_score: number; compensation_score: number; matching_skills: string[]; missing_skills: string[] }>(engineer && sel ? `/matching/jobs/${sel.id}` : null);
   const steps = ["Contact info", "Resume", "Questions", "Review"];
+  const toggleSave = async (id: string) => { if (!engineer) return; await (saved.has(id) ? api.delete(`/saved-jobs/${id}`) : api.post(`/saved-jobs/${id}`)); savedQ.reload(); };
+  const startApply = () => { if (!sel) return; if (!user) { window.location.hash = "login"; return; } if (!sel.easy && sel.raw.external_url) { window.open(sel.raw.external_url, "_blank", "noopener"); return; } setApply(true); setStep(0); setNote(""); };
+  const submit = async () => { if (!sel) return; try { await api.post(`/applications/jobs/${sel.id}`, { cover_note: note.trim() || undefined }); setNotice("Application sent to " + sel.co); appsQ.reload(); } catch (e) { setNotice(extractErrorMessage(e, "We couldn't submit your application.")); } setApply(false); };
+  const m = matchQ.data;
   return (
     <div className="bg-[#F0F2F5]">
       <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2.5">
-          <div className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-md bg-[#E8F0FC] px-3"><Ic n="search" s={18} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Title, skill or company" className="flex-1 bg-transparent text-sm outline-none" /></div>
-          <div className="flex h-10 w-64 items-center gap-2 rounded-md bg-[#E8F0FC] px-3"><Ic n="pin" s={18} c="text-slate-500" /><input defaultValue="Remote - Worldwide" className="flex-1 bg-transparent text-sm outline-none" /></div>
-          <button className="h-10 rounded-full px-6 text-sm font-bold text-white" style={{ background: BL }}>Search</button>
-        </div>
+        <form onSubmit={(e) => { e.preventDefault(); setSearch({ q: q.trim(), skill: skill.trim() }); setSelId(null); }} className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2.5">
+          <div className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-md bg-[#E8F0FC] px-3"><Ic n="search" s={18} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Title, skill or company" aria-label="Search jobs" className="flex-1 bg-transparent text-sm outline-none" /></div>
+          <div className="flex h-10 w-64 items-center gap-2 rounded-md bg-[#E8F0FC] px-3"><Ic n="code" s={18} c="text-slate-500" /><input value={skill} onChange={(e) => setSkill(e.target.value)} placeholder="Skill, e.g. Python" aria-label="Filter by skill" className="flex-1 bg-transparent text-sm outline-none" /></div>
+          <button type="submit" className="h-10 rounded-full px-6 text-sm font-bold text-white" style={{ background: BL }}>Search</button>
+        </form>
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 pb-2.5">
           <button onClick={() => setEasy(!easy)} className={cx("rounded-full border px-3 py-1 text-sm font-semibold", easy ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-400 text-slate-600 hover:bg-slate-50")}>Easy Apply</button>
-          {["Date posted", "Experience level", "Remote model", "Job type", "Salary", "Skills", "Company", "Time zone"].map((f) => <button key={f} className="flex items-center gap-1 rounded-full border border-slate-400 px-3 py-1 text-sm font-semibold text-slate-600 hover:bg-slate-50">{f}<Ic n="down" s={14} /></button>)}
-          <button className="rounded-full border border-slate-400 px-3 py-1 text-sm font-semibold text-slate-600 hover:bg-slate-50">All filters</button>
-          <span className="ml-auto flex items-center gap-2 text-sm font-semibold text-slate-600">Set alert<span className="flex h-5 w-9 items-center rounded-full bg-slate-300 p-0.5"><span className="h-4 w-4 rounded-full bg-white" /></span></span>
         </div>
       </div>
       <div className="mx-auto grid max-w-[1400px] gap-4 px-4 py-4 grid-cols-1 lg:grid-cols-[440px_minmax(0,1fr)]">
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 p-4"><p className="text-lg font-bold">Top job picks for you</p><p className="text-sm text-slate-500">Based on your profile, preferences and activity - {list.length} results</p></div>
-          {list.length === 0 && <div className="p-10 text-center text-slate-500"><Ic n="search" s={32} c="mx-auto mb-2" />No jobs match your filters.</div>}
+          <div className="border-b border-slate-200 p-4"><p className="text-lg font-bold">{search.q ? `Jobs matching “${search.q}”` : "Top job picks for you"}</p><p className="text-sm text-slate-500">Live remote roles - {jobsQ.loading ? "loading…" : `${list.length} results`}</p></div>
+          {!!jobsQ.error && <div className="p-10 text-center text-slate-500"><Ic n="flag" s={32} c="mx-auto mb-2" />We couldn’t load jobs. <button className="font-bold" style={{ color: BL }} onClick={jobsQ.reload}>Try again</button></div>}
+          {!jobsQ.loading && !jobsQ.error && list.length === 0 && <div className="p-10 text-center text-slate-500"><Ic n="search" s={32} c="mx-auto mb-2" />No jobs match your filters.</div>}
           {list.map((j) => (
-            <div key={j.id} onClick={() => setSel(j)} className={cx("flex cursor-pointer gap-3 border-b border-slate-100 p-4 hover:bg-slate-50", sel.id === j.id && "border-l-4 bg-[#F0F6FF]")} style={sel.id === j.id ? { borderLeftColor: BL } : {}}>
+            <div key={j.id} onClick={() => setSelId(j.id)} className={cx("flex cursor-pointer gap-3 border-b border-slate-100 p-4 hover:bg-slate-50", sel?.id === j.id && "border-l-4 bg-[#F0F6FF]")} style={sel?.id === j.id ? { borderLeftColor: BL } : {}}>
               <Lg name={j.co} s={56} r={4} />
-              <div className="min-w-0 flex-1"><p className="truncate font-bold" style={{ color: BL }}>{j.t}</p><p className="text-sm">{j.co}</p><p className="text-sm text-slate-500">{j.loc} ({j.type})</p><p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500"><span className="font-semibold text-emerald-700">{j.post}</span><Tag t="indigo">{j.m}% match</Tag>{j.easy && <span className="flex items-center gap-1 font-semibold"><Ic n="bolt" s={12} c="text-[#0552CC]" />Easy Apply</span>}</p></div>
-              <button onClick={(e) => { e.stopPropagation(); setSaved(saved.includes(j.id) ? saved.filter((x) => x !== j.id) : [...saved, j.id]); }} className="self-start p-1 text-slate-500"><Ic n="bookmark" s={20} c={saved.includes(j.id) ? "fill-current text-[#0552CC]" : ""} /></button>
+              <div className="min-w-0 flex-1"><p className="truncate font-bold" style={{ color: BL }}>{j.t}</p><p className="text-sm">{j.co}</p><p className="text-sm text-slate-500">{j.loc} ({j.type})</p><p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500"><span className="font-semibold text-emerald-700">{j.post}</span>{j.m != null && <Tag t="indigo">{j.m}% match</Tag>}{j.easy && <span className="flex items-center gap-1 font-semibold"><Ic n="bolt" s={12} c="text-[#0552CC]" />Easy Apply</span>}</p></div>
+              {engineer && <button aria-label={saved.has(j.id) ? "Unsave job" : "Save job"} onClick={(e) => { e.stopPropagation(); toggleSave(j.id); }} className="self-start p-1 text-slate-500"><Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-[#0552CC]" : ""} /></button>}
             </div>
           ))}
         </section>
-        <section className="mt-4 max-h-[calc(100vh-190px)] self-start overflow-y-auto rounded-lg border border-slate-200 bg-white lg:mt-0 lg:sticky lg:top-40 lg:block">
+        {sel && <section className="mt-4 max-h-[calc(100vh-190px)] self-start overflow-y-auto rounded-lg border border-slate-200 bg-white lg:mt-0 lg:sticky lg:top-40 lg:block">
           <div className="p-6">
-            <div className="flex items-start gap-4"><Lg name={sel.co} s={64} r={4} /><div className="flex-1"><p className="text-sm font-semibold text-slate-600">{sel.co}</p><h2 className="text-2xl font-black leading-tight">{sel.t}</h2><p className="mt-1 text-sm text-slate-500">{sel.loc} - {sel.post} - <b className="text-emerald-700">{sel.ap} applicants</b></p></div><Ic n="more" c="text-slate-500" /></div>
-            <div className="mt-3 flex flex-wrap gap-2">{[["briefcase", sel.type], ["globe", "Remote"], ["award", sel.lvl], ["dollar", sel.pay]].map(([i, l]) => <span key={l} className="flex items-center gap-1.5 rounded bg-slate-100 px-2.5 py-1 text-sm font-semibold text-slate-700"><Ic n={i} s={14} />{l}</span>)}</div>
-            <div className="mt-4 flex gap-2"><button onClick={() => { setApply(true); setStep(0); }} className="flex items-center gap-1.5 rounded-full px-6 py-2 text-sm font-bold text-white" style={{ background: BL }}>{sel.easy && <Ic n="bolt" s={16} />}{sel.easy ? "Easy Apply" : "Apply"}</button><button onClick={() => setSaved(saved.includes(sel.id) ? saved.filter((x) => x !== sel.id) : [...saved, sel.id])} className="rounded-full border px-6 py-2 text-sm font-bold" style={{ borderColor: BL, color: BL }}>{saved.includes(sel.id) ? "Saved" : "Save"}</button></div>
-            <div className="mt-5 rounded-xl border border-[#5B4BDB]/25 bg-[#F6F4FF] p-4">
-              <div className="flex items-center justify-between"><p className="flex items-center gap-2 font-black text-[#5B4BDB]"><Ic n="spark" s={18} />How you match</p><span className="text-2xl font-black text-[#5B4BDB]">{sel.m}%</span></div>
-              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">{[["Skills", 92], ["Experience", 88], ["Time zone", 100], ["Compensation", 90]].map(([l, v]) => <div key={String(l)}><div className="mb-1 flex justify-between text-xs font-semibold text-slate-600"><span>{l}</span><span>{v}%</span></div><Bar v={Number(v)} c="bg-[#5B4BDB]" /></div>)}</div>
-              <p className="mt-3 text-sm text-emerald-700">Strong: {sel.tags.slice(0, 2).join(", ")} experience matches your last 3 roles.</p><p className="text-sm text-amber-700">Gap: {sel.tags[2] || "Domain depth"} appears in the requirements but not on your profile.</p>
-            </div>
+            <div className="flex items-start gap-4"><Lg name={sel.co} s={64} r={4} /><div className="flex-1"><p className="text-sm font-semibold text-slate-600">{sel.co}</p><h2 className="text-2xl font-black leading-tight">{sel.t}</h2><p className="mt-1 text-sm text-slate-500">{sel.loc} - {sel.post}</p></div></div>
+            <div className="mt-3 flex flex-wrap gap-2">{[["briefcase", sel.type], ["globe", sel.raw.is_remote === false ? "On-site" : "Remote"], ["award", sel.lvl], ["dollar", sel.pay]].filter(([, l]) => l).map(([i, l]) => <span key={i} className="flex items-center gap-1.5 rounded bg-slate-100 px-2.5 py-1 text-sm font-semibold text-slate-700"><Ic n={i} s={14} />{l}</span>)}</div>
+            <div className="mt-4 flex gap-2">{applied.has(sel.id) ? <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-6 py-2 text-sm font-bold text-emerald-700"><Ic n="check" s={16} />Applied</span> : (!user || engineer || !sel.easy) && <button onClick={startApply} className="flex items-center gap-1.5 rounded-full px-6 py-2 text-sm font-bold text-white" style={{ background: BL }}>{sel.easy && <Ic n="bolt" s={16} />}{!user ? "Sign in to apply" : sel.easy ? "Easy Apply" : "Apply on company site"}</button>}{engineer && <button onClick={() => toggleSave(sel.id)} className="rounded-full border px-6 py-2 text-sm font-bold" style={{ borderColor: BL, color: BL }}>{saved.has(sel.id) ? "Saved" : "Save"}</button>}</div>
+            {engineer && <div className="mt-5 rounded-xl border border-[#5B4BDB]/25 bg-[#F6F4FF] p-4">
+              <div className="flex items-center justify-between"><p className="flex items-center gap-2 font-black text-[#5B4BDB]"><Ic n="spark" s={18} />How you match</p>{m && <span className="text-2xl font-black text-[#5B4BDB]">{Math.round(m.overall_score)}%</span>}</div>
+              {m ? <><div className="mt-3 grid grid-cols-2 gap-3 text-sm">{[["Skills", m.skill_score], ["Experience", m.experience_score], ["Time zone", m.timezone_score], ["Compensation", m.compensation_score]].map(([l, v]) => <div key={String(l)}><div className="mb-1 flex justify-between text-xs font-semibold text-slate-600"><span>{l}</span><span>{Math.round(Number(v))}%</span></div><Bar v={Number(v)} c="bg-[#5B4BDB]" /></div>)}</div>
+                {m.matching_skills.length > 0 && <p className="mt-3 text-sm text-emerald-700">Strong: {m.matching_skills.slice(0, 4).join(", ")}.</p>}{m.missing_skills.length > 0 && <p className="text-sm text-amber-700">Gap: {m.missing_skills.slice(0, 3).join(", ")} appear in the requirements but not on your profile.</p>}</>
+                : <p className="mt-3 text-sm text-slate-600">{matchQ.loading ? "Calculating your match…" : statusOf(matchQ.error) === 404 ? "Complete your professional profile to see how you match this role." : "Your match isn’t available right now."}</p>}
+            </div>}
             <h3 className="mt-6 text-lg font-bold">About the job</h3>
-            <p className="mt-2 text-[15px] leading-6 text-slate-700">Join {sel.co} to build production AI systems for remote-first teams. You will own platform reliability, evaluation pipelines and developer experience, working asynchronously across time zones with product, research and go-to-market partners.</p>
-            <p className="mt-3 font-bold">Responsibilities</p>
-            <ul className="mt-1 list-disc space-y-1 pl-5 text-[15px] text-slate-700"><li>Design and operate the services that serve AI features at scale.</li><li>Define quality metrics and automated evaluation for every release.</li><li>Mentor engineers and drive technical roadmaps with clear written proposals.</li></ul>
-            <p className="mt-4 font-bold">Skills</p><div className="mt-2 flex flex-wrap gap-2">{sel.tags.map((t) => <Tag key={t} t="blue">{t}</Tag>)}</div>
-            <div className="mt-6 rounded-xl border border-slate-200 p-4"><p className="font-bold">Meet the hiring team</p><div className="mt-3 flex items-center gap-3"><Av name="Aisha Rahman" s={48} /><div className="flex-1"><p className="font-bold">Aisha Rahman</p><p className="text-sm text-slate-500">Principal AI Recruiter - Job poster</p></div><Btn v="outline" sm>Message</Btn></div></div>
-            <div className="mt-4 rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-3"><Lg name={sel.co} s={48} r={4} /><div className="flex-1"><p className="font-bold">About {sel.co}</p><p className="text-sm text-slate-500">Software - 201-500 employees - 12,480 followers</p></div><Btn v="outline" sm>Follow</Btn></div></div>
+            <p className="mt-2 whitespace-pre-line text-[15px] leading-6 text-slate-700">{sel.raw.description || "No description provided."}</p>
+            {sel.tags.length > 0 && <><p className="mt-4 font-bold">Skills</p><div className="mt-2 flex flex-wrap gap-2">{sel.tags.map((t) => <Tag key={t} t="blue">{t}</Tag>)}</div></>}
+            <div className="mt-4 rounded-xl border border-slate-200 p-4"><div className="flex items-center gap-3"><Lg name={sel.co} s={48} r={4} /><div className="flex-1"><p className="font-bold">About {sel.co}</p><p className="text-sm text-slate-500">{sel.easy ? "Hiring on Remote AI Platform" : `Listed on ${title(sel.raw.source)}`}</p></div></div></div>
           </div>
-        </section>
+        </section>}
       </div>
-      <Modal open={apply} onClose={() => setApply(false)} title={"Apply to " + sel.co}>
+      <Modal open={apply && !!sel} onClose={() => setApply(false)} title={"Apply to " + (sel?.co ?? "")}>
         <div className="mb-4"><Bar v={((step + 1) / steps.length) * 100} c="bg-[#0552CC]" /><p className="mt-1 text-xs font-semibold text-slate-500">Step {step + 1} of {steps.length} - {steps[step]}</p></div>
-        {step === 0 && <div className="space-y-3"><div className="flex items-center gap-3"><Av name="Gokul Raj" s={56} /><div><p className="font-bold">Gokul Raj</p><p className="text-sm text-slate-500">Founder, Remote-AI-Platform</p></div></div><Field label="Email"><input className={inputCls} defaultValue="gokulraj22797@gmail.com" /></Field><Field label="Phone country code"><input className={inputCls} defaultValue="Germany (+49)" /></Field><Field label="Mobile phone number"><input className={inputCls} placeholder="151 2345 6789" /></Field></div>}
-        {step === 1 && <div className="space-y-3"><p className="text-sm text-slate-600">Be sure to include an updated resume.</p><div className="flex items-center gap-3 rounded-lg border-2 border-[#0552CC] p-3"><Ic n="file" c="text-[#0552CC]" s={28} /><div className="flex-1"><p className="font-bold">Gokul_Raj_Resume.pdf</p><p className="text-xs text-slate-500">Uploaded Sep 20, 2026 - AI extracted 34 skills</p></div><Ic n="check" c="text-emerald-600" /></div><Btn v="outline" full icon="plus">Upload a different resume</Btn></div>}
-        {step === 2 && <div className="space-y-3"><Field label="How many years of experience do you have with LLM platforms?"><input className={inputCls} defaultValue="6" /></Field><Field label="Are you authorized to work remotely from your location?"><select className={inputCls}><option>Yes</option><option>No</option></select></Field><Field label="Cover note (AI can draft this)"><textarea rows={3} className={cx(inputCls, "h-auto py-2")} placeholder="Why you are a strong fit" /></Field></div>}
-        {step === 3 && <div className="space-y-2 text-sm"><p className="font-bold">Review your application</p>{[["Contact", "gokulraj22797@gmail.com"], ["Resume", "Gokul_Raj_Resume.pdf"], ["Experience", "6 years - authorized: Yes"], ["Match", sel.m + "%"]].map(([k, v]) => <div key={k} className="flex justify-between border-b border-slate-100 py-2"><span className="text-slate-500">{k}</span><span className="font-semibold">{v}</span></div>)}<label className="flex items-center gap-2 pt-2"><input type="checkbox" defaultChecked />Follow {sel.co} to stay up to date</label></div>}
-        <div className="mt-6 flex justify-between">{step > 0 ? <Btn v="outline" onClick={() => setStep(step - 1)}>Back</Btn> : <span />}{step < 3 ? <Btn onClick={() => setStep(step + 1)}>Next</Btn> : <Btn onClick={() => setApply(false)}>Submit application</Btn>}</div>
+        {step === 0 && <div className="space-y-3"><div className="flex items-center gap-3"><Av name={user?.full_name || "You"} s={56} /><div><p className="font-bold">{user?.full_name}</p><p className="text-sm text-slate-500">{user?.email}</p></div></div><p className="text-sm text-slate-500">The company sees your profile and contact email.</p></div>}
+        {step === 1 && <div className="space-y-3"><p className="text-sm text-slate-600">Your application uses the resume and details on your profile.</p><Btn v="outline" full icon="plus" onClick={() => { setApply(false); window.location.hash = "profile"; }}>Update my profile or resume</Btn></div>}
+        {step === 2 && <div className="space-y-3"><Field label="Cover note (optional)"><textarea rows={4} maxLength={2000} value={note} onChange={(e) => setNote(e.target.value)} className={cx(inputCls, "h-auto py-2")} placeholder="Why you are a strong fit" /></Field></div>}
+        {step === 3 && <div className="space-y-2 text-sm"><p className="font-bold">Review your application</p>{[["Role", sel?.t ?? ""], ["Contact", user?.email ?? ""], ["Cover note", note.trim() ? note.trim().slice(0, 60) : "None"], ["Match", m ? Math.round(m.overall_score) + "%" : "—"]].map(([k, v]) => <div key={k} className="flex justify-between border-b border-slate-100 py-2"><span className="text-slate-500">{k}</span><span className="font-semibold">{v}</span></div>)}</div>}
+        <div className="mt-6 flex justify-between">{step > 0 ? <Btn v="outline" onClick={() => setStep(step - 1)}>Back</Btn> : <span />}{step < 3 ? <Btn onClick={() => setStep(step + 1)}>Next</Btn> : <Btn onClick={submit}>Submit application</Btn>}</div>
       </Modal>
+      {notice && <div role="status" className="v2-toast" onClick={() => setNotice("")}>{notice}</div>}
     </div>
   );
 }
 
+const title = (s?: string | null) => (s || "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 const EXP = [["Founder and CEO", "Remote-AI-Platform", "Jan 2026 - Present - 9 mos", "Building an AI-powered remote engineering marketplace: matching, contracts, escrow and delivery."], ["Senior Data Engineer", "NatWest Group", "2022 - 2025 - 3 yrs", "Led lakehouse and CDC pipelines on AWS and Databricks for regulated financial data."], ["Data Engineer", "Infosys", "2019 - 2022 - 3 yrs", "Built ETL/ELT workloads across Azure and GCP for enterprise clients."]];
 export function Profile() {
   const [open, setOpen] = useState(true);
