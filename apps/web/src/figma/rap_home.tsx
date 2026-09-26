@@ -151,20 +151,34 @@ const CANDS = [
 export function PostJob() {
   const steps = ["Basics", "Requirements", "Budget and contract", "Screening", "Review"];
   const [step, setStep] = useState(0);
-  const [title, setTitle] = useState("Senior AI Platform Engineer");
+  const [title, setTitle] = useState("");
   const [kind, setKind] = useState("Contract");
   const [level, setLevel] = useState("Senior");
-  const [desc, setDesc] = useState("Own platform reliability and developer experience for production AI systems.");
-  const [skills, setSkills] = useState(["Python", "RAG", "Kubernetes"]);
+  const [desc, setDesc] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
   const [skill, setSkill] = useState("");
-  const [rate, setRate] = useState("110");
+  const [rate, setRate] = useState("");
   const [hours, setHours] = useState("40");
   const [escrow, setEscrow] = useState(true);
   const [tz, setTz] = useState("Europe (CET +/- 3h)");
   const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const company = useApi<any>("/companies/me");
+  const coName = company.data?.name || "Your company";
+  const publish = async () => {
+    if (title.trim().length < 2 || !desc.trim()) { setErr("Add a job title and description before publishing."); setStep(0); return; }
+    setBusy(true); setErr("");
+    const r = rate ? Number(rate) : undefined;
+    try {
+      await api.post("/jobs", { title: title.trim(), description: desc.trim(), job_type: ({ Contract: "contract", "Full-time": "full-time", "Fixed price project": "freelance" } as any)[kind], experience_level: ({ Mid: "mid", Senior: "senior", Staff: "lead", Principal: "lead" } as any)[level], skills, remote_preference: tz, budget_min: r, budget_max: r, timeline: hours ? `${hours} hrs/week` : undefined, is_remote: true, location: "Remote" });
+      setDone(true);
+    } catch (e) { setErr(extractErrorMessage(e, company.data ? "We couldn't publish this job." : "Create your company profile before posting a job.")); }
+    finally { setBusy(false); }
+  };
   const lbl = "mb-1 block text-sm font-semibold";
   return (
-    <Page title="Post a job" sub="Reach 48K+ verified engineers - AI improves your brief and ranks applicants" w="max-w-none">
+    <Page title="Post a job" sub="Publish a role — AI ranks applicants by explainable match" w="max-w-none">
       <div className="grid gap-4 grid-cols-1 2xl:grid-cols-[220px_minmax(0,1fr)_300px]">
         <Card c="rounded-xl h-fit flex flex-wrap gap-1 2xl:block" p="p-2">
           {steps.map((x, i) => (
@@ -175,7 +189,7 @@ export function PostJob() {
         </Card>
         <Card c="rounded-xl" p="p-6">
           {done ? (
-            <div className="py-10 text-center"><span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n="check" s={28} /></span><h2 className="text-xl font-bold">Job published</h2><p className="mt-1 text-sm text-slate-500">AI is matching engineers now. First ranked candidates appear in about 2 minutes.</p><div className="mt-4 flex justify-center gap-2"><Btn v="primary" icon="users">View candidates</Btn><Btn v="outline" onClick={() => { setDone(false); setStep(0); }}>Post another</Btn></div></div>
+            <div className="py-10 text-center"><span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n="check" s={28} /></span><h2 className="text-xl font-bold">Job published</h2><p className="mt-1 text-sm text-slate-500">Your role is live. Candidates are ranked by explainable match as they apply.</p><div className="mt-4 flex justify-center gap-2"><Btn v="primary" icon="users" onClick={() => visit("candidates")}>View candidates</Btn><Btn v="outline" onClick={() => { setDone(false); setStep(0); setTitle(""); setDesc(""); setSkills([]); }}>Post another</Btn></div></div>
           ) : (
             <>
               <h2 className="mb-4 text-xl font-bold">{steps[step]}</h2>
@@ -183,7 +197,7 @@ export function PostJob() {
                 <div><label className={lbl}>Job title</label><input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} /></div>
                 <div className="grid gap-4 grid-cols-1 xl:grid-cols-2"><div><label className={lbl}>Engagement</label><select value={kind} onChange={(e) => setKind(e.target.value)} className={inputCls}><option>Contract</option><option>Full-time</option><option>Fixed price project</option></select></div><div><label className={lbl}>Seniority</label><select value={level} onChange={(e) => setLevel(e.target.value)} className={inputCls}><option>Mid</option><option>Senior</option><option>Staff</option><option>Principal</option></select></div></div>
                 <div><label className={lbl}>Description</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={5} className={inputCls} /></div>
-                <div className="flex items-center gap-3 rounded-lg bg-[#F3F0FF] p-3 text-sm"><Ic n="spark" s={18} c="text-[#5B4BDB]" /><span className="flex-1 font-semibold text-[#5B4BDB]">AI can rewrite your brief for clarity and inclusive language</span><Btn v="outline" sm onClick={() => setDesc("Own the reliability, observability and developer experience of our production AI platform. You will design evaluation pipelines, harden inference services and mentor a team of five engineers.")}>Rewrite</Btn></div>
+                
               </div>)}
               {step === 1 && (<div className="space-y-4">
                 <div><label className={lbl}>Required skills</label><div className="flex flex-wrap gap-2">{skills.map((k) => <button key={k} onClick={() => setSkills(skills.filter((x) => x !== k))} className="flex items-center gap-1 rounded-full bg-[#E8F0FC] px-3 py-1 text-sm font-semibold text-[#0552CC]">{k}<Ic n="x" s={12} /></button>)}</div>
@@ -197,23 +211,24 @@ export function PostJob() {
                 <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 text-sm"><input type="checkbox" checked={escrow} onChange={(e) => setEscrow(e.target.checked)} className="mt-1" /><span><span className="block font-semibold">Fund milestones through escrow</span><span className="text-slate-500">Money is held securely and released when you approve each milestone.</span></span></label>
               </div>)}
               {step === 3 && (<div className="space-y-4">
-                <p className="text-sm text-slate-500">Ask up to five questions. Answers feed the explainable match score.</p>
+                <p className="text-sm text-slate-500">Screening questions aren’t sent to applicants yet — this step is coming in a later release.</p>
                 {["Describe a production RAG system you shipped.", "How do you evaluate LLM output quality?", "What is your notice period and availability?"].map((x, i) => <div key={x} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 font-bold">{i + 1}</span><span className="flex-1 font-medium">{x}</span><Tag v="gray">Required</Tag></div>)}
                 <Btn v="outline" icon="plus">Add question</Btn>
               </div>)}
               {step === 4 && (<div className="space-y-3 text-sm">
                 {[["Title", title], ["Engagement", kind + " - " + level], ["Skills", skills.join(", ")], ["Timezone", tz], ["Budget", "USD " + rate + "/hr x " + hours + " hrs/week"], ["Escrow", escrow ? "Enabled" : "Off"]].map((x) => <div key={x[0]} className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-500">{x[0]}</span><span className="font-semibold">{x[1]}</span></div>)}
               </div>)}
+              {err && <p role="alert" className="mt-4 text-sm text-red-600">{err}</p>}
               <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
                 <Btn v="gray" onClick={() => setStep(Math.max(0, step - 1))}>Back</Btn>
-                {step < 4 ? <Btn v="primary" onClick={() => setStep(step + 1)}>Continue</Btn> : <Btn v="primary" icon="send" onClick={() => setDone(true)}>Publish job</Btn>}
+                {step < 4 ? <Btn v="primary" onClick={() => setStep(step + 1)}>Continue</Btn> : <Btn v="primary" icon="send" onClick={publish}>{busy ? "Publishing…" : "Publish job"}</Btn>}
               </div>
             </>
           )}
         </Card>
         <div className="space-y-4">
-          <Card c="rounded-xl" p="p-4"><p className="mb-2 text-xs font-semibold text-slate-500">Live preview</p><div className="flex gap-3"><Lg name="Northstar Cloud" s={48} /><div><p className="font-bold text-[#0552CC]">{title}</p><p className="text-sm text-slate-600">Northstar Cloud - Remote</p><p className="text-sm text-slate-500">{kind} - {level} - USD {rate}/hr</p></div></div><div className="mt-3 flex flex-wrap gap-1">{skills.map((k) => <Tag key={k} v="gray">{k}</Tag>)}</div></Card>
-          <Card c="rounded-xl bg-[#F3F0FF]" p="p-4"><p className="mb-1 flex items-center gap-2 font-bold text-[#5B4BDB]"><Ic n="spark" s={16} />AI market insight</p><p className="text-sm text-slate-700">Roles with escrow and a written evaluation task get 2.3x more qualified applicants. About 140 engineers match this brief today.</p></Card>
+          <Card c="rounded-xl" p="p-4"><p className="mb-2 text-xs font-semibold text-slate-500">Live preview</p><div className="flex gap-3"><Lg name={coName} s={48} /><div><p className="font-bold text-[#0552CC]">{title || "Job title"}</p><p className="text-sm text-slate-600">{coName} - Remote</p><p className="text-sm text-slate-500">{kind} - {level}{rate ? ` - USD ${rate}/hr` : ""}</p></div></div><div className="mt-3 flex flex-wrap gap-1">{skills.map((k) => <Tag key={k} v="gray">{k}</Tag>)}</div></Card>
+          <Card c="rounded-xl bg-[#F3F0FF]" p="p-4"><p className="mb-1 flex items-center gap-2 font-bold text-[#5B4BDB]"><Ic n="spark" s={16} />How matching works</p><p className="text-sm text-slate-700">Applicants are scored on skills, experience, role fit, timezone, availability and rate against this brief — with the reasoning shown for every candidate.</p></Card>
         </div>
       </div>
     </Page>
@@ -223,18 +238,35 @@ export function PostJob() {
 export function Candidates() {
   const [q, setQ] = useState("");
   const [min, setMin] = useState(0);
-  const [list, setList] = useState(CANDS);
+  // Live: real applications for this company's jobs; pipeline moves are real status changes.
+  const appsQ = useApi<any[]>("/applications/company", { limit: 100 });
+  const [err, setErr] = useState("");
+  const stageOf = (st: string) => (st === "REVIEWING" ? 1 : st === "SHORTLISTED" ? 2 : st === "ACCEPTED" ? 4 : 0);
+  const NEXT: Record<string, string> = { SUBMITTED: "REVIEWING", APPLIED: "REVIEWING", INVITED: "REVIEWING", REVIEWING: "SHORTLISTED", SHORTLISTED: "ACCEPTED" };
+  const list = (appsQ.data ?? []).filter((a: any) => !["REJECTED", "WITHDRAWN"].includes(a.application.status)).map((a: any) => ({
+    id: a.application.id, userId: a.candidate.id, status: a.application.status, job: a.job.title,
+    n: a.candidate.full_name || "Candidate", r: a.candidate.headline || a.candidate.primary_role || "Engineer",
+    sc: a.match ? Math.round(a.match.overall_score) : null, m: a.match, sk: a.candidate.skills || [], st: stageOf(a.application.status),
+    ex: a.candidate.years_of_experience ? `${a.candidate.years_of_experience} yrs` : "—", loc: a.candidate.location || "Remote",
+    rate: a.candidate.hourly_rate != null ? `USD ${a.candidate.hourly_rate}/hr` : "—",
+    why: a.match?.reasoning || a.application.cover_note || "Match details appear once the candidate's match for this role has been calculated.",
+  }));
+  const setStatus = async (id: string, status: string) => { setErr(""); try { await api.patch(`/applications/${id}/status`, { status }); appsQ.reload(); } catch (e) { setErr(extractErrorMessage(e, "That move isn't allowed for this application.")); } };
+  const message = async (userId: string) => { try { await api.post("/conversations", { participant_id: userId }); } catch {} visit("messenger"); };
+  const exportCsv = () => { const rows = [["Name", "Role", "Job", "Status", "Match", "Skills", "Location"], ...shown.map((c: any) => [c.n, c.r, c.job, c.status, c.sc ?? "", c.sk.join("; "), c.loc])]; const blob = new Blob([rows.map((r) => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")], { type: "text/csv" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "candidates.csv"; a.click(); };
   const [sel, setSel] = useState<any>(null);
   const [saved, setSaved] = useState<number[]>([]);
   const toggleSaved = (id: number) => setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const [savedOnly, setSavedOnly] = useState(false);
-  const move = (id: number, d: number) => setList(list.map((c) => (c.id === id ? { ...c, st: Math.max(0, Math.min(4, c.st + d)) } : c)));
-  const shown = list.filter((c) => c.sc >= min && (!savedOnly || saved.includes(c.id)) && (c.n + c.r + c.sk.join(" ")).toLowerCase().includes(q.toLowerCase()));
+  const move = (id: string, d: number) => { const c = list.find((x: any) => x.id === id); if (!c) return; if (d < 0) { setErr("Applications can't be moved back to an earlier stage."); return; } const next = NEXT[c.status]; if (next) setStatus(id, next); };
+  const shown = list.filter((c: any) => (c.sc ?? 0) >= min && (!savedOnly || saved.includes(c.id)) && (c.n + c.r + c.sk.join(" ")).toLowerCase().includes(q.toLowerCase()));
   const cur = sel ? list.find((c) => c.id === sel) : null;
   return (
-    <Page title="Candidates" sub="Senior AI Platform Engineer - ranked by explainable match" w="max-w-none" act={<><Btn v="outline" icon="download">Export</Btn><Btn v="primary" icon="users">Invite candidates</Btn></>}>
-      <div className="grid gap-3 grid-cols-2 xl:grid-cols-4"><Stat l="Total applicants" v="248" d="+18 this week" i="users" /><Stat l="Avg match score" v="93%" d="Top 10 above 95%" i="target" /><Stat l="Interviews" v="18" d="6 scheduled" i="calendar" /><Stat l="Time to hire" v="9 days" d="-2 days vs last role" i="clock" /></div>
+    <Page title="Candidates" sub="Applicants across your job postings - ranked by explainable match" w="max-w-none" act={<><Btn v="outline" icon="download" onClick={exportCsv}>Export</Btn><Btn v="primary" icon="users" onClick={() => visit("engineers")}>Invite candidates</Btn></>}>
+      <div className="grid gap-3 grid-cols-2 xl:grid-cols-4"><Stat l="Total applicants" v={String(list.length)} i="users" /><Stat l="Avg match score" v={(() => { const s2 = list.filter((c: any) => c.sc != null); return s2.length ? Math.round(s2.reduce((a: number, c: any) => a + c.sc, 0) / s2.length) + "%" : "—"; })()} i="target" /><Stat l="Interviews" v={String(list.filter((c: any) => c.st === 2).length)} i="calendar" /><Stat l="Hired" v={String(list.filter((c: any) => c.st === 4).length)} i="check" /></div>
       <Card c="mt-4 rounded-xl" p="p-3"><div className="flex flex-wrap items-center gap-2"><div className="flex h-10 flex-1 items-center gap-2 rounded-full bg-slate-100 px-3" style={{ minWidth: 220 }}><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, role or skill" className="w-full bg-transparent text-sm outline-none" /></div>{[["All", 0], ["90+", 90], ["95+", 95]].map((x: any) => <button key={x[0]} onClick={() => setMin(x[1])} className={cx("h-10 rounded-full px-4 text-sm font-semibold", min === x[1] ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>Match {x[0]}</button>)}<button onClick={() => setSavedOnly(!savedOnly)} className={cx("flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold", savedOnly ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}><Ic n="bookmark" s={14} />{saved.length > 0 ? `Saved (${saved.length})` : "Saved"}</button><span className="ml-auto text-sm text-slate-500">{shown.length} candidates</span></div></Card>
+      {err && <p role="alert" className="mt-3 text-sm text-red-600">{err}</p>}
+      {appsQ.loading && <p className="mt-3 text-sm text-slate-500">Loading candidates…</p>}
       <div className={cx("mt-4 grid gap-4", cur ? "grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]" : "")}>
         <div className="grid auto-cols-[240px] grid-flow-col gap-3 overflow-x-auto pb-2">
           {STAGES.map((sg, si) => {
@@ -245,7 +277,7 @@ export function Candidates() {
                 <div className="space-y-2">
                   {col.map((c) => (
                     <div key={c.id} onClick={() => setSel(c.id)} className={cx("cursor-pointer rounded-lg bg-white p-3 shadow-sm hover:shadow-md", sel === c.id && "ring-2 ring-[#0552CC]")}>
-                      <div className="flex items-center gap-2"><Av name={c.n} s={36} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{c.n}</p><p className="truncate text-xs text-slate-500">{c.r}</p></div><button onClick={(e) => { e.stopPropagation(); toggleSaved(c.id); }} className={cx("rounded-full p-1", saved.includes(c.id) ? "text-[#0552CC]" : "text-slate-400 hover:text-slate-600")}><Ic n="bookmark" s={15} /></button><span className="rounded-full bg-[#E8F0FC] px-2 py-0.5 text-xs font-bold text-[#0552CC]">{c.sc}%</span></div>
+                      <div className="flex items-center gap-2"><Av name={c.n} s={36} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{c.n}</p><p className="truncate text-xs text-slate-500">{c.r}</p></div><button onClick={(e) => { e.stopPropagation(); toggleSaved(c.id); }} className={cx("rounded-full p-1", saved.includes(c.id) ? "text-[#0552CC]" : "text-slate-400 hover:text-slate-600")}><Ic n="bookmark" s={15} /></button>{c.sc != null && <span className="rounded-full bg-[#E8F0FC] px-2 py-0.5 text-xs font-bold text-[#0552CC]">{c.sc}%</span>}</div>
                       <div className="mt-2 flex flex-wrap gap-1">{c.sk.slice(0, 3).map((k: string) => <span key={k} className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{k}</span>)}</div>
                       <div className="mt-2 flex items-center justify-between text-xs text-slate-500"><span>{c.loc} - {c.ex}</span><span className="flex gap-1"><button onClick={(e) => { e.stopPropagation(); move(c.id, -1); }} className="rounded bg-slate-100 px-1.5 hover:bg-slate-200">Back</button><button onClick={(e) => { e.stopPropagation(); move(c.id, 1); }} className="rounded bg-[#0552CC] px-1.5 text-white hover:bg-[#0443A8]">Move</button></span></div>
                     </div>
@@ -259,11 +291,11 @@ export function Candidates() {
         {cur && (
           <Card c="h-fit rounded-xl" p="p-4">
             <div className="flex items-start justify-between"><div className="flex items-center gap-3"><Av name={cur.n} s={56} /><div><p className="text-lg font-bold">{cur.n}</p><p className="text-sm text-slate-500">{cur.r}</p></div></div><button onClick={() => setSel(null)} className="rounded-full p-1 hover:bg-slate-100"><Ic n="x" s={16} /></button></div>
-            <div className="mt-3 rounded-lg bg-[#E8F0FC] p-3"><p className="text-sm font-bold text-[#0552CC]">Match {cur.sc}%</p>{[["Skills", cur.sc], ["Experience", cur.sc - 3], ["Timezone", 90], ["Availability", 96]].map((x: any) => <div key={x[0]} className="mt-2"><div className="flex justify-between text-xs text-slate-600"><span>{x[0]}</span><span>{x[1]}%</span></div><div className="h-1.5 rounded-full bg-white"><div className="h-1.5 rounded-full bg-[#0552CC]" style={{ width: x[1] + "%" }} /></div></div>)}</div>
+            <div className="mt-3 rounded-lg bg-[#E8F0FC] p-3"><p className="text-sm font-bold text-[#0552CC]">{cur.m ? `Match ${cur.sc}%` : "Match not calculated yet"}</p>{(cur.m ? [["Skills", Math.round(cur.m.skill_score)], ["Experience", Math.round(cur.m.experience_score)], ["Timezone", Math.round(cur.m.timezone_score)], ["Availability", Math.round(cur.m.availability_score)]] : []).map((x: any) => <div key={x[0]} className="mt-2"><div className="flex justify-between text-xs text-slate-600"><span>{x[0]}</span><span>{x[1]}%</span></div><div className="h-1.5 rounded-full bg-white"><div className="h-1.5 rounded-full bg-[#0552CC]" style={{ width: x[1] + "%" }} /></div></div>)}</div>
             <div className="mt-3 rounded-lg bg-[#F3F0FF] p-3 text-sm"><p className="mb-1 flex items-center gap-1 font-bold text-[#5B4BDB]"><Ic n="spark" s={14} />Why this match</p><p className="text-slate-700">{cur.why}</p></div>
             <div className="mt-3 flex flex-wrap gap-1">{cur.sk.map((k: string) => <Tag key={k} v="gray">{k}</Tag>)}</div>
             <div className="mt-3 grid grid-cols-2 gap-2 text-sm"><div><p className="text-slate-500">Rate</p><p className="font-semibold">{cur.rate}</p></div><div><p className="text-slate-500">Location</p><p className="font-semibold">{cur.loc}</p></div><div><p className="text-slate-500">Experience</p><p className="font-semibold">{cur.ex}</p></div><div><p className="text-slate-500">Stage</p><p className="font-semibold">{STAGES[cur.st]}</p></div></div>
-            <div className="mt-4 grid grid-cols-2 gap-2"><Btn v="primary" icon="chat" full>Message</Btn><Btn v="outline" icon="calendar" full>Interview</Btn><Btn v="gray" full onClick={() => move(cur.id, 1)}>Advance</Btn><Btn v="danger" full>Reject</Btn></div>
+            <div className="mt-4 grid grid-cols-2 gap-2"><Btn v="primary" icon="chat" full onClick={() => message(cur.userId)}>Message</Btn><Btn v="outline" icon="calendar" full onClick={() => (cur.status === "REVIEWING" ? setStatus(cur.id, "SHORTLISTED") : setErr("Move the candidate to screening first."))}>Interview</Btn><Btn v="gray" full onClick={() => move(cur.id, 1)}>Advance</Btn><Btn v="danger" full onClick={() => setStatus(cur.id, "REJECTED")}>Reject</Btn></div>
           </Card>
         )}
       </div>
@@ -272,10 +304,17 @@ export function Candidates() {
 }
 
 export function CoJobs() {
-  const rows = [["Senior AI Platform Engineer", "Active", 48, 9], ["Applied ML Engineer, Search", "Active", 31, 6], ["Data Product Manager", "Paused", 12, 2], ["LLM Evaluation Lead", "Active", 27, 5]];
+  // Live: the company's real postings with applicant counts; pause / reactivate.
+  const jobs = useApi<any[]>("/jobs/company", { limit: 100 });
+  const apps = useApi<any[]>("/applications/company", { limit: 100 });
+  const [err, setErr] = useState("");
+  const count = (id: string, st?: string[]) => (apps.data ?? []).filter((a: any) => a.job.id === id && (!st || st.includes(a.application.status))).length;
+  const toggle = async (j: any) => { setErr(""); try { await api.patch(`/jobs/${j.id}`, { is_active: !j.is_active }); jobs.reload(); } catch (e) { setErr(extractErrorMessage(e, "We couldn't update that job.")); } };
+  const rows = jobs.data ?? [];
   return (
-    <Page title="Job postings" act={<Btn v="primary" icon="plus">Post a job</Btn>}>
-      <Card p={false} c="rounded-xl"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Job", "Status", "Applicants", "Shortlisted", ""].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead><tbody>{rows.map((r) => <tr key={String(r[0])} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{r[0]}</td><td className="px-4 py-3"><Tag t={r[1] === "Active" ? "green" : "amber"}>{r[1]}</Tag></td><td className="px-4 py-3">{r[2]}</td><td className="px-4 py-3">{r[3]}</td><td className="px-4 py-3 text-right"><Btn v="gray" sm>Edit</Btn> <Btn v="outline" sm>{r[1] === "Active" ? "Pause" : "Reactivate"}</Btn></td></tr>)}</tbody></table></Card>
+    <Page title="Job postings" act={<Btn v="primary" icon="plus" onClick={() => visit("postjob")}>Post a job</Btn>}>
+      {err && <p role="alert" className="mb-3 text-sm text-red-600">{err}</p>}
+      <Card p={false} c="rounded-xl"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Job", "Status", "Applicants", "Shortlisted", ""].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead><tbody>{rows.map((r: any) => <tr key={r.id} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{r.title}</td><td className="px-4 py-3"><Tag t={r.is_active ? "green" : "amber"}>{r.is_active ? "Active" : "Paused"}</Tag></td><td className="px-4 py-3">{count(r.id)}</td><td className="px-4 py-3">{count(r.id, ["SHORTLISTED", "ACCEPTED"])}</td><td className="px-4 py-3 text-right"><Btn v="gray" sm onClick={() => openJob(r.id)}>View</Btn> <Btn v="outline" sm onClick={() => toggle(r)}>{r.is_active ? "Pause" : "Reactivate"}</Btn></td></tr>)}{!jobs.loading && !rows.length && <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-500">No job postings yet. <button className="font-semibold text-[#0552CC]" onClick={() => visit("postjob")}>Post your first job</button></td></tr>}{jobs.loading && <tr><td colSpan={5} className="px-4 py-10 text-center text-slate-500">Loading…</td></tr>}</tbody></table></Card>
     </Page>
   );
 }

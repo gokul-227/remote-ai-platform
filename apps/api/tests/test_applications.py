@@ -170,3 +170,21 @@ async def test_engineer_declines_invitation_and_only_owner_can_respond(client: A
     assert (await client.patch(f"/api/v1/applications/{invited.json()['id']}/respond", headers=other_headers, json={"accept": True})).status_code == 404
     declined = await client.patch(f"/api/v1/applications/{invited.json()['id']}/respond", headers=engineer_headers, json={"accept": False})
     assert declined.json()["status"] == "WITHDRAWN"
+
+
+@pytest.mark.asyncio
+async def test_company_applications_include_candidate_match_and_job_filter(client: AsyncClient):
+    company_headers, engineer_headers, profile_id, job_id = await _company_job_and_engineer(client, "match")
+    applied = await client.post(f"/api/v1/applications/jobs/{job_id}", headers=engineer_headers, json={})
+    assert applied.status_code == 201
+    [row] = (await client.get("/api/v1/applications/company", headers=company_headers)).json()
+    assert row["match"] is None
+    assert row["candidate"]["engineer_profile_id"] == profile_id
+
+    computed = await client.get(f"/api/v1/matching/jobs/{job_id}", headers=engineer_headers)
+    assert computed.status_code == 200
+    [row] = (await client.get("/api/v1/applications/company", headers=company_headers, params={"job_id": job_id})).json()
+    assert row["match"]["overall_score"] == computed.json()["overall_score"]
+    assert "Go" in row["match"]["matching_skills"]
+    other_job = "00000000-0000-0000-0000-000000000000"
+    assert (await client.get("/api/v1/applications/company", headers=company_headers, params={"job_id": other_job})).json() == []

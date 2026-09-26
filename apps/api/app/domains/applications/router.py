@@ -13,6 +13,7 @@ from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.engineers.models import EngineerProfile
 from app.domains.jobs.models import JobPost
+from app.domains.matching.models import JobMatch
 from app.domains.network.router import notify
 
 router = APIRouter(prefix="/applications", tags=["Applications"])
@@ -120,23 +121,31 @@ async def withdraw_application(
 async def list_company_applications(
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
+    job_id: uuid.UUID | None = Query(None, description="Only applications for this job"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
-    """List applications for jobs owned by the current company."""
+    """List applications for jobs owned by the current company, with each
+    candidate's AI match for that job when one has been computed."""
     company = await db.scalar(
         select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
     )
     if not company and current_user.role == UserRole.COMPANY:
         raise HTTPException(status_code=404, detail="Company profile required")
-    query = select(JobApplication, JobPost, User, EngineerProfile).join(
+    query = select(JobApplication, JobPost, User, EngineerProfile, JobMatch).join(
         JobPost, JobPost.id == JobApplication.job_id
     )
     if company:
         query = query.where(JobPost.company_id == company.id)
+    if job_id:
+        query = query.where(JobPost.id == job_id)
     result = await db.execute(
         query.join(User, User.id == JobApplication.user_id)
         .outerjoin(EngineerProfile, EngineerProfile.user_id == User.id)
+        .outerjoin(
+            JobMatch,
+            (JobMatch.engineer_id == EngineerProfile.id) & (JobMatch.job_id == JobPost.id),
+        )
         .order_by(JobApplication.created_at.desc())
         .offset(skip)
         .limit(limit)
@@ -147,6 +156,7 @@ async def list_company_applications(
             "job": job,
             "candidate": {
                 "id": str(user.id),
+                "engineer_profile_id": str(profile.id) if profile else None,
                 "full_name": user.full_name,
                 "headline": profile.headline if profile else None,
                 "primary_role": profile.primary_role if profile else None,
@@ -154,9 +164,24 @@ async def list_company_applications(
                 "years_of_experience": profile.years_of_experience if profile else 0,
                 "profile_score": profile.profile_score if profile else None,
                 "location": profile.location if profile else None,
+                "hourly_rate": profile.hourly_rate if profile else None,
             },
+            "match": (
+                {
+                    "overall_score": match.overall_score,
+                    "skill_score": match.skill_score,
+                    "experience_score": match.experience_score,
+                    "timezone_score": match.timezone_score,
+                    "availability_score": match.availability_score,
+                    "reasoning": match.reasoning,
+                    "matching_skills": match.matching_skills,
+                    "missing_skills": match.missing_skills,
+                }
+                if match
+                else None
+            ),
         }
-        for application, job, user, profile in result.all()
+        for application, job, user, profile, match in result.all()
     ]
 
 
