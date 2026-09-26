@@ -66,7 +66,7 @@ export async function loginWithOtp(page: Page, email: string, type: "signup" | "
 
   await page.goto("/auth/login");
   await page.locator("#email").fill(email);
-  await page.getByRole("button", { name: /send code/i }).click();
+  await page.getByRole("button", { name: /email me a sign-in code/i }).click();
   await expect(page.locator("#code")).toBeVisible({ timeout: 30_000 });
 
   const otp = await getEmailOtp(page, email, type);

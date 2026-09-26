@@ -22,7 +22,7 @@ import { Av, Brand, Ic, cx } from "./kit";
 import { activeHref, primaryFor, profileHref, sectionOf, sectionsFor, type NavItem, type Role, type SectionKey } from "./nav";
 
 /** Routes rendered without any shell chrome (they carry their own layout). */
-const BARE = [/^\/auth(\/|$)/];
+const BARE = [/^\/auth(\/|$)/, /^\/$/];
 /** Routes that use the full width (no left sidebar), like the Figma project board. */
 const FULL = [/^\/projects\/[^/]+$/];
 

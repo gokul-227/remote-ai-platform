@@ -5,8 +5,8 @@ test.describe("Public Experience and Visitor Journeys", () => {
   test("visitor can browse landing page, search jobs, view engineers and companies directories", async ({ page }, testInfo) => {
     // 1. Landing Page
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(/remote engineering/i, { timeout: 15000 });
-    await expect(page.getByRole("link", { name: /find your next role/i })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(/your next opportunity/i, { timeout: 15000 });
+    await expect(page.getByRole("link", { name: /browse remote jobs/i })).toBeVisible();
     const landingViolations = await scanForA11yViolations(page, testInfo, "landing-page");
     expect(landingViolations, describeViolations(landingViolations)).toEqual([]);
 

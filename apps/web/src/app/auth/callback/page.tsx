@@ -1,79 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { supabase, fetchBackendUser, applyPendingRegistration } from "@/lib/supabase";
+import { AuthLayout, authButton } from "@/components/rap/AuthLayout";
+import { homeFor, safeRedirect } from "@/features/auth/destinations";
 
-/** Google/Microsoft redirect here after consent. The Supabase client (configured
- * with detectSessionInUrl) parses the redirect and establishes a session on its
- * own -- this page just waits for that, then bridges it into this app's own
- * AuthContext exactly like a password login does. */
-export default function OAuthCallbackPage() {
+/** OAuth providers redirect here. The Supabase client parses the redirect and
+ * establishes a session; this bridges it into the app's AuthContext. */
+function Callback() {
   const { login } = useAuth();
   const router = useRouter();
+  const redirect = safeRedirect(useSearchParams().get("redirect"));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
+    let done = false;
     const finish = async () => {
       const { data, error: sessionError } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (sessionError || !data.session) {
-        setError("Sign-in didn't complete. Please try again.");
-        return;
-      }
+      if (cancelled || done) return;
+      if (sessionError || !data.session) return setError("Sign-in was cancelled or didn't complete. Choose another method or try again.");
+      done = true;
       try {
-        let userData = await fetchBackendUser(data.session);
-        userData = await applyPendingRegistration(data.session, userData);
-        login(data.session.access_token, userData, data.session.refresh_token);
-        const dest =
-          userData.role === "COMPANY"
-            ? "/company/dashboard"
-            : userData.role === "ADMIN"
-              ? "/admin/dashboard"
-              : "/engineer/dashboard";
-        router.push(dest);
+        let user = await fetchBackendUser(data.session);
+        user = await applyPendingRegistration(data.session, user);
+        login(data.session.access_token, user, data.session.refresh_token);
+        router.push(redirect || homeFor(user.role));
       } catch {
-        setError("Signed in, but couldn't load your account. Please try again.");
+        setError("Signed in, but we couldn't load your account. Please try again.");
       }
     };
-
-    // detectSessionInUrl's parsing happens on client init, which can race
-    // this effect -- listening for the auth event is more reliable than a
-    // single getSession() call right on mount.
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") finish();
-    });
-    finish();
-
-    return () => {
-      cancelled = true;
-      listener.subscription.unsubscribe();
-    };
+    // detectSessionInUrl parses on client init, which can race this effect —
+    // the auth event is the reliable signal, getSession() covers the fast path.
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => { if (event === "SIGNED_IN") void finish(); });
+    void finish();
+    return () => { cancelled = true; listener.subscription.unsubscribe(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center px-4">
-      <div className="text-center space-y-3">
-        {error ? (
-          <>
-            <AlertCircle className="h-8 w-8 text-red-500 mx-auto" />
-            <p className="text-sm text-slate-700">{error}</p>
-            <a href="/auth/login" className="text-sm text-[#0552CC] hover:underline font-medium">
-              Back to sign in
-            </a>
-          </>
-        ) : (
-          <>
-            <Loader2 className="h-8 w-8 text-[#0552CC] mx-auto animate-spin" />
-            <p className="text-sm text-slate-600">Finishing sign-in…</p>
-          </>
-        )}
-      </div>
+  return error ? (
+    <>
+      <h1>Sign-in didn&apos;t finish</h1>
+      <p role="alert" className="mt-3 text-slate-500">{error}</p>
+      <Link href="/auth/login" className={authButton + " mt-6"}>Back to sign in</Link>
+    </>
+  ) : (
+    <div className="flex flex-col items-center py-6 text-center" aria-live="polite">
+      <div className="rap-spinner" />
+      <h1 className="mt-5">Finishing sign-in…</h1>
+      <p className="mt-2 text-slate-500">You&apos;ll be redirected in a moment.</p>
     </div>
   );
+}
+
+export default function OAuthCallbackPage() {
+  return <AuthLayout><Suspense><Callback /></Suspense></AuthLayout>;
 }

@@ -37,7 +37,7 @@ test.describe("Negative Resilience & Error State Handling", () => {
     ).toEqual([]);
 
     await page.locator("#email").fill("nonexistent-user@doesnotexist-e2e.com");
-    await page.getByRole("button", { name: /send code/i }).click();
+    await page.getByRole("button", { name: /email me a sign-in code/i }).click();
 
     // Verify error feedback or alert banner is displayed, and the form did
     // not advance to the code-entry stage.
