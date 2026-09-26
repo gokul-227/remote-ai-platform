@@ -212,8 +212,8 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Remote AI Platform",
         description=(
-            "AI-powered Remote Engineering Marketplace — "
-            "Aggregate remote jobs, match engineers with AI, and connect talent with companies."
+            "AI-powered remote work marketplace — "
+            "Aggregate remote jobs, match professionals with AI, and connect talent with organizations."
         ),
         version=settings.APP_VERSION,
         docs_url="/docs" if docs_enabled else None,

@@ -207,7 +207,7 @@ async def invite_engineer(
     target_user_id = engineer_profile.user_id if engineer_profile else engineer_id
     target_user = await db.get(User, target_user_id)
     if not target_user:
-        raise HTTPException(status_code=404, detail="Engineer not found")
+        raise HTTPException(status_code=404, detail="Professional not found")
     existing = await db.scalar(
         select(JobApplication).where(
             JobApplication.user_id == target_user_id, JobApplication.job_id == job_id

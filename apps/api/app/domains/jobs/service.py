@@ -62,7 +62,7 @@ class JobService:
                 "improved_description": analysis.get("summary", job.description),
                 "required_skills": analysis.get("skills", []),
                 "technology_stack": analysis.get("tech_stack", []),
-                "difficulty_level": analysis.get("experience_level", job.experience_level),
+                "difficulty_level": analysis.get("experience_level") or job.experience_level,
                 "estimated_timeline": analysis.get("estimated_timeline"),
                 "milestones": analysis.get("milestones", []),
                 "tasks": analysis.get("tasks", []),

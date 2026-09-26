@@ -45,8 +45,8 @@ class JobEnricherAgent:
 
         return {
             "skills": result.get("skills", []),
-            "experience_level": result.get("experience_level", "mid"),
-            "primary_role": result.get("primary_role", "Software Engineer"),
+            "experience_level": result.get("experience_level") or None,
+            "primary_role": result.get("primary_role") or None,
             "key_responsibilities": result.get("key_responsibilities", []),
             "tech_stack": result.get("tech_stack", []),
             "summary": result.get("summary", ""),

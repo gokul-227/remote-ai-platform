@@ -62,12 +62,13 @@ class ResumeParserAgent:
         prompt = f"Extract structured profile data from the following resume text:\n\n{resume_text[:4000]}"
         result = (await self.ai.analyze(prompt, system_prompt=SYSTEM_PROMPT)).data
 
-        # Ensure default keys exist
+        # Ensure default keys exist. Missing values stay empty rather than
+        # defaulting to a made-up role: the platform serves every profession.
         return {
-            "headline": result.get("headline", "Software Engineer"),
+            "headline": result.get("headline") or None,
             "bio": result.get("bio", ""),
             "years_of_experience": result.get("years_of_experience", 0),
-            "primary_role": result.get("primary_role", "Software Engineer"),
+            "primary_role": result.get("primary_role") or None,
             "skills": result.get("skills", []),
             "experience": result.get("experience", []),
             "education": result.get("education", []),

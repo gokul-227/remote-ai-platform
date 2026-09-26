@@ -164,7 +164,7 @@ class MatchingService:
         """Fetch or compute recommendations for logged in engineer."""
         engineer = await self.engineer_repo.get_by_user_id(user_id)
         if not engineer:
-            raise NotFoundError("Engineer profile required to generate job recommendations")
+            raise NotFoundError("Create your professional profile to get job recommendations")
 
         # Fetch existing matches
         existing = await self.match_repo.list_recommendations_for_engineer(
@@ -189,7 +189,7 @@ class MatchingService:
         demand if it doesn't exist yet — used by the job detail page's AI match panel."""
         engineer = await self.engineer_repo.get_by_user_id(user_id)
         if not engineer:
-            raise NotFoundError("Engineer profile required to view job match")
+            raise NotFoundError("Create your professional profile to see how you match this job")
 
         job = await self.job_repo.get_by_id(job_id)
         if not job:

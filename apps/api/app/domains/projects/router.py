@@ -891,7 +891,7 @@ async def create_sandbox_escrow(
             raise HTTPException(status_code=422, detail="Task must belong to the project")
     payee = await db.get(User, data.payee_id)
     if not payee or payee.role != UserRole.ENGINEER:
-        raise HTTPException(status_code=422, detail="Payee must be an engineer")
+        raise HTTPException(status_code=422, detail="Payee must be a professional")
     existing = await db.scalar(
         select(PaymentTransaction).where(
             PaymentTransaction.project_id == project.id,
@@ -1028,14 +1028,14 @@ async def create_task_offer(
         )
     )
     if not profile or not profile.is_public:
-        raise HTTPException(status_code=404, detail="Public engineer profile not found")
+        raise HTTPException(status_code=404, detail="Public professional profile not found")
     if not profile.is_open_to_work:
-        raise HTTPException(status_code=409, detail="Engineer is not open to work")
+        raise HTTPException(status_code=409, detail="This professional is not open to work")
     required = {skill.strip().lower() for skill in (task.required_skills or []) if skill.strip()}
     available = {skill.strip().lower() for skill in (profile.skills or []) if skill.strip()}
     matched = sorted(required & available)
     if required and not matched:
-        raise HTTPException(status_code=422, detail="Engineer does not match the task skills")
+        raise HTTPException(status_code=422, detail="This professional does not match the task skills")
     active_offer = await db.scalar(
         select(TaskAssignmentOffer).where(
             TaskAssignmentOffer.task_id == task.id,

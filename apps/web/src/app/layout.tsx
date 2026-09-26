@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "
 
 export const metadata: Metadata = {
   title: "Remote AI Platform",
-  description: "Connect with engineers, find remote work, and bring great projects to life together.",
+  description: "Connect with professionals, find remote work, and bring great projects to life together.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

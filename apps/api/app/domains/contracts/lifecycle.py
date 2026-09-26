@@ -77,7 +77,7 @@ def ensure_milestone_transition(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
-                "Only the engineer can start or deliver a milestone"
+                "Only the professional can start or deliver a milestone"
                 if allowed_party == "worker"
                 else "Only the client can approve delivered work or request changes"
             ),

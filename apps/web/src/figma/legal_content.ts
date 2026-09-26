@@ -43,7 +43,7 @@ export const PRIVACY: Section[] = [
   {
     h: "Who is responsible",
     body: [
-      "Remote AI Platform (remoteaiplatform.com) connects remote engineers with companies that hire them. This notice explains what personal data the service processes, why, who can see it and what rights you have.",
+      "Remote AI Platform (remoteaiplatform.com) connects professionals with companies and organisations for remote work. This notice explains what personal data the service processes, why, who can see it and what rights you have.",
       fact(OPERATOR.legalName, "Name of the operator responsible for your data (controller)"),
       fact(OPERATOR.address?.join(", ") ?? null, "Postal address of the operator"),
       fact(OPERATOR.contactEmail, "Contact email for privacy requests"),
@@ -53,7 +53,7 @@ export const PRIVACY: Section[] = [
     h: "What we collect",
     body: [
       [
-        "Account data: your name, email address and account type (engineer or company). You sign in with a one-time code sent by email, or with Google, Microsoft or GitHub; from those providers we receive your name and email address. We do not store a password for these sign-in methods.",
+        "Account data: your name, email address and account type (professional or organisation). You sign in with a one-time code sent by email, or with Google, Microsoft or GitHub; from those providers we receive your name and email address. We do not store a password for these sign-in methods.",
         "Profile data you enter: headline, bio, skills, experience, education, location, time zone, availability, rates, salary expectations and links. Companies provide organisation details and job posts.",
         "Resumes: the file you upload, the text extracted from it and the profile fields generated from that text.",
         "Communications and content: messages, connection requests, posts, comments, group activity, reports you file and reviews you write.",
@@ -67,7 +67,7 @@ export const PRIVACY: Section[] = [
     h: "Who can see your data",
     body: [
       [
-        "If your engineer profile is public, anyone can see your name, headline, bio, skills, experience, location, time zone, availability, hourly rate and links. If you hide it, only you, administrators and the companies you apply to can see it.",
+        "If your professional profile is public, anyone can see your name, headline, bio, skills, experience, location, time zone, availability, hourly rate and links. If you hide it, only you, administrators and the companies you apply to can see it.",
         "Your resume file, your extracted resume data, your minimum salary expectation and your AI profile review are never shown to other users.",
         "A company you apply to sees your application, your profile and the match explanation for its job.",
         "Messages are visible only to the people in the conversation. Posts and group content are visible to the audience they were shared with.",
@@ -165,7 +165,7 @@ export const TERMS: Section[] = [
   {
     h: "Contracts and payments",
     body: [
-      "Contracts created on the platform are agreements between the company and the engineer. Once either party has signed, the terms can no longer be edited. Payments are not processed through Remote AI Platform yet: approving a milestone does not move any money, and the parties arrange payment between themselves.",
+      "Contracts created on the platform are agreements between the organisation and the professional. Once either party has signed, the terms can no longer be edited. Payments are not processed through Remote AI Platform yet: approving a milestone does not move any money, and the parties arrange payment between themselves.",
     ],
   },
   {
