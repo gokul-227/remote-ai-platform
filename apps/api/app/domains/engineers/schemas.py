@@ -138,12 +138,13 @@ RESUME_UPLOAD_MESSAGES = {
     "parsed": "Resume uploaded. We filled in empty profile fields from it; review and edit them.",
     "failed": "Resume uploaded, but we couldn't read it automatically right now. Fill in your profile by hand.",
     "no_text": "Resume uploaded, but it contains no readable text. Fill in your profile by hand.",
+    "quota_exceeded": "Resume uploaded. You've used this month's AI allowance, so fill in your profile by hand.",
 }
 
 
 class ResumeUploadResponse(BaseModel):
     resume_url: str
-    # parsed | failed | no_text -- upload success is separate from parsing success.
+    # parsed | failed | no_text | quota_exceeded -- upload success is separate from parsing success.
     ai_parse_status: str
     message: str
 

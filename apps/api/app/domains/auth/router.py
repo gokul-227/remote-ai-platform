@@ -33,6 +33,7 @@ from app.domains.auth.schemas import (
     UserUpdate,
 )
 from app.domains.auth.service import AuthService
+from app.services.ai.metering import current_ai_actor, usage_summary
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -364,6 +365,14 @@ async def logout_all_sessions(
     )
     await db.commit()
     return {"message": "All active sessions have been successfully revoked."}
+
+
+@router.get("/me/ai-usage")
+async def my_ai_usage(current_user: User = Depends(get_current_user)) -> dict[str, int | None]:
+    """This month's AI token use and allowance (null allowance = unlimited)."""
+    actor = current_ai_actor()
+    assert actor is not None  # set by get_current_user
+    return await usage_summary(actor)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

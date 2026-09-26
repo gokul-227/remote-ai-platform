@@ -3,7 +3,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agents.llm_client import AIProviderError, LLMClient
+from app.agents.llm_client import AIProviderError, AIQuotaExceededError, LLMClient
+from app.services.ai.metering import AIQuotaExceeded, check_ai_quota, current_ai_actor
 from app.services.ai.models import AIUsageLog
 from app.services.ai.prompts import get_prompt
 from app.services.ai.schemas import AIResponse
@@ -30,6 +31,10 @@ class AIService:
         behavior is to propagate it (or catch it explicitly and surface a clear "AI unavailable,
         please retry" error/fallback, as `QualityEngineAgent` does).
         """
+        try:
+            await check_ai_quota()
+        except AIQuotaExceeded as exc:
+            raise AIQuotaExceededError(str(exc)) from exc
         started = time.perf_counter()
         try:
             raw: dict[str, Any] = await self.client.complete_structured_json(prompt, system_prompt)
@@ -70,11 +75,14 @@ class AIService:
     async def _record_usage(
         self, started: float, prompt_key: str | None, prompt_version: str | None
     ) -> None:
-        if self.db is None:
+        actor = current_ai_actor()
+        db = self.db or (actor.db if actor else None)
+        if db is None:
             return
         usage = self.client.last_usage
-        self.db.add(
+        db.add(
             AIUsageLog(
+                user_id=actor.user_id if actor else None,
                 prompt_key=prompt_key,
                 prompt_version=prompt_version,
                 provider_model=usage.get("provider_model"),
@@ -86,4 +94,4 @@ class AIService:
                 error_message=self.client.last_error if not usage else None,
             )
         )
-        await self.db.flush()
+        await db.flush()

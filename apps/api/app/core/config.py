@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     OLLAMA_MODEL_CODER: str = "qwen2.5-coder"
     OLLAMA_MODEL_REASONING: str = "deepseek-coder"
 
-    AI_PROVIDER: str = "ollama"
+    AI_PROVIDER: str = "auto"
     AI_MODEL: str = "qwen2.5"
     AI_API_KEY: str | None = None
     LITELLM_BASE_URL: str | None = None
@@ -122,6 +122,30 @@ class Settings(BaseSettings):
     # Optional: production AI providers via LiteLLM
     GROQ_API_KEY: str | None = None
     OPENAI_API_KEY: str | None = None
+    GEMINI_API_KEY: str | None = None
+    OPENROUTER_API_KEY: str | None = None
+    CEREBRAS_API_KEY: str | None = None
+    MISTRAL_API_KEY: str | None = None
+
+    # AI_PROVIDER="auto": try these free-tier models in order, skipping any
+    # provider whose API key is not set. Override the list via env to follow
+    # the providers' current free model names.
+    AI_FREE_TIER_CHAIN: str = (
+        "groq/llama-3.3-70b-versatile,"
+        "gemini/gemini-2.0-flash,"
+        "cerebras/llama-3.3-70b,"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free,"
+        "mistral/mistral-small-latest"
+    )
+    # Upper bound for one completion across every model tried.
+    AI_TOTAL_BUDGET_SECONDS: int = 45
+
+    # Token allowances (prompt + completion). Checked before each call, so a
+    # user can overshoot by at most one request.
+    AI_FREE_MONTHLY_TOKENS: int = 20_000
+    AI_PRO_MONTHLY_TOKENS: int = 50_000
+    # Platform-wide cap per UTC day, protecting the providers' free quotas.
+    AI_GLOBAL_DAILY_TOKENS: int = 300_000
 
     # ── Job Aggregator ────────────────────────────────────────────────────────
     REMOTEOK_API_URL: str = "https://remoteok.com/api"

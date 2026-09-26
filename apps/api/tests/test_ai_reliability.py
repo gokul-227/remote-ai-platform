@@ -262,6 +262,9 @@ async def test_job_creation_succeeds_with_honest_unavailable_status_when_ai_down
 
 @pytest.mark.asyncio
 async def test_successful_completion_records_usage_and_cost(monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "AI_PROVIDER", "ollama")
     import litellm
 
     async def fake_acompletion(*args, **kwargs):
@@ -284,6 +287,9 @@ async def test_successful_completion_records_usage_and_cost(monkeypatch):
 async def test_cost_estimation_failure_does_not_fail_the_completion(monkeypatch):
     """litellm.completion_cost has no pricing data for some models (e.g. local Ollama) --
     that must degrade to cost_usd=None, never break the actual completion."""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "AI_PROVIDER", "ollama")
     import litellm
 
     async def fake_acompletion(*args, **kwargs):

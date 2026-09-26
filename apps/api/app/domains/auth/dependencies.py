@@ -18,6 +18,7 @@ from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import TokenPayload
 from app.domains.auth.service import AuthService
+from app.services.ai.metering import set_ai_actor
 
 logger = structlog.get_logger(__name__)
 
@@ -74,6 +75,8 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
     # Ensure all server-default/onupdate columns are loaded within the async context
     # to avoid MissingGreenlet during Pydantic serialization.
     await repo.db.refresh(user)
+    # Attribute any AI calls made while serving this request to this user.
+    set_ai_actor(user.id, repo.db, unlimited=user.role == UserRole.ADMIN)
     return user
 
 

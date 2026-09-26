@@ -3,11 +3,17 @@ LiteLLM Client Abstraction — supports Ollama (local testing with qwen/deepseek
 """
 
 import json
+import time
 from typing import Any
 
 import litellm
 
-from app.agents.model_config import get_ai_model_config
+from app.agents.model_config import (
+    PROVIDER_KEY_SETTINGS,
+    api_key_for,
+    get_ai_model_config,
+    provider_of,
+)
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -25,6 +31,10 @@ class AIProviderError(RuntimeError):
     (e.g. HTTP 503 / "please retry") rather than silently substituting placeholder data that
     looks like a real result.
     """
+
+
+class AIQuotaExceededError(AIProviderError):
+    """The user's AI allowance or the platform's daily cap is used up (HTTP 429)."""
 
 
 class LLMClient:
@@ -53,25 +63,33 @@ class LLMClient:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
-        models = self.config.candidates
+        models = tuple(m for m in self.config.candidates if m)
+        if not models:
+            self.last_error = "No AI provider is configured"
+            raise AIProviderError(self.last_error)
+        deadline = time.monotonic() + settings.AI_TOTAL_BUDGET_SECONDS
         for model_name in models:
+            remaining = deadline - time.monotonic()
+            if remaining <= 1:
+                self.last_error = self.last_error or "AI time budget exhausted"
+                break
             try:
                 api_base = settings.LITELLM_BASE_URL
                 if model_name.startswith("ollama/"):
                     api_base = settings.OLLAMA_BASE_URL
-                provider_key = settings.AI_API_KEY
-                if not provider_key and model_name.startswith("groq/"):
-                    provider_key = settings.GROQ_API_KEY
-                if not provider_key and model_name.startswith("openai/"):
-                    provider_key = settings.OPENAI_API_KEY
+                elif provider_of(model_name) in PROVIDER_KEY_SETTINGS:
+                    # Hosted providers use their own endpoints, never a proxy
+                    # configured for another provider.
+                    api_base = None
                 response = await litellm.acompletion(
                     model=model_name,
                     messages=messages,
                     temperature=temperature,
-                    api_key=provider_key,
+                    api_key=api_key_for(model_name),
                     api_base=api_base or None,
                     response_format={"type": "json_object"} if json_mode else None,
-                    timeout=settings.AI_TIMEOUT_SECONDS,
+                    timeout=min(settings.AI_TIMEOUT_SECONDS, remaining),
+                    num_retries=0,
                 )
                 usage = getattr(response, "usage", None)
                 self.last_usage = {

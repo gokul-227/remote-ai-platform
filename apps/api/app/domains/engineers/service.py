@@ -8,7 +8,7 @@ from collections.abc import Sequence
 
 from fastapi import UploadFile
 
-from app.agents.llm_client import AIProviderError
+from app.agents.llm_client import AIProviderError, AIQuotaExceededError
 from app.agents.resume_parser import ResumeParserAgent
 from app.core.config import settings
 from app.core.exceptions import AIUnavailableException, NotFoundError
@@ -149,6 +149,8 @@ class EngineerService:
         )
         try:
             response = await AIService().improve_profile(profile_text)
+        except AIQuotaExceededError:
+            raise
         except AIProviderError as exc:
             # This endpoint is an explicit, user-requested AI action (unlike resume-upload's
             # best-effort background parse) -- on total AI failure, surface a clear 503 rather
@@ -271,6 +273,8 @@ class EngineerService:
                 await self.repo.db.flush()
                 status = "parsed"
                 logger.info("AI-parsed resume for engineer", user_id=str(user_id))
+            except AIQuotaExceededError:
+                status = "quota_exceeded"
             except Exception as exc:
                 status = "failed"
                 logger.warning(

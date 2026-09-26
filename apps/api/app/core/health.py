@@ -171,6 +171,19 @@ async def _check_ai_provider() -> ServiceCheckResult:
     started = time.perf_counter()
     checked_at = datetime.now(UTC).isoformat()
     provider = settings.AI_PROVIDER.lower()
+    if provider == "auto":
+        from app.agents.model_config import configured_free_tier_models, provider_of
+
+        models = configured_free_tier_models()
+        providers = sorted({provider_of(m) for m in models})
+        return ServiceCheckResult(
+            service="AI Provider (free-tier chain)",
+            status="HEALTHY" if models else "DOWN",
+            latency_ms=round((time.perf_counter() - started) * 1000, 2),
+            checked_at=checked_at,
+            details={"providers": providers},
+            error=None if models else "No AI provider key is configured",
+        )
     if provider == "ollama":
         url = f"{settings.OLLAMA_BASE_URL}/api/tags"
         try:

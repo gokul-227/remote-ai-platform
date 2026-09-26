@@ -67,6 +67,25 @@ DuplicateError = ConflictException
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    from app.agents.llm_client import AIProviderError, AIQuotaExceededError
+
+    @app.exception_handler(AIProviderError)
+    async def ai_provider_exception_handler(request: Request, exc: AIProviderError):
+        # Quota exhaustion is the user's limit (429); anything else means every
+        # provider failed (503). Provider error text is never sent to clients.
+        if isinstance(exc, AIQuotaExceededError):
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content=ErrorResponse(error=str(exc)).model_dump(),
+            )
+        logger.warning("AI unavailable", error=str(exc))
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content=ErrorResponse(
+                error="AI features are temporarily unavailable. Please retry shortly."
+            ).model_dump(),
+        )
+
     @app.exception_handler(PlatformException)
     async def platform_exception_handler(request: Request, exc: PlatformException):
         logger.warning("Domain exception", message=exc.message, code=exc.code)
