@@ -93,6 +93,25 @@ async def test_milestone_dual_synchronization(client: AsyncClient):
     assert milestone_resp.status_code == 201
     milestone_id = milestone_resp.json()["id"]
 
+    # Approving work on an unsigned contract is refused on the board too.
+    early = await client.patch(
+        f"/api/v1/projects/milestones/{milestone_id}/status",
+        json={"status": "DONE"},
+        headers=_auth(company_token),
+    )
+    assert early.status_code == 409
+
+    # Both parties sign; the engineer delivers Phase 1.
+    for token in (company_token, engineer_token):
+        signed = await client.post(f"/api/v1/contracts/{contract_id}/sign", headers=_auth(token))
+        assert signed.status_code == 200
+    delivered = await client.patch(
+        f"/api/v1/contracts/{contract_id}/milestones/{contract_milestone_id}/status",
+        json={"status": "DELIVERED"},
+        headers=_auth(engineer_token),
+    )
+    assert delivered.status_code == 200
+
     # 4. Update project milestone status to DONE -> should sync ContractMilestone to APPROVED
     patch_resp = await client.patch(
         f"/api/v1/projects/milestones/{milestone_id}/status",

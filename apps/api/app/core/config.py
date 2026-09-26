@@ -143,6 +143,13 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
     STRIPE_PUBLISHABLE_KEY: str | None = None
+    # Master switch for funding and releasing money through the platform.
+    # Off by default: the marketplace lifecycle (recipient onboarding,
+    # transfers to engineers, payouts, disputes, reconciliation) is not
+    # complete, so neither provider may move or pretend to move money until
+    # the product owner deliberately enables it. Refunds of existing holds
+    # stay available regardless so no funds are ever stranded.
+    MARKETPLACE_PAYMENTS_ENABLED: bool = False
 
     # ── Email ─────────────────────────────────────────────────────────────────
     # "none" (default, honest no-op -- matches the behavior this app has always

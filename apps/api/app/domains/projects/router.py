@@ -14,6 +14,7 @@ from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
+from app.domains.contracts.lifecycle import ensure_milestone_transition, party_of
 from app.domains.contracts.models import Contract, ContractMilestone
 from app.domains.engineers.models import EngineerProfile
 from app.domains.marketplace.models import AIReport, ProjectTask
@@ -34,6 +35,7 @@ from app.domains.projects.models import (
 from app.services.ai.service import AIService
 from app.services.notifications import notify_user
 from app.services.payments import get_payment_provider
+from app.services.payments.gate import require_marketplace_payments_enabled
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -581,20 +583,34 @@ async def update_milestone_status(
             detail="Only the client company or an admin can approve/complete a milestone",
         )
 
-    milestone.status = data.status
+    # Synchronize a linked ContractMilestone, validating the move against the
+    # contract's own lifecycle first so the board cannot approve work on an
+    # unsigned contract or skip delivery. Validate before mutating anything
+    # so both milestones always stay consistent.
+    contract_milestone = (
+        await db.get(ContractMilestone, milestone.contract_milestone_id)
+        if milestone.contract_milestone_id
+        else None
+    )
+    if contract_milestone:
+        status_map = {
+            "TODO": "PENDING",
+            "IN_PROGRESS": "IN_PROGRESS",
+            "IN_REVIEW": "DELIVERED",
+            "DONE": "APPROVED",
+            "COMPLETED": "APPROVED",
+        }
+        target = status_map.get(data.status, contract_milestone.status)
+        if target != contract_milestone.status:
+            contract = await db.get(Contract, contract_milestone.contract_id)
+            if contract is None:
+                raise HTTPException(status_code=409, detail="Linked contract no longer exists")
+            ensure_milestone_transition(
+                contract, contract_milestone.status, target, party_of(contract, current_user.id)
+            )
+            contract_milestone.status = target
 
-    # Synchronize linked ContractMilestone if present
-    if milestone.contract_milestone_id:
-        contract_milestone = await db.get(ContractMilestone, milestone.contract_milestone_id)
-        if contract_milestone:
-            status_map = {
-                "TODO": "PENDING",
-                "IN_PROGRESS": "IN_PROGRESS",
-                "IN_REVIEW": "DELIVERED",
-                "DONE": "APPROVED",
-                "COMPLETED": "APPROVED",
-            }
-            contract_milestone.status = status_map.get(data.status, contract_milestone.status)
+    milestone.status = data.status
 
     await record_activity(
         db,
@@ -857,7 +873,11 @@ async def list_project_reviews(
     )
 
 
-@router.post("/{project_id}/payments/escrow", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{project_id}/payments/escrow",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_marketplace_payments_enabled)],
+)
 async def create_sandbox_escrow(
     project_id: uuid.UUID,
     data: EscrowCreate,
@@ -922,7 +942,10 @@ async def create_sandbox_escrow(
     }
 
 
-@router.patch("/payments/{payment_id}/release")
+@router.patch(
+    "/payments/{payment_id}/release",
+    dependencies=[Depends(require_marketplace_payments_enabled)],
+)
 async def release_sandbox_payment(
     payment_id: uuid.UUID,
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),

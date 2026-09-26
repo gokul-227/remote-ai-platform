@@ -9,6 +9,9 @@ from app.domains.projects.models import Project
 from conftest import engine
 
 
+pytestmark = pytest.mark.usefixtures("marketplace_payments_enabled")
+
+
 @pytest.mark.asyncio
 async def test_wallet_overview_and_escrow_workflow(client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession):
     # Setup company & project

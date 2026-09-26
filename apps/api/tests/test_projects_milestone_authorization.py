@@ -187,7 +187,26 @@ async def test_engineer_cannot_self_approve_a_contract_linked_milestone(client: 
     )
     assert denied.status_code == 403
 
-    # The company (client) can.
+    # The company (client) cannot approve before the contract is signed and
+    # the work delivered...
+    premature = await client.patch(
+        f"/api/v1/projects/milestones/{milestone_id}/status",
+        headers=company_headers,
+        json={"status": "COMPLETED"},
+    )
+    assert premature.status_code == 409
+
+    contract_id = contract.json()["id"]
+    for headers in (company_headers, worker_headers):
+        assert (await client.post(f"/api/v1/contracts/{contract_id}/sign", headers=headers)).status_code == 200
+    delivered = await client.patch(
+        f"/api/v1/contracts/{contract_id}/milestones/{contract_milestone_id}/status",
+        headers=worker_headers,
+        json={"status": "DELIVERED"},
+    )
+    assert delivered.status_code == 200
+
+    # ...but can once it has been.
     allowed = await client.patch(
         f"/api/v1/projects/milestones/{milestone_id}/status",
         headers=company_headers,

@@ -250,7 +250,7 @@ async def test_engineer_cannot_void_ledger_entry(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_engineer_cannot_release_payment(client: AsyncClient):
+async def test_engineer_cannot_release_payment(client: AsyncClient, marketplace_payments_enabled):
     """ENGINEER cannot release escrowed sandbox payments."""
     token = await _register(client, "ENGINEER")
     fake_payment_id = str(uuid.uuid4())

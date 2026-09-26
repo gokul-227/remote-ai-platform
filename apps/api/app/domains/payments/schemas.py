@@ -13,6 +13,9 @@ class WalletBalanceResponse(BaseModel):
     total_spent: float
     total_released: float
     currency: str = "USD"
+    # False while money movement is gated (see MARKETPLACE_PAYMENTS_ENABLED);
+    # clients must not describe any figure here as money that moved.
+    payments_enabled: bool = False
 
 
 class PaymentPartySummary(BaseModel):

@@ -150,3 +150,13 @@ async def company_token(client: AsyncClient) -> str:
     )
     assert resp.status_code == 200, f"Company registration failed: {resp.text}"
     return resp.json()["access_token"]
+
+
+@pytest.fixture
+def marketplace_payments_enabled():
+    """Money movement is gated off by default; opt in for payment-flow tests."""
+    from app.core.config import settings
+    orig = settings.MARKETPLACE_PAYMENTS_ENABLED
+    settings.MARKETPLACE_PAYMENTS_ENABLED = True
+    yield
+    settings.MARKETPLACE_PAYMENTS_ENABLED = orig

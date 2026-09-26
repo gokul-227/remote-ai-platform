@@ -31,6 +31,7 @@ from app.domains.payments.schemas import (
 from app.domains.projects.models import PaymentTransaction, Project
 from app.services.notifications import notify_user
 from app.services.payments import get_payment_provider
+from app.services.payments.gate import require_marketplace_payments_enabled
 
 logger = get_logger("payments.router")
 
@@ -113,6 +114,7 @@ async def get_wallet_balance(
         total_spent=round(total_spent, 2),
         total_released=round(total_released, 2),
         currency="USD",
+        payments_enabled=settings.MARKETPLACE_PAYMENTS_ENABLED,
     )
 
 
@@ -161,6 +163,7 @@ async def list_transactions(
     status_code=status.HTTP_201_CREATED,
     response_model=PaymentTransactionResponse,
     summary="Create escrow payment",
+    dependencies=[Depends(require_marketplace_payments_enabled)],
 )
 async def create_escrow_payment(
     data: DirectEscrowCreate,
@@ -244,6 +247,7 @@ async def create_escrow_payment(
     "/{payment_id}/release",
     response_model=PaymentTransactionResponse,
     summary="Release escrow payment",
+    dependencies=[Depends(require_marketplace_payments_enabled)],
 )
 async def release_escrow(
     payment_id: uuid.UUID,

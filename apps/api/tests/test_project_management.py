@@ -190,7 +190,7 @@ async def test_task_offer_qualification_acceptance_and_reassignment(client: Asyn
 
 
 @pytest.mark.asyncio
-async def test_work_submission_review_revision_and_ai_quality_check(client: AsyncClient, monkeypatch):
+async def test_work_submission_review_revision_and_ai_quality_check(client: AsyncClient, monkeypatch, marketplace_payments_enabled):
     async def fake_completion(self, prompt, system_prompt):
         return {"quality_score": 88, "feedback": "Clear implementation with useful evidence.", "strengths": ["Tested"], "issues": [], "recommendation": "APPROVE"}
 

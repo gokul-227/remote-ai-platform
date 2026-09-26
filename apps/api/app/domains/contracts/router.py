@@ -16,6 +16,13 @@ from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
+from app.domains.contracts.lifecycle import (
+    SIGNABLE_CONTRACT_STATUSES,
+    TERMINAL_CONTRACT_STATUSES,
+    ensure_milestone_transition,
+    ensure_terms_editable,
+    party_of,
+)
 from app.domains.contracts.models import Contract, ContractMilestone
 from app.domains.contracts.schemas import (
     ContractCreate,
@@ -229,10 +236,7 @@ async def update_contract(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found or access denied"
         )
-    if contract.status in {"ACTIVE", "COMPLETED", "TERMINATED"}:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Active/signed contract cannot be updated"
-        )
+    ensure_terms_editable(contract)
 
     if data.title is not None:
         contract.title = data.title
@@ -265,16 +269,18 @@ async def sign_contract(
     contract = await db.get(Contract, contract_id)
     if not contract or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
-    if contract.status in {"COMPLETED", "TERMINATED"}:
+    if contract.status not in SIGNABLE_CONTRACT_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Contract is already completed or terminated",
+            detail=f"A {contract.status.lower()} contract cannot be signed",
         )
 
+    # Signing twice is a no-op, so a retried request never moves the
+    # timestamp the other party relied on.
     now = datetime.now(UTC)
-    if current_user.id == contract.client_id:
+    if current_user.id == contract.client_id and contract.client_signed_at is None:
         contract.client_signed_at = now
-    if current_user.id == contract.worker_id:
+    if current_user.id == contract.worker_id and contract.worker_signed_at is None:
         contract.worker_signed_at = now
 
     # If both signed, activate contract
@@ -308,6 +314,11 @@ async def terminate_contract(
     contract = await db.get(Contract, contract_id)
     if not contract or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
+    if contract.status in TERMINAL_CONTRACT_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Contract is already {contract.status.lower()}",
+        )
 
     contract.status = "TERMINATED"
     await db.flush()
@@ -339,6 +350,11 @@ async def add_milestone(
     contract = await db.get(Contract, contract_id)
     if not contract or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
+    if current_user.id != contract.client_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Only the client can add milestones"
+        )
+    ensure_terms_editable(contract)
 
     milestone = ContractMilestone(
         contract_id=contract_id,
@@ -374,19 +390,12 @@ async def update_contract_milestone_status(
             status_code=status.HTTP_404_NOT_FOUND, detail="Contract milestone not found"
         )
 
-    # Worker can submit/deliver; Client/Admin can approve/pay
-    if data.status in {"DELIVERED", "IN_PROGRESS"} and current_user.id != contract.worker_id:
-        if current_user.role != UserRole.ADMIN and current_user.id != contract.client_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only worker can mark milestone delivered",
-            )
-    if data.status in {"APPROVED", "PAID"} and current_user.id != contract.client_id:
-        if current_user.role != UserRole.ADMIN:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only client can approve or pay milestone",
-            )
+    if milestone.status == data.status:
+        # Idempotent retry of a transition that already happened.
+        return ContractMilestoneResponse.model_validate(milestone)
+    ensure_milestone_transition(
+        contract, milestone.status, data.status, party_of(contract, current_user.id)
+    )
 
     milestone.status = data.status
 
