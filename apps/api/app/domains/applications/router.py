@@ -162,7 +162,6 @@ async def list_company_applications(
                 "primary_role": profile.primary_role if profile else None,
                 "skills": profile.skills if profile else [],
                 "years_of_experience": profile.years_of_experience if profile else 0,
-                "profile_score": profile.profile_score if profile else None,
                 "location": profile.location if profile else None,
                 "hourly_rate": profile.hourly_rate if profile else None,
             },
