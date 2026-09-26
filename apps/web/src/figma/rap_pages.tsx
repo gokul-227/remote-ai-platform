@@ -1,13 +1,12 @@
-// @ts-nocheck -- Figma Make export, kept verbatim (never type-checked upstream).
 import { useState, useEffect } from "react";
 import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob } from "./live";
+import { useApi, toFigmaJob, goRoute } from "./live";
 import { Groups } from "./rap_social";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls } from "./rap_kit";
 
-const nav = (h: string) => { window.location.hash = h; };
+const nav = (h: string) => { goRoute(h); };
 function Wrap({ children, w }: { children: any; w?: string }) { return <div className="bg-[#F0F2F5] py-6"><div className={cx("mx-auto px-4", w || "max-w-[1100px]")}>{children}</div></div>; }
 
 export function EngineerDetail() {
@@ -23,12 +22,12 @@ export function EngineerDetail() {
   const [t, setT] = useState("About");
   const [invOpen, setInvOpen] = useState(false);
   const [notice, setNotice] = useState("");
-  if (!id || q.error) return <Wrap><Card c="rounded-xl p-10 text-center"><h2>Profile not found</h2><p className="mt-2 text-slate-500">This profile isn’t available.</p><Btn c="mt-4" onClick={() => { window.location.hash = "engineers"; }}>Browse professionals</Btn></Card></Wrap>;
+  if (!id || q.error) return <Wrap><Card c="rounded-xl p-10 text-center"><h2>Profile not found</h2><p className="mt-2 text-slate-500">This profile isn’t available.</p><Btn c="mt-4" onClick={() => { goRoute("engineers"); }}>Browse professionals</Btn></Card></Wrap>;
   if (!p0) return <Wrap><Card c="rounded-xl p-10 text-center text-slate-500">Loading profile…</Card></Wrap>;
   const p = { n: p0.full_name || "Professional", t: p0.headline || p0.primary_role || "Professional", loc: p0.location || "Remote", rate: p0.hourly_rate, skills: p0.skills || [], score: Math.round(p0.profile_score || 0) };
   const conn = (conns.data ?? []).find((c: any) => [c.sender_id, c.receiver_id].includes(p0.user_id));
-  const connect = async () => { if (!user) { window.location.hash = "login"; return; } try { await api.post("/connections", { receiver_id: p0.user_id }); conns.reload(); setNotice("Connection request sent"); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that request.")); } };
-  const message = () => { if (!user) { window.location.hash = "login"; return; } sessionStorage.setItem("rap-contact-id", p0.user_id); window.location.hash = "messenger"; };
+  const connect = async () => { if (!user) { goRoute("login"); return; } try { await api.post("/connections", { receiver_id: p0.user_id }); conns.reload(); setNotice("Connection request sent"); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that request.")); } };
+  const message = () => { if (!user) { goRoute("login"); return; } sessionStorage.setItem("rap-contact-id", p0.user_id); goRoute("messenger"); };
   const invite = async (jobId: string) => { try { await api.post(`/applications/jobs/${jobId}/invite/${p0.id}`); setNotice(`${p.n} was invited to apply`); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that invitation.")); } setInvOpen(false); };
   const self = p0.user_id === user?.id;
   return (
@@ -137,14 +136,6 @@ export function ContractSign() {
     </Wrap>
   );
 }
-
-const FINDINGS = [
-  ["High", "Hard-coded credential in config loader", "src/config/loader.ts:42", "Move the secret to environment variables and rotate the key."],
-  ["Medium", "Unbounded retry loop in webhook handler", "src/webhooks/retry.ts:88", "Add exponential backoff with a maximum attempt count."],
-  ["Medium", "Missing input validation on milestone amount", "src/api/milestones.ts:31", "Validate positive decimal amounts before escrow funding."],
-  ["Low", "Duplicate helper functions across modules", "src/utils/*.ts", "Extract shared helpers into one utility module."],
-  ["Low", "Test coverage below target for payouts", "src/payouts/", "Add tests for partial release and refund paths."],
-];
 
 export function Workspace() {
   // Live: my tasks, active contracts, offers, reputation; the timer logs real time to a task's work ledger.

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi } from "./live";
-import { Ic, Av, Btn, Tag, cx } from "./rap_kit";
+import { useApi, goRoute } from "./live";
+import { Ic, Av, Tag, cx } from "./rap_kit";
 
 // Engagement options: how many engineers and how candidates are ranked. Prices
 // come from the matched engineers' own hourly rates, never invented.
@@ -86,7 +86,7 @@ export function Ride() {
               {step === 1 && <><p className="mb-2 mt-5 text-sm font-bold text-slate-900">{cands.length ? `Pick ${cur.count > 1 ? `up to ${cur.count}` : "one"} · ${cur.n} from ${from(cur)}` : "Try a broader description — we only match professionals with a set rate."}</p>
                 {cands.map((c: any) => { const on = picked.some((x) => x.id === c.id) || (!picked.length && cands.slice(0, cur.count).includes(c)); return <button key={c.id} onClick={() => toggle(c)} className={cx("mb-2 flex w-full items-center gap-3 rounded-lg p-3 text-left", on ? "bg-slate-100 ring-2 ring-[#050505]" : "bg-slate-50")}><Av name={c.full_name || "Professional"} s={48} /><div className="flex-1"><p className="font-bold text-slate-900">{c.full_name || "Professional"}</p><p className="text-xs text-slate-500">{c.headline || c.primary_role}</p><p className="text-xs text-slate-600">{c.profile_score != null && `Profile ${Math.round(c.profile_score)}% - `}{c.availability || "Availability not set"}</p></div><p className="text-xs font-bold text-slate-900">${c.hourly_rate}/hr</p></button>; })}</>}
               {step >= 2 && <p className="mt-5 text-sm text-slate-600">{step === 2 ? "The contract offer is waiting for their signature in Contracts. Let them know you’re ready to start." : "We messaged them about the kickoff. You’ll get a notification when they reply or sign."}</p>}
-              <div className="mt-3 flex gap-2">{step === 1 ? <button disabled={busy || !cands.length} onClick={confirm} className="h-12 flex-1 rounded-lg bg-[#050505] font-medium text-white disabled:opacity-50">{busy ? "Sending offer…" : `Confirm ${chosenNames || "professional"}`}</button> : step === 2 ? <button disabled={busy} onClick={kickoff} className="h-12 flex-1 rounded-lg bg-[#050505] font-medium text-white">{busy ? "Messaging…" : "Schedule kickoff"}</button> : <button onClick={() => { window.location.hash = "contracts"; }} className="h-12 flex-1 rounded-lg bg-[#050505] font-medium text-white">View contracts</button>}<button onClick={() => { window.location.hash = "messenger"; }} className="h-12 rounded-lg bg-slate-100 px-4 font-medium text-slate-900">Message</button></div>
+              <div className="mt-3 flex gap-2">{step === 1 ? <button disabled={busy || !cands.length} onClick={confirm} className="h-12 flex-1 rounded-lg bg-[#050505] font-medium text-white disabled:opacity-50">{busy ? "Sending offer…" : `Confirm ${chosenNames || "professional"}`}</button> : step === 2 ? <button disabled={busy} onClick={kickoff} className="h-12 flex-1 rounded-lg bg-[#050505] font-medium text-white">{busy ? "Messaging…" : "Schedule kickoff"}</button> : <button onClick={() => { goRoute("contracts"); }} className="h-12 flex-1 rounded-lg bg-[#050505] font-medium text-white">View contracts</button>}<button onClick={() => { goRoute("messenger"); }} className="h-12 rounded-lg bg-slate-100 px-4 font-medium text-slate-900">Message</button></div>
             </>
           )}
           {notice && <p role="alert" className="mt-3 text-sm text-red-600">{notice}</p>}

@@ -50,21 +50,32 @@ export function toFigmaJob(j: ApiJob): FigmaJob {
   };
 }
 
+/** Navigate the hash router. Kept in one place so components never write window state directly. */
+export function goRoute(route: string) {
+  window.location.hash = route;
+}
+
 /** Minimal fetch hook (the Figma app has no query library). */
 export function useApi<T>(path: string | null, params?: Record<string, unknown>) {
-  const key = path ? path + JSON.stringify(params ?? {}) : null;
-  const [state, setState] = useState<{ data?: T; error?: unknown; loading: boolean }>({ loading: !!path });
   const [tick, setTick] = useState(0);
+  // Each request is identified by path + params + reload tick; `loading` is
+  // derived from whether the last settled result belongs to the current one.
+  const reqKey = path ? `${path}${JSON.stringify(params ?? {})}#${tick}` : null;
+  const [state, setState] = useState<{ for?: string | null; data?: T; error?: unknown }>({});
   useEffect(() => {
     if (!path) return;
     let live = true;
-    setState((s) => ({ ...s, loading: true }));
-    api.get<T>(path, { params }).then((r) => live && setState({ data: r.data, loading: false })).catch((e) => live && setState({ error: e, loading: false }));
-    return () => { live = false; };
+    api
+      .get<T>(path, { params })
+      .then((r) => live && setState({ for: reqKey, data: r.data }))
+      .catch((e) => live && setState((s) => ({ for: reqKey, data: s.data, error: e })));
+    return () => {
+      live = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, tick]);
+  }, [reqKey]);
   const reload = useCallback(() => setTick((t) => t + 1), []);
-  return { ...state, reload };
+  return { data: state.data, error: state.for === reqKey ? state.error : undefined, loading: !!path && state.for !== reqKey, reload };
 }
 
 export const statusOf = (e: unknown) => (e as { response?: { status?: number } } | undefined)?.response?.status;

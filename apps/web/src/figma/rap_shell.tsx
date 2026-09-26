@@ -1,5 +1,5 @@
 import {useState,useEffect} from "react";
-import {Ic,Av,Brand,PEOPLE,cx} from "./rap_kit";
+import {Ic,Av,Brand,cx} from "./rap_kit";
 import {useAuth} from "@/lib/auth";
 import api from "@/lib/api";
 import {useApi} from "./live";
@@ -10,7 +10,7 @@ Workspace:[["workspace","Overview","layers"],["projects","Project board","board"
 Hiring:[["codash","Hiring overview","chart"],["ride","Hire a professional","zap"],["cojobs","Job postings","briefcase"],["postjob","Post a job","plus"],["candidates","Candidates","users"],["engineers","Discover talent","search"],["coprofile","Company profile","building"],["contracts","Contracts","file"],["copayments","Payments","wallet"]],
 Account:[["settings","Account settings","settings"],["security","Security & verification","shield"],["profile","Profile & visibility","user"],["help","Help center","question"]],
 Admin:[["admin","Platform overview","chart"],["adminusers","People & access","users"],["adminjobs","Job moderation","briefcase"],["reports","Content reports","flag"],["verifications","Verification queue","shieldcheck"],["audit","Audit trail","history"],["sync","Job sources","layers"],["aiusage","AI usage","spark"],["health","System health","bolt"],["flags","Feature availability","settings"]]};
-export function AppShell({r,go,mods,children}:any){const {user,logout,updateUser}=useAuth();const unreadN=useApi<{count:number}>(user?"/notifications/unread-count":null);const unreadM=useApi<{count:number}>(user?"/conversations/unread-count":null);const conns=useApi<any[]>(user&&r==="feed"?"/connections":null,{status:"ACCEPTED"});const top=useApi<any[]>(user?.role==="ENGINEER"&&r==="feed"?"/matching/recommendations":null,{limit:1});useEffect(()=>{unreadN.reload();unreadM.reload()},[r]);// eslint-disable-line react-hooks/exhaustive-deps
+export function AppShell({r,go,children}:any){const {user,logout,updateUser}=useAuth();const unreadN=useApi<{count:number}>(user?"/notifications/unread-count":null);const unreadM=useApi<{count:number}>(user?"/conversations/unread-count":null);const conns=useApi<any[]>(user&&r==="feed"?"/connections":null,{status:"ACCEPTED"});const top=useApi<any[]>(user?.role==="ENGINEER"&&r==="feed"?"/matching/recommendations":null,{limit:1});useEffect(()=>{unreadN.reload();unreadM.reload()},[r]);// eslint-disable-line react-hooks/exhaustive-deps
 useEffect(()=>{const t=setInterval(()=>{unreadN.reload();unreadM.reload()},30000);return()=>clearInterval(t)},[]);// eslint-disable-line react-hooks/exhaustive-deps
 const badges:Record<string,number>={messenger:unreadM.data?.count||0,notifications:unreadN.data?.count||0};const contacts=(conns.data??[]).map((c:any)=>c.sender_id===user?.id?c.receiver:c.sender).filter(Boolean);const opp=top.data?.[0]?.job;const me=user?.full_name||"Guest";const signOut=async()=>{try{await api.post("/auth/logout")}catch{}await logout();setMenu("");go("login")};const [menu,setMenu]=useState("");const [q,setQ]=useState("");useEffect(()=>{setMenu("")},[r]);
 let section=Object.keys(sections).find(s=>sections[s].some(x=>x[0]===r))||"Community";

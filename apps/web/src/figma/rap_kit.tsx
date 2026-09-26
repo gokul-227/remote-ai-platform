@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 export const cx = (...a: any[]) => a.filter(Boolean).join(" ");
 
 const P: Record<string, string> = {
@@ -121,12 +121,15 @@ export function Btn({ children, v = "primary", sm, onClick, icon, full, c = "" }
   };
   return <button onClick={onClick} className={cx(base, vs[v], sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]", full && "w-full", c)}>{icon && <Ic n={icon} s={sm ? 14 : 16} />}{children}</button>;
 }
-export function Card({ children, c = "", p = true }: { children: ReactNode; c?: string; p?: boolean }) {
-  return <div className={cx("rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,.06)]", p && "p-4", c)}>{children}</div>;
+/** `p`: true = default padding, false = none, or a padding class such as "p-5". */
+export function Card({ children, c = "", p = true }: { children: ReactNode; c?: string; p?: boolean | string }) {
+  return <div className={cx("rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,.06)]", typeof p === "string" ? p : p && "p-4", c)}>{children}</div>;
 }
-export function Tag({ children, t = "gray" }: { children: ReactNode; t?: string }) {
-  const m: Record<string, string> = { gray: "bg-slate-100 text-slate-700", blue: "bg-[#E8F0FC] text-[#0552CC]", green: "bg-emerald-50 text-emerald-700", amber: "bg-amber-50 text-amber-700", red: "bg-red-50 text-red-700", indigo: "bg-[#F1EFFF] text-[#5B4BDB]", dark: "bg-slate-900 text-white" };
-  return <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold", m[t])}>{children}</span>;
+/** Colour via `t` (or the `v` alias some screens use). */
+export function Tag({ children, t, v }: { children: ReactNode; t?: string; v?: string }) {
+  const tone = t ?? v ?? "gray";
+  const m: Record<string, string> = { gray: "bg-slate-100 text-slate-700", blue: "bg-[#E8F0FC] text-[#0552CC]", primary: "bg-[#E8F0FC] text-[#0552CC]", green: "bg-emerald-50 text-emerald-700", amber: "bg-amber-50 text-amber-700", red: "bg-red-50 text-red-700", indigo: "bg-[#F1EFFF] text-[#5B4BDB]", dark: "bg-slate-900 text-white" };
+  return <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold", m[tone] ?? m.gray)}>{children}</span>;
 }
 export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; set: (x: string) => void; c?: string }) {
   return (
@@ -166,24 +169,3 @@ export function Stars({ v }: { v: number }) {
   return <span className="inline-flex items-center gap-0.5 text-amber-500">{[1, 2, 3, 4, 5].map((i) => <Ic key={i} n="star" s={13} c={i <= Math.round(v) ? "fill-current" : "opacity-30"} />)}<span className="ml-1 text-xs font-semibold text-slate-600">{v.toFixed(1)}</span></span>;
 }
 
-export const PEOPLE = [
-  { n: "Priya Raman", t: "Staff ML Engineer", co: "Helix Labs", loc: "Bengaluru, India", rate: 118, jss: 98, score: 97, earn: "$240K+", jobs: 64, skills: ["RAG", "MLOps", "Python", "PyTorch", "Kubernetes"], on: true },
-  { n: "Mateo Silva", t: "AI Product Designer", co: "Northstar Cloud", loc: "Lisbon, Portugal", rate: 92, jss: 96, score: 94, earn: "$120K+", jobs: 41, skills: ["Figma", "SaaS UX", "Design systems", "Agents"], on: true },
-  { n: "Elena Petrova", t: "LLM Evaluation Lead", co: "Aster Labs", loc: "Berlin, Germany", rate: 105, jss: 100, score: 96, earn: "$180K+", jobs: 52, skills: ["EvalOps", "PyTorch", "Safety", "Python"], on: false },
-  { n: "Daniel Okafor", t: "Data Platform Lead", co: "Brightpath", loc: "Lagos, Nigeria", rate: 85, jss: 95, score: 91, earn: "$95K+", jobs: 33, skills: ["Databricks", "Spark", "dbt", "AWS"], on: true },
-  { n: "Aisha Rahman", t: "Principal AI Recruiter", co: "CloudNova", loc: "London, UK", rate: 0, jss: 0, score: 0, earn: "", jobs: 0, skills: ["Talent", "Hiring"], on: true },
-  { n: "Lucas Meyer", t: "Senior Backend Engineer", co: "Helix Labs", loc: "Munich, Germany", rate: 98, jss: 97, score: 92, earn: "$150K+", jobs: 47, skills: ["Go", "Postgres", "gRPC", "Kafka"], on: false },
-  { n: "Sofia Alvarez", t: "Data Scientist", co: "Brightpath", loc: "Madrid, Spain", rate: 88, jss: 94, score: 90, earn: "$80K+", jobs: 29, skills: ["Python", "Causal ML", "SQL"], on: true },
-  { n: "Kenji Watanabe", t: "MLOps Engineer", co: "Northstar Cloud", loc: "Tokyo, Japan", rate: 110, jss: 99, score: 95, earn: "$200K+", jobs: 58, skills: ["Kubeflow", "Terraform", "AWS", "Python"], on: true },
-];
-export const JOBS = [
-  { id: 1, t: "Senior AI Platform Engineer", co: "Northstar Cloud", loc: "Remote (US/EU)", type: "Full-time", pay: "$165K - $210K", post: "2 hours ago", ap: 34, m: 96, easy: true, lvl: "Senior", tags: ["Kubernetes", "LLMOps", "Python", "Terraform"] },
-  { id: 2, t: "Applied ML Engineer, Search", co: "Helix Labs", loc: "Remote (Europe)", type: "Contract", pay: "$110/hr", post: "1 day ago", ap: 78, m: 93, easy: true, lvl: "Mid-Senior", tags: ["Embeddings", "Ranking", "RAG"] },
-  { id: 3, t: "Data Product Manager", co: "Brightpath", loc: "Remote-first", type: "Full-time", pay: "$145K - $180K", post: "3 days ago", ap: 120, m: 89, easy: false, lvl: "Senior", tags: ["AI roadmap", "Analytics", "B2B SaaS"] },
-  { id: 4, t: "LLM Evaluation Lead", co: "Aster Labs", loc: "Remote (EU)", type: "Full-time", pay: "EUR 120K - 150K", post: "5 days ago", ap: 51, m: 91, easy: true, lvl: "Lead", tags: ["EvalOps", "Safety", "PyTorch"] },
-  { id: 5, t: "MLOps Engineer", co: "CloudNova", loc: "Remote (Worldwide)", type: "Full-time", pay: "$130K - $170K", post: "1 week ago", ap: 203, m: 87, easy: true, lvl: "Mid-Senior", tags: ["Airflow", "AWS", "Docker"] },
-  { id: 6, t: "Staff Data Engineer", co: "Helix Labs", loc: "Remote (US)", type: "Full-time", pay: "$185K - $230K", post: "2 days ago", ap: 88, m: 94, easy: false, lvl: "Staff", tags: ["Databricks", "Delta Lake", "Spark"] },
-  { id: 7, t: "AI Solutions Architect", co: "Brightpath", loc: "Remote (EU)", type: "Contract", pay: "$140/hr", post: "4 days ago", ap: 44, m: 90, easy: true, lvl: "Principal", tags: ["Architecture", "GenAI", "Azure"] },
-  { id: 8, t: "Senior Frontend Engineer", co: "Aster Labs", loc: "Remote (Americas)", type: "Full-time", pay: "$140K - $175K", post: "6 days ago", ap: 156, m: 82, easy: true, lvl: "Senior", tags: ["React", "TypeScript", "Design systems"] },
-];
-export const COMPANIES = ["Northstar Cloud", "Helix Labs", "Brightpath", "Aster Labs", "CloudNova", "Vector Forge"];

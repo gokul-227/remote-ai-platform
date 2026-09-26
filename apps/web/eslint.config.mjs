@@ -5,6 +5,12 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // The product UI came from a Figma Make export typed with `any` throughout.
+    // It is fully linted; `any` is a warning here until API responses are typed.
+    files: ["src/figma/**/*.{ts,tsx}"],
+    rules: { "@typescript-eslint/no-explicit-any": "warn" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -17,8 +23,6 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     ".open-next/**",
     ".wrangler/**",
-    // Figma Make export, kept verbatim.
-    "src/figma/**",
   ]),
 ]);
 

@@ -1,11 +1,9 @@
-// @ts-nocheck -- Figma Make export (Jira-style board), rewired to the live /projects API.
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi } from "./live";
-import { Ic, Av, Btn, Card, Tag, Tabs, Modal, Bar, cx, Field, inputCls } from "./rap_kit";
+import { useApi, goRoute } from "./live";
+import { Ic, Av, Btn, Card, Tag, Modal, Bar, cx, Field, inputCls } from "./rap_kit";
 
-const B = "#0552CC";
 type Issue = { id: string; k: string; t: string; type: string; pri: string; as: string; asId: string | null; sp: number; st: string; raw: string; ep: string; d: string; updated: string; created: string; deadline?: string };
 const COLS = [["todo", "TO DO"], ["prog", "IN PROGRESS"], ["rev", "IN REVIEW"], ["done", "DONE"]];
 const COL_OF: Record<string, string> = { TODO: "todo", BLOCKED: "todo", IN_PROGRESS: "prog", REVIEW: "rev", COMPLETED: "done" };
@@ -68,7 +66,7 @@ export function Projects() {
   const analyse = async () => { if (!pid) return; setBusy(true); try { const r = await api.post(`/projects/${pid}/ai/risk-analysis`); const p = r.data?.payload || r.data; setRisk(p?.summary || (p?.risks || []).map((x: any) => `• ${x.description || x.title || x}`).join("\n") || "No significant risks found."); } catch (e) { setRisk(extractErrorMessage(e, "AI analysis is unavailable right now.")); } finally { setBusy(false); } };
   const share = async () => { try { await navigator.clipboard.writeText(`${window.location.origin}/#projects`); setNotice("Board link copied"); } catch { setNotice("Copy the page address to share this board"); } };
 
-  if (!user) return <div className="p-10 text-center"><h2>Sign in to see your projects</h2><Btn c="mt-4" onClick={() => { window.location.hash = "login"; }}>Sign in</Btn></div>;
+  if (!user) return <div className="p-10 text-center"><h2>Sign in to see your projects</h2><Btn c="mt-4" onClick={() => { goRoute("login"); }}>Sign in</Btn></div>;
   if (list.loading && !list.data) return <div className="p-10 text-center text-slate-500">Loading projects…</div>;
   if (!projects.length) return <div className="mx-auto max-w-xl p-10 text-center"><span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n="board" s={26} /></span><h2>No projects yet</h2><p className="mt-2 text-slate-500">{company ? "Create a project to plan tasks and milestones with your team." : "Projects you’re added to, or whose tasks you accept, appear here."}</p>{company && <Btn c="mt-4" icon="plus" onClick={() => setNewProject(true)}>Create project</Btn>}<Modal open={newProject} onClose={() => setNewProject(false)} title="Create project"><div className="space-y-3"><Field label="Project name"><input value={np.title} onChange={(e) => setNp({ ...np, title: e.target.value })} className={inputCls} /></Field><Field label="Description"><textarea rows={3} value={np.desc} onChange={(e) => setNp({ ...np, desc: e.target.value })} className={cx(inputCls, "h-auto py-2")} /></Field></div><div className="mt-5 flex justify-end gap-2"><Btn v="gray" onClick={() => setNewProject(false)}>Cancel</Btn><Btn v="primary" onClick={addProject}>Create</Btn></div></Modal>{notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}</div>;
 
@@ -113,7 +111,7 @@ export function Projects() {
           <div className="mt-4 space-y-4">
             {[["Open work", "", iss.filter((i) => i.st !== "done")], ["Completed", "", iss.filter((i) => i.st === "done")]].map((s) => (
               <div key={String(s[0])} className="rounded-lg border border-slate-200">
-                <div className="flex items-center justify-between bg-[#F7F8F9] p-3"><p className="font-semibold">{s[0]} <span className="ml-2 text-xs font-normal text-slate-500">{(s[2] as Issue[]).length} tasks</span></p></div>
+                <div className="flex items-center justify-between bg-[#F7F8F9] p-3"><p className="font-semibold">{s[0] as string} <span className="ml-2 text-xs font-normal text-slate-500">{(s[2] as Issue[]).length} tasks</span></p></div>
                 {(s[2] as Issue[]).map((i) => <div key={i.id} onClick={() => setOpenId(i.id)} className="flex cursor-pointer items-center gap-3 border-t border-slate-100 px-3 py-2 text-sm hover:bg-slate-50"><TI t={i.type} /><span className="w-16 text-xs text-slate-500">{i.k}</span><span className="flex-1">{i.t}</span>{i.ep !== "—" && <span className="hidden rounded bg-[#F3F0FF] px-1.5 text-[11px] font-bold text-[#5E4DB2] md:inline">{i.ep}</span>}<Tag t="gray">{COLS.find((c) => c[0] === i.st)![1]}</Tag><PI p={i.pri} /><Av name={i.as} s={22} /></div>)}
               </div>
             ))}

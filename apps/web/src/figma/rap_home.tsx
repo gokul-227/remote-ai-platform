@@ -1,17 +1,14 @@
-// @ts-nocheck -- Figma Make export, kept verbatim (never type-checked upstream).
 import { useEffect, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
-import { useApi, toFigmaJob } from "./live";
+import { useApi, toFigmaJob, goRoute } from "./live";
 import { useAuth } from "@/lib/auth";
-const openJob=(id:string)=>{localStorage.setItem("rap-selected-job",id);window.location.hash="jobs";};
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, Stars, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
+const openJob=(id:string)=>{localStorage.setItem("rap-selected-job",id);goRoute("jobs");};
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, cx, Field, inputCls } from "./rap_kit";
 
 
-function useDemo<T>(key:string,initial:T):[T,(v:T)=>void]{const [value,setValue]=useState<T>(()=>{try{return JSON.parse(localStorage.getItem("rap-v2-"+key)||"null")??initial;}catch{return initial;}});return [value,(v:T)=>{setValue(v);localStorage.setItem("rap-v2-"+key,JSON.stringify(v));}];}
-const visit=(page:string)=>{window.location.hash=page;};
+const visit=(page:string)=>{goRoute(page);};
 function Empty({text="No results yet",action="Explore jobs",to="jobs"}:{text?:string;action?:string;to?:string}){return <Card c="p-10 text-center"><Ic n="inbox" s={36} c="mx-auto mb-3 text-slate-400"/><h2>{text}</h2><p className="my-3 text-slate-500">Try another filter or explore the opportunities available.</p><Btn onClick={()=>visit(to)}>{action}</Btn></Card>;}
 
-const BL = "#0552CC";
 function Page({ title, sub, act, children, w }: { title: string; sub?: string; act?: any; children: any; w?: string }) {
   return (
     <div className="bg-[#F0F2F5] py-6"><div className={cx("mx-auto px-4", w || "max-w-[1200px]")}>
@@ -28,17 +25,6 @@ export function Dashboard(){/* Live */const matches=useApi<any[]>("/matching/rec
 export function Recs(){/* Live */const [filter,setFilter]=useState("All");const matches=useApi<any[]>("/matching/recommendations",{limit:50});const savedQ=useApi<any[]>("/saved-jobs",{limit:100});const saved=new Set((savedQ.data??[]).map((j:any)=>j.id));const all=(matches.data??[]).filter((m:any)=>m.job&&m.status!=="dismissed");const rows=all.filter((m:any)=>filter==="All"||(m.job.job_type||"").toLowerCase().includes(filter.toLowerCase()));const toggle=async(id:string)=>{await(saved.has(id)?api.delete(`/saved-jobs/${id}`):api.post(`/saved-jobs/${id}`));savedQ.reload();};return <Page title="Matches for you" sub="Compare your skills, experience, role, timezone, availability, rate and remote preferences."><Tabs items={["All","Contract","Full-time"]} v={filter} set={setFilter}/><div className="mt-5 space-y-4">{matches.loading&&<Card><p className="text-slate-500">Finding your best matches…</p></Card>}{rows.map((m:any)=>{const j=toFigmaJob(m.job);return <Card key={m.id}><div className="flex items-start gap-4"><Lg name={j.co}/><div className="flex-1"><button onClick={()=>openJob(j.id)} className="text-left text-lg font-bold text-blue-700">{j.t}</button><p className="mt-1 text-sm text-slate-500">{[j.co,j.loc,j.pay].filter(Boolean).join(" · ")}</p></div><Tag t="blue">{Math.round(m.overall_score)}% match</Tag></div><p className="my-4 text-sm text-slate-600">{m.reasoning||"Review the complete requirements before applying."}</p><div className="flex gap-2"><Btn onClick={()=>openJob(j.id)}>View match & apply</Btn><Btn v="gray" icon="bookmark" onClick={()=>toggle(j.id)}>{saved.has(j.id)?"Saved":"Save job"}</Btn></div></Card>})}{!matches.loading&&!rows.length&&<Empty text={all.length?"No matches for this filter":"No matches yet"}/>}</div></Page>;}
 export function Applications(){/* Live */const [tab,setTab]=useState("All");const apps=useApi<any[]>("/applications/me",{limit:100});const rows=(apps.data??[]).map((a:any)=>({id:a.application.id,jobId:a.job.id,title:a.job.title,company:a.job.company_name||"Company",status:a.application.status,note:a.application.cover_note||""}));const [selected,setSelected]=useState<any>(null);const [withdraw,setWithdraw]=useState<any>(null);const [err,setErr]=useState("");const shown=rows.filter(x=>tab==="All"||(tab==="Invitations"?x.status==="INVITED":tab==="Archived"?["WITHDRAWN","REJECTED","ACCEPTED"].includes(x.status):!["WITHDRAWN","REJECTED","ACCEPTED","INVITED"].includes(x.status)));const act=async(fn:()=>Promise<unknown>)=>{setErr("");try{await fn();apps.reload();}catch(e){setErr(extractErrorMessage(e,"That didn't work. Please try again."));}};return <Page title="Your applications" sub="Every opportunity, with a clear next step"><Tabs items={["All","Active","Invitations","Archived"]} v={tab} set={setTab}/>{err&&<p role="alert" className="mt-3 text-sm text-red-600">{err}</p>}<div className="mt-4 space-y-3">{apps.loading&&<Card><p className="text-slate-500">Loading your applications…</p></Card>}{shown.map(x=><Card key={x.id}><div className="flex flex-wrap items-center gap-4"><Lg name={x.company}/><div className="flex-1"><h3>{x.title}</h3><p className="text-sm text-slate-500">{x.company}</p></div><Tag t={x.status==="REJECTED"?"red":"blue"}>{x.status.replaceAll("_"," ")}</Tag><Btn v="gray" onClick={()=>setSelected(x)}>View details</Btn>{!["WITHDRAWN","REJECTED","ACCEPTED","INVITED"].includes(x.status)&&<Btn v="outline" onClick={()=>setWithdraw(x)}>Withdraw</Btn>}{x.status==="INVITED"&&<><Btn onClick={()=>act(()=>api.patch(`/applications/${x.id}/respond`,{accept:true}))}>Accept invitation</Btn><Btn v="gray" onClick={()=>act(()=>api.patch(`/applications/${x.id}/respond`,{accept:false}))}>Decline</Btn></>}</div></Card>)}{!apps.loading&&!shown.length&&<Empty text="No applications in this view"/>}</div><Modal open={!!selected} onClose={()=>setSelected(null)} title="Application details">{selected&&<><h2>{selected.title}</h2><p className="my-2 text-slate-500">{selected.company}</p><Tag t="blue">{selected.status}</Tag><h3 className="mt-5">Your cover note</h3><p className="my-3 text-slate-600">{selected.note||"No cover note attached."}</p><p className="rounded-lg bg-blue-50 p-3 text-sm">You will receive a notification when the company updates your application.</p><Btn c="mt-5" onClick={()=>{setSelected(null);openJob(selected.jobId);}}>View job</Btn></>}</Modal><Modal open={!!withdraw} onClose={()=>setWithdraw(null)} title="Withdraw application?"><p className="mb-5 text-slate-600">This removes your application from the active pipeline. You can review it in Archived.</p><div className="flex justify-end gap-2"><Btn v="gray" onClick={()=>setWithdraw(null)}>Keep application</Btn><Btn v="danger" onClick={()=>{const w=withdraw;setWithdraw(null);act(()=>api.patch(`/applications/${w.id}/withdraw`));}}>Withdraw application</Btn></div></Modal></Page>;}
 export function Saved(){/* Live */const q=useApi<any[]>("/saved-jobs",{limit:100});const rows=(q.data??[]).map(toFigmaJob);return <Page title="Saved jobs" sub="Keep interesting opportunities together until you’re ready"><div className="space-y-3">{q.loading&&<Card><p className="text-slate-500">Loading…</p></Card>}{rows.map(j=><Card key={j.id}><div className="flex flex-wrap items-center gap-3"><Lg name={j.co}/><div className="flex-1"><h3>{j.t}</h3><p className="text-sm text-slate-500">{[j.co,j.pay].filter(Boolean).join(" · ")}</p></div><Btn onClick={()=>openJob(j.id)}>View job</Btn><Btn v="gray" onClick={async()=>{await api.delete(`/saved-jobs/${j.id}`);q.reload();}}>Remove</Btn></div></Card>)}{!q.loading&&!rows.length&&<Empty text="Your saved jobs will appear here"/>}</div></Page>;}
-
-const ENGS = [
-  { n: "Priya Raman", r: "Staff ML Engineer", loc: "Bengaluru, India", rate: 118, sk: ["RAG", "MLOps", "Python"], av: "Available now", exp: 9, sc: 97, on: true, tz: "Asia" },
-  { n: "Mateo Silva", r: "AI Product Designer", loc: "Lisbon, Portugal", rate: 92, sk: ["Figma", "SaaS UX", "Design systems"], av: "Available now", exp: 7, sc: 94, on: true, tz: "Europe" },
-  { n: "Elena Petrova", r: "LLM Evaluation Lead", loc: "Berlin, Germany", rate: 105, sk: ["Evals", "PyTorch", "Safety"], av: "In 2 weeks", exp: 6, sc: 96, on: false, tz: "Europe" },
-  { n: "Daniel Okafor", r: "Data Platform Lead", loc: "Lagos, Nigeria", rate: 85, sk: ["Databricks", "Spark", "dbt"], av: "Available now", exp: 10, sc: 91, on: true, tz: "Africa" },
-  { n: "Aisha Rahman", r: "Principal AI Recruiter", loc: "London, UK", rate: 70, sk: ["Talent", "Hiring", "Sourcing"], av: "In 1 month", exp: 12, sc: 88, on: false, tz: "Europe" },
-  { n: "Lucas Meyer", r: "Senior Backend Engineer", loc: "Munich, Germany", rate: 98, sk: ["Go", "Postgres", "gRPC"], av: "Available now", exp: 11, sc: 93, on: true, tz: "Europe" },
-  { n: "Kenji Watanabe", r: "MLOps Lead", loc: "Tokyo, Japan", rate: 105, sk: ["Kubernetes", "Vector DB", "Terraform"], av: "In 2 weeks", exp: 8, sc: 95, on: true, tz: "Asia" },
-  { n: "Sara Lindqvist", r: "DevOps Engineer", loc: "Stockholm, Sweden", rate: 88, sk: ["AWS", "CI/CD", "Observability"], av: "Available now", exp: 9, sc: 87, on: false, tz: "Europe" },
-];
 
 export function Engineers() {
   // Live: /engineers (or /engineers/search when searching); Connect and (for companies) Invite to a job are real.
@@ -61,9 +47,9 @@ export function Engineers() {
   const cap = maxRate || topRate;
   const regions = ["Any", ...Array.from(new Set(ENGS.map((e: any) => e.tz).filter(Boolean)))].slice(0, 6) as string[];
   const list = ENGS.filter((e: any) => (!cap || e.rate <= cap) && (!avail || /now|open/i.test(e.av)) && (tz === "Any" || e.tz === tz) && (e.n + e.r + e.sk.join(" ")).toLowerCase().includes(q.toLowerCase())).sort((x: any, y: any) => (sort === "match" ? (y.sc ?? 0) - (x.sc ?? 0) : sort === "rate" ? x.rate - y.rate : y.exp - x.exp));
-  const connect = async (uid: string) => { if (!user) { window.location.hash = "login"; return; } try { await api.post("/connections", { receiver_id: uid }); conns.reload(); setNotice("Connection request sent"); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that request.")); } };
+  const connect = async (uid: string) => { if (!user) { goRoute("login"); return; } try { await api.post("/connections", { receiver_id: uid }); conns.reload(); setNotice("Connection request sent"); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that request.")); } };
   const invite = async (jobId: string) => { try { await api.post(`/applications/jobs/${jobId}/invite/${inviting.id}`); setNotice(`${inviting.n} was invited to apply`); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that invitation.")); } setInviting(null); };
-  const open = (id: string) => { sessionStorage.setItem("rap-person-id", id); window.location.hash = "engineer"; };
+  const open = (id: string) => { sessionStorage.setItem("rap-person-id", id); goRoute("engineer"); };
   return (
     <Page title="Professional directory" sub="Discover professionals by skills, availability and experience" w="max-w-none">
       <div className="grid gap-4 grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)]">
@@ -99,20 +85,11 @@ export function Engineers() {
           </div>
         </div>
       </div>
-      <Modal open={!!inviting} onClose={() => setInviting(null)} title={`Invite ${inviting?.n ?? ""} to apply`}>{(myJobs.data ?? []).filter((j: any) => j.is_active).length ? <div className="space-y-2">{(myJobs.data ?? []).filter((j: any) => j.is_active).map((j: any) => <button key={j.id} onClick={() => invite(j.id)} className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50"><b>{j.title}</b><Ic n="send" s={16} /></button>)}</div> : <p className="text-slate-500">Post a job first, then invite professionals to apply. <button className="font-semibold text-[#0552CC]" onClick={() => { setInviting(null); window.location.hash = "postjob"; }}>Post a job</button></p>}</Modal>
+      <Modal open={!!inviting} onClose={() => setInviting(null)} title={`Invite ${inviting?.n ?? ""} to apply`}>{(myJobs.data ?? []).filter((j: any) => j.is_active).length ? <div className="space-y-2">{(myJobs.data ?? []).filter((j: any) => j.is_active).map((j: any) => <button key={j.id} onClick={() => invite(j.id)} className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50"><b>{j.title}</b><Ic n="send" s={16} /></button>)}</div> : <p className="text-slate-500">Post a job first, then invite professionals to apply. <button className="font-semibold text-[#0552CC]" onClick={() => { setInviting(null); goRoute("postjob"); }}>Post a job</button></p>}</Modal>
       {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </Page>
   );
 }
-
-const COS = [
-  { n: "Northstar Cloud", ind: "Cloud infrastructure", size: "1,001-5,000", loc: "Remote - US/EU", jobs: 12, rating: 4.8, fol: "48K", hiring: true, tag: "AI platform, reliability" },
-  { n: "Helix Labs", ind: "Applied AI research", size: "201-500", loc: "Remote - Europe", jobs: 7, rating: 4.7, fol: "22K", hiring: true, tag: "Search, ranking, evals" },
-  { n: "Brightpath", ind: "Data and analytics", size: "51-200", loc: "Remote-first", jobs: 5, rating: 4.6, fol: "9K", hiring: true, tag: "Lakehouse, dbt, BI" },
-  { n: "Aster Labs", ind: "LLM tooling", size: "51-200", loc: "Remote - EU", jobs: 4, rating: 4.5, fol: "12K", hiring: true, tag: "Evaluation, safety" },
-  { n: "CloudNova", ind: "SaaS platform", size: "501-1,000", loc: "Remote - Global", jobs: 9, rating: 4.4, fol: "31K", hiring: true, tag: "Backend, DevOps" },
-  { n: "Orbit Systems", ind: "Developer tools", size: "11-50", loc: "Remote - US", jobs: 0, rating: 4.3, fol: "5K", hiring: false, tag: "SDKs, CLI" },
-];
 
 export function Companies() {
   // Live: /companies/public with open-role counts from real postings.
@@ -123,7 +100,7 @@ export function Companies() {
   const roles = (id: string) => (jobs.data ?? []).filter((j: any) => j.company_id === id).length;
   const COS = (cos.data ?? []).map((c: any) => ({ id: c.id, n: c.name, ind: c.industry || "Technology", size: c.company_size || "—", loc: c.location || "Remote", jobs: roles(c.id), hiring: c.hiring_status === "actively_hiring" || roles(c.id) > 0, tag: (c.tech_stack || []).join(", "), verified: c.is_verified }));
   const list = COS.filter((c: any) => (!hiring || c.hiring) && (c.n + c.ind + c.tag).toLowerCase().includes(q.toLowerCase()));
-  const open = (id: string) => { sessionStorage.setItem("rap-company-id", id); window.location.hash = "company"; };
+  const open = (id: string) => { sessionStorage.setItem("rap-company-id", id); goRoute("company"); };
   return (
     <Page title="Companies" sub="Discover teams hiring remote professionals" w="max-w-none">
       <Card c="mb-4 rounded-xl" p="p-3"><div className="flex flex-wrap items-center gap-2"><div className="flex h-10 flex-1 items-center gap-2 rounded-full bg-slate-100 px-3" style={{ minWidth: 220 }}><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies, industries or focus" aria-label="Search companies" className="w-full bg-transparent text-sm outline-none" /></div><button onClick={() => setHiring(!hiring)} className={cx("h-10 rounded-full px-4 text-sm font-semibold", hiring ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>Hiring now</button><span className="text-sm text-slate-500">{cos.loading ? "Loading…" : `${list.length} companies`}</span></div></Card>
@@ -158,17 +135,6 @@ return <Page title="Build your professional profile" sub="A few details help the
 export function CoDash(){return <Page title="Your hiring workspace" sub="Find the right people and keep hiring moving" act={<Btn icon="plus" onClick={()=>visit("postjob")}>Post a job</Btn>}><div className="grid gap-4 md:grid-cols-3">{[["Job postings","cojobs","briefcase","Manage active and paused roles."],["Candidates","candidates","users","Review applications and explainable matches."],["Contracts & delivery","contracts","file","Turn an accepted application into a clear agreement."]].map(([title,path,icon,copy])=><Card key={path}><Ic n={icon} s={28} c="text-blue-600"/><h2 className="mt-4">{title}</h2><p className="my-3 text-sm text-slate-500">{copy}</p><Btn v="outline" onClick={()=>visit(path)}>Open {title.toLowerCase()}</Btn></Card>)}</div><Card c="mt-5"><h2>A clear path from hiring to delivery</h2><div className="mt-4 grid gap-3 md:grid-cols-4">{[["1","Post a role","postjob"],["2","Review candidates","candidates"],["3","Agree on a contract","contracts"],["4","Start the project","workspace"]].map(([n,title,path])=><button key={n} onClick={()=>visit(path)} className="rounded-lg bg-slate-50 p-4 text-left"><span className="text-blue-600">{n}</span><b className="mt-2 block">{title} →</b></button>)}</div></Card><Card c="mt-5"><h2>Your company profile</h2><p className="my-3 text-slate-500">Give professionals a clear picture of your team, mission and working style.</p><Btn onClick={()=>visit("coprofile")}>Edit company profile</Btn></Card></Page>;}
 
 const STAGES = ["Applied", "Screening", "Interview", "Offer", "Hired"];
-const CANDS = [
-  { id: 1, n: "Priya Raman", r: "Staff ML Engineer", sc: 97, sk: ["RAG", "Python", "LLM evals"], st: 0, ex: "9 yrs", loc: "Berlin", rate: "USD 110/hr", why: "Shipped 3 production RAG platforms; strongest evaluation depth in the pool." },
-  { id: 2, n: "Kenji Watanabe", r: "MLOps Lead", sc: 95, sk: ["Kubernetes", "Vector DB", "Terraform"], st: 0, ex: "8 yrs", loc: "Tokyo", rate: "USD 105/hr", why: "Owns inference infrastructure at scale; timezone overlap is 3 hrs." },
-  { id: 3, n: "Mateo Silva", r: "AI Product Designer", sc: 94, sk: ["Figma", "LLM UX", "Research"], st: 1, ex: "7 yrs", loc: "Madrid", rate: "USD 85/hr", why: "Portfolio shows explainable AI interfaces similar to this role." },
-  { id: 4, n: "Daniel Okafor", r: "Data Platform Lead", sc: 91, sk: ["Databricks", "Spark", "dbt"], st: 1, ex: "10 yrs", loc: "Lagos", rate: "USD 95/hr", why: "Lakehouse migrations with measurable cost reduction." },
-  { id: 5, n: "Elena Petrova", r: "LLM Evaluation Lead", sc: 96, sk: ["Evals", "Python", "Red teaming"], st: 2, ex: "6 yrs", loc: "Sofia", rate: "USD 100/hr", why: "Built the evaluation harness used by two hiring companies." },
-  { id: 6, n: "Aisha Rahman", r: "Backend Engineer", sc: 89, sk: ["Go", "gRPC", "Postgres"], st: 2, ex: "8 yrs", loc: "Dubai", rate: "USD 90/hr", why: "Strong systems background, lighter on ML tooling." },
-  { id: 7, n: "Lucas Meyer", r: "Applied Scientist", sc: 93, sk: ["PyTorch", "Ranking", "A/B tests"], st: 3, ex: "11 yrs", loc: "Munich", rate: "USD 120/hr", why: "Offer extended; verified references and background checks complete." },
-  { id: 8, n: "Sara Lindqvist", r: "DevOps Engineer", sc: 87, sk: ["AWS", "CI/CD", "Observability"], st: 4, ex: "9 yrs", loc: "Stockholm", rate: "USD 88/hr", why: "Hired on the Platform Reliability contract." },
-];
-
 export function PostJob() {
   const steps = ["Basics", "Requirements", "Budget and contract", "Screening", "Review"];
   const [step, setStep] = useState(0);

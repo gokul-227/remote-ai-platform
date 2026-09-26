@@ -13,7 +13,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
  const { login } = useAuth();
  const [email,setEmail]=useState(""); const [name,setName]=useState(""); const [role,setRole]=useState("engineer");
  const [step,setStep]=useState("email"); const [code,setCode]=useState(""); const [error,setError]=useState(""); const [seconds,setSeconds]=useState(0); const [password,setPassword]=useState(""); const [confirm,setConfirm]=useState(""); const [busy,setBusy]=useState(false); const [devToken,setDevToken]=useState("");
- useEffect(()=>{setStep("email");setError("");setCode("");},[route]);
+ // Step/error/code reset per route via the key App puts on <AuthFlow>.
  useEffect(()=>{if(seconds<=0)return;const timer=setTimeout(()=>setSeconds(seconds-1),1000);return()=>clearTimeout(timer);},[seconds]);
  const join=route==="register"; const recovery=route==="forgot"; const reset=route==="reset";
  const msg=(e:unknown)=>(e as {message?:string})?.message||"";
