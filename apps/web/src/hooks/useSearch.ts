@@ -2,14 +2,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import type { JobPost, EngineerProfile } from "@/types";
+import type { CompanyProfile, EngineerProfile, JobPost } from "@/types";
 
 export interface GlobalSearchResponse {
   query: string;
   total_jobs: number;
   total_engineers: number;
+  total_companies: number;
   jobs: JobPost[];
   engineers: EngineerProfile[];
+  companies: CompanyProfile[];
 }
 
 export function useSearch(query: string, enabled = true) {

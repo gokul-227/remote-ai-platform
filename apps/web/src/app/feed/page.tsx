@@ -28,7 +28,6 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useFeed, usePostComments, Post, Comment } from "@/hooks/useFeed";
-import { Sidebar } from "@/components/Sidebar";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { FeedPostSkeleton } from "@/components/ui/Skeleton";
@@ -607,7 +606,6 @@ function SocialFeedContent() {
       {/* Left sidebar */}
       <div className="hidden lg:block lg:col-span-3 space-y-4">
         <ProfileWidget user={user} />
-        <Sidebar />
       </div>
 
       {/* Main feed */}

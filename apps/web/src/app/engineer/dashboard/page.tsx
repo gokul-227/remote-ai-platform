@@ -13,8 +13,6 @@ import {
   Bookmark,
   Target,
 } from "lucide-react";
-import { Sidebar } from "@/components/Sidebar";
-import { RightSidebar } from "@/components/RightSidebar";
 import { JobCard } from "@/components/JobCard";
 import { AIMatchPanel } from "@/components/ai/MatchScore";
 import { Button } from "@/components/ui/Button";
@@ -119,7 +117,6 @@ function EngineerDashboardContent() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 py-2">
       {/* Left Sidebar */}
       <div className="lg:col-span-3 space-y-4">
-        <Sidebar />
       </div>
 
       {/* Main Center Column */}
@@ -277,7 +274,6 @@ function EngineerDashboardContent() {
 
       {/* Right Rail */}
       <div className="lg:col-span-3 space-y-4">
-        <RightSidebar />
       </div>
     </div>
   );

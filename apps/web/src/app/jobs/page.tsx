@@ -14,8 +14,6 @@ import {
   Globe,
   Zap,
 } from "lucide-react";
-import { Sidebar } from "@/components/Sidebar";
-import { RightSidebar } from "@/components/RightSidebar";
 import { JobCard } from "@/components/JobCard";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
@@ -350,7 +348,6 @@ function JobsContent() {
             </div>
           </div>
 
-          <Sidebar />
         </div>
 
         {/* Center Results Stream */}
@@ -477,7 +474,6 @@ function JobsContent() {
 
         {/* Right Rail: AI Spotlight & Trending */}
         <div className="lg:col-span-3 space-y-4">
-          <RightSidebar />
         </div>
       </div>
     </div>

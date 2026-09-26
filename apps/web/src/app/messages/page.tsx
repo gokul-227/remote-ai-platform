@@ -83,7 +83,7 @@ function NewConversationModal({
 interface ConvData {
   id: string;
   updated_at?: string;
-  last_message?: string;
+  last_message?: { content: string } | null;
   participants?: Array<{ id: string; full_name?: string; email?: string; avatar_url?: string }>;
   other_participant?: { id: string; full_name?: string; email?: string; avatar_url?: string };
 }
@@ -133,7 +133,7 @@ function ConversationItem({
           )}
         </div>
         <span className="text-xs text-[var(--text-muted)] block truncate mt-0.5">
-          {conv.last_message || "Click to open conversation"}
+          {conv.last_message?.content || "Click to open conversation"}
         </span>
       </div>
     </button>
@@ -191,7 +191,7 @@ function MessagesContent() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.messages]);
 
-  const convList = (conversations.data ?? []) as ConvData[];
+  const convList = (conversations.data ?? []) as unknown as ConvData[];
   const filtered = search
     ? convList.filter((c) => {
         const other = c.other_participant || c.participants?.find((p) => p.id !== user?.id);

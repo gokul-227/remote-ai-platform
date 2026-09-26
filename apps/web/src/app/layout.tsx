@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
-import { Fraunces } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
-import { ThemeProvider, THEME_INIT_SCRIPT } from "@/lib/theme";
-import { LayoutShell } from "@/components/LayoutShell";
+import { ThemeProvider } from "@/lib/theme";
+import { AppShell } from "@/components/rap/AppShell";
 import { QueryProvider } from "@/components/QueryProvider";
 import { ToastProvider } from "@/components/ui/Toast";
 
-// Editorial display serif for headlines only — body/UI text stays on the
-// existing system-sans stack for density and readability.
-const fraunces = Fraunces({
+// Inter is the Figma design's single typeface for every surface.
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-display",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-inter",
   display: "swap",
 });
 
@@ -35,16 +33,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
-      <body className={`${fraunces.variable} antialiased min-h-screen`}>
+    // The Figma design is light-only, so the theme is pinned rather than
+    // initialised from storage / prefers-color-scheme.
+    <html lang="en" data-theme="light" suppressHydrationWarning>
+      <body className={`${inter.variable} antialiased min-h-screen`}>
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
               <ToastProvider>
-                <LayoutShell>{children}</LayoutShell>
+                <AppShell>{children}</AppShell>
               </ToastProvider>
             </AuthProvider>
           </QueryProvider>

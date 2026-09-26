@@ -29,12 +29,17 @@ export interface EngineerProfile {
 export interface CompanyProfile {
   id: string;
   user_id?: string;
-  company_name: string;
+  name: string;
   logo_url?: string | null;
   industry?: string | null;
   company_size?: string | null;
   description?: string | null;
   location?: string | null;
+  country?: string | null;
   website?: string | null;
+  hiring_status?: string | null;
+  tech_stack?: string[];
   is_verified?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -4,9 +4,12 @@ API Router for Unified Search domain.
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domains.companies.models import CompanyProfile
+from app.domains.companies.schemas import CompanyProfileResponse
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import EngineerPublicProfileResponse
 from app.domains.jobs.repository import JobRepository
@@ -19,8 +22,10 @@ class GlobalSearchResponse(BaseModel):
     query: str
     total_jobs: int
     total_engineers: int
+    total_companies: int = 0
     jobs: list[JobPostResponse]
     engineers: list[EngineerPublicProfileResponse]
+    companies: list[CompanyProfileResponse] = []
 
 
 @router.get("", response_model=GlobalSearchResponse)
@@ -37,11 +42,29 @@ async def global_search(
 
     jobs = await job_repo.search(query=q, is_remote=is_remote, skip=skip, limit=limit)
     engineers = await engineer_repo.search(query=q, skip=skip, limit=limit)
+    pattern = f"%{q.strip()}%"
+    companies = (
+        await db.execute(
+            select(CompanyProfile)
+            .where(
+                or_(
+                    CompanyProfile.name.ilike(pattern),
+                    CompanyProfile.industry.ilike(pattern),
+                    CompanyProfile.location.ilike(pattern),
+                )
+            )
+            .order_by(CompanyProfile.is_verified.desc(), CompanyProfile.name)
+            .offset(skip)
+            .limit(limit)
+        )
+    ).scalars().all()
 
     return GlobalSearchResponse(
         query=q,
         total_jobs=len(jobs),
         total_engineers=len(engineers),
+        total_companies=len(companies),
         jobs=[JobPostResponse.model_validate(j) for j in jobs],
         engineers=[EngineerPublicProfileResponse.model_validate(e) for e in engineers],
+        companies=[CompanyProfileResponse.model_validate(c) for c in companies],
     )

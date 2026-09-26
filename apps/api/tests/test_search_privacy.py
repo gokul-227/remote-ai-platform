@@ -41,3 +41,18 @@ async def test_global_search_never_leaks_resume_fields(client: AsyncClient):
 async def test_global_search_works_without_authentication(client: AsyncClient):
     resp = await client.get("/api/v1/search", params={"q": "anything"})
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_global_search_includes_matching_companies(client, company_token):
+    headers = {"Authorization": f"Bearer {company_token}"}
+    created = await client.post(
+        "/api/v1/companies/me",
+        headers=headers,
+        json={"name": "Quasar Search Labs", "industry": "Developer tools", "location": "Remote"},
+    )
+    assert created.status_code in (200, 201), created.text
+    body = (await client.get("/api/v1/search", params={"q": "quasar"})).json()
+    assert body["total_companies"] == 1
+    assert body["companies"][0]["name"] == "Quasar Search Labs"
+    assert (await client.get("/api/v1/search", params={"q": "zzz-no-such-co"})).json()["companies"] == []

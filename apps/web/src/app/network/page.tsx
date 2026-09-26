@@ -60,8 +60,8 @@ function ConnectionCard({
   const displayName = otherUser?.full_name || otherUser?.email || "Platform Member";
   const headline = otherUser?.headline || "Professional";
   const statusConf = STATUS_CONFIG[connection.status] ?? STATUS_CONFIG.pending;
-  const isPending = connection.status === "pending";
-  const isAccepted = connection.status === "accepted";
+  const isPending = connection.status.toUpperCase() === "PENDING";
+  const isAccepted = connection.status.toUpperCase() === "ACCEPTED";
 
   return (
     <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-4 flex items-start gap-3 hover:shadow-[var(--shadow-sm)] hover:border-[var(--border-hover)] transition-all">
@@ -162,12 +162,12 @@ function NetworkContent() {
   const allConns = (connections.data ?? []) as Connection[];
   const suggestedPeople: EngineerProfile[] = (suggestions.data ?? []).slice(0, 12);
 
-  const acceptedCount = allConns.filter((c) => c.status === "accepted").length;
-  const pendingCount = allConns.filter((c) => c.status === "pending").length;
-  const incomingPending = allConns.filter((c) => c.status === "pending" && c.receiver_id === user?.id);
+  const acceptedCount = allConns.filter((c) => c.status.toUpperCase() === "ACCEPTED").length;
+  const pendingCount = allConns.filter((c) => c.status.toUpperCase() === "PENDING").length;
+  const incomingPending = allConns.filter((c) => c.status.toUpperCase() === "PENDING" && c.receiver_id === user?.id);
 
   const filtered = allConns.filter((c) => {
-    const matchTab = tab === "all" || (tab === "connected" && c.status === "accepted") || (tab === "pending" && c.status === "pending");
+    const matchTab = tab === "all" || (tab === "connected" && c.status.toUpperCase() === "ACCEPTED") || (tab === "pending" && c.status.toUpperCase() === "PENDING");
     const otherUser = c.receiver_id === user?.id ? c.sender : c.receiver;
     const otherName = otherUser?.full_name || otherUser?.email || "";
     const matchSearch = !search || otherName.toLowerCase().includes(search.toLowerCase());

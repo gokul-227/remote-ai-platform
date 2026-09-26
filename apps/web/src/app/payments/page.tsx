@@ -16,8 +16,6 @@ import { Input, Select } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { RequireAuth } from "@/components/RequireAuth";
-import { Sidebar } from "@/components/Sidebar";
-import { RightSidebar } from "@/components/RightSidebar";
 
 const STATUS_TONE: Record<string, StatusTone> = {
   RELEASED: "success",
@@ -57,7 +55,6 @@ function PaymentsWalletContent() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 py-6">
       <div className="lg:col-span-3 space-y-4">
-        <Sidebar />
       </div>
 
       <div className="lg:col-span-6 space-y-6">
@@ -234,7 +231,6 @@ function PaymentsWalletContent() {
       </div>
 
       <div className="lg:col-span-3 space-y-4">
-        <RightSidebar />
       </div>
 
       {/* Fund Escrow Modal */}

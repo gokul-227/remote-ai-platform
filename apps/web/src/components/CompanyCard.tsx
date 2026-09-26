@@ -23,7 +23,7 @@ export function CompanyCard({
       )}
     >
       <Avatar
-        name={company.company_name}
+        name={company.name}
         src={company.logo_url}
         size="lg"
         className="rounded-xl ring-1 ring-[var(--border-color)] shrink-0"
@@ -31,7 +31,7 @@ export function CompanyCard({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-bold text-[var(--text-main)] truncate group-hover:text-[var(--color-brand)] transition-colors">
-            {company.company_name}
+            {company.name}
           </p>
           <CheckCircle2 className="h-3.5 w-3.5 text-[var(--color-brand)] shrink-0" />
         </div>

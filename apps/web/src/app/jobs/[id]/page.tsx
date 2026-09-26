@@ -73,7 +73,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   const job = jobQuery.data || null;
   const loading = jobQuery.isLoading;
-  const saved = !!savedJobs.data?.some((item: JobPost) => item.id === id);
+  const saved = !!savedJobs.data?.some((item) => item.id === id);
   const alreadyApplied = !!applications.data?.some((entry: { job: { id: string } }) => entry.job.id === id);
 
   const handleShare = () => {

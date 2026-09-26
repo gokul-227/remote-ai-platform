@@ -7,7 +7,7 @@ from typing import Any
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -15,6 +15,7 @@ from app.core.database import AsyncSessionFactory, get_db
 from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
+from app.domains.engineers.models import EngineerProfile
 from app.domains.network.models import Connection, Conversation, Message
 from app.services.notifications import notify_user as send_notification
 
@@ -41,26 +42,61 @@ async def notify(db: AsyncSession, user_id: uuid.UUID, title: str, body: str, ki
     await send_notification(db, user_id, title, body, kind)
 
 
+async def user_summaries(db: AsyncSession, ids: set[uuid.UUID]) -> dict[uuid.UUID, dict[str, Any]]:
+    """Public-safe display info for other users (never email), keyed by user id."""
+    if not ids:
+        return {}
+    rows = await db.execute(
+        select(User.id, User.full_name, User.avatar_url, User.role, EngineerProfile.id, EngineerProfile.headline)
+        .outerjoin(EngineerProfile, EngineerProfile.user_id == User.id)
+        .where(User.id.in_(ids))
+    )
+    return {
+        uid: {
+            "id": uid,
+            "full_name": name,
+            "avatar_url": avatar,
+            "role": role.value if hasattr(role, "value") else role,
+            "engineer_profile_id": profile_id,
+            "headline": headline,
+        }
+        for uid, name, avatar, role, profile_id, headline in rows.all()
+    }
+
+
+def _connection_out(c: Connection, users: dict[uuid.UUID, dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "id": c.id,
+        "sender_id": c.sender_id,
+        "receiver_id": c.receiver_id,
+        "status": c.status,
+        "created_at": c.created_at,
+        "updated_at": c.updated_at,
+        "sender": users.get(c.sender_id),
+        "receiver": users.get(c.receiver_id),
+    }
+
+
 @router.get("/connections")
 async def list_connections(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    status_filter: str | None = Query(None, alias="status", pattern="^(PENDING|ACCEPTED|REJECTED|BLOCKED)$"),
 ):
-    result = await db.execute(
-        select(Connection)
-        .where(
-            or_(
-                Connection.sender_id == current_user.id,
-                Connection.receiver_id == current_user.id,
-            )
+    query = select(Connection).where(
+        or_(
+            Connection.sender_id == current_user.id,
+            Connection.receiver_id == current_user.id,
         )
-        .order_by(Connection.created_at.desc())
-        .offset(skip)
-        .limit(limit)
     )
-    return result.scalars().all()
+    if status_filter:
+        query = query.where(Connection.status == status_filter)
+    result = await db.execute(query.order_by(Connection.created_at.desc()).offset(skip).limit(limit))
+    connections = result.scalars().all()
+    users = await user_summaries(db, {c.sender_id for c in connections} | {c.receiver_id for c in connections})
+    return [_connection_out(c, users) for c in connections]
 
 
 @router.post("/connections", status_code=status.HTTP_201_CREATED)
@@ -160,7 +196,81 @@ async def list_conversations(
         .offset(skip)
         .limit(limit)
     )
-    return result.scalars().all()
+    conversations = result.scalars().all()
+    if not conversations:
+        return []
+    conv_ids = [c.id for c in conversations]
+    others = {
+        c.id: c.participant_two_id if c.participant_one_id == current_user.id else c.participant_one_id
+        for c in conversations
+    }
+    users = await user_summaries(db, set(others.values()))
+
+    latest = (
+        select(Message.conversation_id, func.max(Message.created_at).label("at"))
+        .where(Message.conversation_id.in_(conv_ids))
+        .group_by(Message.conversation_id)
+        .subquery()
+    )
+    last_rows = await db.execute(
+        select(Message).join(
+            latest,
+            (Message.conversation_id == latest.c.conversation_id) & (Message.created_at == latest.c.at),
+        )
+    )
+    last_by_conv = {m.conversation_id: m for m in last_rows.scalars().all()}
+    unread_rows = await db.execute(
+        select(Message.conversation_id, func.count())
+        .where(
+            Message.conversation_id.in_(conv_ids),
+            Message.sender_id != current_user.id,
+            Message.is_read.is_(False),
+        )
+        .group_by(Message.conversation_id)
+    )
+    unread_by_conv: dict[uuid.UUID, int] = {cid: n for cid, n in unread_rows.all()}
+
+    out = []
+    for c in conversations:
+        last = last_by_conv.get(c.id)
+        out.append(
+            {
+                "id": c.id,
+                "participant_one_id": c.participant_one_id,
+                "participant_two_id": c.participant_two_id,
+                "created_at": c.created_at,
+                "updated_at": c.updated_at,
+                "other_participant": users.get(others[c.id]),
+                "last_message": (
+                    {"content": last.content, "sender_id": last.sender_id, "created_at": last.created_at}
+                    if last
+                    else None
+                ),
+                "unread_count": unread_by_conv.get(c.id, 0),
+            }
+        )
+    return out
+
+
+@router.get("/conversations/unread-count")
+async def unread_message_count(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    count = await db.scalar(
+        select(func.count())
+        .select_from(Message)
+        .join(Conversation, Conversation.id == Message.conversation_id)
+        .where(
+            or_(
+                Conversation.participant_one_id == current_user.id,
+                Conversation.participant_two_id == current_user.id,
+            ),
+            Message.sender_id != current_user.id,
+            Message.is_read.is_(False),
+        )
+    )
+    return {"count": count or 0}
 
 
 @router.post("/conversations", status_code=status.HTTP_201_CREATED)
@@ -207,6 +317,16 @@ async def message_history(
     limit: int = Query(50, ge=1, le=200),
 ):
     await get_conversation(conversation_id, current_user.id, db)
+    # Opening a conversation reads it: clear the other party's unread messages.
+    await db.execute(
+        update(Message)
+        .where(
+            Message.conversation_id == conversation_id,
+            Message.sender_id != current_user.id,
+            Message.is_read.is_(False),
+        )
+        .values(is_read=True)
+    )
     # Fetch the most recent `limit` messages (bounded, instead of the whole
     # conversation history), then restore ascending order for display.
     result = await db.execute(
