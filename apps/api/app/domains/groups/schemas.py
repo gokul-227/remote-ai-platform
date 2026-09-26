@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -83,6 +84,8 @@ class MembershipResponse(BaseModel):
     role: str
     status: str
     joined_at: datetime
+    # Public-safe display info for the member (name, avatar, headline; never email).
+    member: dict[str, Any] | None = None
 
     model_config = {"from_attributes": True}
 
@@ -103,6 +106,7 @@ class GroupPostResponse(BaseModel):
     id: uuid.UUID
     group_id: uuid.UUID
     author_id: uuid.UUID
+    author: dict[str, Any] | None = None
     content: str
     media_urls: list[str]
     like_count: int

@@ -348,3 +348,17 @@ class TestGroupRouter:
             )
 
         assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_members_and_posts_embed_public_person_summaries(client):
+    reg = await client.post("/api/v1/auth/register", json={"email": "grp-owner@example.com", "password": "secure-pass", "full_name": "Group Owner", "role": "ENGINEER"})
+    h = {"Authorization": f"Bearer {reg.json()['access_token']}"}
+    g = (await client.post("/api/v1/groups", headers=h, json={"name": "Summary Circle"})).json()
+    post = await client.post(f"/api/v1/groups/{g['id']}/posts", headers=h, json={"content": "hello"})
+    assert post.status_code == 201
+    assert post.json()["author"]["full_name"] == "Group Owner"
+    [m] = (await client.get(f"/api/v1/groups/{g['id']}/members", headers=h)).json()
+    assert m["member"]["full_name"] == "Group Owner" and "email" not in m["member"]
+    [p] = (await client.get(f"/api/v1/groups/{g['id']}/posts", headers=h)).json()["posts"]
+    assert p["author"]["full_name"] == "Group Owner"

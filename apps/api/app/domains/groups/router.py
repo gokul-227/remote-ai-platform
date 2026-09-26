@@ -25,6 +25,7 @@ from app.domains.groups.schemas import (
     MemberRoleUpdate,
     MembershipResponse,
 )
+from app.domains.network.router import user_summaries
 
 logger = structlog.get_logger(__name__)
 
@@ -299,7 +300,11 @@ async def list_members(
     # stale to refresh -- the previous per-row db.refresh() was a pure N+1
     # (one extra SELECT per member) with no effect on the returned data.
     memberships = result.scalars().all()
-    return [MembershipResponse.model_validate(m) for m in memberships]
+    people = await user_summaries(db, {m.user_id for m in memberships})
+    return [
+        MembershipResponse.model_validate(m).model_copy(update={"member": people.get(m.user_id)})
+        for m in memberships
+    ]
 
 
 @router.patch("/{group_id}/members/{user_id}/role", response_model=MembershipResponse)
@@ -398,8 +403,12 @@ async def list_group_posts(
     result = await db.execute(q)
     posts = result.scalars().all()
 
+    authors = await user_summaries(db, {p.author_id for p in posts})
     return GroupPostListResponse(
-        posts=[GroupPostResponse.model_validate(p) for p in posts],
+        posts=[
+            GroupPostResponse.model_validate(p).model_copy(update={"author": authors.get(p.author_id)})
+            for p in posts
+        ],
         total=total,
         page=page,
         page_size=page_size,
@@ -433,7 +442,8 @@ async def create_group_post(
     group.post_count = (group.post_count or 0) + 1
     await db.commit()
     await db.refresh(post)
-    return GroupPostResponse.model_validate(post)
+    authors = await user_summaries(db, {post.author_id})
+    return GroupPostResponse.model_validate(post).model_copy(update={"author": authors.get(post.author_id)})
 
 
 @router.delete("/{group_id}/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)

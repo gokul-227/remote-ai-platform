@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi } from "./live";
+import { Groups } from "./rap_social";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
 
 const nav = (h: string) => { window.location.hash = h; };
@@ -279,11 +280,6 @@ export function NotFound() {
 }
 
 export function GroupDetail() {
-  const [j, setJ] = useState(false);
-  return (
-    <Wrap>
-      <Card p={false} c="overflow-hidden rounded-xl"><div className="h-40 bg-gradient-to-r from-[#0552CC] to-[#5B9BFF]" /><div className="flex flex-wrap items-center justify-between gap-3 p-5"><div><h1>LLMOps Engineers</h1><p className="text-sm text-slate-500">Public group - 12.4K members</p></div><Btn v={j ? "gray" : "primary"} onClick={() => setJ(!j)}>{j ? "Joined" : "Join group"}</Btn></div></Card>
-      <div className="mt-4 grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]"><div className="space-y-3">{[["Priya Raman", "Anyone benchmarking rerankers on long-tail queries? We got +9 nDCG with a small cross-encoder."], ["Mateo Silva", "Sharing our Delta Live Tables CDC template for the group."]].map((p) => <Card key={p[0]} c="rounded-xl"><div className="flex items-center gap-3"><Av name={p[0]} s={40} /><div><p className="font-semibold">{p[0]}</p><p className="text-xs text-slate-500">2h</p></div></div><p className="mt-3 text-slate-700">{p[1]}</p><div className="mt-3 flex gap-4 border-t border-slate-200 pt-2 text-sm font-semibold text-slate-500"><span>Like</span><span>Comment</span><span>Share</span></div></Card>)}</div><Card c="rounded-xl"><h3>About</h3><p className="mt-2 text-sm text-slate-600">Practical discussions on running LLM systems in production.</p></Card></div>
-    </Wrap>
-  );
+  // Live: the Figma group view for the group chosen elsewhere (feed, search, links).
+  return <Groups initial={new URLSearchParams(window.location.search).get("id") || sessionStorage.getItem("rap-group-id")} />;
 }
