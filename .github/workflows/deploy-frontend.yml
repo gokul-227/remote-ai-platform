@@ -23,12 +23,40 @@ on:
 permissions:
   contents: read
 
+# One deploy per environment at a time, in order. Never cancel a deploy
+# midway; a queued older run is skipped by the `current` gate below.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  current:
+    # Deploy only the commit that is still the tip of the branch. Without
+    # this, a slow run for an older commit could finish after a newer one
+    # and put stale code back live.
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      is_tip: ${{ steps.tip.outputs.is_tip }}
+    steps:
+      - id: tip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tip=$(gh api "repos/${{ github.repository }}/git/ref/heads/prod" --jq .object.sha)
+          if [ "$tip" = "${{ github.event.workflow_run.head_sha }}" ]; then
+            echo "is_tip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Skipping: ${{ github.event.workflow_run.head_sha }} is no longer the tip of prod ($tip)."
+            echo "is_tip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: current
+    if: needs.current.outputs.is_tip == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -41,11 +69,17 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install -g npm@latest && npm ci
+        run: npm install -g npm@12.1.0 && npm ci
+
+      - name: Record build time
+        run: echo "NEXT_PUBLIC_BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Build for Cloudflare Workers
         working-directory: apps/web
         env:
+          NEXT_PUBLIC_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
+          NEXT_PUBLIC_DEPLOY_ENV: production
+          NEXT_PUBLIC_DEPLOYMENT_ID: ${{ github.run_id }}-${{ github.run_attempt }}
           NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_BASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
@@ -62,6 +96,18 @@ jobs:
       - name: Verify deploy
         run: |
           sleep 5
+          expected="${{ github.event.workflow_run.head_sha }}"
+          live=""
+          for i in $(seq 1 12); do
+            live=$(curl -sf "${{ vars.PROD_FRONTEND_WORKERSDEV_URL }}/api/version" | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || echo "")
+            [ "$live" = "$expected" ] && break
+            sleep 5
+          done
+          if [ "$live" != "$expected" ]; then
+            echo "Frontend reports git_sha '${live:-no response}', expected $expected"
+            exit 1
+          fi
+          echo "Frontend live at $live"
           curl -sf "${{ vars.PROD_FRONTEND_URL }}/" -o /dev/null -w "homepage (custom domain): %{http_code}\n"
           curl -sf "${{ vars.PROD_FRONTEND_WORKERSDEV_URL }}/" -o /dev/null -w "homepage (workers.dev): %{http_code}\n"
 
@@ -73,10 +119,8 @@ jobs:
     # calling it here makes the backend deploy an explicit, verifiable step
     # in the same pipeline as the frontend deploy, instead of an invisible
     # dependency on a webhook we can't inspect or debug.
-    if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+    needs: current
+    if: needs.current.outputs.is_tip == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -84,7 +128,12 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Trigger Render deploy
-        run: curl -sf -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
+        # ref= deploys exactly the CI-tested commit rather than whatever the
+        # branch tip is when Render gets to it (documented deploy-hook option).
+        run: |
+          hook="${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
+          case "$hook" in *\?*) sep="&" ;; *) sep="?" ;; esac
+          curl -sf -X POST "${hook}${sep}ref=${{ github.event.workflow_run.head_sha }}"
 
       - name: Wait for the new commit to actually be live
         # A plain "is /health up" check would pass instantly against the OLD
@@ -98,8 +147,7 @@ jobs:
         # check was first written and it never moved without a real deploy
         # actually changing it. Note: RENDER_GIT_COMMIT reflects the FULL
         # commit SHA Render checked out, which is this workflow's own
-        # head_sha since the deploy hook always builds the tracked branch's
-        # current tip).
+        # head_sha because the hook above is called with ref=head_sha).
         run: |
           expected_sha="${{ github.event.workflow_run.head_sha }}"
           echo "Waiting for backend to report git_sha ${expected_sha}..."

@@ -64,7 +64,7 @@ jobs:
         # unsupported-platform *optional* dependency (e.g. an esbuild
         # AIX/ppc64 binary) instead of skipping it as it's supposed to -- a
         # known npm bug, fixed in newer npm releases.
-        run: npm install -g npm@latest && npm ci
+        run: npm install -g npm@12.1.0 && npm ci
 
       - name: Lint
         working-directory: apps/web
@@ -101,7 +101,7 @@ jobs:
         # unsupported-platform *optional* dependency (e.g. an esbuild
         # AIX/ppc64 binary) instead of skipping it as it's supposed to -- a
         # known npm bug, fixed in newer npm releases.
-        run: npm install -g npm@latest && npm ci
+        run: npm install -g npm@12.1.0 && npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
