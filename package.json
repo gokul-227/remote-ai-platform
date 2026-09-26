@@ -5,7 +5,6 @@
   "packageManager": "npm@10.8.0",
   "workspaces": [
     "apps/*",
-    "packages/*",
     "tests/*"
   ],
   "scripts": {
@@ -18,8 +17,7 @@
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
     "docker:logs": "docker compose -f infra/docker/docker-compose.yml logs -f",
-    "db:migrate": "cd apps/api && alembic upgrade head",
-    "db:seed": "curl -X POST http://localhost:8000/api/v1/jobs/seed_demo"
+    "db:migrate": "cd apps/api && alembic upgrade head"
   },
   "devDependencies": {
     "eslint": "^9.0.0",

@@ -10,8 +10,6 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
-  keycloak_data:
-  celery_beat_data:
 
 services:
 
@@ -105,41 +103,6 @@ services:
     networks:
       - remote_ai_platform
 
-  # ─── Keycloak (Authentication) ────────────────────────────────────────────────
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    container_name: remote-ai-platform-keycloak
-    restart: unless-stopped
-    command: ["start-dev", "--import-realm"]
-    environment:
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_dev_password}
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-remote_ai_platform}
-      KC_DB_USERNAME: ${POSTGRES_USER:-remote_ai_platform}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}
-      KC_DB_SCHEMA: keycloak
-      KC_HOSTNAME_STRICT: false
-      KC_HTTP_ENABLED: true
-      KC_PROXY: edge
-      KC_FEATURES: token-exchange,admin-fine-grained-authz
-      KC_HEALTH_ENABLED: "true"
-    volumes:
-      - ../keycloak/realm-remote-ai-platform.json:/opt/keycloak/data/import/realm-remote-ai-platform.json:ro
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - remote_ai_platform
-    healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && cat <&3 | grep -q '200 OK'"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
-
   # ─────────────────────────────────────────────────────────────────────────────
   # APPLICATION SERVICES
   # ─────────────────────────────────────────────────────────────────────────────
@@ -158,32 +121,21 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
       REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
       MINIO_ENDPOINT: minio:9000
       MINIO_PUBLIC_ENDPOINT: http://localhost:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
       MINIO_SECURE: "false"
-      KEYCLOAK_URL: http://keycloak:8080
-      KEYCLOAK_PUBLIC_URL: http://localhost:8080
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-remote-ai-platform}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-remote-ai-platform-api}
-      KEYCLOAK_WEB_CLIENT_ID: ${KEYCLOAK_WEB_CLIENT_ID:-remote-ai-platform-web}
-      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:-change-me-in-production}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev_secret_key_change_in_prod}
+      # Free-tier AI chain; any provider without a key is skipped.
+      AI_PROVIDER: ${AI_PROVIDER:-auto}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      AI_PROVIDER: ${AI_PROVIDER:-ollama}
-      AI_MODEL: ${AI_MODEL:-qwen2.5}
-      AI_API_KEY: ${AI_API_KEY:-}
-      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
-      AI_FALLBACK_PROVIDERS: ${AI_FALLBACK_PROVIDERS:-ollama/qwen2.5}
       APP_ENV: ${APP_ENV:-development}
-      # Defaults to this app's own self-issued JWT auth so local dev doesn't
-      # require real Supabase credentials just to run docker-compose. CI's
-      # E2E job overrides both to test against real Supabase Auth, matching
-      # what's actually deployed in production.
-      AUTH_PROVIDER: ${AUTH_PROVIDER:-custom_jwt}
+      # Sign-in only works through Supabase: point this at the dev project.
       SUPABASE_URL: ${SUPABASE_URL:-}
     ports:
       - "8000:8000"
@@ -239,48 +191,6 @@ services:
       retries: 5
       start_period: 30s
 
-  # ─── Celery Worker ────────────────────────────────────────────────────────────
-  celery-worker:
-    build:
-      context: ../../apps/api
-      dockerfile: Dockerfile
-      target: production
-    container_name: remote-ai-platform-celery-worker
-    restart: unless-stopped
-    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4 -Q default,jobs,ai,matching
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
-      MINIO_SECURE: "false"
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      AI_PROVIDER: ${AI_PROVIDER:-ollama}
-      AI_MODEL: ${AI_MODEL:-qwen2.5}
-      AI_API_KEY: ${AI_API_KEY:-}
-      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-}
-      AI_FALLBACK_PROVIDERS: ${AI_FALLBACK_PROVIDERS:-ollama/qwen2.5}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    networks:
-      - remote_ai_platform
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A app.workers.celery_app inspect ping -d celery@$$HOSTNAME -t 10 2>/dev/null | grep -q pong || exit 1"]
-      interval: 30s
-      timeout: 20s
-      retries: 5
-      start_period: 30s
-
   # ─── Backend Tests ────────────────────────────────────────────────────────────
   test:
     build:
@@ -292,18 +202,10 @@ services:
     environment:
       APP_ENV: test
       REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
       MINIO_SECURE: "false"
-      JWT_SECRET_KEY: test-secret-key-at-least-32-chars-long # gitleaks:allow -- local/CI test fixture, not a real secret
-      KEYCLOAK_URL: http://keycloak:8080
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-remote-ai-platform}
-      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-remote-ai-platform-api}
-      KEYCLOAK_WEB_CLIENT_ID: ${KEYCLOAK_WEB_CLIENT_ID:-remote-ai-platform-web}
-      KEYCLOAK_CLIENT_SECRET: change-me-in-production
     depends_on:
       postgres:
         condition: service_healthy
@@ -313,34 +215,4 @@ services:
         condition: service_healthy
     networks:
       - remote_ai_platform
-    command: python -m pytest /app/tests -v --ignore=/app/tests/integration
-
-  # ─── Celery Beat ──────────────────────────────────────────────────────────────
-  celery-beat:
-    build:
-      context: ../../apps/api
-      dockerfile: Dockerfile
-      target: production
-    container_name: remote-ai-platform-celery-beat
-    restart: unless-stopped
-    command: celery -A app.workers.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler --schedule=/app/data/celerybeat-schedule
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
-      REDIS_URL: redis://redis:6379/0
-      CELERY_BROKER_URL: redis://redis:6379/1
-      CELERY_RESULT_BACKEND: redis://redis:6379/2
-    volumes:
-      - celery_beat_data:/app/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - remote_ai_platform
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import sys; data=open('/proc/1/cmdline').read(); sys.exit(0 if ('celery' in data and 'beat' in data) else 1)"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 20s
+    command: python -m pytest /app/tests -v
