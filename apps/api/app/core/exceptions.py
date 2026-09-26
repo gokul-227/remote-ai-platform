@@ -28,8 +28,10 @@ class PlatformException(Exception):  # noqa: N818
 
 
 class NotFoundException(PlatformException):
-    def __init__(self, resource: str, id: str | int | None = None):
-        detail = f"{resource} not found" if id is None else f"{resource} with id '{id}' not found"
+    """404 with a complete, user-facing message (used verbatim)."""
+
+    def __init__(self, message: str, id: str | int | None = None):
+        detail = message if id is None else f"{message} (id '{id}')"
         super().__init__(detail, status.HTTP_404_NOT_FOUND, "NOT_FOUND")
 
 

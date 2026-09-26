@@ -85,3 +85,13 @@ async def test_unexpected_error_during_auth_does_not_leak_internals(client: Asyn
     body = response.text
     assert sensitive_text not in body
     assert response.json()["detail"] == "Invalid authentication credentials"
+
+
+@pytest.mark.asyncio
+async def test_not_found_messages_are_used_verbatim(client: AsyncClient):
+    """NotFoundError used to append " not found" to already complete messages."""
+    resp = await client.get(f"/api/v1/jobs/{uuid.uuid4()}")
+    assert resp.status_code == 404
+    body = resp.json()
+    message = body.get("error") or body.get("detail")
+    assert "not found not found" not in message

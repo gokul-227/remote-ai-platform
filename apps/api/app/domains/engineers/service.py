@@ -89,7 +89,7 @@ class EngineerService:
     async def get_by_id(self, profile_id: uuid.UUID) -> EngineerProfile:
         profile = await self.repo.get_by_id(profile_id)
         if not profile:
-            raise NotFoundError("Engineer profile not found")
+            raise NotFoundError("Professional profile not found")
         return profile
 
     def _recalculate_score(self, profile: EngineerProfile) -> None:
@@ -127,7 +127,7 @@ class EngineerService:
     ) -> EngineerProfile:
         profile = await self.repo.get_by_user_id(user_id)
         if not profile:
-            raise NotFoundError("Engineer profile not found. Please create one first.")
+            raise NotFoundError("Create your professional profile first.")
         updated = await self.repo.update(profile, data)
         self._recalculate_score(updated)
         await self.repo.db.flush()
@@ -137,7 +137,7 @@ class EngineerService:
     async def enhance_profile(self, user_id: uuid.UUID) -> EngineerProfile:
         profile = await self.repo.get_by_user_id(user_id)
         if not profile:
-            raise NotFoundError("Engineer profile not found. Please create a profile first.")
+            raise NotFoundError("Create your professional profile first.")
         profile_text = "\n".join(
             [
                 profile.headline or "",
@@ -198,7 +198,7 @@ class EngineerService:
         """
         profile = await self.repo.get_by_user_id(user_id)
         if not profile:
-            raise NotFoundError("Engineer profile not found. Please create a profile first.")
+            raise NotFoundError("Create your professional profile first.")
 
         # Read file content
         file_bytes = await file.read()
