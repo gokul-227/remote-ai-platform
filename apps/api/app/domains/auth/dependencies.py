@@ -3,6 +3,7 @@ FastAPI authentication and authorization dependencies.
 """
 
 from collections.abc import Callable
+from datetime import UTC
 
 import structlog
 from fastapi import Depends, HTTPException, Security, status
@@ -53,7 +54,9 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
         # this app's business role -- role is decided by this backend
         # (defaulted on first sight, changed only through its own admin
         # endpoints), never read off the identity provider's token.
-        payload = TokenPayload(sub=identity.user_id, email=identity.email, roles=[])
+        payload = TokenPayload(
+            sub=identity.user_id, email=identity.email, roles=[], iat=identity.issued_at
+        )
     else:
         payload = await service.verify_token(token)
     user = await service.get_or_create_user_from_token(payload)
@@ -62,7 +65,7 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive",
         )
-    if payload.v is not None and user.token_version > payload.v:
+    if _session_revoked(user, payload):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session has been revoked. Please log in again.",
@@ -72,6 +75,24 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
     # to avoid MissingGreenlet during Pydantic serialization.
     await repo.db.refresh(user)
     return user
+
+
+def _session_revoked(user: User, payload: TokenPayload) -> bool:
+    # Self-issued tokens carry a version claim; that is authoritative.
+    if payload.v is not None:
+        return user.token_version > payload.v
+    # Identity-provider tokens (Supabase) have no version: use issue time.
+    revoked_at = user.sessions_revoked_at
+    if revoked_at is None:
+        return False
+    if payload.iat is None:
+        # Cannot prove the token postdates the revocation.
+        return True
+    if revoked_at.tzinfo is None:  # SQLite in tests drops the offset
+        revoked_at = revoked_at.replace(tzinfo=UTC)
+    # iat has whole-second precision; a token minted in the same second as
+    # the revocation is treated as revoked.
+    return payload.iat <= int(revoked_at.timestamp())
 
 
 async def get_current_user(

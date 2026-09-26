@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useSyncExternalStore } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface User {
   id: string;
@@ -16,7 +17,8 @@ interface AuthContextType {
   refreshToken: string | null;
   loading: boolean;
   login: (token: string, user: User, refreshToken?: string | null) => void;
-  logout: () => void;
+  /** Ends the Supabase session too; `everywhere` also revokes every other device. */
+  logout: (opts?: { everywhere?: boolean }) => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
 }
 
@@ -26,7 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   refreshToken: null,
   loading: false,
   login: () => {},
-  logout: () => {},
+  logout: async () => {},
   updateUser: () => {},
 });
 
@@ -131,10 +133,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     notifyListeners();
   };
 
-  const logout = () => {
+  const logout = async ({ everywhere = false }: { everywhere?: boolean } = {}) => {
+    // Clearing our own keys alone left the Supabase session (and its refresh
+    // token) alive, so the next visit could silently sign the user back in.
+    // "local" revokes this device's refresh token; "global" revokes all of them.
+    try {
+      await supabase.auth.signOut({ scope: everywhere ? "global" : "local" });
+    } catch {
+      // Offline or already signed out: still clear this device below.
+    }
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    // Per-user UI selections (selected job, contact, contract, ...) must not
+    // leak into the next account that signs in on this browser.
+    for (const store of [localStorage, sessionStorage]) {
+      for (const key of Object.keys(store)) if (key.startsWith("rap-")) store.removeItem(key);
+    }
     notifyListeners();
   };
 

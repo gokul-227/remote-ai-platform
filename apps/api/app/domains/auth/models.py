@@ -66,6 +66,12 @@ class User(Base):
         default=1,
         nullable=False,
     )
+    # Tokens issued at or before this instant are rejected (sign out
+    # everywhere). Unlike token_version this also covers Supabase tokens.
+    sessions_revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     avatar_url: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,

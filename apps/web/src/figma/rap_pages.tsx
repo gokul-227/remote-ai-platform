@@ -234,7 +234,7 @@ export function Security() {
   const TYPES = [["IDENTITY", "Identity", "Confirm who you are with a government ID"], ["GITHUB", "GitHub", "Link your GitHub account and public work"], ["LINKEDIN", "LinkedIn", "Link your professional history"], ["SKILL_ASSESSMENT", "Skill assessment", "Have your key skills assessed"]];
   const status = (t: string) => (ver.data ?? []).find((v: any) => v.verification_type === t)?.status;
   const request = async (t: string) => { try { await api.post("/trust/verifications", { verification_type: t }); ver.reload(); setNotice("Verification requested — we’ll review it shortly."); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't request that verification.")); } };
-  const signOutAll = async () => { try { await api.post("/auth/logout-all"); } catch {} logout(); nav("login"); };
+  const signOutAll = async () => { try { await api.post("/auth/logout-all"); } catch {} await logout({ everywhere: true }); nav("login"); };
   const verified = (ver.data ?? []).filter((v: any) => v.status === "VERIFIED").length;
   if (!user) return <Wrap><Card c="rounded-xl p-10 text-center"><h2>Sign in to manage your security</h2><Btn c="mt-4" onClick={() => nav("login")}>Sign in</Btn></Card></Wrap>;
   return (

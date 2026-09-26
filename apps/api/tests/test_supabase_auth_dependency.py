@@ -3,6 +3,7 @@ gated by settings.AUTH_PROVIDER = "supabase". Uses a real generated EC keypair
 in place of a real Supabase project's JWKS -- no network dependency.
 """
 
+import asyncio
 import time
 import uuid
 from types import SimpleNamespace
@@ -75,3 +76,37 @@ async def test_invalid_supabase_token_rejected(client: AsyncClient):
         "/api/v1/auth/me", headers={"Authorization": "Bearer not-a-real-token"}
     )
     assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_all_revokes_already_issued_supabase_tokens(client: AsyncClient):
+    """Supabase tokens carry no version claim, so /auth/logout-all used to
+    leave every already-issued access token valid until it expired."""
+    sub = str(uuid.uuid4())
+    email = "logout-all-supabase@example.com"
+    now = int(time.time())
+
+    def token_issued_at(iat: int) -> str:
+        claims = {
+            "sub": sub,
+            "email": email,
+            "aud": "authenticated",
+            "role": "authenticated",
+            "iss": "https://test-project.supabase.co/auth/v1",
+            "iat": iat,
+            "exp": iat + 3600,
+        }
+        return jwt.encode(claims, _PRIVATE_KEY, algorithm="ES256")
+
+    old = {"Authorization": f"Bearer {token_issued_at(now - 60)}"}
+    other_device = {"Authorization": f"Bearer {token_issued_at(now - 30)}"}
+    assert (await client.get("/api/v1/auth/me", headers=old)).status_code == 200
+
+    assert (await client.post("/api/v1/auth/logout-all", headers=old)).status_code == 200
+
+    assert (await client.get("/api/v1/auth/me", headers=old)).status_code == 401
+    assert (await client.get("/api/v1/auth/me", headers=other_device)).status_code == 401
+    # Signing in again afterwards works (iat has whole-second precision).
+    await asyncio.sleep(1.1)
+    fresh = {"Authorization": f"Bearer {token_issued_at(int(time.time()))}"}
+    assert (await client.get("/api/v1/auth/me", headers=fresh)).status_code == 200

@@ -346,8 +346,13 @@ async def logout_all_sessions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
-    """Revoke all active sessions and refresh tokens across all devices."""
+    """Reject every access token issued so far, on every device.
+
+    Refresh tokens are held by the identity provider: the client must also
+    call Supabase's global sign-out so no new access token can be minted.
+    """
     current_user.token_version = (current_user.token_version or 1) + 1
+    current_user.sessions_revoked_at = datetime.now(UTC)
     await record_audit_event(
         db=db,
         action="LOGOUT_ALL_SESSIONS",

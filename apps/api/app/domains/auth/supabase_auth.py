@@ -26,6 +26,7 @@ _jwks_client: PyJWKClient | None = None
 class SupabaseIdentity:
     user_id: str
     email: str | None
+    issued_at: int | None = None
 
 
 def _get_jwks_client() -> PyJWKClient:
@@ -82,4 +83,4 @@ def verify_supabase_token(token: str) -> SupabaseIdentity:
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    return SupabaseIdentity(user_id=sub, email=payload.get("email"))
+    return SupabaseIdentity(user_id=sub, email=payload.get("email"), issued_at=payload.get("iat"))
