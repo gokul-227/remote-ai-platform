@@ -4,6 +4,7 @@ AI Matching Engine Service — Computes multi-factor score breakdown and explain
 
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,10 @@ from app.services.ai import AIResponse
 logger = get_logger("matching.service")
 
 
+# Upper bound on profiles scored per candidate search (in memory, no AI).
+CANDIDATE_POOL_LIMIT = 1000
+
+
 class MatchingService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -28,8 +33,13 @@ class MatchingService:
         self.job_repo = JobRepository(db)
 
     async def calculate_match(self, engineer: EngineerProfile, job: JobPost) -> JobMatch:
+        """Score a professional against a job and persist the result."""
+        return await self.match_repo.upsert_match(**self.score(engineer, job))
+
+    @staticmethod
+    def score(engineer: EngineerProfile, job: JobPost) -> dict[str, Any]:
         """
-        Evaluate multi-factor match score between Engineer profile and Job post.
+        Evaluate the multi-factor match between a profile and a job (pure, no I/O).
         """
         eng_skills = {s.lower() for s in (engineer.skills or [])}
         job_skills = {s.lower() for s in (job.skills or [])}
@@ -45,7 +55,8 @@ class MatchingService:
 
         # 2. Experience Score (0-100)
         exp_map = {"junior": 1, "mid": 3, "senior": 5, "lead": 8}
-        required_exp = exp_map.get((job.experience_level or "mid").lower(), 3)
+        # A job that doesn't state a level sets no experience requirement.
+        required_exp = exp_map.get((job.experience_level or "").lower(), 0)
         candidate_exp = engineer.years_of_experience or 0
 
         if candidate_exp >= required_exp:
@@ -122,7 +133,9 @@ class MatchingService:
             rationale_parts.append(
                 f"Matches {len(matching_skills)} key skills ({', '.join(matching_skills[:3])})."
             )
-        if candidate_exp >= required_exp:
+        if not required_exp:
+            rationale_parts.append("The job doesn't state an experience level.")
+        elif candidate_exp >= required_exp:
             rationale_parts.append(
                 f"Meets experience criteria ({candidate_exp} yrs vs {required_exp} yrs required)."
             )
@@ -141,22 +154,21 @@ class MatchingService:
             recommendations=missing_skills,
         )
 
-        # Save to DB
-        return await self.match_repo.upsert_match(
-            engineer_id=engineer.id,
-            job_id=job.id,
-            overall_score=overall_score,
-            skill_score=round(skill_score, 1),
-            experience_score=round(experience_score, 1),
-            role_score=round(role_score, 1),
-            timezone_score=round(timezone_score, 1),
-            availability_score=round(availability_score, 1),
-            compensation_score=round(compensation_score, 1),
-            remote_score=round(remote_score, 1),
-            reasoning=" ".join(analysis.reason),
-            matching_skills=analysis.skills_match,
-            missing_skills=analysis.recommendations,
-        )
+        return {
+            "engineer_id": engineer.id,
+            "job_id": job.id,
+            "overall_score": overall_score,
+            "skill_score": round(skill_score, 1),
+            "experience_score": round(experience_score, 1),
+            "role_score": round(role_score, 1),
+            "timezone_score": round(timezone_score, 1),
+            "availability_score": round(availability_score, 1),
+            "compensation_score": round(compensation_score, 1),
+            "remote_score": round(remote_score, 1),
+            "reasoning": " ".join(analysis.reason),
+            "matching_skills": analysis.skills_match,
+            "missing_skills": analysis.recommendations,
+        }
 
     async def get_recommendations_for_engineer(
         self, user_id: uuid.UUID, skip: int = 0, limit: int = 20
@@ -217,10 +229,19 @@ class MatchingService:
         if not job:
             raise NotFoundError("Job post not found")
 
-        # Compute against public engineer profiles
-        engineers = await self.engineer_repo.search(skip=0, limit=30)
-        for engineer in engineers:
-            await self.calculate_match(engineer, job)
+        # Score every public, open-to-work profile in memory (cheap and
+        # deterministic), then persist only the best ones needed for this
+        # page. Previously only the first 30 profiles were ever considered.
+        engineers = await self.engineer_repo.search(
+            is_open_to_work=True, skip=0, limit=CANDIDATE_POOL_LIMIT
+        )
+        scored = sorted(
+            (self.score(engineer, job) for engineer in engineers),
+            key=lambda m: m["overall_score"],
+            reverse=True,
+        )
+        for match in scored[: max(skip + limit, 50)]:
+            await self.match_repo.upsert_match(**match)
         await self.db.commit()
 
         return await self.match_repo.list_top_candidates_for_job(job_id, skip=skip, limit=limit)

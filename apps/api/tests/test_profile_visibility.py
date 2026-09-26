@@ -177,3 +177,34 @@ async def test_candidate_matches_show_only_public_profiles(
     assert resp.status_code == 200
     assert [m["engineer_id"] for m in resp.json()] == [public_id]
     assert PRIVATE_FIELDS.isdisjoint(resp.json()[0]["engineer"])
+
+
+@pytest.mark.asyncio
+async def test_candidate_search_considers_more_than_the_first_30_profiles(client: AsyncClient, db: AsyncSession):
+    """Only the first 30 public profiles used to be scored (go-live finding W)."""
+    import datetime as dt
+
+    from app.domains.engineers.models import EngineerProfile
+
+    company, _ = await _register(client, "COMPANY")
+    created = await client.post("/api/v1/companies/me", headers=company, json={"name": "Pool Co"})
+    job = JobPost(title="Illustrator", slug=f"illustrator-{uuid.uuid4().hex[:6]}", description="d",
+                  company_name="Pool Co", source="DIRECT", company_id=uuid.UUID(created.json()["id"]),
+                  skills=["Illustration", "Procreate"])
+    db.add(job)
+    old = dt.datetime(2026, 1, 1, tzinfo=dt.UTC)
+    for i in range(40):
+        user = User(id=uuid.uuid4(), keycloak_id=str(uuid.uuid4()), email=f"pool{i}@visibility-example.com",
+                    full_name=f"Pool {i}", role=UserRole.ENGINEER, is_active=True, token_version=1)
+        db.add(user)
+        await db.flush()
+        # The one strong match is the least recently updated, i.e. outside the first 30.
+        best = i == 39
+        db.add(EngineerProfile(user_id=user.id, headline="x", skills=["Illustration", "Procreate"] if best else ["Excel"],
+                               years_of_experience=5, is_public=True, is_open_to_work=True,
+                               updated_at=old if best else dt.datetime(2026, 9, 1, tzinfo=dt.UTC)))
+    await db.commit()
+
+    resp = await client.get(f"/api/v1/matching/candidates/{job.id}", headers=company)
+    assert resp.status_code == 200
+    assert resp.json()[0]["engineer"]["full_name"] == "Pool 39"
