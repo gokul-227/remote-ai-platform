@@ -1,0 +1,273 @@
+// @ts-nocheck -- Figma Make export, kept verbatim (never type-checked upstream).
+import { useState } from "react";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, Stars, cx, PEOPLE, JOBS, Field, inputCls } from "./rap_kit";
+
+
+function useDemo<T>(key:string,initial:T):[T,(v:T)=>void]{const [value,setValue]=useState<T>(()=>{try{return JSON.parse(localStorage.getItem("rap-v2-"+key)||"null")??initial;}catch{return initial;}});return [value,(v:T)=>{setValue(v);localStorage.setItem("rap-v2-"+key,JSON.stringify(v));}];}
+const visit=(page:string)=>{window.location.hash=page;};
+function Empty({text="No results yet",action="Explore jobs",to="jobs"}:{text?:string;action?:string;to?:string}){return <Card c="p-10 text-center"><Ic n="inbox" s={36} c="mx-auto mb-3 text-slate-400"/><h2>{text}</h2><p className="my-3 text-slate-500">Try another filter or explore the opportunities available.</p><Btn onClick={()=>visit(to)}>{action}</Btn></Card>;}
+
+const BL = "#0552CC";
+function Page({ title, sub, act, children, w }: { title: string; sub?: string; act?: any; children: any; w?: string }) {
+  return (
+    <div className="bg-[#F0F2F5] py-6"><div className={cx("mx-auto px-4", w || "max-w-[1200px]")}>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-bold text-slate-900">{title}</h1>{sub && <p className="text-sm text-slate-500">{sub}</p>}</div><div className="flex gap-2">{act}</div></div>
+      {children}
+    </div></div>
+  );
+}
+function Stat({ l, v, d, i }: { l: string; v: string; d?: string; i: string }) {
+  return <Card c="rounded-xl"><div className="flex items-center justify-between text-slate-500"><span className="text-sm">{l}</span><span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n={i} s={16} /></span></div><p className="mt-2 text-2xl font-bold text-slate-900">{v}</p>{d && <p className="text-xs font-semibold text-emerald-600">{d}</p>}</Card>;
+}
+
+export function Dashboard(){return <Page title="Your next chapter starts here" sub="Keep your profile, opportunities and current work in one place" act={<Btn onClick={()=>visit("jobs")} icon="search">Find jobs</Btn>}><div className="grid gap-4 md:grid-cols-3">{[["My matches","recs","target","Explore roles with a clear explanation of why they fit."],["Applications","applications","file","Follow your applications and invitations."],["Current work","workspace","board","Check your tasks, deliverables and milestones."]].map(([title,path,icon,copy])=><Card key={path}><Ic n={icon} c="text-blue-600" s={28}/><h2 className="mt-4">{title}</h2><p className="my-3 text-sm text-slate-500">{copy}</p><Btn v="outline" onClick={()=>visit(path)}>Open {title.toLowerCase()}</Btn></Card>)}</div><Card c="mt-5"><h2>Make your profile work for you</h2><p className="my-3 text-slate-500">Add your experience, skills and work preferences so employers can understand what you bring.</p><Btn onClick={()=>visit("profile")}>Review my profile</Btn><Btn v="gray" c="ml-2" onClick={()=>visit("onboarding")}>Import a resume</Btn></Card><Card c="mt-5"><h2>Recommended roles</h2>{JOBS.slice(0,3).map(j=><button key={j.id} onClick={()=>{localStorage.setItem("rap-selected-job",String(j.id));visit("jobdetail");}} className="flex w-full items-center gap-4 border-t border-slate-100 py-4 text-left first:mt-3"><Lg name={j.co}/><span className="flex-1"><b>{j.t}</b><span className="block text-sm text-slate-500">{j.co} · {j.loc}</span></span><Tag t="blue">{j.m}% match</Tag><Ic n="right"/></button>)}</Card></Page>;}
+export function Recs(){const [filter,setFilter]=useState("All");const [saved,setSaved]=useDemo<number[]>("saved",[]);const rows=JOBS.filter((j:any)=>filter==="All"||(j.type||j.t||"").toLowerCase().includes(filter.toLowerCase()));return <Page title="Matches for you" sub="Compare your skills, experience, role, timezone, availability, rate and remote preferences."><Tabs items={["All","Contract","Full-time"]} v={filter} set={setFilter}/><div className="mt-5 space-y-4">{rows.map(j=><Card key={j.id}><div className="flex items-start gap-4"><Lg name={j.co}/><div className="flex-1"><button onClick={()=>{localStorage.setItem("rap-selected-job",String(j.id));visit("jobdetail");}} className="text-left text-lg font-bold text-blue-700">{j.t}</button><p className="mt-1 text-sm text-slate-500">{j.co} · {j.loc} · {j.pay}</p></div><Tag t="blue">{j.m}% match</Tag></div><p className="my-4 text-sm text-slate-600">Your Python and platform engineering experience align with this sample role. Review the complete requirements before applying.</p><div className="flex gap-2"><Btn onClick={()=>{localStorage.setItem("rap-selected-job",String(j.id));visit("jobdetail");}}>View match & apply</Btn><Btn v="gray" icon="bookmark" onClick={()=>setSaved(saved.includes(j.id)?saved.filter(id=>id!==j.id):[...saved,j.id])}>{saved.includes(j.id)?"Saved":"Save job"}</Btn></div></Card>)}{!rows.length&&<Empty text="No matches for this filter"/>}</div></Page>;}
+export function Applications(){const [tab,setTab]=useState("All");const [rows,setRows]=useDemo<any[]>("applications",[{id:1,title:"Senior AI Platform Engineer",company:"Northstar Cloud",status:"REVIEWING",note:"Excited to contribute my platform experience."},{id:2,title:"Applied ML Engineer",company:"Helix Labs",status:"SHORTLISTED",note:""},{id:3,title:"Data Platform Engineer",company:"Brightpath",status:"INVITED",note:"We would like to learn more about your experience."}]);const [selected,setSelected]=useState<any>(null);const [withdraw,setWithdraw]=useState<any>(null);const shown=rows.filter(x=>tab==="All"||(tab==="Invitations"?x.status==="INVITED":tab==="Archived"?["WITHDRAWN","REJECTED","ACCEPTED"].includes(x.status):!["WITHDRAWN","REJECTED","ACCEPTED","INVITED"].includes(x.status)));return <Page title="Your applications" sub="Every opportunity, with a clear next step"><Tabs items={["All","Active","Invitations","Archived"]} v={tab} set={setTab}/><div className="mt-4 space-y-3">{shown.map(x=><Card key={x.id}><div className="flex flex-wrap items-center gap-4"><Lg name={x.company}/><div className="flex-1"><h3>{x.title}</h3><p className="text-sm text-slate-500">{x.company}</p></div><Tag t={x.status==="REJECTED"?"red":"blue"}>{x.status.replaceAll("_"," ")}</Tag><Btn v="gray" onClick={()=>setSelected(x)}>View details</Btn>{!["WITHDRAWN","REJECTED","ACCEPTED","INVITED"].includes(x.status)&&<Btn v="outline" onClick={()=>setWithdraw(x)}>Withdraw</Btn>}{x.status==="INVITED"&&<Btn onClick={()=>{localStorage.setItem("rap-selected-job","1");visit("jobdetail");}}>Review invitation</Btn>}</div></Card>)}{!shown.length&&<Empty text="No applications in this view"/>}</div><Modal open={!!selected} onClose={()=>setSelected(null)} title="Application details">{selected&&<><h2>{selected.title}</h2><p className="my-2 text-slate-500">{selected.company}</p><Tag t="blue">{selected.status}</Tag><h3 className="mt-5">Your cover note</h3><p className="my-3 text-slate-600">{selected.note||"No cover note attached."}</p><p className="rounded-lg bg-blue-50 p-3 text-sm">You will receive a notification when the company updates your application.</p><Btn c="mt-5" onClick={()=>{setSelected(null);visit("jobdetail");}}>View job</Btn></>}</Modal><Modal open={!!withdraw} onClose={()=>setWithdraw(null)} title="Withdraw application?"><p className="mb-5 text-slate-600">This removes your application from the active pipeline. You can review it in Archived.</p><div className="flex justify-end gap-2"><Btn v="gray" onClick={()=>setWithdraw(null)}>Keep application</Btn><Btn v="danger" onClick={()=>{setRows(rows.map(x=>x.id===withdraw.id?{...x,status:"WITHDRAWN"}:x));setWithdraw(null);}}>Withdraw application</Btn></div></Modal></Page>;}
+export function Saved(){const [saved,setSaved]=useDemo<number[]>("saved",[1,2]);const rows=JOBS.filter(j=>saved.includes(j.id));return <Page title="Saved jobs" sub="Keep interesting opportunities together until you’re ready"><div className="space-y-3">{rows.map(j=><Card key={j.id}><div className="flex flex-wrap items-center gap-3"><Lg name={j.co}/><div className="flex-1"><h3>{j.t}</h3><p className="text-sm text-slate-500">{j.co} · {j.pay}</p></div><Btn onClick={()=>{localStorage.setItem("rap-selected-job",String(j.id));visit("jobdetail");}}>View job</Btn><Btn v="gray" onClick={()=>setSaved(saved.filter(id=>id!==j.id))}>Remove</Btn></div></Card>)}{!rows.length&&<Empty text="Your saved jobs will appear here"/>}</div></Page>;}
+
+const ENGS = [
+  { n: "Priya Raman", r: "Staff ML Engineer", loc: "Bengaluru, India", rate: 118, sk: ["RAG", "MLOps", "Python"], av: "Available now", exp: 9, sc: 97, on: true, tz: "Asia" },
+  { n: "Mateo Silva", r: "AI Product Designer", loc: "Lisbon, Portugal", rate: 92, sk: ["Figma", "SaaS UX", "Design systems"], av: "Available now", exp: 7, sc: 94, on: true, tz: "Europe" },
+  { n: "Elena Petrova", r: "LLM Evaluation Lead", loc: "Berlin, Germany", rate: 105, sk: ["Evals", "PyTorch", "Safety"], av: "In 2 weeks", exp: 6, sc: 96, on: false, tz: "Europe" },
+  { n: "Daniel Okafor", r: "Data Platform Lead", loc: "Lagos, Nigeria", rate: 85, sk: ["Databricks", "Spark", "dbt"], av: "Available now", exp: 10, sc: 91, on: true, tz: "Africa" },
+  { n: "Aisha Rahman", r: "Principal AI Recruiter", loc: "London, UK", rate: 70, sk: ["Talent", "Hiring", "Sourcing"], av: "In 1 month", exp: 12, sc: 88, on: false, tz: "Europe" },
+  { n: "Lucas Meyer", r: "Senior Backend Engineer", loc: "Munich, Germany", rate: 98, sk: ["Go", "Postgres", "gRPC"], av: "Available now", exp: 11, sc: 93, on: true, tz: "Europe" },
+  { n: "Kenji Watanabe", r: "MLOps Lead", loc: "Tokyo, Japan", rate: 105, sk: ["Kubernetes", "Vector DB", "Terraform"], av: "In 2 weeks", exp: 8, sc: 95, on: true, tz: "Asia" },
+  { n: "Sara Lindqvist", r: "DevOps Engineer", loc: "Stockholm, Sweden", rate: 88, sk: ["AWS", "CI/CD", "Observability"], av: "Available now", exp: 9, sc: 87, on: false, tz: "Europe" },
+];
+
+export function Engineers() {
+  const [q, setQ] = useState("");
+  const [avail, setAvail] = useState(false);
+  const [tz, setTz] = useState("Any");
+  const [maxRate, setMaxRate] = useState(130);
+  const [sort, setSort] = useState("match");
+  const [conn, setConn] = useState<string[]>([]);
+  const [saved, setSaved] = useState<string[]>([]);
+  const list = ENGS.filter((e) => e.rate <= maxRate && (!avail || e.av === "Available now") && (tz === "Any" || e.tz === tz) && (e.n + e.r + e.sk.join(" ")).toLowerCase().includes(q.toLowerCase())).sort((x, y) => (sort === "match" ? y.sc - x.sc : sort === "rate" ? x.rate - y.rate : y.exp - x.exp));
+  const tog = (arr: string[], set: any, n: string) => set(arr.includes(n) ? arr.filter((x) => x !== n) : [...arr, n]);
+  return (
+    <Page title="Engineer directory" sub="Discover engineers by skills, availability and experience" w="max-w-none">
+      <div className="grid gap-4 grid-cols-1 xl:grid-cols-[260px_minmax(0,1fr)]">
+        <Card c="h-fit rounded-xl" p="p-4">
+          <p className="mb-3 text-[17px] font-bold">Filters</p>
+          <label className="mb-1 block text-sm font-semibold">Keyword</label>
+          <div className="mb-4 flex h-10 items-center gap-2 rounded-full bg-slate-100 px-3"><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, role or skill" className="w-full bg-transparent text-sm outline-none" /></div>
+          <label className="mb-1 block text-sm font-semibold">Timezone</label>
+          <div className="mb-4 flex flex-wrap gap-2">{["Any", "Europe", "Asia", "Africa"].map((x) => <button key={x} onClick={() => setTz(x)} className={cx("rounded-full px-3 py-1 text-sm font-semibold", tz === x ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>{x}</button>)}</div>
+          <label className="mb-1 block text-sm font-semibold">Max hourly rate: USD {maxRate}</label>
+          <input type="range" min={60} max={130} value={maxRate} onChange={(e) => setMaxRate(Number(e.target.value))} className="mb-4 w-full" />
+          <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={avail} onChange={(e) => setAvail(e.target.checked)} />Available now only</label>
+          <div className="mt-4 rounded-lg bg-[#F3F0FF] p-3 text-sm"><p className="mb-1 flex items-center gap-1 font-bold text-[#5B4BDB]"><Ic n="spark" s={14} />AI tip</p><p className="text-slate-700">Sort by match to see engineers ranked against your open roles.</p></div>
+        </Card>
+        <div>
+          <Card c="mb-3 rounded-xl" p="p-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">{list.length} engineers</p><div className="flex items-center gap-2 text-sm"><span className="text-slate-500">Sort by</span>{[["match", "Best match"], ["rate", "Lowest rate"], ["exp", "Experience"]].map((x) => <button key={x[0]} onClick={() => setSort(x[0])} className={cx("rounded-full px-3 py-1.5 font-semibold", sort === x[0] ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>{x[1]}</button>)}</div></div></Card>
+          <div className="space-y-3">
+            {list.map((e) => (
+              <Card key={e.n} c="rounded-xl" p="p-4">
+                <div className="flex flex-wrap items-start gap-4">
+                  <Av name={e.n} s={64} dot={e.on} />
+                  <div className="min-w-[220px] flex-1">
+                    <div className="flex flex-wrap items-center gap-2"><button onClick={() => { window.location.hash = "engineer"; }} className="text-[17px] font-bold text-[#0552CC] hover:underline">{e.n}</button><Tag v="blue">{e.sc}% match</Tag><Tag v="gray">Verified</Tag></div>
+                    <p className="text-sm text-slate-700">{e.r}</p>
+                    <p className="text-sm text-slate-500">{e.loc} - {e.exp} yrs - <span className={e.av === "Available now" ? "font-semibold text-emerald-700" : ""}>{e.av}</span></p>
+                    <div className="mt-2 flex flex-wrap gap-1">{e.sk.map((k) => <Tag key={k} v="gray">{k}</Tag>)}</div>
+                  </div>
+                  <div className="text-right"><p className="text-xl font-bold">USD {e.rate}<span className="text-sm font-medium text-slate-500">/hr</span></p><div className="mt-2 flex justify-end gap-2"><button onClick={() => tog(saved, setSaved, e.n)} className="rounded-full bg-slate-100 p-2 hover:bg-slate-200"><Ic n="bookmark" s={16} c={saved.includes(e.n) ? "text-[#0552CC]" : "text-slate-600"} /></button><Btn v={conn.includes(e.n) ? "gray" : "outline"} sm onClick={() => tog(conn, setConn, e.n)}>{conn.includes(e.n) ? "Requested" : "Connect"}</Btn><Btn v="primary" sm onClick={() => { window.location.hash = "engineer"; }}>Invite</Btn></div></div>
+                </div>
+              </Card>
+            ))}
+            {list.length === 0 && <Card c="rounded-xl" p="p-10"><p className="text-center text-slate-500">No engineers match these filters. Try widening the rate or timezone.</p></Card>}
+          </div>
+        </div>
+      </div>
+    </Page>
+  );
+}
+
+const COS = [
+  { n: "Northstar Cloud", ind: "Cloud infrastructure", size: "1,001-5,000", loc: "Remote - US/EU", jobs: 12, rating: 4.8, fol: "48K", hiring: true, tag: "AI platform, reliability" },
+  { n: "Helix Labs", ind: "Applied AI research", size: "201-500", loc: "Remote - Europe", jobs: 7, rating: 4.7, fol: "22K", hiring: true, tag: "Search, ranking, evals" },
+  { n: "Brightpath", ind: "Data and analytics", size: "51-200", loc: "Remote-first", jobs: 5, rating: 4.6, fol: "9K", hiring: true, tag: "Lakehouse, dbt, BI" },
+  { n: "Aster Labs", ind: "LLM tooling", size: "51-200", loc: "Remote - EU", jobs: 4, rating: 4.5, fol: "12K", hiring: true, tag: "Evaluation, safety" },
+  { n: "CloudNova", ind: "SaaS platform", size: "501-1,000", loc: "Remote - Global", jobs: 9, rating: 4.4, fol: "31K", hiring: true, tag: "Backend, DevOps" },
+  { n: "Orbit Systems", ind: "Developer tools", size: "11-50", loc: "Remote - US", jobs: 0, rating: 4.3, fol: "5K", hiring: false, tag: "SDKs, CLI" },
+];
+
+export function Companies() {
+  const [q, setQ] = useState("");
+  const [hiring, setHiring] = useState(false);
+  const [fol, setFol] = useState<string[]>(["Northstar Cloud"]);
+  const list = COS.filter((c) => (!hiring || c.hiring) && (c.n + c.ind + c.tag).toLowerCase().includes(q.toLowerCase()));
+  return (
+    <Page title="Companies" sub="Follow teams, read culture reviews and see who is hiring" w="max-w-none">
+      <Card c="mb-4 rounded-xl" p="p-3"><div className="flex flex-wrap items-center gap-2"><div className="flex h-10 flex-1 items-center gap-2 rounded-full bg-slate-100 px-3" style={{ minWidth: 220 }}><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search companies, industries or focus" className="w-full bg-transparent text-sm outline-none" /></div><button onClick={() => setHiring(!hiring)} className={cx("h-10 rounded-full px-4 text-sm font-semibold", hiring ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>Hiring now</button><span className="text-sm text-slate-500">{list.length} companies</span></div></Card>
+      <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
+        {list.map((c) => (
+          <Card key={c.n} c="rounded-xl" p="p-4">
+            <div className="flex items-start gap-4">
+              <Lg name={c.n} s={64} />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2"><p className="text-[17px] font-bold text-[#0552CC]">{c.n}</p>{c.hiring && <Tag v="blue">Hiring</Tag>}</div>
+                <p className="text-sm text-slate-700">{c.ind} - {c.size} employees</p>
+                <p className="text-sm text-slate-500">{c.loc} - {c.fol} followers</p>
+                <p className="mt-1 text-sm text-slate-500">Focus: {c.tag}</p>
+              </div>
+              <div className="text-right"><p className="text-lg font-bold">{c.rating}</p><p className="text-xs text-slate-500">culture rating</p></div>
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span className="text-sm text-slate-600">{c.jobs} open roles</span><div className="flex gap-2"><Btn v={fol.includes(c.n) ? "gray" : "outline"} sm onClick={() => setFol(fol.includes(c.n) ? fol.filter((x) => x !== c.n) : [...fol, c.n])}>{fol.includes(c.n) ? "Following" : "Follow"}</Btn><Btn v="primary" sm onClick={() => { window.location.hash = "company"; }}>View page</Btn></div></div>
+          </Card>
+        ))}
+        {list.length === 0 && <Card c="rounded-xl" p="p-10"><p className="text-center text-slate-500">No companies match your search.</p></Card>}
+      </div>
+    </Page>
+  );
+}
+
+export function Settings(){const [tab,setTab]=useState("Account");const [data,setData]=useDemo<any>("settings",{name:"Gokul Raj",public:true,open:true});const [draft,setDraft]=useState(data);const [notice,setNotice]=useState("");return <Page title="Settings" sub="Manage your account and how your profile appears"><div className="grid gap-5 md:grid-cols-[180px_1fr]"><div>{["Account","Privacy","Security"].map(t=><button key={t} onClick={()=>{setTab(t);setNotice("");}} className={cx("mb-1 block w-full rounded-lg p-3 text-left",tab===t?"bg-blue-100 font-semibold text-blue-700":"hover:bg-slate-200")}>{t}</button>)}</div><Card>{tab==="Account"?<><h2>Account details</h2><Field label="Full name"><input className={inputCls+" mt-3"} value={draft.name} onChange={e=>setDraft({...draft,name:e.target.value})}/></Field><p className="my-4 text-sm text-slate-500">Your email is managed by your sign-in provider.</p><Btn onClick={()=>{if(!draft.name.trim()){setNotice("Enter your full name.");return;}setData(draft);setNotice("Account changes saved in this preview.");}}>Save changes</Btn></>:tab==="Privacy"?<><h2>Profile visibility</h2>{[["public","Public profile","Allow people to find your professional profile."],["open","Open to work","Let hiring companies know you are exploring opportunities."]].map(([key,label,copy])=><label key={key} className="mt-5 flex items-start gap-3 border-t border-slate-100 pt-4"><input type="checkbox" checked={draft[key]} onChange={e=>setDraft({...draft,[key]:e.target.checked})}/><span><b>{label}</b><p className="mt-1 text-sm font-normal text-slate-500">{copy}</p></span></label>)}<Btn c="mt-5" onClick={()=>{setData(draft);setNotice("Privacy preferences saved in this preview.");}}>Save preferences</Btn></>:<><h2>Sign-in & security</h2><p className="my-4 text-slate-500">Sign in with an email code or your connected identity provider.</p><Btn v="outline" onClick={()=>visit("forgot")}>Account recovery</Btn><Btn v="gray" c="ml-2" onClick={()=>setNotice("Other sessions signed out in this preview.")}>Sign out other sessions</Btn><p className="mt-5 text-xs text-slate-500">No live account changes are made in this design.</p></>}{notice&&<p role="status" className="mt-5 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">{notice}</p>}</Card></div></Page>;}
+export function Onboarding(){const [step,setStep]=useState(0);const [file,setFile]=useState("");const [data,setData]=useDemo<any>("profile",{headline:"",role:"Data Engineer",location:"",skills:"",rate:"",availability:"Available now",timezone:"Europe/Berlin",bio:""});const [error,setError]=useState("");const steps=["Start","Resume","Profile","Preferences","Ready"];const update=(k:string,v:string)=>setData({...data,[k]:v});return <Page title="Build your professional profile" sub="A few details help the right opportunities find you" w="max-w-[900px]"><Card><div className="mb-7 flex gap-2">{steps.map((label,i)=><div key={label} className="flex-1"><div className={cx("mb-2 h-1 rounded-full",i<=step?"bg-blue-600":"bg-slate-200")}/><span className="text-xs text-slate-500">{i+1}. {label}</span></div>)}</div>{step===0?<><h2>Let’s get to know your work</h2><p className="my-4 text-slate-500">Import a resume or build your profile by hand. You can review and edit every detail before sharing it.</p><div className="grid gap-3 md:grid-cols-2"><button onClick={()=>setStep(1)} className="rounded-xl border border-blue-200 bg-blue-50 p-6 text-left"><Ic n="file" c="text-blue-600"/><h3 className="mt-3">Start with your resume</h3><p className="mt-2 text-sm text-slate-500">PDF or DOCX, with a review step.</p></button><button onClick={()=>setStep(2)} className="rounded-xl border border-slate-200 p-6 text-left"><Ic n="edit"/><h3 className="mt-3">Build it myself</h3><p className="mt-2 text-sm text-slate-500">Add your skills and experience.</p></button></div></>:step===1?<><h2>Import your resume</h2><p className="my-3 text-sm text-slate-500">Files stay in your browser during this preview. AI extraction below uses a sample resume.</p><label className="mt-4 block rounded-xl border-2 border-dashed border-slate-300 p-8 text-center"><Ic n="file" s={32} c="mx-auto mb-3 text-blue-600"/><span className="block">Choose a PDF or DOCX</span><input aria-label="Resume file" type="file" accept=".pdf,.docx" className="mt-4 max-w-full text-sm" onChange={e=>setFile(e.target.files?.[0]?.name||"")}/></label>{file&&<p className="mt-3 text-sm">Selected: {file}</p>}<Btn v="outline" c="mt-4" onClick={()=>{setData({...data,headline:"Data engineer building reliable platforms",location:"Berlin, Germany",skills:"Python, SQL, AWS, Databricks",bio:"I build data platforms that help distributed teams deliver reliable analytics."});setFile("Sample resume ready for review");}}>Preview sample extraction</Btn></>:step===2?<><h2>Review your profile</h2><p className="my-3 text-sm text-slate-500">Describe the work you want to be known for.</p><div className="space-y-4">{[["headline","Professional headline"],["role","Primary role"],["location","Location"],["skills","Skills, separated by commas"]].map(([key,label])=><Field key={key} label={label}><input className={inputCls} value={data[key]} onChange={e=>update(key,e.target.value)}/></Field>)}<Field label="About you"><textarea className={inputCls+" !h-24 py-2"} value={data.bio} onChange={e=>update("bio",e.target.value)}/></Field></div></>:step===3?<><h2>Your work preferences</h2><div className="mt-4 space-y-4"><Field label="Hourly rate (USD)"><input type="number" min="0" className={inputCls} value={data.rate} onChange={e=>update("rate",e.target.value)}/></Field><Field label="Timezone"><input className={inputCls} value={data.timezone} onChange={e=>update("timezone",e.target.value)}/></Field><Field label="Availability"><select className={inputCls} value={data.availability} onChange={e=>update("availability",e.target.value)}>{["Available now","In 2 weeks","In 1 month","Not available"].map(v=><option key={v}>{v}</option>)}</select></Field></div></>:<div className="py-8 text-center"><Ic n="check" s={40} c="mx-auto text-green-600"/><h2 className="mt-4">You’re ready to explore</h2><p className="my-3 text-slate-500">Your profile details are saved in this preview. Discover roles and refine your profile at any time.</p><Btn onClick={()=>visit("dash")}>Go to my dashboard</Btn></div>}{error&&<p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}{step>0&&step<4&&<div className="mt-6 flex justify-between border-t border-slate-200 pt-4"><Btn v="gray" onClick={()=>{setError("");setStep(step-1);}}>Back</Btn><Btn onClick={()=>{if(step===2&&(!data.headline.trim()||!data.skills.trim())){setError("Add a headline and at least one skill to continue.");return;}setError("");setStep(step+1);}}>{step===1?"Review profile":"Continue"}</Btn></div>}</Card></Page>;}
+export function CoDash(){return <Page title="Your hiring workspace" sub="Find the right people and keep hiring moving" act={<Btn icon="plus" onClick={()=>visit("postjob")}>Post a job</Btn>}><div className="grid gap-4 md:grid-cols-3">{[["Job postings","cojobs","briefcase","Manage active and paused roles."],["Candidates","candidates","users","Review applications and explainable matches."],["Contracts & delivery","contracts","file","Turn an accepted application into a clear agreement."]].map(([title,path,icon,copy])=><Card key={path}><Ic n={icon} s={28} c="text-blue-600"/><h2 className="mt-4">{title}</h2><p className="my-3 text-sm text-slate-500">{copy}</p><Btn v="outline" onClick={()=>visit(path)}>Open {title.toLowerCase()}</Btn></Card>)}</div><Card c="mt-5"><h2>A clear path from hiring to delivery</h2><div className="mt-4 grid gap-3 md:grid-cols-4">{[["1","Post a role","postjob"],["2","Review candidates","candidates"],["3","Agree on a contract","contracts"],["4","Start the project","workspace"]].map(([n,title,path])=><button key={n} onClick={()=>visit(path)} className="rounded-lg bg-slate-50 p-4 text-left"><span className="text-blue-600">{n}</span><b className="mt-2 block">{title} →</b></button>)}</div></Card><Card c="mt-5"><h2>Your company profile</h2><p className="my-3 text-slate-500">Give engineers a clear picture of your team, mission and working style.</p><Btn onClick={()=>visit("coprofile")}>Edit company profile</Btn></Card></Page>;}
+
+const STAGES = ["Applied", "Screening", "Interview", "Offer", "Hired"];
+const CANDS = [
+  { id: 1, n: "Priya Raman", r: "Staff ML Engineer", sc: 97, sk: ["RAG", "Python", "LLM evals"], st: 0, ex: "9 yrs", loc: "Berlin", rate: "USD 110/hr", why: "Shipped 3 production RAG platforms; strongest evaluation depth in the pool." },
+  { id: 2, n: "Kenji Watanabe", r: "MLOps Lead", sc: 95, sk: ["Kubernetes", "Vector DB", "Terraform"], st: 0, ex: "8 yrs", loc: "Tokyo", rate: "USD 105/hr", why: "Owns inference infrastructure at scale; timezone overlap is 3 hrs." },
+  { id: 3, n: "Mateo Silva", r: "AI Product Designer", sc: 94, sk: ["Figma", "LLM UX", "Research"], st: 1, ex: "7 yrs", loc: "Madrid", rate: "USD 85/hr", why: "Portfolio shows explainable AI interfaces similar to this role." },
+  { id: 4, n: "Daniel Okafor", r: "Data Platform Lead", sc: 91, sk: ["Databricks", "Spark", "dbt"], st: 1, ex: "10 yrs", loc: "Lagos", rate: "USD 95/hr", why: "Lakehouse migrations with measurable cost reduction." },
+  { id: 5, n: "Elena Petrova", r: "LLM Evaluation Lead", sc: 96, sk: ["Evals", "Python", "Red teaming"], st: 2, ex: "6 yrs", loc: "Sofia", rate: "USD 100/hr", why: "Built the evaluation harness used by two hiring companies." },
+  { id: 6, n: "Aisha Rahman", r: "Backend Engineer", sc: 89, sk: ["Go", "gRPC", "Postgres"], st: 2, ex: "8 yrs", loc: "Dubai", rate: "USD 90/hr", why: "Strong systems background, lighter on ML tooling." },
+  { id: 7, n: "Lucas Meyer", r: "Applied Scientist", sc: 93, sk: ["PyTorch", "Ranking", "A/B tests"], st: 3, ex: "11 yrs", loc: "Munich", rate: "USD 120/hr", why: "Offer extended; verified references and background checks complete." },
+  { id: 8, n: "Sara Lindqvist", r: "DevOps Engineer", sc: 87, sk: ["AWS", "CI/CD", "Observability"], st: 4, ex: "9 yrs", loc: "Stockholm", rate: "USD 88/hr", why: "Hired on the Platform Reliability contract." },
+];
+
+export function PostJob() {
+  const steps = ["Basics", "Requirements", "Budget and contract", "Screening", "Review"];
+  const [step, setStep] = useState(0);
+  const [title, setTitle] = useState("Senior AI Platform Engineer");
+  const [kind, setKind] = useState("Contract");
+  const [level, setLevel] = useState("Senior");
+  const [desc, setDesc] = useState("Own platform reliability and developer experience for production AI systems.");
+  const [skills, setSkills] = useState(["Python", "RAG", "Kubernetes"]);
+  const [skill, setSkill] = useState("");
+  const [rate, setRate] = useState("110");
+  const [hours, setHours] = useState("40");
+  const [escrow, setEscrow] = useState(true);
+  const [tz, setTz] = useState("Europe (CET +/- 3h)");
+  const [done, setDone] = useState(false);
+  const lbl = "mb-1 block text-sm font-semibold";
+  return (
+    <Page title="Post a job" sub="Reach 48K+ verified engineers - AI improves your brief and ranks applicants" w="max-w-none">
+      <div className="grid gap-4 grid-cols-1 2xl:grid-cols-[220px_minmax(0,1fr)_300px]">
+        <Card c="rounded-xl h-fit flex flex-wrap gap-1 2xl:block" p="p-2">
+          {steps.map((x, i) => (
+            <button key={x} onClick={() => setStep(i)} className={cx("flex items-center gap-2 2xl:w-full rounded-lg px-3 py-2 text-left text-sm font-semibold", i === step ? "bg-[#E8F0FC] text-[#0552CC]" : "text-slate-700 hover:bg-slate-100")}>
+              <span className={cx("flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold", i < step ? "bg-[#0552CC] text-white" : i === step ? "border-2 border-[#0552CC] text-[#0552CC]" : "bg-slate-200 text-slate-600")}>{i < step ? <Ic n="check" s={14} /> : i + 1}</span>{x}
+            </button>
+          ))}
+        </Card>
+        <Card c="rounded-xl" p="p-6">
+          {done ? (
+            <div className="py-10 text-center"><span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n="check" s={28} /></span><h2 className="text-xl font-bold">Job published</h2><p className="mt-1 text-sm text-slate-500">AI is matching engineers now. First ranked candidates appear in about 2 minutes.</p><div className="mt-4 flex justify-center gap-2"><Btn v="primary" icon="users">View candidates</Btn><Btn v="outline" onClick={() => { setDone(false); setStep(0); }}>Post another</Btn></div></div>
+          ) : (
+            <>
+              <h2 className="mb-4 text-xl font-bold">{steps[step]}</h2>
+              {step === 0 && (<div className="space-y-4">
+                <div><label className={lbl}>Job title</label><input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} /></div>
+                <div className="grid gap-4 grid-cols-1 xl:grid-cols-2"><div><label className={lbl}>Engagement</label><select value={kind} onChange={(e) => setKind(e.target.value)} className={inputCls}><option>Contract</option><option>Full-time</option><option>Fixed price project</option></select></div><div><label className={lbl}>Seniority</label><select value={level} onChange={(e) => setLevel(e.target.value)} className={inputCls}><option>Mid</option><option>Senior</option><option>Staff</option><option>Principal</option></select></div></div>
+                <div><label className={lbl}>Description</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={5} className={inputCls} /></div>
+                <div className="flex items-center gap-3 rounded-lg bg-[#F3F0FF] p-3 text-sm"><Ic n="spark" s={18} c="text-[#5B4BDB]" /><span className="flex-1 font-semibold text-[#5B4BDB]">AI can rewrite your brief for clarity and inclusive language</span><Btn v="outline" sm onClick={() => setDesc("Own the reliability, observability and developer experience of our production AI platform. You will design evaluation pipelines, harden inference services and mentor a team of five engineers.")}>Rewrite</Btn></div>
+              </div>)}
+              {step === 1 && (<div className="space-y-4">
+                <div><label className={lbl}>Required skills</label><div className="flex flex-wrap gap-2">{skills.map((k) => <button key={k} onClick={() => setSkills(skills.filter((x) => x !== k))} className="flex items-center gap-1 rounded-full bg-[#E8F0FC] px-3 py-1 text-sm font-semibold text-[#0552CC]">{k}<Ic n="x" s={12} /></button>)}</div>
+                  <div className="mt-2 flex gap-2"><input value={skill} onChange={(e) => setSkill(e.target.value)} placeholder="Add a skill" className={inputCls} /><Btn v="outline" onClick={() => { if (skill.trim()) { setSkills([...skills, skill.trim()]); setSkill(""); } }}>Add</Btn></div></div>
+                <div className="grid gap-4 grid-cols-1 xl:grid-cols-2"><div><label className={lbl}>Timezone overlap</label><select value={tz} onChange={(e) => setTz(e.target.value)} className={inputCls}><option>Europe (CET +/- 3h)</option><option>US East (+/- 3h)</option><option>Asia Pacific</option><option>Any</option></select></div><div><label className={lbl}>Experience</label><select className={inputCls}><option>5+ years</option><option>8+ years</option><option>10+ years</option></select></div></div>
+                <div><label className={lbl}>Verification</label><div className="grid gap-2 grid-cols-1 xl:grid-cols-2">{["Identity verified", "Skills assessed", "References checked", "Background check"].map((x) => <label key={x} className="flex items-center gap-2 rounded-lg border border-slate-200 p-3 text-sm font-medium"><input type="checkbox" defaultChecked />{x}</label>)}</div></div>
+              </div>)}
+              {step === 2 && (<div className="space-y-4">
+                <div className="grid gap-4 grid-cols-1 xl:grid-cols-2"><div><label className={lbl}>Hourly rate (USD)</label><input value={rate} onChange={(e) => setRate(e.target.value)} className={inputCls} /></div><div><label className={lbl}>Hours per week</label><input value={hours} onChange={(e) => setHours(e.target.value)} className={inputCls} /></div></div>
+                <div className="rounded-lg bg-[#E8F0FC] p-4 text-sm"><p className="font-semibold text-[#0552CC]">Estimated monthly spend</p><p className="mt-1 text-2xl font-bold">USD {(Number(rate) * Number(hours) * 4).toLocaleString()}</p><p className="text-slate-600">{hours} hrs x 4 weeks at USD {rate}/hr + 5% platform fee on release</p></div>
+                <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 text-sm"><input type="checkbox" checked={escrow} onChange={(e) => setEscrow(e.target.checked)} className="mt-1" /><span><span className="block font-semibold">Fund milestones through escrow</span><span className="text-slate-500">Money is held securely and released when you approve each milestone.</span></span></label>
+              </div>)}
+              {step === 3 && (<div className="space-y-4">
+                <p className="text-sm text-slate-500">Ask up to five questions. Answers feed the explainable match score.</p>
+                {["Describe a production RAG system you shipped.", "How do you evaluate LLM output quality?", "What is your notice period and availability?"].map((x, i) => <div key={x} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 font-bold">{i + 1}</span><span className="flex-1 font-medium">{x}</span><Tag v="gray">Required</Tag></div>)}
+                <Btn v="outline" icon="plus">Add question</Btn>
+              </div>)}
+              {step === 4 && (<div className="space-y-3 text-sm">
+                {[["Title", title], ["Engagement", kind + " - " + level], ["Skills", skills.join(", ")], ["Timezone", tz], ["Budget", "USD " + rate + "/hr x " + hours + " hrs/week"], ["Escrow", escrow ? "Enabled" : "Off"]].map((x) => <div key={x[0]} className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-500">{x[0]}</span><span className="font-semibold">{x[1]}</span></div>)}
+              </div>)}
+              <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
+                <Btn v="gray" onClick={() => setStep(Math.max(0, step - 1))}>Back</Btn>
+                {step < 4 ? <Btn v="primary" onClick={() => setStep(step + 1)}>Continue</Btn> : <Btn v="primary" icon="send" onClick={() => setDone(true)}>Publish job</Btn>}
+              </div>
+            </>
+          )}
+        </Card>
+        <div className="space-y-4">
+          <Card c="rounded-xl" p="p-4"><p className="mb-2 text-xs font-semibold text-slate-500">Live preview</p><div className="flex gap-3"><Lg name="Northstar Cloud" s={48} /><div><p className="font-bold text-[#0552CC]">{title}</p><p className="text-sm text-slate-600">Northstar Cloud - Remote</p><p className="text-sm text-slate-500">{kind} - {level} - USD {rate}/hr</p></div></div><div className="mt-3 flex flex-wrap gap-1">{skills.map((k) => <Tag key={k} v="gray">{k}</Tag>)}</div></Card>
+          <Card c="rounded-xl bg-[#F3F0FF]" p="p-4"><p className="mb-1 flex items-center gap-2 font-bold text-[#5B4BDB]"><Ic n="spark" s={16} />AI market insight</p><p className="text-sm text-slate-700">Roles with escrow and a written evaluation task get 2.3x more qualified applicants. About 140 engineers match this brief today.</p></Card>
+        </div>
+      </div>
+    </Page>
+  );
+}
+
+export function Candidates() {
+  const [q, setQ] = useState("");
+  const [min, setMin] = useState(0);
+  const [list, setList] = useState(CANDS);
+  const [sel, setSel] = useState<any>(null);
+  const [saved, setSaved] = useState<number[]>([]);
+  const toggleSaved = (id: number) => setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  const [savedOnly, setSavedOnly] = useState(false);
+  const move = (id: number, d: number) => setList(list.map((c) => (c.id === id ? { ...c, st: Math.max(0, Math.min(4, c.st + d)) } : c)));
+  const shown = list.filter((c) => c.sc >= min && (!savedOnly || saved.includes(c.id)) && (c.n + c.r + c.sk.join(" ")).toLowerCase().includes(q.toLowerCase()));
+  const cur = sel ? list.find((c) => c.id === sel) : null;
+  return (
+    <Page title="Candidates" sub="Senior AI Platform Engineer - ranked by explainable match" w="max-w-none" act={<><Btn v="outline" icon="download">Export</Btn><Btn v="primary" icon="users">Invite candidates</Btn></>}>
+      <div className="grid gap-3 grid-cols-2 xl:grid-cols-4"><Stat l="Total applicants" v="248" d="+18 this week" i="users" /><Stat l="Avg match score" v="93%" d="Top 10 above 95%" i="target" /><Stat l="Interviews" v="18" d="6 scheduled" i="calendar" /><Stat l="Time to hire" v="9 days" d="-2 days vs last role" i="clock" /></div>
+      <Card c="mt-4 rounded-xl" p="p-3"><div className="flex flex-wrap items-center gap-2"><div className="flex h-10 flex-1 items-center gap-2 rounded-full bg-slate-100 px-3" style={{ minWidth: 220 }}><Ic n="search" s={16} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, role or skill" className="w-full bg-transparent text-sm outline-none" /></div>{[["All", 0], ["90+", 90], ["95+", 95]].map((x: any) => <button key={x[0]} onClick={() => setMin(x[1])} className={cx("h-10 rounded-full px-4 text-sm font-semibold", min === x[1] ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>Match {x[0]}</button>)}<button onClick={() => setSavedOnly(!savedOnly)} className={cx("flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold", savedOnly ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}><Ic n="bookmark" s={14} />{saved.length > 0 ? `Saved (${saved.length})` : "Saved"}</button><span className="ml-auto text-sm text-slate-500">{shown.length} candidates</span></div></Card>
+      <div className={cx("mt-4 grid gap-4", cur ? "grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]" : "")}>
+        <div className="grid auto-cols-[240px] grid-flow-col gap-3 overflow-x-auto pb-2">
+          {STAGES.map((sg, si) => {
+            const col = shown.filter((c) => c.st === si);
+            return (
+              <div key={sg} className="rounded-xl bg-slate-200/70 p-2">
+                <div className="mb-2 flex items-center justify-between px-2 pt-1"><p className="text-sm font-bold">{sg}</p><span className="rounded-full bg-white px-2 text-xs font-bold text-slate-600">{col.length}</span></div>
+                <div className="space-y-2">
+                  {col.map((c) => (
+                    <div key={c.id} onClick={() => setSel(c.id)} className={cx("cursor-pointer rounded-lg bg-white p-3 shadow-sm hover:shadow-md", sel === c.id && "ring-2 ring-[#0552CC]")}>
+                      <div className="flex items-center gap-2"><Av name={c.n} s={36} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{c.n}</p><p className="truncate text-xs text-slate-500">{c.r}</p></div><button onClick={(e) => { e.stopPropagation(); toggleSaved(c.id); }} className={cx("rounded-full p-1", saved.includes(c.id) ? "text-[#0552CC]" : "text-slate-400 hover:text-slate-600")}><Ic n="bookmark" s={15} /></button><span className="rounded-full bg-[#E8F0FC] px-2 py-0.5 text-xs font-bold text-[#0552CC]">{c.sc}%</span></div>
+                      <div className="mt-2 flex flex-wrap gap-1">{c.sk.slice(0, 3).map((k: string) => <span key={k} className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{k}</span>)}</div>
+                      <div className="mt-2 flex items-center justify-between text-xs text-slate-500"><span>{c.loc} - {c.ex}</span><span className="flex gap-1"><button onClick={(e) => { e.stopPropagation(); move(c.id, -1); }} className="rounded bg-slate-100 px-1.5 hover:bg-slate-200">Back</button><button onClick={(e) => { e.stopPropagation(); move(c.id, 1); }} className="rounded bg-[#0552CC] px-1.5 text-white hover:bg-[#0443A8]">Move</button></span></div>
+                    </div>
+                  ))}
+                  {col.length === 0 && <p className="rounded-lg border border-dashed border-slate-300 p-4 text-center text-xs text-slate-500">No candidates</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {cur && (
+          <Card c="h-fit rounded-xl" p="p-4">
+            <div className="flex items-start justify-between"><div className="flex items-center gap-3"><Av name={cur.n} s={56} /><div><p className="text-lg font-bold">{cur.n}</p><p className="text-sm text-slate-500">{cur.r}</p></div></div><button onClick={() => setSel(null)} className="rounded-full p-1 hover:bg-slate-100"><Ic n="x" s={16} /></button></div>
+            <div className="mt-3 rounded-lg bg-[#E8F0FC] p-3"><p className="text-sm font-bold text-[#0552CC]">Match {cur.sc}%</p>{[["Skills", cur.sc], ["Experience", cur.sc - 3], ["Timezone", 90], ["Availability", 96]].map((x: any) => <div key={x[0]} className="mt-2"><div className="flex justify-between text-xs text-slate-600"><span>{x[0]}</span><span>{x[1]}%</span></div><div className="h-1.5 rounded-full bg-white"><div className="h-1.5 rounded-full bg-[#0552CC]" style={{ width: x[1] + "%" }} /></div></div>)}</div>
+            <div className="mt-3 rounded-lg bg-[#F3F0FF] p-3 text-sm"><p className="mb-1 flex items-center gap-1 font-bold text-[#5B4BDB]"><Ic n="spark" s={14} />Why this match</p><p className="text-slate-700">{cur.why}</p></div>
+            <div className="mt-3 flex flex-wrap gap-1">{cur.sk.map((k: string) => <Tag key={k} v="gray">{k}</Tag>)}</div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-sm"><div><p className="text-slate-500">Rate</p><p className="font-semibold">{cur.rate}</p></div><div><p className="text-slate-500">Location</p><p className="font-semibold">{cur.loc}</p></div><div><p className="text-slate-500">Experience</p><p className="font-semibold">{cur.ex}</p></div><div><p className="text-slate-500">Stage</p><p className="font-semibold">{STAGES[cur.st]}</p></div></div>
+            <div className="mt-4 grid grid-cols-2 gap-2"><Btn v="primary" icon="chat" full>Message</Btn><Btn v="outline" icon="calendar" full>Interview</Btn><Btn v="gray" full onClick={() => move(cur.id, 1)}>Advance</Btn><Btn v="danger" full>Reject</Btn></div>
+          </Card>
+        )}
+      </div>
+    </Page>
+  );
+}
+
+export function CoJobs() {
+  const rows = [["Senior AI Platform Engineer", "Active", 48, 9], ["Applied ML Engineer, Search", "Active", 31, 6], ["Data Product Manager", "Paused", 12, 2], ["LLM Evaluation Lead", "Active", 27, 5]];
+  return (
+    <Page title="Job postings" act={<Btn v="primary" icon="plus">Post a job</Btn>}>
+      <Card p={false} c="rounded-xl"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Job", "Status", "Applicants", "Shortlisted", ""].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead><tbody>{rows.map((r) => <tr key={String(r[0])} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{r[0]}</td><td className="px-4 py-3"><Tag t={r[1] === "Active" ? "green" : "amber"}>{r[1]}</Tag></td><td className="px-4 py-3">{r[2]}</td><td className="px-4 py-3">{r[3]}</td><td className="px-4 py-3 text-right"><Btn v="gray" sm>Edit</Btn> <Btn v="outline" sm>{r[1] === "Active" ? "Pause" : "Reactivate"}</Btn></td></tr>)}</tbody></table></Card>
+    </Page>
+  );
+}

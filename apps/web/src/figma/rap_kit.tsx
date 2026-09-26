@@ -1,0 +1,189 @@
+import { useState, type ReactNode } from "react";
+export const cx = (...a: any[]) => a.filter(Boolean).join(" ");
+
+const P: Record<string, string> = {
+  home: "M3 11l9-8 9 8|M5 10v10h5v-6h4v6h5V10",
+  users: "M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2|M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8|M21 21v-2a4 4 0 0 0-3-3.9|M16 3.1a4 4 0 0 1 0 7.8",
+  user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2|M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8",
+  briefcase: "M3 8h18v12H3z|M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2|M3 14h18",
+  board: "M4 4h16v16H4z|M9 4v16|M15 4v16",
+  map: "M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z|M9 4v14|M15 6v14",
+  bell: "M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8|M10.3 20a2 2 0 0 0 3.4 0",
+  chat: "M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z",
+  search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14|M21 21l-4.3-4.3",
+  plus: "M12 5v14|M5 12h14",
+  more: "M5 12h.01|M12 12h.01|M19 12h.01",
+  thumb: "M7 11v9H3v-9z|M7 11l4-8a2 2 0 0 1 2 2v4h6a2 2 0 0 1 2 2l-1.5 7a2 2 0 0 1-2 1.5H7",
+  comment: "M21 15a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3z",
+  share: "M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7|M16 6l-4-4-4 4|M12 2v13",
+  repost: "M17 2l4 4-4 4|M3 11V9a3 3 0 0 1 3-3h15|M7 22l-4-4 4-4|M21 13v2a3 3 0 0 1-3 3H3",
+  send: "M22 2L11 13|M22 2l-7 20-4-9-9-4z",
+  star: "M12 2l3 6.5 7 1-5 5 1.2 7L12 18l-6.2 3.5L7 14.5l-5-5 7-1z",
+  filter: "M3 5h18l-7 8v6l-4 2v-8z",
+  check: "M20 6L9 17l-5-5",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18|M12 7v5l3 2",
+  video: "M3 6h13v12H3z|M16 10l5-3v10l-5-3",
+  image: "M3 4h18v16H3z|M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3|M21 16l-5-5-8 8",
+  calendar: "M4 5h16v16H4z|M4 10h16|M8 3v4|M16 3v4",
+  bookmark: "M6 3h12v18l-6-4-6 4z",
+  settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6|M4 12h2|M18 12h2|M12 4v2|M12 18v2|M6.3 6.3l1.4 1.4|M16.3 16.3l1.4 1.4|M6.3 17.7l1.4-1.4|M16.3 7.7l1.4-1.4",
+  dollar: "M12 2v20|M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
+  shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  chart: "M4 20V10|M10 20V4|M16 20v-7|M22 20H2",
+  globe: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18|M3 12h18|M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18",
+  spark: "M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z",
+  heart: "M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6-8 11-8 11z",
+  link: "M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1|M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1",
+  flag: "M4 22V4|M4 4h13l-2 4 2 4H4",
+  menu: "M3 6h18|M3 12h18|M3 18h18",
+  down: "M6 9l6 6 6-6",
+  right: "M9 6l6 6-6 6",
+  x: "M6 6l12 12|M18 6L6 18",
+  car: "M5 16l1.5-6A2 2 0 0 1 8.4 8.5h7.2a2 2 0 0 1 1.9 1.5L19 16|M3 16h18v3H3z|M7 19v2|M17 19v2",
+  pin: "M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z|M12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5",
+  lock: "M5 11h14v10H5z|M8 11V7a4 4 0 0 1 8 0v4",
+  file: "M6 2h9l5 5v15H6z|M14 2v6h6",
+  layers: "M12 2l10 5-10 5L2 7z|M2 12l10 5 10-5|M2 17l10 5 10-5",
+  list: "M8 6h13|M8 12h13|M8 18h13|M3 6h.01|M3 12h.01|M3 18h.01",
+  grid: "M3 3h7v7H3z|M14 3h7v7h-7z|M3 14h7v7H3z|M14 14h7v7h-7z",
+  bolt: "M13 2L4 14h7l-1 8 9-12h-7z",
+  edit: "M4 20h4L19 9l-4-4L4 16z",
+  trash: "M4 7h16|M9 7V4h6v3|M6 7l1 14h10l1-14",
+  eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z|M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
+  phone: "M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z",
+  mail: "M3 5h18v14H3z|M3 6l9 7 9-7",
+  award: "M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12|M8.5 14L7 22l5-3 5 3-1.5-8",
+  target: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18|M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8|M12 12h.01",
+  trend: "M3 17l6-6 4 4 8-8|M15 7h6v6",
+  dot: "M12 12h.01",
+  waffle: "M5 5h.01|M12 5h.01|M19 5h.01|M5 12h.01|M12 12h.01|M19 12h.01|M5 19h.01|M12 19h.01|M19 19h.01",
+  question: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18|M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7|M12 17h.01",
+  smile: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18|M8 14s1.5 2 4 2 4-2 4-2|M9 9h.01|M15 9h.01",
+  paperclip: "M21 12l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8",
+  download: "M12 3v12|M7 10l5 5 5-5|M4 21h16",
+  external: "M14 3h7v7|M21 3l-9 9|M19 14v6H4V5h6",
+  shieldcheck: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z|M9 12l2 2 4-4",
+  building: "M4 21V4h11v17|M15 9h5v12|M8 8h3|M8 12h3|M8 16h3",
+  wallet: "M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z|M3 7l2-3h12v3|M16 13h2",
+  history: "M3 12a9 9 0 1 0 3-6.7L3 8|M3 3v5h5|M12 7v5l3 2",
+  zap: "M13 2L4 14h7l-1 8 9-12h-7z",
+  inbox: "M22 12h-6l-2 3h-4l-2-3H2|M5 5h14l3 7v7H2v-7z",
+  bug: "M8 8h8v8a4 4 0 0 1-8 0z|M9 4l1.5 2|M15 4l-1.5 2|M3 12h5|M16 12h5|M4 19l4-2|M20 19l-4-2",
+  compass: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18|M15.5 8.5l-2 5-5 2 2-5z",
+  gift: "M3 8h18v4H3z|M5 12v9h14v-9|M12 8v13|M12 8a3 3 0 1 0-3-3c0 1.5 1.5 3 3 3z|M12 8a3 3 0 1 1 3-3c0 1.5-1.5 3-3 3z",
+  play: "M6 4l14 8-14 8z",
+  code: "M8 8l-5 4 5 4|M16 8l5 4-5 4|M14 5l-4 14",
+  columns: "M3 4h6v16H3z|M15 4h6v16h-6z",
+  timeline: "M3 6h9|M8 12h13|M5 18h10",
+};
+export function Ic({ n, s = 20, c = "" }: { n: string; s?: number; c?: string }) {
+  const d = (P[n] || P.dot).split("|");
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={cx("shrink-0", c)}>
+      {d.map((x, i) => <path key={i} d={x} />)}
+    </svg>
+  );
+}
+
+const GR = ["from-blue-500 to-indigo-600", "from-emerald-500 to-teal-600", "from-rose-500 to-orange-500", "from-violet-500 to-fuchsia-600", "from-amber-500 to-orange-600", "from-cyan-500 to-blue-600", "from-slate-600 to-slate-800", "from-pink-500 to-rose-600"];
+export const grad = (s: string) => GR[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % GR.length];
+export function Av({ name, s = 40, dot, ring }: { name: string; s?: number; dot?: boolean; ring?: boolean }) {
+  const ini = name.split(" ").map((p) => p[0]).slice(0, 2).join("");
+  return (
+    <div className="relative shrink-0" style={{ width: s, height: s }}>
+      <div className={cx("flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br font-bold text-white", grad(name), ring && "ring-2 ring-[#0552CC] ring-offset-2")} style={{ fontSize: s * 0.36 }}>{ini}</div>
+      {dot && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />}
+    </div>
+  );
+}
+export function Lg({ name, s = 48, r = 8 }: { name: string; s?: number; r?: number }) {
+  return <div className={cx("flex shrink-0 items-center justify-center bg-gradient-to-br font-black text-white", grad(name))} style={{ width: s, height: s, borderRadius: r, fontSize: s * 0.36 }}>{name.slice(0, 2).toUpperCase()}</div>;
+}
+export function Brand({ s = 32 }: { s?: number }) {
+  return (
+    <div className="flex items-center justify-center rounded-lg bg-[#0552CC] text-white" style={{ width: s, height: s }}>
+      <svg width={s * 0.62} height={s * 0.62} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18" /><path d="M17 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="currentColor" stroke="none" /></svg>
+    </div>
+  );
+}
+export function Btn({ children, v = "primary", sm, onClick, icon, full, c = "" }: { children?: ReactNode; v?: string; sm?: boolean; onClick?: () => void; icon?: string; full?: boolean; c?: string }) {
+  const base = "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors";
+  const vs: Record<string, string> = {
+    primary: "bg-[#0552CC] text-white hover:bg-[#0443A8]",
+    outline: "border border-[#0552CC] text-[#0552CC] hover:bg-[#E8F0FC]",
+    ghost: "text-slate-600 hover:bg-slate-100",
+    gray: "bg-slate-100 text-slate-800 hover:bg-slate-200",
+    dark: "bg-black text-white hover:bg-slate-800",
+    green: "bg-[#14A800] text-white hover:bg-[#108a00]",
+    greenOutline: "border border-[#14A800] text-[#14A800] hover:bg-[#f1faef]",
+    danger: "bg-red-600 text-white hover:bg-red-700",
+    line: "border border-slate-300 text-slate-700 hover:bg-slate-50",
+  };
+  return <button onClick={onClick} className={cx(base, vs[v], sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]", full && "w-full", c)}>{icon && <Ic n={icon} s={sm ? 14 : 16} />}{children}</button>;
+}
+export function Card({ children, c = "", p = true }: { children: ReactNode; c?: string; p?: boolean }) {
+  return <div className={cx("rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,.06)]", p && "p-4", c)}>{children}</div>;
+}
+export function Tag({ children, t = "gray" }: { children: ReactNode; t?: string }) {
+  const m: Record<string, string> = { gray: "bg-slate-100 text-slate-700", blue: "bg-[#E8F0FC] text-[#0552CC]", green: "bg-emerald-50 text-emerald-700", amber: "bg-amber-50 text-amber-700", red: "bg-red-50 text-red-700", indigo: "bg-[#F1EFFF] text-[#5B4BDB]", dark: "bg-slate-900 text-white" };
+  return <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold", m[t])}>{children}</span>;
+}
+export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; set: (x: string) => void; c?: string }) {
+  return (
+    <div className={cx("flex gap-1 overflow-x-auto border-b border-slate-200", c)}>
+      {items.map((t) => <button key={t} onClick={() => set(t)} className={cx("whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold", v === t ? "border-[#0552CC] text-[#0552CC]" : "border-transparent text-slate-500 hover:text-slate-800")}>{t}</button>)}
+    </div>
+  );
+}
+export function Modal({ open, onClose, title, children, w = "max-w-lg" }: { open: boolean; onClose: () => void; title: string; children: ReactNode; w?: string }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className={cx("max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl", w)} onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-xl font-bold">{title}</h3><button onClick={onClose} className="rounded-full p-1.5 hover:bg-slate-100"><Ic n="x" /></button></div>
+        {children}
+      </div>
+    </div>
+  );
+}
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return <label className="block text-sm font-semibold text-slate-700">{label}<div className="mt-1 font-normal">{children}</div></label>;
+}
+export const inputCls = "h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-[#0552CC] focus:ring-2 focus:ring-[#0552CC]/20";
+export function Bar({ v, c = "bg-[#0552CC]" }: { v: number; c?: string }) {
+  return <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={cx("h-full rounded-full", c)} style={{ width: v + "%" }} /></div>;
+}
+export function Spark({ d, c = "#0552CC", h = 36, w = 120 }: { d: number[]; c?: string; h?: number; w?: number }) {
+  const mx = Math.max(...d), mn = Math.min(...d);
+  const pts = d.map((y, i) => (i / (d.length - 1)) * w + "," + (h - ((y - mn) / (mx - mn || 1)) * (h - 4) - 2)).join(" ");
+  return <svg width={w} height={h}><polyline points={pts} fill="none" stroke={c} strokeWidth="2" strokeLinejoin="round" /></svg>;
+}
+export function Bars({ d, c = "#0552CC", h = 120 }: { d: number[]; c?: string; h?: number }) {
+  const mx = Math.max(...d);
+  return <div className="flex items-end gap-1.5" style={{ height: h }}>{d.map((y, i) => <div key={i} className="flex-1 rounded-t" style={{ height: (y / mx) * 100 + "%", background: c, opacity: 0.35 + (i / d.length) * 0.65 }} />)}</div>;
+}
+export function Stars({ v }: { v: number }) {
+  return <span className="inline-flex items-center gap-0.5 text-amber-500">{[1, 2, 3, 4, 5].map((i) => <Ic key={i} n="star" s={13} c={i <= Math.round(v) ? "fill-current" : "opacity-30"} />)}<span className="ml-1 text-xs font-semibold text-slate-600">{v.toFixed(1)}</span></span>;
+}
+
+export const PEOPLE = [
+  { n: "Priya Raman", t: "Staff ML Engineer", co: "Helix Labs", loc: "Bengaluru, India", rate: 118, jss: 98, score: 97, earn: "$240K+", jobs: 64, skills: ["RAG", "MLOps", "Python", "PyTorch", "Kubernetes"], on: true },
+  { n: "Mateo Silva", t: "AI Product Designer", co: "Northstar Cloud", loc: "Lisbon, Portugal", rate: 92, jss: 96, score: 94, earn: "$120K+", jobs: 41, skills: ["Figma", "SaaS UX", "Design systems", "Agents"], on: true },
+  { n: "Elena Petrova", t: "LLM Evaluation Lead", co: "Aster Labs", loc: "Berlin, Germany", rate: 105, jss: 100, score: 96, earn: "$180K+", jobs: 52, skills: ["EvalOps", "PyTorch", "Safety", "Python"], on: false },
+  { n: "Daniel Okafor", t: "Data Platform Lead", co: "Brightpath", loc: "Lagos, Nigeria", rate: 85, jss: 95, score: 91, earn: "$95K+", jobs: 33, skills: ["Databricks", "Spark", "dbt", "AWS"], on: true },
+  { n: "Aisha Rahman", t: "Principal AI Recruiter", co: "CloudNova", loc: "London, UK", rate: 0, jss: 0, score: 0, earn: "", jobs: 0, skills: ["Talent", "Hiring"], on: true },
+  { n: "Lucas Meyer", t: "Senior Backend Engineer", co: "Helix Labs", loc: "Munich, Germany", rate: 98, jss: 97, score: 92, earn: "$150K+", jobs: 47, skills: ["Go", "Postgres", "gRPC", "Kafka"], on: false },
+  { n: "Sofia Alvarez", t: "Data Scientist", co: "Brightpath", loc: "Madrid, Spain", rate: 88, jss: 94, score: 90, earn: "$80K+", jobs: 29, skills: ["Python", "Causal ML", "SQL"], on: true },
+  { n: "Kenji Watanabe", t: "MLOps Engineer", co: "Northstar Cloud", loc: "Tokyo, Japan", rate: 110, jss: 99, score: 95, earn: "$200K+", jobs: 58, skills: ["Kubeflow", "Terraform", "AWS", "Python"], on: true },
+];
+export const JOBS = [
+  { id: 1, t: "Senior AI Platform Engineer", co: "Northstar Cloud", loc: "Remote (US/EU)", type: "Full-time", pay: "$165K - $210K", post: "2 hours ago", ap: 34, m: 96, easy: true, lvl: "Senior", tags: ["Kubernetes", "LLMOps", "Python", "Terraform"] },
+  { id: 2, t: "Applied ML Engineer, Search", co: "Helix Labs", loc: "Remote (Europe)", type: "Contract", pay: "$110/hr", post: "1 day ago", ap: 78, m: 93, easy: true, lvl: "Mid-Senior", tags: ["Embeddings", "Ranking", "RAG"] },
+  { id: 3, t: "Data Product Manager", co: "Brightpath", loc: "Remote-first", type: "Full-time", pay: "$145K - $180K", post: "3 days ago", ap: 120, m: 89, easy: false, lvl: "Senior", tags: ["AI roadmap", "Analytics", "B2B SaaS"] },
+  { id: 4, t: "LLM Evaluation Lead", co: "Aster Labs", loc: "Remote (EU)", type: "Full-time", pay: "EUR 120K - 150K", post: "5 days ago", ap: 51, m: 91, easy: true, lvl: "Lead", tags: ["EvalOps", "Safety", "PyTorch"] },
+  { id: 5, t: "MLOps Engineer", co: "CloudNova", loc: "Remote (Worldwide)", type: "Full-time", pay: "$130K - $170K", post: "1 week ago", ap: 203, m: 87, easy: true, lvl: "Mid-Senior", tags: ["Airflow", "AWS", "Docker"] },
+  { id: 6, t: "Staff Data Engineer", co: "Helix Labs", loc: "Remote (US)", type: "Full-time", pay: "$185K - $230K", post: "2 days ago", ap: 88, m: 94, easy: false, lvl: "Staff", tags: ["Databricks", "Delta Lake", "Spark"] },
+  { id: 7, t: "AI Solutions Architect", co: "Brightpath", loc: "Remote (EU)", type: "Contract", pay: "$140/hr", post: "4 days ago", ap: 44, m: 90, easy: true, lvl: "Principal", tags: ["Architecture", "GenAI", "Azure"] },
+  { id: 8, t: "Senior Frontend Engineer", co: "Aster Labs", loc: "Remote (Americas)", type: "Full-time", pay: "$140K - $175K", post: "6 days ago", ap: 156, m: 82, easy: true, lvl: "Senior", tags: ["React", "TypeScript", "Design systems"] },
+];
+export const COMPANIES = ["Northstar Cloud", "Helix Labs", "Brightpath", "Aster Labs", "CloudNova", "Vector Forge"];
