@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,11 @@ class ApplicationStatusUpdate(BaseModel):
     status: str
 
 
+class InvitationResponse(BaseModel):
+    accept: bool
+    note: str | None = Field(None, max_length=2000)
+
+
 APPLICATION_STATUSES = {
     "SUBMITTED",
     "REVIEWING",
@@ -36,6 +41,8 @@ APPLICATION_STATUSES = {
     "INVITED",
     "APPLIED",
 }
+# Statuses an invitation may (re)open: not yet reviewed, or closed.
+REINVITABLE_STATUSES = {"SUBMITTED", "APPLIED", "REJECTED", "WITHDRAWN"}
 ALLOWED_TRANSITIONS = {
     "SUBMITTED": {"REVIEWING", "WITHDRAWN"},
     "APPLIED": {"REVIEWING", "WITHDRAWN"},  # Legacy status retained for existing rows.
@@ -182,11 +189,54 @@ async def invite_engineer(
             JobApplication.user_id == target_user_id, JobApplication.job_id == job_id
         )
     )
+    if existing and existing.status not in REINVITABLE_STATUSES:
+        # Already under review, shortlisted, accepted or invited — don't
+        # silently reset the candidate's progress back to INVITED.
+        return existing
     if existing:
         existing.status = "INVITED"
-        return existing
-    application = JobApplication(user_id=target_user_id, job_id=job_id, status="INVITED")
-    db.add(application)
+        application = existing
+    else:
+        application = JobApplication(user_id=target_user_id, job_id=job_id, status="INVITED")
+        db.add(application)
+    await notify(
+        db,
+        target_user_id,
+        "You're invited to apply",
+        f"{job.company_name or 'A company'} invited you to apply for {job.title}.",
+        "application_invite",
+    )
+    await db.flush()
+    return application
+
+
+@router.patch("/{application_id}/respond")
+async def respond_to_invitation(
+    application_id: uuid.UUID,
+    data: InvitationResponse,
+    current_user: User = Depends(require_role(UserRole.ENGINEER)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Engineer accepts (moves into the company's review) or declines an invitation."""
+    application = await db.get(JobApplication, application_id)
+    if not application or application.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if application.status != "INVITED":
+        raise HTTPException(status_code=409, detail="Only open invitations can be answered")
+    application.status = "REVIEWING" if data.accept else "WITHDRAWN"
+    if data.accept and data.note:
+        application.cover_note = data.note
+    job = await db.get(JobPost, application.job_id)
+    company = await db.get(CompanyProfile, job.company_id) if job and job.company_id else None
+    if company:
+        await notify(
+            db,
+            company.user_id,
+            "Invitation accepted" if data.accept else "Invitation declined",
+            f"{current_user.full_name} {'accepted' if data.accept else 'declined'} your invitation"
+            f" for {job.title if job else 'your job'}.",
+            "application_update",
+        )
     await db.flush()
     return application
 

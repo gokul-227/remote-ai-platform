@@ -115,3 +115,58 @@ async def test_company_can_review_owned_job_application(client: AsyncClient):
         json={"status": "ACCEPTED"},
     )
     assert invalid.status_code == 409
+
+
+async def _company_job_and_engineer(client: AsyncClient, tag: str):
+    company = await client.post("/api/v1/auth/register", json={"email": f"co-{tag}@example.com", "password": "secure-pass", "full_name": f"Co {tag}", "role": "COMPANY"})
+    company_headers = {"Authorization": f"Bearer {company.json()['access_token']}"}
+    await client.post("/api/v1/companies/me", headers=company_headers, json={"name": f"Invite Labs {tag}"})
+    engineer = await client.post("/api/v1/auth/register", json={"email": f"eng-{tag}@example.com", "password": "secure-pass", "full_name": f"Eng {tag}", "role": "ENGINEER"})
+    engineer_headers = {"Authorization": f"Bearer {engineer.json()['access_token']}"}
+    profile_id = (await client.post("/api/v1/engineers/me", headers=engineer_headers, json={"headline": "Engineer", "skills": ["Go"]})).json()["id"]
+
+    from conftest import TestingSessionLocal
+    from sqlalchemy import select
+    from app.domains.companies.models import CompanyProfile
+    from app.domains.jobs.models import JobPost
+
+    async with TestingSessionLocal() as db:
+        co = await db.scalar(select(CompanyProfile).where(CompanyProfile.name == f"Invite Labs {tag}"))
+        job = JobPost(company_id=co.id, title=f"Invited role {tag}", slug=f"invited-role-{tag}", description="x", company_name=co.name, is_remote=True, skills=["Go"])
+        db.add(job)
+        await db.commit()
+        job_id = str(job.id)
+    return company_headers, engineer_headers, profile_id, job_id
+
+
+@pytest.mark.asyncio
+async def test_engineer_accepts_invitation_and_company_is_notified(client: AsyncClient):
+    company_headers, engineer_headers, profile_id, job_id = await _company_job_and_engineer(client, "accept")
+    invited = await client.post(f"/api/v1/applications/jobs/{job_id}/invite/{profile_id}", headers=company_headers)
+    assert invited.status_code == 201
+    notes = (await client.get("/api/v1/notifications", headers=engineer_headers)).json()
+    assert any(n["kind"] == "application_invite" for n in notes)
+
+    accepted = await client.patch(f"/api/v1/applications/{invited.json()['id']}/respond", headers=engineer_headers, json={"accept": True, "note": "Keen!"})
+    assert accepted.status_code == 200
+    assert accepted.json()["status"] == "REVIEWING"
+    assert accepted.json()["cover_note"] == "Keen!"
+    company_notes = (await client.get("/api/v1/notifications", headers=company_headers)).json()
+    assert any(n["title"] == "Invitation accepted" for n in company_notes)
+
+    # Answering twice, or re-inviting a candidate already under review, changes nothing.
+    again = await client.patch(f"/api/v1/applications/{invited.json()['id']}/respond", headers=engineer_headers, json={"accept": False})
+    assert again.status_code == 409
+    reinvite = await client.post(f"/api/v1/applications/jobs/{job_id}/invite/{profile_id}", headers=company_headers)
+    assert reinvite.json()["status"] == "REVIEWING"
+
+
+@pytest.mark.asyncio
+async def test_engineer_declines_invitation_and_only_owner_can_respond(client: AsyncClient):
+    company_headers, engineer_headers, profile_id, job_id = await _company_job_and_engineer(client, "decline")
+    invited = await client.post(f"/api/v1/applications/jobs/{job_id}/invite/{profile_id}", headers=company_headers)
+    other = await client.post("/api/v1/auth/register", json={"email": "intruder@example.com", "password": "secure-pass", "full_name": "Intruder", "role": "ENGINEER"})
+    other_headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
+    assert (await client.patch(f"/api/v1/applications/{invited.json()['id']}/respond", headers=other_headers, json={"accept": True})).status_code == 404
+    declined = await client.patch(f"/api/v1/applications/{invited.json()['id']}/respond", headers=engineer_headers, json={"accept": False})
+    assert declined.json()["status"] == "WITHDRAWN"
