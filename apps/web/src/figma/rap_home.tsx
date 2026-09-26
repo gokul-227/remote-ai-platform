@@ -180,7 +180,6 @@ export function PostJob() {
   const [skill, setSkill] = useState("");
   const [rate, setRate] = useState("");
   const [hours, setHours] = useState("40");
-  const [escrow, setEscrow] = useState(true);
   const [tz, setTz] = useState("Europe (CET +/- 3h)");
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -229,7 +228,6 @@ export function PostJob() {
               {step === 2 && (<div className="space-y-4">
                 <div className="grid gap-4 grid-cols-1 xl:grid-cols-2"><div><label className={lbl}>Hourly rate (USD)</label><input value={rate} onChange={(e) => setRate(e.target.value)} className={inputCls} /></div><div><label className={lbl}>Hours per week</label><input value={hours} onChange={(e) => setHours(e.target.value)} className={inputCls} /></div></div>
                 <div className="rounded-lg bg-[#E8F0FC] p-4 text-sm"><p className="font-semibold text-[#0552CC]">Estimated monthly spend</p><p className="mt-1 text-2xl font-bold">USD {(Number(rate) * Number(hours) * 4).toLocaleString()}</p><p className="text-slate-600">{hours} hrs x 4 weeks at USD {rate}/hr + 5% platform fee on release</p></div>
-                <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-4 text-sm"><input type="checkbox" checked={escrow} onChange={(e) => setEscrow(e.target.checked)} className="mt-1" /><span><span className="block font-semibold">Fund milestones through escrow</span><span className="text-slate-500">Money is held securely and released when you approve each milestone.</span></span></label>
               </div>)}
               {step === 3 && (<div className="space-y-4">
                 <p className="text-sm text-slate-500">Screening questions aren’t sent to applicants yet — this step is coming in a later release.</p>
@@ -237,7 +235,7 @@ export function PostJob() {
                 <Btn v="outline" icon="plus">Add question</Btn>
               </div>)}
               {step === 4 && (<div className="space-y-3 text-sm">
-                {[["Title", title], ["Engagement", kind + " - " + level], ["Skills", skills.join(", ")], ["Timezone", tz], ["Budget", "USD " + rate + "/hr x " + hours + " hrs/week"], ["Escrow", escrow ? "Enabled" : "Off"]].map((x) => <div key={x[0]} className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-500">{x[0]}</span><span className="font-semibold">{x[1]}</span></div>)}
+                {[["Title", title], ["Engagement", kind + " - " + level], ["Skills", skills.join(", ")], ["Timezone", tz], ["Budget", "USD " + rate + "/hr x " + hours + " hrs/week"]].map((x) => <div key={x[0]} className="flex justify-between border-b border-slate-100 pb-2"><span className="text-slate-500">{x[0]}</span><span className="font-semibold">{x[1]}</span></div>)}
               </div>)}
               {err && <p role="alert" className="mt-4 text-sm text-red-600">{err}</p>}
               <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
