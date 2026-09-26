@@ -79,9 +79,11 @@ test("job detail page computes and displays a real AI match score", async ({ pag
   // (0-100, "Excellent/Good/Fair/Low Match") if the profile save above
   // worked, or the panel's own honest empty state if it didn't. Either is a
   // real, non-fake response from /matching/jobs/{id} — never a placeholder.
-  const panel = page.locator(".badge-ai").locator("..");
-  await expect(panel.getByText(/ai match/i)).toBeVisible({ timeout: 15_000 });
-  const hasScore = await page.locator("text=/^(Excellent|Good|Fair|Low) Match \\(\\d+%\\)$/").isVisible().catch(() => false);
-  const hasEmptyState = await page.getByText(/complete your professional profile/i).isVisible().catch(() => false);
+  const panel = page.getByTestId("match-panel");
+  await expect(panel.getByText(/how you match/i)).toBeVisible({ timeout: 15_000 });
+  // Either a real score or the honest empty state, once the request settles.
+  await expect(panel.getByText(/calculating your match/i)).toBeHidden({ timeout: 30_000 });
+  const hasScore = await panel.getByTestId("match-score").isVisible().catch(() => false);
+  const hasEmptyState = await panel.getByText(/complete your professional profile/i).isVisible().catch(() => false);
   expect(hasScore || hasEmptyState).toBeTruthy();
 });

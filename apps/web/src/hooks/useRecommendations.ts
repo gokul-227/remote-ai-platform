@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import type { JobPost } from "@/types";
 
 export interface JobMatch {
   id: string;
@@ -19,20 +20,7 @@ export interface JobMatch {
   status: string;
   created_at: string;
   updated_at: string;
-  job?: {
-    id: string;
-    title: string;
-    company_name: string;
-    location: string | null;
-    salary_min: number | null;
-    salary_max: number | null;
-    currency: string | null;
-    remote_type: string | null;
-    required_skills: string[];
-    employment_type: string | null;
-    description: string;
-    source_url: string | null;
-  };
+  job?: JobPost;
 }
 
 export function useRecommendations(limit = 20) {

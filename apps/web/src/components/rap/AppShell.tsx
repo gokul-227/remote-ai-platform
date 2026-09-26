@@ -233,7 +233,7 @@ function FeedRail({ role, myId }: { role: Role | null; myId: string }) {
           <Link className="rap-opportunity" href={`/jobs/${job.id}`}>
             <span className="rap-company-mark">{(job.company_name || "?").slice(0, 1).toUpperCase()}</span>
             <b>{job.title}</b>
-            <p>{job.company_name} · {job.remote_type ? job.remote_type.toLowerCase().replace(/_/g, " ") : "Remote"}</p>
+            <p>{job.company_name} · {job.location || "Remote"}</p>
             <span>View opportunity →</span>
           </Link>
           <div className="rap-divider" />

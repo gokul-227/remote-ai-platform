@@ -36,3 +36,6 @@ export interface MyEngineerProfile {
   created_at: string;
   updated_at: string;
 }
+
+/** GET /engineers, /engineers/{id}, /engineers/search — public view (no resume). */
+export type PublicEngineerProfile = Omit<MyEngineerProfile, "resume_url" | "parsed_resume_data">;
