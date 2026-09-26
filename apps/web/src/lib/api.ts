@@ -83,8 +83,11 @@ api.interceptors.response.use(
 // Callers must not render `detail` directly — React throws when handed an
 // array of objects as a child.
 export function extractErrorMessage(err: unknown, fallback: string): string {
-  const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  const data = (err as { response?: { data?: { detail?: unknown; error?: unknown } } })?.response?.data;
+  const detail = data?.detail;
   if (typeof detail === "string") return detail;
+  // Domain, AI and rate-limit errors use the { error } envelope instead of { detail }.
+  if (typeof data?.error === "string" && !Array.isArray(detail)) return data.error;
   if (Array.isArray(detail)) {
     const joined = detail
       .map((d) => (typeof d === "string" ? d : (d as { msg?: string })?.msg))
