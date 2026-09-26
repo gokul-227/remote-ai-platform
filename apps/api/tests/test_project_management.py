@@ -267,3 +267,18 @@ async def test_work_submission_review_revision_and_ai_quality_check(client: Asyn
     assert reputation.status_code == 200
     assert reputation.json()["trust_score"] == 80
     assert reputation.json()["completion_rate"] == 100
+
+
+@pytest.mark.asyncio
+async def test_project_detail_embeds_comments_and_people(client: AsyncClient):
+    reg = await client.post("/api/v1/auth/register", json={"email": "board-owner@example.com", "password": "secure-pass", "full_name": "Board Owner", "role": "COMPANY"})
+    headers = {"Authorization": f"Bearer {reg.json()['access_token']}"}
+    await client.post("/api/v1/companies/me", headers=headers, json={"name": "Board Labs"})
+    project_id = (await client.post("/api/v1/projects", headers=headers, json={"title": "Board", "description": "Board test"})).json()["id"]
+    task_id = (await client.post("/api/v1/projects/tasks", headers=headers, json={"project_id": project_id, "title": "Wire board"})).json()["id"]
+    assert (await client.post(f"/api/v1/projects/tasks/{task_id}/comments", headers=headers, json={"content": "Started"})).status_code == 201
+    detail = (await client.get(f"/api/v1/projects/{project_id}", headers=headers)).json()
+    [comment] = detail["comments"]
+    assert comment["content"] == "Started" and comment["task_id"] == task_id
+    author = detail["people"][comment["author_id"]]
+    assert author["full_name"] == "Board Owner" and "email" not in author

@@ -17,6 +17,7 @@ from app.domains.companies.models import CompanyProfile
 from app.domains.contracts.models import Contract, ContractMilestone
 from app.domains.engineers.models import EngineerProfile
 from app.domains.marketplace.models import AIReport, ProjectTask
+from app.domains.network.router import user_summaries
 from app.domains.projects.models import (
     Milestone,
     PaymentTransaction,
@@ -427,12 +428,38 @@ async def project_detail(
         .where(AIReport.project_id == project.id, AIReport.report_type == "PROJECT_PLAN")
         .order_by(AIReport.created_at.desc())
     )
+    comments = (
+        (
+            await db.execute(
+                select(TaskComment)
+                .where(TaskComment.task_id.in_(task_ids))
+                .order_by(TaskComment.created_at.asc())
+            )
+        )
+        .scalars()
+        .all()
+        if task_ids
+        else []
+    )
+    member_ids = (
+        await db.execute(select(ProjectMember.user_id).where(ProjectMember.project_id == project.id))
+    ).scalars().all()
+    people_ids = (
+        set(member_ids)
+        | {t.assigned_user_id for t in tasks if t.assigned_user_id}
+        | {c.author_id for c in comments}
+    )
     return {
         "project": project,
         "milestones": milestones,
         "tasks": tasks,
         "dependencies": dependencies,
         "submissions": submissions,
+        "comments": comments,
+        # Public-safe display info (name, avatar, headline) for members,
+        # assignees and commenters, keyed by user id.
+        "people": {str(k): v for k, v in (await user_summaries(db, people_ids)).items()},
+        "member_ids": list(member_ids),
         "plan": latest_plan.payload if latest_plan else None,
     }
 
