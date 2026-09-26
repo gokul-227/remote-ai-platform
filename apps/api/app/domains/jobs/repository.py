@@ -61,6 +61,7 @@ class JobRepository:
             remote_preference=data.remote_preference,
             salary_min=data.salary_min,
             salary_max=data.salary_max,
+            salary_period=data.salary_period,
             currency=data.currency,
             skills=data.skills,
             ai_analysis=data.ai_analysis,
@@ -107,6 +108,8 @@ class JobRepository:
                 existing.salary_min = data.salary_min
             if data.salary_max:
                 existing.salary_max = data.salary_max
+            if data.salary_period:
+                existing.salary_period = data.salary_period
             await self.db.flush()
             return existing, False
 

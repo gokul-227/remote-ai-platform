@@ -37,3 +37,15 @@ def test_new_jobs_default_to_unknown_type_and_level():
     assert job.job_type == "unspecified"
     assert job.experience_level is None
     assert job.salary_period is None
+
+
+@pytest.mark.asyncio
+async def test_direct_job_keeps_its_salary_period(client):
+    reg = await client.post("/api/v1/auth/register", json={"email": "period-co@example.com", "full_name": "Co", "role": "COMPANY"})
+    headers = {"Authorization": f"Bearer {reg.json()['access_token']}"}
+    await client.post("/api/v1/companies/me", headers=headers, json={"name": "Period Co"})
+    resp = await client.post("/api/v1/jobs", headers=headers, json={
+        "title": "Copywriter", "description": "Write copy", "salary_min": 40, "salary_max": 40,
+        "salary_period": "hour", "currency": "EUR"})
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["salary_period"] == "hour"
