@@ -36,29 +36,17 @@ class EngineerRepository:
         return result.scalar_one_or_none()
 
     async def create(self, user_id: uuid.UUID, data: EngineerProfileCreate) -> EngineerProfile:
-        profile = EngineerProfile(
-            user_id=user_id,
-            headline=data.headline,
-            bio=data.bio,
-            location=data.location,
-            country=data.country,
-            profile_image_url=data.profile_image_url,
-            years_of_experience=data.years_of_experience,
-            primary_role=data.primary_role,
-            certifications=data.certifications,
-            previous_companies=data.previous_companies,
-            employment_type=data.employment_type,
-            available_hours=data.available_hours,
-            github_url=data.github_url,
-            linkedin_url=data.linkedin_url,
-            portfolio_url=data.portfolio_url,
-            skills=data.skills,
-            experience=[item.model_dump() for item in data.experience],
-            projects=[item.model_dump() for item in data.projects],
-            education=[item.model_dump() for item in data.education],
-            is_public=data.is_public,
-            is_open_to_work=data.is_open_to_work,
-        )
+        # Copy every schema field the model has. A hand-written field list here
+        # used to drop hourly_rate, availability, timezone, remote_preference,
+        # languages and desired_salary_min, so new profiles silently lost them.
+        # model_dump() already turns the nested experience/projects/education
+        # items into plain dicts for the JSON columns.
+        values = {
+            key: value
+            for key, value in data.model_dump().items()
+            if hasattr(EngineerProfile, key) and key not in {"id", "user_id"}
+        }
+        profile = EngineerProfile(user_id=user_id, **values)
         self.db.add(profile)
         await self.db.flush()
         await self.db.refresh(profile)

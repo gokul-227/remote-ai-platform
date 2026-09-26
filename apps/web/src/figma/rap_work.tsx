@@ -2,7 +2,7 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi } from "./live";
+import { useApi, toFigmaJob } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, Stars, cx, PEOPLE, Field, inputCls } from "./rap_kit";
 
 const GR = "#0552CC";
@@ -14,85 +14,119 @@ const WORK = [
 ];
 
 export function Work() {
+  // Live: contract / freelance roles from /jobs, real saved jobs, proposals submitted as applications.
+  const { user } = useAuth();
+  const eng = user?.role === "ENGINEER";
   const [tab, setTab] = useState("Best Matches");
-  const [sel, setSel] = useState<(typeof WORK)[number] | null>(null);
-  const [saved, setSaved] = useState<number[]>([]);
+  const [q, setQ] = useState("");
+  const [term, setTerm] = useState("");
+  const [sel, setSel] = useState<any>(null);
   const [prop, setProp] = useState(false);
-  const [bid, setBid] = useState(100);
-  const fee = bid * 0.1;
+  const [bid, setBid] = useState(0);
+  const [cover, setCover] = useState("");
+  const [notice, setNotice] = useState("");
+  const contract = useApi<any[]>("/jobs", { query: term || undefined, job_type: "contract", limit: 50 });
+  const freelance = useApi<any[]>("/jobs", { query: term || undefined, job_type: "freelance", limit: 50 });
+  const savedQ = useApi<any[]>(eng ? "/saved-jobs" : null, { limit: 100 });
+  const recs = useApi<any[]>(eng ? "/matching/recommendations" : null, { limit: 50 });
+  const prof = useApi<any>(eng ? "/engineers/me" : null);
+  const saved = new Set((savedQ.data ?? []).map((j: any) => j.id));
+  const score: Record<string, number> = Object.fromEntries((recs.data ?? []).map((m: any) => [m.job_id, m.overall_score]));
+  const all = [...(contract.data ?? []), ...(freelance.data ?? [])];
+  const WORK = all.map((j: any) => { const f = toFigmaJob(j); return { ...f, id: j.id, tm: `Posted ${f.post}`, kind: f.pay ? `${f.type} - ${f.pay}` : f.type, est: j.timeline ? `Est. time: ${j.timeline}` : "", d: j.description || "", sk: f.tags, co: f.co, raw: j }; });
+  const list = (tab.startsWith("Saved") ? WORK.filter((w) => saved.has(w.id)) : tab === "Most Recent" ? [...WORK].sort((a, b) => +new Date(b.raw.posted_at) - +new Date(a.raw.posted_at)) : [...WORK].sort((a, b) => (score[b.id] ?? -1) - (score[a.id] ?? -1)));
+  const toggle = async (id: string) => { if (!eng) { window.location.hash = "login"; return; } await (saved.has(id) ? api.delete(`/saved-jobs/${id}`) : api.post(`/saved-jobs/${id}`)); savedQ.reload(); };
+  const startApply = () => { if (!user) { window.location.hash = "login"; return; } if (!sel.easy && sel.raw.external_url) { window.open(sel.raw.external_url, "_blank", "noopener"); return; } setBid(prof.data?.hourly_rate || 0); setCover(""); setProp(true); };
+  const send = async () => { try { await api.post(`/applications/jobs/${sel.id}`, { cover_note: [bid ? `Proposed rate: $${bid}/hr` : "", cover.trim()].filter(Boolean).join("\n\n") || undefined }); setProp(false); setSel(null); setNotice("Proposal sent"); } catch (e) { setNotice(extractErrorMessage(e, "We couldn't send your proposal.")); } };
+  const loading = contract.loading || freelance.loading;
   return (
     <div className="bg-white">
       <div className="mx-auto max-w-[1300px] px-4 py-6">
         <h1 className="text-3xl font-light">Jobs you might like</h1>
-        <div className="mt-4 flex gap-2"><div className="flex h-11 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4"><Ic n="search" c="text-slate-500" /><input placeholder="Search for jobs" className="flex-1 outline-none" /></div><button className="rounded-full px-6 font-semibold text-white" style={{ background: GR }}>Search</button></div>
+        <form onSubmit={(e) => { e.preventDefault(); setTerm(q.trim()); }} className="mt-4 flex gap-2"><div className="flex h-11 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4"><Ic n="search" c="text-slate-500" /><input aria-label="Search for jobs" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search for jobs" className="flex-1 outline-none" /></div><button className="rounded-full px-6 font-semibold text-white" style={{ background: GR }}>Search</button></form>
         <div className="mt-5 grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]">
           <div>
-            <Tabs items={["Best Matches", "Most Recent", "Saved Jobs " + saved.length]} v={tab} set={setTab} />
-            <p className="py-3 text-sm text-slate-500">Browse jobs that match your experience to a client's hiring preferences. Ordered by most relevant.</p>
-            {WORK.filter((w) => tab.startsWith("Saved") ? saved.includes(w.id) : true).map((w) => (
+            <Tabs items={["Best Matches", "Most Recent", "Saved Jobs " + WORK.filter((w) => saved.has(w.id)).length]} v={tab} set={setTab} />
+            <p className="py-3 text-sm text-slate-500">Contract and freelance roles{eng ? ", ordered by how well they match your profile" : ""}.</p>
+            {loading && <p className="border-t border-slate-200 p-4 text-sm text-slate-500">Loading…</p>}
+            {list.map((w) => (
               <div key={w.id} onClick={() => setSel(w)} className="cursor-pointer border-t border-slate-200 p-4 hover:bg-slate-50">
-                <div className="flex justify-between"><p className="text-xs text-slate-500">{w.tm}</p><div className="flex gap-2"><button onClick={(e) => { e.stopPropagation(); }} className="rounded-full border border-slate-300 p-1.5 text-slate-500"><Ic n="thumb" s={16} c="rotate-180" /></button><button onClick={(e) => { e.stopPropagation(); setSaved(saved.includes(w.id) ? saved.filter((x) => x !== w.id) : [...saved, w.id]); }} className={cx("rounded-full border p-1.5", saved.includes(w.id) ? "border-[#0552CC] text-[#0552CC]" : "border-slate-300 text-slate-500")}><Ic n="heart" s={16} c={saved.includes(w.id) ? "fill-current" : ""} /></button></div></div>
+                <div className="flex justify-between"><p className="text-xs text-slate-500">{w.tm}</p>{eng && <button aria-label={saved.has(w.id) ? "Unsave job" : "Save job"} onClick={(e) => { e.stopPropagation(); toggle(w.id); }} className={cx("rounded-full border p-1.5", saved.has(w.id) ? "border-[#0552CC] text-[#0552CC]" : "border-slate-300 text-slate-500")}><Ic n="heart" s={16} c={saved.has(w.id) ? "fill-current" : ""} /></button>}</div>
                 <h3 className="mt-1 text-lg font-semibold hover:underline" style={{ color: GR }}>{w.t}</h3>
-                <p className="mt-1 text-xs text-slate-500">{w.kind} - {w.lvl} - {w.est}</p>
+                <p className="mt-1 text-xs text-slate-500">{[w.kind, w.lvl, w.est].filter(Boolean).join(" - ")}</p>
                 <p className="mt-2 line-clamp-2 text-[15px] leading-6 text-slate-700">{w.d}</p>
-                <div className="mt-3 flex flex-wrap gap-2">{w.sk.map((s) => <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{s}</span>)}</div>
-                <p className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500"><span className="flex items-center gap-1">{w.ver ? <><Ic n="shieldcheck" s={14} c="text-[#0552CC]" />Payment verified</> : "Payment unverified"}</span><Stars v={w.rate} /><span>{w.spent}</span><span className="flex items-center gap-1"><Ic n="pin" s={12} />{w.loc}</span></p>
-                <p className="mt-1 text-xs text-slate-500">Proposals: <b>{w.pr}</b></p>
+                <div className="mt-3 flex flex-wrap gap-2">{w.sk.map((s: string) => <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{s}</span>)}</div>
+                <p className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500"><span>{w.co}</span><span className="flex items-center gap-1"><Ic n="pin" s={12} />{w.loc}</span>{score[w.id] != null && <span className="font-semibold text-[#0552CC]">{Math.round(score[w.id])}% match</span>}</p>
               </div>
             ))}
+            {!loading && !list.length && <p className="border-t border-slate-200 p-6 text-sm text-slate-500">{tab.startsWith("Saved") ? "No saved roles yet." : "No contract or freelance roles right now — check back soon or browse all jobs."}</p>}
           </div>
           <aside className="hidden space-y-4 lg:block">
-            <Card c="rounded-lg"><div className="flex items-center gap-3"><Av name="Gokul Raj" s={64} /><div><p className="font-semibold">Gokul R.</p><p className="text-sm text-slate-600">Data and AI platform engineer</p></div></div><Btn v="outline" full sm c="mt-3">Complete your profile</Btn><div className="mt-3"><div className="mb-1 flex justify-between text-xs"><span>Profile completeness</span><b>86%</b></div><Bar v={86} c="bg-[#0552CC]" /></div></Card>
-            <Card c="rounded-lg"><p className="font-semibold">Availability</p><p className="text-sm text-slate-600">More than 30 hrs/week</p><p className="mt-3 font-semibold">Connects</p><p className="text-sm text-slate-600">42 available - <span style={{ color: GR }}>View details</span></p></Card>
-            <Card c="rounded-lg"><p className="mb-2 font-semibold">Your categories</p>{["AI and machine learning", "Data engineering", "DevOps and cloud"].map((c) => <p key={c} className="border-b border-slate-100 py-2 text-sm" style={{ color: GR }}>{c}</p>)}</Card>
+            {eng && prof.data && <Card c="rounded-lg"><div className="flex items-center gap-3"><Av name={user?.full_name || "You"} s={64} /><div><p className="font-semibold">{user?.full_name}</p><p className="text-sm text-slate-600">{prof.data.headline || prof.data.primary_role}</p></div></div><Btn v="outline" full sm c="mt-3" onClick={() => { window.location.hash = "profile"; }}>Complete your profile</Btn><div className="mt-3"><div className="mb-1 flex justify-between text-xs"><span>Profile completeness</span><b>{Math.round(prof.data.profile_score || 0)}%</b></div><Bar v={prof.data.profile_score || 0} c="bg-[#0552CC]" /></div></Card>}
+            {eng && prof.data && <Card c="rounded-lg"><p className="font-semibold">Availability</p><p className="text-sm text-slate-600">{prof.data.availability || "Not set"}</p><p className="mt-3 font-semibold">Rate</p><p className="text-sm text-slate-600">{prof.data.hourly_rate != null ? `$${prof.data.hourly_rate}/hr` : "Not set"}</p></Card>}
+            {eng && (prof.data?.skills ?? []).length > 0 && <Card c="rounded-lg"><p className="mb-2 font-semibold">Your skills</p>{prof.data.skills.slice(0, 6).map((c: string) => <button key={c} onClick={() => { setQ(c); setTerm(c); }} className="block w-full border-b border-slate-100 py-2 text-left text-sm" style={{ color: GR }}>{c}</button>)}</Card>}
           </aside>
         </div>
       </div>
       {sel && (
         <div className="fixed inset-0 z-[90] flex justify-end bg-black/40" onClick={() => setSel(null)}>
           <div className="h-full w-full max-w-3xl overflow-y-auto bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white p-4"><button onClick={() => setSel(null)} className="rounded-full p-1.5 hover:bg-slate-100"><Ic n="x" /></button><div className="flex gap-2"><Btn v="outline" icon="heart">Save job</Btn><Btn v="primary" onClick={() => setProp(true)}>Apply now</Btn></div></div>
+            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white p-4"><button aria-label="Close" onClick={() => setSel(null)} className="rounded-full p-1.5 hover:bg-slate-100"><Ic n="x" /></button><div className="flex gap-2">{eng && <Btn v="outline" icon="heart" onClick={() => toggle(sel.id)}>{saved.has(sel.id) ? "Saved" : "Save job"}</Btn>}{(!user || eng) && <Btn v="primary" onClick={startApply}>{!user ? "Sign in to apply" : sel.easy ? "Apply now" : "Apply on company site"}</Btn>}</div></div>
             <div className="grid gap-6 p-6 grid-cols-1 md:grid-cols-[1fr_240px]">
-              <div><h2 className="text-2xl font-semibold">{sel.t}</h2><p className="mt-1 text-sm text-slate-500">{sel.tm} - Worldwide</p><p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-slate-700">{sel.d}</p><div className="mt-5 grid grid-cols-3 gap-4 border-y border-slate-200 py-4 text-sm"><div><p className="font-semibold">{sel.lvl}</p><p className="text-slate-500">Experience level</p></div><div><p className="font-semibold">{sel.kind.split(" - ")[0]}</p><p className="text-slate-500">Budget</p></div><div><p className="font-semibold">Remote</p><p className="text-slate-500">Location</p></div></div><p className="mt-4 font-semibold">Skills and expertise</p><div className="mt-2 flex flex-wrap gap-2">{sel.sk.map((s) => <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-sm">{s}</span>)}</div><p className="mt-5 font-semibold">Activity on this job</p><p className="mt-1 text-sm text-slate-600">Proposals: {sel.pr} - Interviewing: 2 - Invites sent: 6</p></div>
-              <div className="space-y-4"><Card c="rounded-lg"><p className="font-semibold">About the client</p><p className="mt-2 flex items-center gap-1 text-sm"><Ic n="shieldcheck" s={16} c="text-[#0552CC]" />Payment method verified</p><Stars v={sel.rate} /><p className="mt-2 text-sm font-semibold">{sel.co}</p><p className="text-sm text-slate-500">{sel.loc}</p><p className="mt-2 text-sm">{sel.spent} total - 86% hire rate</p></Card><Card c="rounded-lg"><p className="font-semibold">Send a proposal for: 16 Connects</p><p className="text-sm text-slate-500">Available Connects: 42</p></Card></div>
+              <div><h2 className="text-2xl font-semibold">{sel.t}</h2><p className="mt-1 text-sm text-slate-500">{sel.tm} - {sel.loc}</p><p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-slate-700">{sel.d}</p><div className="mt-5 grid grid-cols-3 gap-4 border-y border-slate-200 py-4 text-sm"><div><p className="font-semibold">{sel.lvl || "—"}</p><p className="text-slate-500">Experience level</p></div><div><p className="font-semibold">{sel.pay || "—"}</p><p className="text-slate-500">Budget</p></div><div><p className="font-semibold">{sel.raw.is_remote === false ? "On-site" : "Remote"}</p><p className="text-slate-500">Location</p></div></div>{sel.sk.length > 0 && <><p className="mt-4 font-semibold">Skills and expertise</p><div className="mt-2 flex flex-wrap gap-2">{sel.sk.map((s: string) => <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-sm">{s}</span>)}</div></>}</div>
+              <div className="space-y-4"><Card c="rounded-lg"><p className="font-semibold">About the client</p><p className="mt-2 text-sm font-semibold">{sel.co}</p><p className="text-sm text-slate-500">{sel.easy ? "Hiring on Remote AI Platform" : `Listed on ${sel.raw.source}`}</p>{sel.raw.company_id && <button className="mt-2 text-sm font-semibold" style={{ color: GR }} onClick={() => { sessionStorage.setItem("rap-company-id", sel.raw.company_id); window.location.hash = "company"; }}>View company</button>}</Card></div>
             </div>
           </div>
         </div>
       )}
       <Modal open={prop} onClose={() => setProp(false)} title="Submit a proposal" w="max-w-2xl">
-        <p className="mb-1 font-semibold">Terms</p><p className="mb-3 text-sm text-slate-500">What is the rate you would like to bid for this job?</p>
-        <div className="space-y-3 rounded-lg border border-slate-200 p-4">{[["Hourly rate", null], ["10% Remote-AI service fee", -fee], ["You will receive", bid - fee]].map(([l, v], i) => <div key={String(l)} className="flex items-center justify-between text-sm"><span className={i === 2 ? "font-bold" : ""}>{l}</span>{i === 0 ? <input type="number" value={bid} onChange={(e) => setBid(Number(e.target.value))} className="h-10 w-32 rounded-lg border border-slate-300 px-3 text-right" /> : <span className={i === 2 ? "font-bold" : ""}>{Number(v) < 0 ? "-" : ""}${Math.abs(Number(v)).toFixed(2)}/hr</span>}</div>)}</div>
-        <Field label="Cover letter"><textarea rows={5} className={cx(inputCls, "mt-2 h-auto py-2")} placeholder="Introduce yourself and explain why you are a strong fit" /></Field>
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-[#F6F4FF] p-3 text-sm text-[#5B4BDB]"><Ic n="spark" s={16} />AI can draft a cover letter from your profile and this job.<button className="ml-auto font-bold">Generate</button></div>
-        <div className="mt-5 flex justify-end gap-2"><Btn v="outline" onClick={() => setProp(false)}>Cancel</Btn><Btn v="primary" onClick={() => setProp(false)}>Send for 16 Connects</Btn></div>
+        <p className="mb-1 font-semibold">Terms</p><p className="mb-3 text-sm text-slate-500">What rate would you like to propose for this job?</p>
+        <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4 text-sm"><span className="font-bold">Hourly rate (USD)</span><input aria-label="Hourly rate" type="number" min={0} value={bid || ""} onChange={(e) => setBid(Number(e.target.value))} className="h-10 w-32 rounded-lg border border-slate-300 px-3 text-right" /></div>
+        <Field label="Cover letter"><textarea rows={5} maxLength={1900} value={cover} onChange={(e) => setCover(e.target.value)} className={cx(inputCls, "mt-2 h-auto py-2")} placeholder="Introduce yourself and explain why you are a strong fit" /></Field>
+        <div className="mt-5 flex justify-end gap-2"><Btn v="outline" onClick={() => setProp(false)}>Cancel</Btn><Btn v="primary" onClick={send}>Send proposal</Btn></div>
       </Modal>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </div>
   );
 }
 
 export function Talent() {
-  const [inv, setInv] = useState<string[]>([]);
-  const [fav, setFav] = useState<string[]>([]);
-  const tal = PEOPLE.filter((p) => p.rate > 0);
+  // Live: engineers from /engineers (or /engineers/search) with rate and experience filters; Invite to a job; Message.
+  const { user } = useAuth();
+  const [q, setQ] = useState("");
+  const [term, setTerm] = useState("");
+  const [rate, setRate] = useState("Any");
+  const [lvl, setLvl] = useState<string[]>([]);
+  const [inviting, setInviting] = useState<any>(null);
+  const [notice, setNotice] = useState("");
+  const q1 = useApi<any[]>(term ? "/engineers/search" : "/engineers", term ? { query: term, is_open_to_work: false, limit: 100 } : { limit: 100 });
+  const myJobs = useApi<any[]>(user?.role === "COMPANY" ? "/jobs/company" : null, { limit: 100 });
+  const band = (y: number) => (y >= 8 ? "Expert" : y >= 3 ? "Intermediate" : "Entry");
+  const inRate = (r: number) => rate === "Any" || (rate === "$30 - $60" ? r >= 30 && r < 60 : rate === "$60 - $100" ? r >= 60 && r < 100 : r >= 100);
+  const tal = (q1.data ?? []).filter((e: any) => e.user_id !== user?.id && e.hourly_rate > 0 && inRate(e.hourly_rate) && (!lvl.length || lvl.includes(band(e.years_of_experience || 0))));
+  const invite = async (jobId: string) => { try { await api.post(`/applications/jobs/${jobId}/invite/${inviting.id}`); setNotice(`${inviting.full_name || "Engineer"} was invited`); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't send that invitation.")); } setInviting(null); };
   return (
     <div className="bg-white">
       <div className="mx-auto max-w-[1300px] px-4 py-6">
         <h1 className="text-3xl font-light">Find talent</h1>
-        <div className="mt-4 flex gap-2"><div className="flex h-11 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4"><Ic n="search" c="text-slate-500" /><input defaultValue="ML engineer" className="flex-1 outline-none" /></div><button className="rounded-full px-6 font-semibold text-white" style={{ background: GR }}>Search</button></div>
+        <form onSubmit={(e) => { e.preventDefault(); setTerm(q.trim()); }} className="mt-4 flex gap-2"><div className="flex h-11 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4"><Ic n="search" c="text-slate-500" /><input aria-label="Search talent" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Skill, role or name" className="flex-1 outline-none" /></div><button className="rounded-full px-6 font-semibold text-white" style={{ background: GR }}>Search</button></form>
         <div className="mt-6 grid gap-8 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="space-y-5 text-sm">{[["Category", ["AI and ML", "Data engineering", "Design", "DevOps"]], ["Job success", ["Any", "80% and up", "90% and up"]], ["Hourly rate", ["Any", "$30 - $60", "$60 - $100", "$100+"]], ["Experience level", ["Entry", "Intermediate", "Expert"]]].map(([h, o]) => <div key={String(h)}><p className="mb-2 font-semibold">{h}</p>{(o as string[]).map((x) => <label key={x} className="flex items-center gap-2 py-1"><input type="checkbox" />{x}</label>)}</div>)}</aside>
+          <aside className="space-y-5 text-sm"><div><p className="mb-2 font-semibold">Hourly rate</p>{["Any", "$30 - $60", "$60 - $100", "$100+"].map((x) => <label key={x} className="flex items-center gap-2 py-1"><input type="radio" name="rate" checked={rate === x} onChange={() => setRate(x)} />{x}</label>)}</div><div><p className="mb-2 font-semibold">Experience level</p>{["Entry", "Intermediate", "Expert"].map((x) => <label key={x} className="flex items-center gap-2 py-1"><input type="checkbox" checked={lvl.includes(x)} onChange={(e) => setLvl(e.target.checked ? [...lvl, x] : lvl.filter((y) => y !== x))} />{x}</label>)}</div></aside>
           <div>
-            <p className="mb-3 text-sm text-slate-500">{tal.length} freelancers match your search</p>
-            {tal.map((p) => (
-              <div key={p.n} className="flex gap-4 border-t border-slate-200 p-5 hover:bg-slate-50">
-                <Av name={p.n} s={72} dot={p.on} />
-                <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h3 className="text-lg font-semibold" style={{ color: GR }}>{p.n}</h3>{p.jss >= 97 && <Tag v="blue">Top Rated Plus</Tag>}</div><p className="font-semibold">{p.t}</p><p className="mt-1 text-sm text-slate-600"><b>{"$" + p.rate}/hr</b> - {p.earn} earned - <span className="inline-flex items-center gap-1"><Ic n="target" s={14} c="text-[#0552CC]" />{p.jss}% Job Success</span> - {p.loc}</p><p className="mt-2 line-clamp-2 text-sm text-slate-600">Delivered {p.jobs} projects for remote teams. Specializes in {p.skills.slice(0, 3).join(", ")} with strong written communication and documented handovers.</p><div className="mt-2 flex flex-wrap gap-2">{p.skills.map((s) => <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{s}</span>)}</div></div>
-                <div className="flex flex-col items-end gap-2"><button onClick={() => setFav(fav.includes(p.n) ? fav.filter((x) => x !== p.n) : [...fav, p.n])} className={cx("rounded-full border p-2", fav.includes(p.n) ? "border-[#0552CC] text-[#0552CC]" : "border-slate-300 text-slate-500")}><Ic n="heart" s={16} c={fav.includes(p.n) ? "fill-current" : ""} /></button><Btn v={inv.includes(p.n) ? "gray" : "primary"} onClick={() => setInv([...inv, p.n])}>{inv.includes(p.n) ? "Invited" : "Invite to job"}</Btn><Btn v="outline" sm>Message</Btn></div>
+            <p className="mb-3 text-sm text-slate-500">{q1.loading ? "Loading…" : `${tal.length} freelancers match your search`}</p>
+            {tal.map((p: any) => (
+              <div key={p.id} className="flex gap-4 border-t border-slate-200 p-5 hover:bg-slate-50">
+                <Av name={p.full_name || "Engineer"} s={72} />
+                <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><button onClick={() => { sessionStorage.setItem("rap-person-id", p.id); window.location.hash = "engineer"; }} className="text-lg font-semibold hover:underline" style={{ color: GR }}>{p.full_name || "Engineer"}</button>{p.is_verified && <Tag v="blue">Verified</Tag>}</div><p className="font-semibold">{p.headline || p.primary_role}</p><p className="mt-1 text-sm text-slate-600"><b>${p.hourly_rate}/hr</b> - {p.years_of_experience || 0} yrs experience - {p.location || "Remote"}</p>{p.bio && <p className="mt-2 line-clamp-2 text-sm text-slate-600">{p.bio}</p>}<div className="mt-2 flex flex-wrap gap-2">{(p.skills || []).slice(0, 8).map((s: string) => <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{s}</span>)}</div></div>
+                <div className="flex flex-col items-end gap-2">{user?.role === "COMPANY" && <Btn v="primary" onClick={() => setInviting(p)}>Invite to job</Btn>}<Btn v="outline" sm onClick={() => { if (!user) { window.location.hash = "login"; return; } sessionStorage.setItem("rap-contact-id", p.user_id); window.location.hash = "messenger"; }}>Message</Btn></div>
               </div>
             ))}
+            {!q1.loading && !tal.length && <p className="border-t border-slate-200 p-6 text-sm text-slate-500">No freelancers with a set rate match these filters.</p>}
           </div>
         </div>
       </div>
+      <Modal open={!!inviting} onClose={() => setInviting(null)} title={`Invite ${inviting?.full_name ?? ""} to apply`}>{(myJobs.data ?? []).filter((j: any) => j.is_active).length ? <div className="space-y-2">{(myJobs.data ?? []).filter((j: any) => j.is_active).map((j: any) => <button key={j.id} onClick={() => invite(j.id)} className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left hover:bg-slate-50"><b>{j.title}</b><Ic n="send" s={16} /></button>)}</div> : <p className="text-slate-500">Post a job first, then invite engineers to apply.</p>}</Modal>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </div>
   );
 }
