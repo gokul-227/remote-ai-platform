@@ -206,6 +206,39 @@ async def delete_user(
     return None
 
 
+@router.get("/jobs")
+async def list_all_jobs(
+    q: str | None = Query(None, description="Title or company contains"),
+    active: bool | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """All jobs for moderation — unlike GET /jobs this includes hidden (inactive) ones."""
+    query = select(JobPost)
+    if q:
+        pattern = f"%{q.strip()}%"
+        query = query.where(JobPost.title.ilike(pattern) | JobPost.company_name.ilike(pattern))
+    if active is not None:
+        query = query.where(JobPost.is_active.is_(active))
+    rows = (
+        await db.execute(query.order_by(JobPost.created_at.desc()).offset(skip).limit(limit))
+    ).scalars().all()
+    return [
+        {
+            "id": j.id,
+            "title": j.title,
+            "company_name": j.company_name,
+            "location": j.location,
+            "source": j.source,
+            "is_active": j.is_active,
+            "posted_at": j.posted_at,
+        }
+        for j in rows
+    ]
+
+
 @router.patch("/jobs/{job_id}/status")
 async def update_job_status(
     job_id: uuid.UUID,
@@ -445,6 +478,28 @@ async def _check_minio() -> ServiceHealthStatus:
         )
 
 
+async def _check_supabase_auth() -> ServiceHealthStatus:
+    """Supabase Auth's public JWKS — what the API needs to verify every sign-in token."""
+    started = time.monotonic()
+    name = "Supabase Auth"
+    if not settings.SUPABASE_URL:
+        return ServiceHealthStatus(service=name, status="DOWN", latency_ms=0.0)
+    try:
+        url = f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
+        async with httpx.AsyncClient(timeout=1.5) as client:
+            resp = await client.get(url)
+        healthy = resp.status_code == 200 and bool(resp.json().get("keys"))
+        return ServiceHealthStatus(
+            service=name,
+            status="OPERATIONAL" if healthy else "DOWN",
+            latency_ms=round((time.monotonic() - started) * 1000, 1),
+        )
+    except Exception:
+        return ServiceHealthStatus(
+            service=name, status="DOWN", latency_ms=round((time.monotonic() - started) * 1000, 1)
+        )
+
+
 async def _check_keycloak() -> ServiceHealthStatus:
     started = time.monotonic()
     if not settings.FEATURE_KEYCLOAK_AUTH:
@@ -505,7 +560,7 @@ async def get_system_health_details(
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> SystemHealthDetailResponse:
-    """Detailed health check for all core platform subsystems (Postgres, Redis, MinIO, Keycloak).
+    """Detailed health check for all core platform subsystems (Postgres, Redis, MinIO, the identity provider, Celery).
 
     Each subsystem is checked directly (a real Postgres query, a real Redis PING,
     a real S3 list-buckets call, a real Keycloak realm fetch) rather than reported
@@ -516,7 +571,13 @@ async def get_system_health_details(
         ("PostgreSQL Database Pool", _check_postgres(db)),
         ("Redis Cache & Session Broker", _check_redis()),
         ("MinIO Object Storage S3", _check_minio()),
-        ("Keycloak Identity Provider", _check_keycloak()),
+        # Check the identity provider actually in use: Supabase in production,
+        # Keycloak only for the legacy custom-JWT setup.
+        (
+            ("Supabase Auth", _check_supabase_auth())
+            if settings.AUTH_PROVIDER == "supabase"
+            else ("Keycloak Identity Provider", _check_keycloak())
+        ),
         ("Celery Background Task Queue", _check_celery_queues()),
     ]
     # Belt-and-suspenders cap on top of each check's own internal timeout —

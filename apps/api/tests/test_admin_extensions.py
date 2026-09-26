@@ -116,3 +116,53 @@ async def test_posts_can_be_reported_and_removed_by_admin(client: AsyncClient, t
     removed = await client.patch(f"/api/v1/moderation/reports/{report.json()['id']}", headers=auth_headers, json={"status": "RESOLVED", "decision": "REMOVE_POST", "note": "Spam"})
     assert removed.status_code == 200
     assert (await client.get(f"/api/v1/social/posts/{post_id}", headers=author_headers)).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_admin_verification_queue_and_job_list(client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession):
+    eng = await client.post("/api/v1/auth/register", json={"email": "verify-me@example.com", "password": "VerifyPassword123!", "full_name": "Verify Me", "role": "ENGINEER"})
+    eh = {"Authorization": f"Bearer {eng.json()['access_token']}"}
+    req = await client.post("/api/v1/trust/verifications", headers=eh, json={"verification_type": "GITHUB"})
+    assert req.status_code == 201
+
+    # Non-admins can't see the queue or the full job list.
+    assert (await client.get("/api/v1/trust/verifications", headers=eh)).status_code == 403
+    assert (await client.get("/api/v1/admin/jobs", headers=eh)).status_code == 403
+
+    test_user.role = UserRole.ADMIN
+    await db.commit()
+    queue = (await client.get("/api/v1/trust/verifications", headers=auth_headers)).json()
+    assert [v["id"] for v in queue] == [req.json()["id"]]
+    reviewed = await client.patch(f"/api/v1/trust/verifications/{req.json()['id']}/review", headers=auth_headers, json={"status": "VERIFIED"})
+    assert reviewed.status_code == 200
+    assert (await client.get("/api/v1/trust/verifications", headers=auth_headers)).json() == []
+
+    from app.domains.jobs.models import JobPost
+    db.add(JobPost(title="Hidden role", slug="hidden-role", description="x", company_name="Hidden Co", is_active=False))
+    await db.commit()
+    jobs = (await client.get("/api/v1/admin/jobs", headers=auth_headers, params={"q": "hidden"})).json()
+    assert [j["title"] for j in jobs] == ["Hidden role"] and jobs[0]["is_active"] is False
+
+
+@pytest.mark.asyncio
+async def test_health_checks_supabase_not_keycloak_when_supabase_is_the_provider(client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession, monkeypatch):
+    from app.core.config import settings
+    from app.domains.admin import router as admin_router
+    from app.domains.admin.schemas import ServiceHealthStatus
+
+    test_user.role = UserRole.ADMIN
+    await db.commit()
+
+    async def fake_supabase() -> ServiceHealthStatus:
+        return ServiceHealthStatus(service="Supabase Auth", status="OPERATIONAL", latency_ms=1.0)
+
+    async def boom() -> ServiceHealthStatus:
+        raise AssertionError("Keycloak must not be checked when Supabase is the provider")
+
+    # Only the admin router sees Supabase as the provider; the test client keeps its own JWT auth.
+    monkeypatch.setattr(admin_router, "settings", settings.model_copy(update={"AUTH_PROVIDER": "supabase"}))
+    monkeypatch.setattr(admin_router, "_check_supabase_auth", fake_supabase)
+    monkeypatch.setattr(admin_router, "_check_keycloak", boom)
+    body = (await client.get("/api/v1/admin/health/details", headers=auth_headers)).json()
+    names = [s["service"] for s in body["services"]]
+    assert "Supabase Auth" in names and not any("Keycloak" in n for n in names)

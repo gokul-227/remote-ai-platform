@@ -194,7 +194,7 @@ function PaymentsView({ company }: { company: boolean }) {
 export function Earnings() { return <PaymentsView company={false} />; }
 export function CoPayments() { return <PaymentsView company />; }
 
-export function TaskMarketplace() {
+export function TaskMarketplace({ initial }: { initial?: string } = {}) {
   // Live: engineers — /projects/my-offers, /my-tasks (+ submit work), submissions with AI review, /reputation;
   // companies — offers they sent (/projects/task-offers) with cancel.
   const { user } = useAuth();
@@ -203,7 +203,7 @@ export function TaskMarketplace() {
   const tasksQ = useApi<any[]>(user && !company ? "/projects/my-tasks" : null);
   const repQ = useApi<any>(user && !company ? `/projects/reputation/${user.id}` : null);
   const sentQ = useApi<any[]>(company ? "/projects/task-offers" : null);
-  const [tab, setTab] = useState(company ? "sent" : "offers");
+  const [tab, setTab] = useState(company ? "sent" : initial || "offers");
   const [submit, setSubmit] = useState<any>(null);
   const [summary, setSummary] = useState("");
   const [links, setLinks] = useState("");

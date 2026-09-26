@@ -10,6 +10,7 @@ import { AppShell } from "./rap_shell";
 import { Projects } from "./rap_projects";
 import { Ride } from "./rap_ride";
 import { Work, Talent, Contracts, Earnings, CoPayments, TaskMarketplace } from "./rap_work";
+import { WorkLedger, HelpCenter } from "./rap_enterprise";
 
 type Mod = { k: string; l: string; i: string; sub: [string, string][]; accent: string };
 const MODS: Mod[] = [
@@ -22,7 +23,7 @@ const MODS: Mod[] = [
 ];
 const modOf = (r: string) => MODS.find((m) => m.sub.some((s) => s[0] === r)) || MODS[0];
 
-export const REG: Record<string, any> = { engineer: EngineerDetail, jobdetail: JobDetail, contractsign: ContractSign, workspace: Workspace, quality: Quality, security: Security, search: Search, coprofile: CoProfile, copayments: CoPayments, taskmarket: TaskMarketplace, terms: Terms, privacy: Privacy, impressum: Impressum, group: GroupDetail, dash: Dashboard, recs: Recs, applications: Applications, saved: Saved, engineers: Engineers, companies: Companies, settings: Settings, onboarding: Onboarding, codash: CoDash, postjob: PostJob, candidates: Candidates, cojobs: CoJobs, admin: Admin, projects: Projects, ride: Ride, jobs: Jobs, profile: Profile, network: Network, company: Company, work: Work, talent: Talent, contracts: Contracts, earnings: Earnings, feed: Feed, groups: Groups, messenger: Messenger, notifications: Notifications };
+export const REG: Record<string, any> = { submissions: () => <TaskMarketplace initial="submissions" />, reviews: () => <TaskMarketplace initial="reviews" />, worklog: WorkLedger, help: HelpCenter, adminusers: () => <Admin initial="adminusers" />, adminjobs: () => <Admin initial="adminjobs" />, reports: () => <Admin initial="reports" />, verifications: () => <Admin initial="verifications" />, audit: () => <Admin initial="audit" />, sync: () => <Admin initial="sync" />, aiusage: () => <Admin initial="aiusage" />, health: () => <Admin initial="health" />, flags: () => <Admin initial="flags" />, orgs: () => <Admin initial="orgs" />, engineer: EngineerDetail, jobdetail: JobDetail, contractsign: ContractSign, workspace: Workspace, quality: Quality, security: Security, search: Search, coprofile: CoProfile, copayments: CoPayments, taskmarket: TaskMarketplace, terms: Terms, privacy: Privacy, impressum: Impressum, group: GroupDetail, dash: Dashboard, recs: Recs, applications: Applications, saved: Saved, engineers: Engineers, companies: Companies, settings: Settings, onboarding: Onboarding, codash: CoDash, postjob: PostJob, candidates: Candidates, cojobs: CoJobs, admin: Admin, projects: Projects, ride: Ride, jobs: Jobs, profile: Profile, network: Network, company: Company, work: Work, talent: Talent, contracts: Contracts, earnings: Earnings, feed: Feed, groups: Groups, messenger: Messenger, notifications: Notifications };
 
 function Soon({ r }: { r: string }) {
   return <div className="mx-auto max-w-xl p-16 text-center text-slate-500"><Ic n="layers" s={40} c="mx-auto mb-3" /><p className="text-lg font-bold text-slate-800">{r}</p><p>This workspace is fully wired; select a surface above to continue designing the workflow.</p></div>;

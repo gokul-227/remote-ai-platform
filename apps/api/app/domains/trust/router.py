@@ -207,6 +207,25 @@ async def submit_review(
 
 
 @router.get(
+    "/verifications",
+    response_model=list[VerificationResponse],
+    summary="Admin verification queue",
+)
+async def list_verification_queue(
+    status_filter: str | None = Query("SELF_REPORTED", alias="status", pattern="^(SELF_REPORTED|VERIFIED|REJECTED)$"),
+    limit: int = Query(100, ge=1, le=200),
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> list[VerificationResponse]:
+    """Verification requests awaiting (or past) admin review, oldest first."""
+    query = select(UserVerification).order_by(UserVerification.created_at.asc()).limit(limit)
+    if status_filter:
+        query = query.where(UserVerification.status == status_filter)
+    rows = (await db.execute(query)).scalars().all()
+    return [VerificationResponse.model_validate(v) for v in rows]
+
+
+@router.get(
     "/verifications/{user_id}",
     response_model=list[VerificationResponse],
     summary="List user verifications",
