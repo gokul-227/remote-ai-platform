@@ -141,23 +141,24 @@ export async function completeOnboarding(
   await expect(page).toHaveURL(/\/onboarding/, { timeout: 30_000 });
 
   if (opts.role === "engineer") {
-    await page.getByText("Manual Setup").click();
+    await page.getByRole("button", { name: /build it myself/i }).click();
     await page.locator("#onboardingHeadline").fill(opts.headline);
     await page.locator("#onboardingSkills").fill(opts.skills);
-    await page.getByRole("button", { name: /next: preferences/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
     const [profileResponse] = await Promise.all([
       page.waitForResponse((res) => res.url().includes("/engineers/me") && res.request().method() === "POST", { timeout: 30_000 }),
-      page.getByRole("button", { name: /complete setup/i }).click(),
+      page.getByRole("button", { name: /save profile/i }).click(),
     ]);
     expect(profileResponse.ok()).toBeTruthy();
+    await page.getByRole("button", { name: /go to my dashboard/i }).click();
     await expect(page).toHaveURL(/\/engineer\/dashboard/, { timeout: 30_000 });
   } else {
     await page.locator("#compName").fill(opts.name);
-    await page.getByRole("button", { name: /next: organization profile/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
     if (opts.description) {
       await page.getByPlaceholder(/what does your organization build/i).fill(opts.description);
     }
-    await page.getByRole("button", { name: /next: final review/i }).click();
+    await page.getByRole("button", { name: /^continue$/i }).click();
     const [profileResponse] = await Promise.all([
       page.waitForResponse((res) => res.url().includes("/companies/me") && res.request().method() === "POST", { timeout: 30_000 }),
       page.getByRole("button", { name: /finish setup/i }).click(),

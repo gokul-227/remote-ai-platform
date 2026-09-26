@@ -1,45 +1,39 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useSwitchWorkspace } from "@/hooks/useWorkspace";
+import { AccessDenied, Btn, Loading } from "@/components/rap/kit";
 
-/** Client-side gate for role-restricted pages (admin/company dashboards).
- * The API is the real authorization boundary — this only avoids flashing
- * a full page shell at users who can't act on it. */
-export function RequireRole({
-  roles,
-  children,
-}: {
-  roles: Array<"ENGINEER" | "COMPANY" | "ADMIN">;
-  children: React.ReactNode;
-}) {
+type Role = "ENGINEER" | "COMPANY" | "ADMIN";
+const LABEL: Record<Role, string> = { ENGINEER: "engineer", COMPANY: "company", ADMIN: "admin" };
+
+/** Client-side gate for role-restricted pages. The API is the real
+ * authorization boundary — this only avoids flashing a page shell at users
+ * who can't act on it, and offers the workspace switch when that's the fix. */
+export function RequireRole({ roles, children }: { roles: Role[]; children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/auth/login");
-  }, [loading, user, router]);
+    if (!loading && !user) router.replace(`/auth/login?redirect=${encodeURIComponent(pathname || "/")}`);
+  }, [loading, user, router, pathname]);
 
-  if (loading || !user) {
-    return (
-      <div className="flex min-h-[360px] items-center justify-center text-slate-500">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-        Loading
-      </div>
-    );
-  }
-
-  if (!roles.includes(user.role)) {
-    return (
-      <div className="card-enterprise mx-auto max-w-lg p-8 text-center">
-        <ShieldAlert className="mx-auto mb-3 h-8 w-8 text-amber-500" />
-        <h1 className="text-xl font-bold text-slate-900">Access restricted</h1>
-        <p className="mt-2 text-sm text-slate-600">This page is only available to {roles.join(" or ").toLowerCase()} accounts.</p>
-      </div>
-    );
-  }
-
+  if (loading || !user) return <Loading label="Loading" />;
+  if (!roles.includes(user.role)) return <WrongWorkspace roles={roles} current={user.role} />;
   return <>{children}</>;
+}
+
+function WrongWorkspace({ roles, current }: { roles: Role[]; current: Role }) {
+  const { switchTo } = useSwitchWorkspace();
+  const target = roles.find((r) => r !== "ADMIN");
+  const canSwitch = current !== "ADMIN" && !!target;
+  return (
+    <AccessDenied
+      message={`This page is only available in the ${roles.map((r) => LABEL[r]).join(" or ")} workspace.`}
+      action={canSwitch ? <Btn loading={switchTo.isPending} onClick={() => switchTo.mutate(target as "ENGINEER" | "COMPANY")}>Switch to the {LABEL[target as Role]} workspace</Btn> : undefined}
+    />
+  );
 }

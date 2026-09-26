@@ -1,625 +1,333 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Sparkles,
-  Upload,
-  Building2,
-  CheckCircle2,
-  ArrowRight,
-  ArrowLeft,
-  FileText,
-  Loader2,
-  Wand2,
-  Check,
-  AlertCircle,
-} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { RequireAuth } from "@/components/RequireAuth";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
-import { cn } from "@/lib/cn";
+import { Btn, Card, Field, Ic, Loading, Page, cx, inputCls, textareaCls } from "@/components/rap/kit";
+import type { CompanyProfile, MyEngineerProfile } from "@/types";
 
 export default function OnboardingPage() {
-  return (
-    <RequireAuth>
-      <OnboardingContent />
-    </RequireAuth>
-  );
+  return <RequireAuth><Onboarding /></RequireAuth>;
 }
 
-function OnboardingContent() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const isCompany = user?.role === "COMPANY";
-
-  // Shared state
-  const [step, setStep] = useState<number>(1);
-  const [error, setError] = useState<string | null>(null);
-
-  // Engineer state
-  const [method, setMethod] = useState<"ai" | "manual" | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [enhancing, setEnhancing] = useState(false);
-  const [resumeUploaded, setResumeUploaded] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [engForm, setEngForm] = useState({
-    headline: "",
-    primary_role: "",
-    location: "",
-    bio: "",
-    years_of_experience: "3",
-    skills: "",
-    hourly_rate: "",
-    remote_preference: "100% Remote",
-    availability: "Immediate",
-  });
-
-  // Company state
-  const [compForm, setCompForm] = useState({
-    name: "",
-    industry: "",
-    company_size: "11-50",
-    location: "",
-    description: "",
-    website: "",
-  });
-
-  const updateEng = (key: keyof typeof engForm, val: string) => setEngForm((c) => ({ ...c, [key]: val }));
-  const updateComp = (key: keyof typeof compForm, val: string) => setCompForm((c) => ({ ...c, [key]: val }));
-
-  // Mutations
-  const createEngineerProfile = useMutation({
-    mutationFn: async () => {
-      const payload = {
-        headline: engForm.headline || undefined,
-        primary_role: engForm.primary_role || undefined,
-        location: engForm.location || undefined,
-        bio: engForm.bio || undefined,
-        years_of_experience: Number(engForm.years_of_experience) || 0,
-        hourly_rate: engForm.hourly_rate ? Number(engForm.hourly_rate) : undefined,
-        remote_preference: engForm.remote_preference,
-        availability: engForm.availability,
-        skills: engForm.skills.split(",").map((s) => s.trim()).filter(Boolean),
-      };
-      return (await api.post("/engineers/me", payload)).data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["engineer-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["engineer-profile-exists"] });
-      router.push("/engineer/dashboard");
-    },
-    onError: (err: unknown) => {
-      const msg = extractErrorMessage(err, "Failed to create engineer profile. Please check your entries.");
-      setError(msg);
-    },
-  });
-
-  const createCompanyProfile = useMutation({
-    mutationFn: async () => {
-      const payload = {
-        name: compForm.name,
-        industry: compForm.industry || undefined,
-        company_size: compForm.company_size || undefined,
-        location: compForm.location || undefined,
-        description: compForm.description || undefined,
-        website: compForm.website || undefined,
-      };
-      return (await api.post("/companies/me", payload)).data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["company-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["company-profile-exists"] });
-      router.push("/company/dashboard");
-    },
-    onError: (err: unknown) => {
-      const msg = extractErrorMessage(err, "Failed to create company profile. Please check your entries.");
-      setError(msg);
-    },
-  });
-
-  // Handle Resume Upload
-  const handleResumeUpload = async (file: File) => {
-    setError(null);
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      await api.post("/engineers/me/resume", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      setResumeUploaded(true);
-
-      // Trigger AI enhance right away to parse resume data
-      setEnhancing(true);
-      const enhancedRes = await api.post("/engineers/me/ai-enhance");
-      const data = enhancedRes.data;
-      if (data) {
-        setEngForm((c) => ({
-          ...c,
-          headline: data.headline || c.headline,
-          primary_role: data.primary_role || c.primary_role,
-          location: data.location || c.location,
-          bio: data.bio || c.bio,
-          skills: data.skills?.length ? data.skills.join(", ") : c.skills,
-          years_of_experience: data.years_of_experience ? String(data.years_of_experience) : c.years_of_experience,
-        }));
+/** GET that resolves to null on 404 (no profile yet) instead of retrying. */
+function useMine<T>(path: string, key: string, enabled: boolean) {
+  return useQuery<T | null>({
+    queryKey: [key],
+    enabled,
+    retry: false,
+    queryFn: async () => {
+      try {
+        return (await api.get<T>(path)).data;
+      } catch (e) {
+        if ((e as { response?: { status?: number } }).response?.status === 404) return null;
+        throw e;
       }
-      setStep(3); // Advance to review step
-    } catch (err: unknown) {
-      const msg = extractErrorMessage(err, "Failed to parse resume. You can still set up your profile manually below.");
-      setError(msg);
-    } finally {
-      setUploading(false);
-      setEnhancing(false);
-    }
+    },
+  });
+}
+
+function Onboarding() {
+  const { user } = useAuth();
+  const isCompany = user?.role === "COMPANY";
+  const engineer = useMine<MyEngineerProfile>("/engineers/me", "engineer-profile", !isCompany);
+  const company = useMine<CompanyProfile>("/companies/me", "company-profile", isCompany);
+  const q = isCompany ? company : engineer;
+
+  if (q.isLoading) return <Loading />;
+  // A failed lookup still lets people build a profile from scratch.
+  return isCompany
+    ? <CompanySetup key="company" initial={company.data ?? null} />
+    : <EngineerWizard key="engineer" initial={engineer.data ?? null} />;
+}
+
+/* ---------------------------------------------------------------- engineer */
+
+const STEPS = ["Start", "Resume", "Profile", "Preferences", "Ready"] as const;
+const AVAILABILITY = ["Available now", "In 2 weeks", "In 1 month", "Not available"];
+const REMOTE = ["100% Remote", "Remote-first", "Hybrid", "Flexible"];
+
+type EngForm = {
+  headline: string; primary_role: string; location: string; skills: string; bio: string; years_of_experience: string;
+  hourly_rate: string; timezone: string; availability: string; remote_preference: string;
+};
+
+const browserTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ""; } };
+
+function fromProfile(p: MyEngineerProfile | null): EngForm {
+  return {
+    headline: p?.headline ?? "",
+    primary_role: p?.primary_role ?? "",
+    location: p?.location ?? "",
+    skills: (p?.skills ?? []).join(", "),
+    bio: p?.bio ?? "",
+    years_of_experience: String(p?.years_of_experience ?? ""),
+    hourly_rate: p?.hourly_rate != null ? String(p.hourly_rate) : "",
+    timezone: p?.timezone ?? browserTz(),
+    availability: p?.availability ?? "Available now",
+    remote_preference: p?.remote_preference ?? "100% Remote",
+  };
+}
+
+function EngineerWizard({ initial }: { initial: MyEngineerProfile | null }) {
+  const router = useRouter();
+  const client = useQueryClient();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [step, setStep] = useState(initial ? 2 : 0);
+  const [data, setData] = useState<EngForm>(() => fromProfile(initial));
+  const [error, setError] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [imported, setImported] = useState(false);
+  const update = (k: keyof EngForm, v: string) => setData((d) => ({ ...d, [k]: v }));
+
+  const payload = () => ({
+    headline: data.headline.trim() || undefined,
+    primary_role: data.primary_role.trim() || undefined,
+    location: data.location.trim() || undefined,
+    bio: data.bio.trim() || undefined,
+    skills: data.skills.split(",").map((s) => s.trim()).filter(Boolean),
+    years_of_experience: Math.min(50, Math.max(0, Number(data.years_of_experience) || 0)),
+    hourly_rate: data.hourly_rate ? Number(data.hourly_rate) : undefined,
+    timezone: data.timezone.trim() || undefined,
+    availability: data.availability,
+    remote_preference: data.remote_preference,
+    is_open_to_work: data.availability !== "Not available",
+  });
+
+  const importResume = useMutation({
+    mutationFn: async (f: File) => {
+      // Upload attaches the resume to an existing profile, so make sure one
+      // exists first (POST /engineers/me is create-or-update).
+      if (!initial) await api.post("/engineers/me", {});
+      const form = new FormData();
+      form.append("file", f);
+      await api.post("/engineers/me/resume", form, { headers: { "Content-Type": "multipart/form-data" } });
+      // The upload parses the resume inline and writes what it found onto the profile.
+      return (await api.get<MyEngineerProfile>("/engineers/me")).data;
+    },
+    onSuccess: (p) => {
+      const parsed = (p.parsed_resume_data ?? {}) as Record<string, unknown>;
+      const str = (v: unknown) => (typeof v === "string" ? v : "");
+      setData((d) => ({
+        ...d,
+        headline: p.headline || str(parsed.headline) || d.headline,
+        primary_role: p.primary_role || str(parsed.primary_role) || d.primary_role,
+        location: p.location || str(parsed.location) || d.location,
+        bio: p.bio || str(parsed.bio) || d.bio,
+        skills: p.skills?.length ? p.skills.join(", ") : d.skills,
+        years_of_experience: p.years_of_experience ? String(p.years_of_experience) : typeof parsed.years_of_experience === "number" ? String(parsed.years_of_experience) : d.years_of_experience,
+      }));
+      setImported(true);
+      setError("");
+      void client.invalidateQueries({ queryKey: ["engineer-profile"] });
+    },
+    onError: (e) => setError(extractErrorMessage(e, "We couldn't read that file. You can still build your profile by hand.")),
+  });
+
+  const save = useMutation({
+    mutationFn: async () => (await api.post("/engineers/me", payload())).data,
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["engineer-profile"] });
+      void client.invalidateQueries({ queryKey: ["engineer-profile-exists"] });
+      setStep(4);
+    },
+    onError: (e) => setError(extractErrorMessage(e, "We couldn't save your profile. Check your entries and try again.")),
+  });
+
+  const next = () => {
+    if (step === 2 && (!data.headline.trim() || !data.skills.trim())) return setError("Add a headline and at least one skill to continue.");
+    setError("");
+    if (step === 3) return save.mutate();
+    setStep(step + 1);
   };
 
-  const totalSteps = isCompany ? 3 : 4;
-
   return (
-    <div className="min-h-screen bg-[var(--bg-page)] py-12 px-4 flex items-center justify-center">
-      <div className="w-full max-w-2xl space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 text-[#0552CC] font-extrabold text-2xl">
-            {isCompany ? <Building2 className="h-7 w-7" /> : <Sparkles className="h-7 w-7" />}
-            Remote AI Platform Onboarding
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {isCompany ? "Set up your organization" : "Build your AI-matched profile"}
-          </h1>
-          <p className="text-sm text-slate-600">
-            {isCompany
-              ? "Complete your organization profile to start hiring top engineering talent."
-              : "Tell us about your skills to get matched with remote tech organizations."}
-          </p>
-        </div>
-
-        {/* Wizard Progress Bar */}
-        <div className="flex items-center justify-center gap-3">
-          {Array.from({ length: totalSteps }).map((_, idx) => {
-            const s = idx + 1;
-            return (
-              <div key={s} className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all border",
-                    step > s
-                      ? "bg-[#0552CC] text-white border-[#0552CC]"
-                      : step === s
-                        ? "border-[#0552CC] text-[#0552CC] bg-blue-50 dark:bg-blue-950/30"
-                        : "border-slate-300 text-slate-400 bg-white"
-                  )}
-                >
-                  {step > s ? <Check className="h-4 w-4" /> : s}
-                </div>
-                {s < totalSteps && (
-                  <div className={cn("h-0.5 w-12 sm:w-16 transition-colors", step > s ? "bg-[#0552CC]" : "bg-slate-200")} />
-                )}
+    <Page title="Build your professional profile" sub="A few details help the right opportunities find you">
+      <div className="mx-auto max-w-[900px]">
+        <Card c="!p-6">
+          <div className="mb-7 flex gap-2">
+            {STEPS.map((label, i) => (
+              <div key={label} className="flex-1">
+                <div className={cx("mb-2 h-1 rounded-full", i <= step ? "bg-[#0866ff]" : "bg-slate-200")} />
+                <span className="text-xs text-slate-500">{i + 1}. {label}</span>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        {/* Card Container */}
-        <div className="card-enterprise p-8 space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl p-4 flex items-center gap-2 animate-fade-in">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              {error}
+          {step === 0 && (
+            <>
+              <h2>Let’s get to know your work</h2>
+              <p className="my-4 text-slate-500">Import a resume or build your profile by hand. You can review and edit every detail before sharing it.</p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <button type="button" onClick={() => setStep(1)} className="rounded-xl border border-blue-200 bg-blue-50 p-6 text-left">
+                  <Ic n="file" c="text-[#0866ff]" /><h3 className="mt-3">Start with your resume</h3><p className="mt-2 text-sm text-slate-500">PDF or DOCX, with a review step.</p>
+                </button>
+                <button type="button" onClick={() => setStep(2)} className="rounded-xl border border-slate-200 p-6 text-left">
+                  <Ic n="edit" /><h3 className="mt-3">Build it myself</h3><p className="mt-2 text-sm text-slate-500">Add your skills and experience.</p>
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 1 && (
+            <>
+              <h2>Import your resume</h2>
+              <p className="my-3 text-sm text-slate-500">We read your resume with AI and pre-fill your profile. You review everything before it’s saved.</p>
+              <label className="mt-4 block cursor-pointer rounded-xl border-2 border-dashed border-slate-300 p-8 text-center hover:border-[#0866ff]">
+                <Ic n="file" s={32} c="mx-auto mb-3 text-[#0866ff]" />
+                <span className="block font-semibold">Choose a PDF or DOCX</span>
+                <span className="mt-1 block text-xs text-slate-500">Up to 10 MB</span>
+                <input ref={fileRef} aria-label="Resume file" type="file" accept=".pdf,.docx" className="mt-4 max-w-full text-sm" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setImported(false); }} />
+              </label>
+              {file && <p className="mt-3 text-sm">Selected: <b>{file.name}</b></p>}
+              {imported && <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-800">Resume imported. Review what we found on the next step.</p>}
+              <Btn v="outline" c="mt-4" icon="spark" disabled={!file || imported} loading={importResume.isPending} onClick={() => file && importResume.mutate(file)}>
+                {importResume.isPending ? "Reading your resume…" : "Import with AI"}
+              </Btn>
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <h2>Review your profile</h2>
+              <p className="my-3 text-sm text-slate-500">Describe the work you want to be known for.</p>
+              <div className="space-y-4">
+                <Field label="Professional headline"><input id="onboardingHeadline" className={inputCls} value={data.headline} onChange={(e) => update("headline", e.target.value)} placeholder="e.g. Senior data engineer building reliable platforms" /></Field>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Primary role"><input id="onboardingRole" className={inputCls} value={data.primary_role} onChange={(e) => update("primary_role", e.target.value)} placeholder="e.g. Data Engineer" /></Field>
+                  <Field label="Years of experience"><input id="onboardingExp" type="number" min={0} max={50} className={inputCls} value={data.years_of_experience} onChange={(e) => update("years_of_experience", e.target.value)} /></Field>
+                </div>
+                <Field label="Location"><input id="onboardingLocation" className={inputCls} value={data.location} onChange={(e) => update("location", e.target.value)} placeholder="e.g. Berlin, Germany" /></Field>
+                <Field label="Skills, separated by commas"><input id="onboardingSkills" className={inputCls} value={data.skills} onChange={(e) => update("skills", e.target.value)} placeholder="Python, SQL, AWS" /></Field>
+                <Field label="About you"><textarea id="onboardingBio" rows={4} className={textareaCls} value={data.bio} onChange={(e) => update("bio", e.target.value)} /></Field>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <h2>Your work preferences</h2>
+              <div className="mt-4 space-y-4">
+                <Field label="Hourly rate (USD)"><input id="onboardingRate" type="number" min={0} className={inputCls} value={data.hourly_rate} onChange={(e) => update("hourly_rate", e.target.value)} /></Field>
+                <Field label="Timezone"><input id="onboardingTimezone" className={inputCls} value={data.timezone} onChange={(e) => update("timezone", e.target.value)} placeholder="Europe/Berlin" /></Field>
+                <Field label="Availability"><select className={inputCls} value={data.availability} onChange={(e) => update("availability", e.target.value)}>{AVAILABILITY.map((v) => <option key={v}>{v}</option>)}</select></Field>
+                <Field label="Remote preference"><select className={inputCls} value={data.remote_preference} onChange={(e) => update("remote_preference", e.target.value)}>{REMOTE.map((v) => <option key={v}>{v}</option>)}</select></Field>
+              </div>
+            </>
+          )}
+
+          {step === 4 && (
+            <div className="py-8 text-center">
+              <Ic n="check" s={40} c="mx-auto text-green-600" />
+              <h2 className="mt-4">You’re ready to explore</h2>
+              <p className="my-3 text-slate-500">Your profile is saved. We’ll use it to match you with roles — refine it any time.</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Btn onClick={() => router.push("/engineer/dashboard")}>Go to my dashboard</Btn>
+                <Btn v="gray" href="/engineer/recommendations">See my matches</Btn>
+              </div>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* ENGINEER ONBOARDING FLOW */}
-          {/* ========================================================================= */}
-          {!isCompany && (
-            <>
-              {/* Step 1: Method Choice */}
-              {step === 1 && (
-                <div className="space-y-6">
-                  <div className="text-center space-y-1">
-                    <h2 className="text-lg font-bold text-slate-900">How would you like to set up your profile?</h2>
-                    <p className="text-xs text-slate-500">Choose your preferred method to get started quickly.</p>
-                  </div>
+          {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMethod("ai");
-                        setStep(2);
-                      }}
-                      className={cn(
-                        "p-6 rounded-2xl border-2 text-left space-y-3 transition-all hover:border-[#0552CC] hover:shadow-md",
-                        method === "ai" ? "border-[#0552CC] bg-blue-50/50" : "border-slate-200 bg-white"
-                      )}
-                    >
-                      <div className="h-10 w-10 rounded-xl bg-blue-100 text-[#0552CC] flex items-center justify-center">
-                        <Wand2 className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-1.5">
-                          AI Resume Import <Badge tone="ai">Recommended</Badge>
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Upload your PDF/DOCX resume. AI will parse your skills, roles, and experience instantly.
-                        </p>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMethod("manual");
-                        setStep(3);
-                      }}
-                      className={cn(
-                        "p-6 rounded-2xl border-2 text-left space-y-3 transition-all hover:border-[#0552CC] hover:shadow-md",
-                        method === "manual" ? "border-[#0552CC] bg-blue-50/50" : "border-slate-200 bg-white"
-                      )}
-                    >
-                      <div className="h-10 w-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900 text-sm">Manual Setup</h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Enter your headline, skills, and bio step-by-step using our interactive form.
-                        </p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Resume Upload & AI Parsing */}
-              {step === 2 && (
-                <div className="space-y-6 text-center">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-slate-900">Upload your Resume</h2>
-                    <p className="text-xs text-slate-500">PDF or DOCX format (Max 10MB)</p>
-                  </div>
-
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept=".pdf,.docx"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleResumeUpload(file);
-                    }}
-                  />
-
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-300 hover:border-[#0552CC] hover:bg-slate-50 rounded-2xl p-10 cursor-pointer transition-colors space-y-3 flex flex-col items-center justify-center"
-                  >
-                    {uploading || enhancing ? (
-                      <div className="space-y-3 flex flex-col items-center">
-                        <Loader2 className="h-10 w-10 text-[#0552CC] animate-spin" />
-                        <p className="text-sm font-semibold text-slate-800">
-                          {enhancing ? "AI is extracting skills & experience..." : "Uploading resume..."}
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="h-12 w-12 rounded-full bg-blue-50 text-[#0552CC] flex items-center justify-center">
-                          <Upload className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">Click to select resume document</p>
-                          <p className="text-xs text-slate-500 mt-0.5">Supports PDF and DOCX files</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <Button variant="secondary" onClick={() => setStep(1)} icon={<ArrowLeft className="h-4 w-4" />}>
-                      Back
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setStep(3)}
-                      className="text-xs text-slate-500 hover:text-slate-800 underline font-medium"
-                    >
-                      Skip resume upload &rarr;
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Core Profile Fields */}
-              {step === 3 && (
-                <div className="space-y-4">
-                  <div className="space-y-1 border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-900">Professional Details</h2>
-                    <p className="text-xs text-slate-500">
-                      {resumeUploaded ? "Review the details extracted by AI." : "Tell us about your current role and skills."}
-                    </p>
-                  </div>
-
-                  <Input
-                    id="onboardingHeadline"
-                    label="Professional Headline"
-                    placeholder="e.g. Senior Full-Stack Engineer (React, Python)"
-                    value={engForm.headline}
-                    onChange={(e) => updateEng("headline", e.target.value)}
-                  />
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Input
-                      id="onboardingRole"
-                      label="Primary Role"
-                      placeholder="e.g. Full-Stack Engineer"
-                      value={engForm.primary_role}
-                      onChange={(e) => updateEng("primary_role", e.target.value)}
-                    />
-                    <Input
-                      id="onboardingLocation"
-                      label="Location"
-                      placeholder="e.g. San Francisco, CA (Remote)"
-                      value={engForm.location}
-                      onChange={(e) => updateEng("location", e.target.value)}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Input
-                      id="onboardingExp"
-                      type="number"
-                      label="Years of Experience"
-                      value={engForm.years_of_experience}
-                      onChange={(e) => updateEng("years_of_experience", e.target.value)}
-                    />
-                    <Input
-                      id="onboardingSkills"
-                      label="Key Skills (comma separated)"
-                      placeholder="React, Python, TypeScript, PostgreSQL"
-                      value={engForm.skills}
-                      onChange={(e) => updateEng("skills", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Bio / Professional Summary</label>
-                    <textarea
-                      value={engForm.bio}
-                      onChange={(e) => updateEng("bio", e.target.value)}
-                      rows={3}
-                      className="input-enterprise w-full"
-                      placeholder="Brief summary of your technical background, accomplishments, and career goals."
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4">
-                    <Button variant="secondary" onClick={() => setStep(method === "ai" ? 2 : 1)} icon={<ArrowLeft className="h-4 w-4" />}>
-                      Back
-                    </Button>
-                    <Button onClick={() => setStep(4)} icon={undefined}>
-                      Next: Preferences <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Preferences & Completion */}
-              {step === 4 && (
-                <div className="space-y-5">
-                  <div className="space-y-1 border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-900">Work Preferences & Rates</h2>
-                    <p className="text-xs text-slate-500">Configure your availability and expected rate.</p>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Remote Preference</label>
-                      <select
-                        value={engForm.remote_preference}
-                        onChange={(e) => updateEng("remote_preference", e.target.value)}
-                        className="input-enterprise w-full"
-                      >
-                        <option value="100% Remote">100% Remote</option>
-                        <option value="Hybrid">Hybrid</option>
-                        <option value="On-site">On-site</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Availability</label>
-                      <select
-                        value={engForm.availability}
-                        onChange={(e) => updateEng("availability", e.target.value)}
-                        className="input-enterprise w-full"
-                      >
-                        <option value="Immediate">Immediate</option>
-                        <option value="2 Weeks">2 Weeks Notice</option>
-                        <option value="1 Month">1 Month Notice</option>
-                        <option value="Exploring">Exploring Opportunities</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <Input
-                    id="onboardingRate"
-                    type="number"
-                    label="Desired Hourly Rate ($/hr USD)"
-                    placeholder="e.g. 85"
-                    value={engForm.hourly_rate}
-                    onChange={(e) => updateEng("hourly_rate", e.target.value)}
-                  />
-
-                  <div className="flex items-center justify-between pt-4">
-                    <Button variant="secondary" onClick={() => setStep(3)} icon={<ArrowLeft className="h-4 w-4" />}>
-                      Back
-                    </Button>
-                    <Button
-                      loading={createEngineerProfile.isPending}
-                      onClick={() => createEngineerProfile.mutate()}
-                      icon={<CheckCircle2 className="h-4 w-4" />}
-                    >
-                      Complete Setup & View Dashboard
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
+          {step > 0 && step < 4 && (
+            <div className="mt-6 flex justify-between border-t border-slate-200 pt-4">
+              <Btn v="gray" onClick={() => { setError(""); setStep(step - 1); }}>Back</Btn>
+              <Btn loading={save.isPending} disabled={step === 1 && importResume.isPending} onClick={next}>
+                {step === 1 ? (imported ? "Review profile" : "Skip and fill in myself") : step === 3 ? "Save profile" : "Continue"}
+              </Btn>
+            </div>
           )}
-
-          {/* ========================================================================= */}
-          {/* COMPANY ONBOARDING FLOW */}
-          {/* ========================================================================= */}
-          {isCompany && (
-            <>
-              {/* Step 1: Basics */}
-              {step === 1 && (
-                <div className="space-y-4">
-                  <div className="space-y-1 border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-900">Organization Identity</h2>
-                    <p className="text-xs text-slate-500">Provide basic information about your organization.</p>
-                  </div>
-
-                  <Input
-                    id="compName"
-                    label="Organization Name *"
-                    placeholder="e.g. Acme AI Innovations"
-                    value={compForm.name}
-                    onChange={(e) => updateComp("name", e.target.value)}
-                  />
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Input
-                      id="compIndustry"
-                      label="Industry"
-                      placeholder="e.g. Software / Artificial Intelligence"
-                      value={compForm.industry}
-                      onChange={(e) => updateComp("industry", e.target.value)}
-                    />
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Organization Size</label>
-                      <select
-                        value={compForm.company_size}
-                        onChange={(e) => updateComp("company_size", e.target.value)}
-                        className="input-enterprise w-full"
-                      >
-                        <option value="1-10">1-10 employees</option>
-                        <option value="11-50">11-50 employees</option>
-                        <option value="51-200">51-200 employees</option>
-                        <option value="201-500">201-500 employees</option>
-                        <option value="500+">500+ employees</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end pt-4">
-                    <Button disabled={!compForm.name.trim()} onClick={() => setStep(2)} icon={undefined}>
-                      Next: Organization Profile <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Location & Description */}
-              {step === 2 && (
-                <div className="space-y-4">
-                  <div className="space-y-1 border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-900">Organization Overview</h2>
-                    <p className="text-xs text-slate-500">Help remote talent understand your organization&rsquo;s mission.</p>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Input
-                      id="compLocation"
-                      label="Location / Headquarters"
-                      placeholder="e.g. Remote-first / San Francisco, CA"
-                      value={compForm.location}
-                      onChange={(e) => updateComp("location", e.target.value)}
-                    />
-                    <Input
-                      id="compWebsite"
-                      label="Website URL"
-                      placeholder="https://example.com"
-                      value={compForm.website}
-                      onChange={(e) => updateComp("website", e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Organization Description</label>
-                    <textarea
-                      value={compForm.description}
-                      onChange={(e) => updateComp("description", e.target.value)}
-                      rows={4}
-                      className="input-enterprise w-full"
-                      placeholder="What does your organization build, and what technologies do you specialize in?"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4">
-                    <Button variant="secondary" onClick={() => setStep(1)} icon={<ArrowLeft className="h-4 w-4" />}>
-                      Back
-                    </Button>
-                    <Button onClick={() => setStep(3)} icon={undefined}>
-                      Next: Final Review <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 3: Review & Finish */}
-              {step === 3 && (
-                <div className="space-y-5">
-                  <div className="space-y-1 border-b border-slate-100 pb-3">
-                    <h2 className="text-lg font-bold text-slate-900">Confirm Organization Setup</h2>
-                    <p className="text-xs text-slate-500">Review your information before finishing setup.</p>
-                  </div>
-
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
-                    <p>
-                      <strong className="text-slate-900">Organization:</strong> {compForm.name}
-                    </p>
-                    {compForm.industry && (
-                      <p>
-                        <strong className="text-slate-900">Industry:</strong> {compForm.industry}
-                      </p>
-                    )}
-                    <p>
-                      <strong className="text-slate-900">Size:</strong> {compForm.company_size}
-                    </p>
-                    {compForm.location && (
-                      <p>
-                        <strong className="text-slate-900">Location:</strong> {compForm.location}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4">
-                    <Button variant="secondary" onClick={() => setStep(2)} icon={<ArrowLeft className="h-4 w-4" />}>
-                      Back
-                    </Button>
-                    <Button
-                      loading={createCompanyProfile.isPending}
-                      onClick={() => createCompanyProfile.mutate()}
-                      icon={<CheckCircle2 className="h-4 w-4" />}
-                    >
-                      Finish Setup & Go to Hiring Dashboard
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        </Card>
       </div>
-    </div>
+    </Page>
+  );
+}
+
+/* ----------------------------------------------------------------- company */
+
+const SIZES = ["1-10", "11-50", "51-200", "201-500", "500+"];
+
+function CompanySetup({ initial }: { initial: CompanyProfile | null }) {
+  const router = useRouter();
+  const client = useQueryClient();
+  const [step, setStep] = useState(0);
+  const [f, setF] = useState({
+    name: initial?.name ?? "",
+    industry: initial?.industry ?? "Software and AI",
+    company_size: initial?.company_size ?? "11-50",
+    location: initial?.location ?? "",
+    website: initial?.website ?? "",
+    description: initial?.description ?? "",
+  });
+  const [error, setError] = useState("");
+  const set = (k: keyof typeof f, v: string) => setF((c) => ({ ...c, [k]: v }));
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const body = {
+        name: f.name.trim(),
+        industry: f.industry.trim() || undefined,
+        company_size: f.company_size,
+        location: f.location.trim() || undefined,
+        website: f.website.trim() || undefined,
+        description: f.description.trim() || undefined,
+      };
+      return (await (initial ? api.put("/companies/me", body) : api.post("/companies/me", body))).data;
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["company-profile"] });
+      void client.invalidateQueries({ queryKey: ["company-profile-exists"] });
+      router.push("/company/dashboard");
+    },
+    onError: (e) => setError(extractErrorMessage(e, "We couldn't save your organization. Please try again.")),
+  });
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (step === 0 && !f.name.trim()) return setError("Enter your organization’s name.");
+    if (step === 1 && f.website.trim() && !/^https?:\/\/\S+\.\S+/.test(f.website.trim())) return setError("Enter a full website address, starting with https://");
+    setError("");
+    if (step < 2) setStep(step + 1);
+    else save.mutate();
+  };
+
+  const review: Array<[string, string]> = [["Organization", f.name], ["Industry", f.industry], ["Team size", f.company_size], ["Location", f.location || "Not set"], ["Website", f.website || "Not set"], ["About", f.description || "Not set"]];
+
+  return (
+    <Page title="Set up your organization" sub="Build a company profile that helps professionals understand your team.">
+      <div className="max-w-2xl">
+        <p className="mb-6 text-sm text-[#0757d8]">Step {step + 1} of 3 · {["Organization identity", "Organization overview", "Review and confirm"][step]}</p>
+        <form onSubmit={submit} noValidate>
+          {step === 0 && (
+            <>
+              <label className="v2-field">Organization name<input id="compName" required value={f.name} onChange={(e) => set("name", e.target.value)} /></label>
+              <label className="v2-field">Industry<input id="compIndustry" value={f.industry} onChange={(e) => set("industry", e.target.value)} /></label>
+              <label className="v2-field">Organization size<select value={f.company_size} onChange={(e) => set("company_size", e.target.value)}>{SIZES.map((x) => <option key={x}>{x}</option>)}</select></label>
+            </>
+          )}
+          {step === 1 && (
+            <>
+              <label className="v2-field">Headquarters<input id="compLocation" value={f.location} onChange={(e) => set("location", e.target.value)} placeholder="e.g. Remote-first, Berlin" /></label>
+              <label className="v2-field">Website<input id="compWebsite" type="url" value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" /></label>
+              <label className="v2-field">About your organization<textarea rows={5} value={f.description} onChange={(e) => set("description", e.target.value)} placeholder="What does your organization build, and what technologies do you use?" /></label>
+            </>
+          )}
+          {step === 2 && (
+            <dl className="v2-list">
+              {review.map(([l, v]) => <div className="v2-row" key={l}><dt className="w-28 text-sm text-slate-500">{l}</dt><dd className="flex-1 break-words">{v}</dd></div>)}
+            </dl>
+          )}
+          {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
+          <div className="mt-6 flex items-center gap-4">
+            {step > 0 && <button type="button" className="font-semibold text-[#0757d8]" onClick={() => { setError(""); setStep(step - 1); }}>Back</button>}
+            <button type="submit" className="auth-submit" disabled={save.isPending}>{step === 2 ? (save.isPending ? "Saving…" : "Finish setup") : "Continue"}</button>
+          </div>
+        </form>
+      </div>
+    </Page>
   );
 }

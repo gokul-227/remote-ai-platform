@@ -68,7 +68,7 @@
   --shadow-lg: 0 12px 50px #00000033;
   --focus-ring: 0 0 0 3px #8cb8ff;
   --skeleton-bg: #e4e6eb;
-  --badge-info-bg: #e7f0ff;    --badge-info-text: #0866ff;
+  --badge-info-bg: #e7f0ff;    --badge-info-text: #0757d8;
   --badge-success-bg: #edf8f1; --badge-success-text: #176942;
   --badge-warning-bg: #fff6df; --badge-warning-text: #8b6310;
   --badge-danger-bg: #fdecec;  --badge-danger-text: #c62828;
@@ -113,14 +113,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--rap-blue); }
 .rap-side-title > a:not(.rap-person), .rap-side-title > button:not(.rap-person) { padding: 9px; background: #e4e6eb; border-radius: 50%; }
 .rap-nav { display: flex; width: 100%; align-items: center; text-align: left; gap: 13px; padding: 10px 12px; min-height: 48px; border-radius: 8px; font-weight: 500; font-size: 14px; }
 .rap-nav:hover, .rap-contact:hover, .rap-person:hover { background: #e4e6eb; }
-.rap-nav.selected { background: #e7f0ff; color: #0866ff; font-weight: 600; }
+.rap-nav.selected { background: #e7f0ff; color: #0757d8; font-weight: 600; }
 .rap-nav-icon { width: 32px; display: flex; justify-content: center; color: #65676b; }
-.rap-nav.selected .rap-nav-icon { color: #0866ff; }
+.rap-nav.selected .rap-nav-icon { color: #0757d8; }
 .rap-person { display: flex; align-items: center; gap: 12px; border-radius: 8px; padding: 7px; width: 100%; text-align: left; }
 .rap-divider { border-top: 1px solid #d8dadf; margin: 18px 8px; }
 .rap-side-label { font-size: 13px; font-weight: 600; color: #65676b; padding: 0 12px; margin: 14px 0 8px; }
 .rap-more { display: flex; gap: 10px; align-items: center; margin: 14px 12px; color: #65676b; font-size: 13px; }
-.rap-sidebar footer { font-size: 11px; color: #8a8d91; padding: 26px 12px; }
+.rap-sidebar footer { font-size: 11px; color: #65676b; padding: 26px 12px; }
 .rap-sidebar footer p { margin-top: 7px; }
 .rap-main { padding: 64px 0 0 280px; min-height: 100vh; }
 .rap-main-full { padding-left: 0; }
@@ -134,7 +134,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--rap-blue); }
 .rap-opportunity { text-align: left; display: block; padding: 12px 6px; width: 100%; }
 .rap-opportunity b { display: block; margin-top: 12px; font-size: 14px; }
 .rap-opportunity p { font-size: 12px; color: #65676b; margin: 5px 0 12px; }
-.rap-opportunity span:last-child { font-size: 13px; color: #0866ff; font-weight: 600; }
+.rap-opportunity span:last-child { font-size: 13px; color: #0757d8; font-weight: 600; }
 .rap-company-mark { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 10px; background: #172b4d; color: white; font-weight: 700; font-size: 26px; }
 .rap-overlay { position: fixed; inset: 0; background: #ffffffb8; backdrop-filter: blur(2px); z-index: 80; }
 .rap-menu { position: absolute; right: 18px; top: 74px; width: 370px; max-height: calc(100vh - 94px); overflow: auto; background: white; border-radius: 12px; box-shadow: 0 12px 50px #0003; border: 1px solid #e4e6eb; padding: 24px; }
@@ -175,7 +175,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--rap-blue); }
 .v2-status.warning { background: #fff6df; color: #8b6310; }
 .v2-status.danger { background: #fdecec; color: #c62828; }
 .v2-status.neutral { background: #f0f2f5; color: #303338; }
-.v2-status.info { background: #e7f0ff; color: #0866ff; }
+.v2-status.info { background: #e7f0ff; color: #0757d8; }
 .v2-table { width: 100%; border-collapse: collapse; text-align: left; }
 .v2-table th { background: #f7f8fa; color: #65676b; font-size: 12px; padding: 14px 20px; font-weight: 600; }
 .v2-table td { padding: 18px 20px; border-top: 1px solid #e4e6eb; font-size: 14px; }
@@ -186,7 +186,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--rap-blue); }
 .v2-field { display: block; font-size: 13px; font-weight: 600; margin: 18px 0; }
 .v2-field input, .v2-field select, .v2-field textarea { display: block; width: 100%; margin-top: 7px; font-weight: 400; }
 .v2-row-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-.rap-notice-icon { padding: 12px; background: #e7f0ff; color: #0866ff; border-radius: 10px; }
+.rap-notice-icon { padding: 12px; background: #e7f0ff; color: #0757d8; border-radius: 10px; }
 .rap-content table { border-collapse: collapse; }
 .rap-content th { font-weight: 600; font-size: 12px; color: #65676b; }
 .rap-content td { font-size: 14px; }

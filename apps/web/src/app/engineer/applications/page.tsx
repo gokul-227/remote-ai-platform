@@ -191,7 +191,7 @@ export default function ApplicationsPage() {
 function ApplicationsContent() {
   const applications = useApplications(true);
   const offers = useTaskOffers(true);
-  const items: ApplicationItem[] = applications.data ?? [];
+  const items = (applications.data ?? []) as unknown as ApplicationItem[];
   const [filter, setFilter] = useState<"all" | "active" | "interviews" | "offers" | "closed">("all");
 
   const TABS = [

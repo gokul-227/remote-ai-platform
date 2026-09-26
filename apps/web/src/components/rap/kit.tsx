@@ -90,7 +90,7 @@ export function Card({ children, c = "", p = true }: { children: ReactNode; c?: 
   return <div className={cx("rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,.06)]", p && "p-4", c)}>{children}</div>;
 }
 
-const TAG: Record<string, string> = { gray: "bg-slate-100 text-slate-700", blue: "bg-[#e7f0ff] text-[#0866ff]", green: "bg-emerald-50 text-emerald-700", amber: "bg-amber-50 text-amber-700", red: "bg-red-50 text-red-700", indigo: "bg-[#F1EFFF] text-[#5B4BDB]", dark: "bg-slate-900 text-white" };
+const TAG: Record<string, string> = { gray: "bg-slate-100 text-slate-700", blue: "bg-[#e7f0ff] text-[#0757d8]", green: "bg-emerald-50 text-emerald-700", amber: "bg-amber-50 text-amber-700", red: "bg-red-50 text-red-700", indigo: "bg-[#F1EFFF] text-[#5B4BDB]", dark: "bg-slate-900 text-white" };
 export type TagTone = keyof typeof TAG;
 export function Tag({ children, t = "gray" }: { children: ReactNode; t?: TagTone }) {
   return <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold", TAG[t])}>{children}</span>;

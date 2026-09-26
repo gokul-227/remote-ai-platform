@@ -2,10 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import type { MyApplication } from "@/types";
 
 export function useApplications(enabled = true) {
   const client = useQueryClient();
-  const query = useQuery({ queryKey: ["applications"], queryFn: async () => (await api.get("/applications/me")).data, enabled });
+  const query = useQuery<MyApplication[]>({ queryKey: ["applications"], queryFn: async () => (await api.get("/applications/me", { params: { limit: 100 } })).data, enabled });
   const apply = useMutation({ mutationFn: ({ jobId, cover_note }: { jobId: string; cover_note?: string }) => api.post(`/applications/jobs/${jobId}`, { cover_note }), onSuccess: () => client.invalidateQueries({ queryKey: ["applications"] }) });
   const withdraw = useMutation({ mutationFn: (applicationId: string) => api.patch(`/applications/${applicationId}/withdraw`), onSuccess: () => client.invalidateQueries({ queryKey: ["applications"] }) });
   return { ...query, apply, withdraw };
