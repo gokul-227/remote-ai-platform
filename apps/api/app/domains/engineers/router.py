@@ -16,6 +16,7 @@ from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import (
+    RESUME_UPLOAD_MESSAGES,
     EngineerProfileCreate,
     EngineerProfileResponse,
     EngineerProfileUpdate,
@@ -111,10 +112,14 @@ async def upload_resume(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported content type"
         )
     try:
-        resume_url = await service.upload_resume(current_user.id, file)
+        resume_url, parse_status = await service.upload_resume(current_user.id, file)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    return ResumeUploadResponse(resume_url=resume_url)
+    return ResumeUploadResponse(
+        resume_url=resume_url,
+        ai_parse_status=parse_status,
+        message=RESUME_UPLOAD_MESSAGES[parse_status],
+    )
 
 
 @router.get("/search", response_model=list[EngineerPublicProfileResponse])

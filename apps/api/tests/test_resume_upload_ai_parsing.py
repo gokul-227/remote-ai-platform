@@ -70,13 +70,16 @@ async def test_resume_upload_succeeds_and_stores_url(client: AsyncClient, monkey
     )
     assert res.status_code == 200
     assert res.json()["resume_url"]
+    assert res.json()["ai_parse_status"] == "parsed"
 
     profile_res = await client.get("/api/v1/engineers/me", headers=headers)
     profile = profile_res.json()
-    # The inline AI-parse call updated the profile in the same request.
-    assert profile["headline"] == "Senior Backend Engineer"
-    assert "Go" in profile["skills"]
-    assert profile["parsed_resume_data"]["bio"] == "8 years Python/Go"
+    # The inline AI parse fills empty fields and merges skills, but never
+    # overwrites what the engineer wrote themselves ("Junior Engineer").
+    assert profile["headline"] == "Junior Engineer"
+    assert profile["bio"] == "8 years Python/Go"
+    assert "Go" in profile["skills"] and "Python" in profile["skills"]
+    assert profile["parsed_resume_data"]["headline"] == "Senior Backend Engineer"
 
 
 @pytest.mark.asyncio
@@ -102,3 +105,29 @@ async def test_resume_upload_still_succeeds_when_ai_parsing_fails(client: AsyncC
     )
     assert res.status_code == 200
     assert res.json()["resume_url"]
+    assert res.json()["ai_parse_status"] == "failed"
+    assert "queued" not in res.json()["message"].lower()
+
+
+@pytest.mark.asyncio
+async def test_resume_parsing_is_bounded_by_a_total_budget(client: AsyncClient, monkeypatch):
+    import asyncio
+
+    from app.agents.resume_parser import ResumeParserAgent
+    from app.core.config import settings
+
+    async def hanging_parse(self, resume_text: str) -> dict:
+        await asyncio.sleep(30)
+        return {}
+
+    monkeypatch.setattr(ResumeParserAgent, "parse_resume_text", hanging_parse)
+    monkeypatch.setattr(settings, "RESUME_PARSE_BUDGET_SECONDS", 0.2)
+
+    headers = await _register_and_create_profile(client, "resume_upload_slow_ai@example.com")
+    res = await client.post(
+        "/api/v1/engineers/me/resume",
+        files={"file": ("resume.docx", _build_docx_bytes("Slow AI resume."), "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+        headers=headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["ai_parse_status"] == "failed"

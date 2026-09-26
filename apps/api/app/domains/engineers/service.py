@@ -2,6 +2,7 @@
 Service layer for Engineer Profile management.
 """
 
+import asyncio
 import uuid
 from collections.abc import Sequence
 
@@ -186,8 +187,13 @@ class EngineerService:
         await self.repo.db.refresh(profile)
         return profile
 
-    async def upload_resume(self, user_id: uuid.UUID, file: UploadFile) -> str:
-        """Upload resume PDF to object storage (MinIO) and store reference."""
+    async def upload_resume(self, user_id: uuid.UUID, file: UploadFile) -> tuple[str, str]:
+        """Store the resume privately, then try to AI-parse it.
+
+        Returns (resume_url, ai_parse_status) where the status is "parsed",
+        "failed" or "no_text", so the client can tell upload success apart
+        from parsing success.
+        """
         profile = await self.repo.get_by_user_id(user_id)
         if not profile:
             raise NotFoundError("Engineer profile not found. Please create a profile first.")
@@ -240,28 +246,40 @@ class EngineerService:
         # the honest choice over queuing work nothing will ever pick up.
         # Never let a parsing failure fail the upload itself -- the file is
         # already safely stored at this point.
-        resume_text = extract_resume_text(file_bytes, suffix)
+        # PDF/DOCX parsing is CPU-bound; keep it off the event loop.
+        resume_text = await asyncio.to_thread(extract_resume_text, file_bytes, suffix)
+        status = "no_text"
         if resume_text:
             try:
                 parser = ResumeParserAgent()
-                parsed_data = await parser.parse_resume_text(resume_text)
+                # One overall budget, however many fallback models the client
+                # tries, so the request can't outlive the browser's timeout.
+                parsed_data = await asyncio.wait_for(
+                    parser.parse_resume_text(resume_text),
+                    timeout=settings.RESUME_PARSE_BUDGET_SECONDS,
+                )
+                # The full parse is kept as a draft in parsed_resume_data.
+                # Only empty fields are filled; anything the engineer already
+                # wrote is never overwritten by AI output.
                 profile.parsed_resume_data = parsed_data
-                if parsed_data.get("headline"):
+                if parsed_data.get("headline") and not profile.headline:
                     profile.headline = parsed_data["headline"]
-                if parsed_data.get("bio"):
+                if parsed_data.get("bio") and not profile.bio:
                     profile.bio = parsed_data["bio"]
                 if parsed_data.get("skills"):
                     profile.skills = list(set((profile.skills or []) + parsed_data["skills"]))
                 await self.repo.db.flush()
+                status = "parsed"
                 logger.info("AI-parsed resume for engineer", user_id=str(user_id))
             except Exception as exc:
+                status = "failed"
                 logger.warning(
                     "Resume AI parsing failed; resume upload still succeeded",
                     user_id=str(user_id),
-                    error=str(exc),
+                    error=str(exc) or type(exc).__name__,
                 )
 
-        return self.resume_download_url(profile) or filename
+        return self.resume_download_url(profile) or filename, status
 
     async def search_engineers(self, params: EngineerSearchQuery) -> Sequence[EngineerProfile]:
         return await self.repo.search(

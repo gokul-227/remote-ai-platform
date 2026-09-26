@@ -120,7 +120,7 @@ async def test_upload_resume_does_not_log_the_resume_url(monkeypatch):
     monkeypatch.setattr("app.domains.engineers.service.logger.info", fake_info)
 
     file = _FakeUploadFile("resume.pdf", "application/pdf", b"%PDF-1.7 body")
-    resume_url = await service.upload_resume(uuid.uuid4(), file)
+    resume_url, _status = await service.upload_resume(uuid.uuid4(), file)
 
     assert resume_url
     assert captured.get("calls"), "expected upload_resume to log something"

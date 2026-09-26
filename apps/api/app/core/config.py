@@ -110,6 +110,9 @@ class Settings(BaseSettings):
     AI_FALLBACK_PROVIDERS: str = "ollama/qwen2.5"
     AI_MAX_RETRIES: int = 3
     AI_TIMEOUT_SECONDS: int = 60
+    # Total time allowed for resume parsing across all models tried; the
+    # web client waits longer than this for the upload request.
+    RESUME_PARSE_BUDGET_SECONDS: int = 45
 
     # ── Security ─────────────────────────────────────────────────────────────
     RATE_LIMIT_WINDOW_SECONDS: int = 60
