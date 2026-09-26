@@ -1,5 +1,8 @@
 // @ts-nocheck -- Figma Make export, kept verbatim (never type-checked upstream).
 import { useState } from "react";
+import api, { extractErrorMessage } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { useApi } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, Stars, cx, PEOPLE, Field, inputCls } from "./rap_kit";
 
 const GR = "#0552CC";
@@ -95,142 +98,141 @@ export function Talent() {
 }
 
 const MS0 = [["Discovery and architecture", "$4,000", "Released", 100], ["Ingestion and CDC pipelines", "$6,200", "Released", 100], ["Unity Catalog and governance", "$5,000", "In review", 80], ["Cutover and handover", "$3,200", "Not funded", 0]];
+const money = (n: number, cur = "USD") => { try { return new Intl.NumberFormat("en-US", { style: "currency", currency: cur, maximumFractionDigits: n % 1 ? 2 : 0 }).format(n); } catch { return `${cur} ${n}`; } };
+const CTABS: Record<string, string[]> = { Active: ["ACTIVE"], "Pending signature": ["DRAFT", "OFFERED", "SIGNED"], Ended: ["COMPLETED", "TERMINATED"] };
+const MS_LABEL: Record<string, string> = { PENDING: "Not started", IN_PROGRESS: "In progress", DELIVERED: "In review", APPROVED: "Approved", PAID: "Released" };
 export function Contracts() {
+  // Live: /contracts/me with milestone workflow (worker delivers, client approves and releases); companies send offers.
+  const { user } = useAuth();
+  const q = useApi<any[]>(user ? "/contracts/me" : null);
+  const accepted = useApi<any[]>(user?.role === "COMPANY" ? "/applications/company" : null, { limit: 100 });
   const [tab, setTab] = useState("Active");
-  const [open, setOpen] = useState(true);
-  const [ms, setMs] = useState(MS0);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [dt, setDt] = useState("Milestones");
-  const rows = [["Databricks lakehouse migration", "Brightpath", "$18,400", "Milestone 3 in review", 68], ["RAG platform delivery sprint", "Helix Labs", "$12,200", "Weekly retainer active", 42], ["LLM evaluation audit", "Northstar Cloud", "$9,800", "Awaiting kickoff", 12]];
+  const [offer, setOffer] = useState(false);
+  const [f, setF] = useState<any>({ worker: "", title: "", scope: "", rate_type: "FIXED", amount: "", ms: "" });
+  const [notice, setNotice] = useState("");
+  const all = q.data ?? [];
+  const rows = all.filter((c: any) => CTABS[tab].includes(c.status));
+  const cur = all.find((c: any) => c.id === openId) || rows[0];
+  const isClient = cur && cur.client_id === user?.id;
+  const total = (c: any) => (c.milestones?.length ? c.milestones.reduce((a: number, m: any) => a + m.amount, 0) : c.rate_amount);
+  const progress = (c: any) => (c.milestones?.length ? Math.round((c.milestones.filter((m: any) => ["APPROVED", "PAID"].includes(m.status)).length / c.milestones.length) * 100) : c.status === "COMPLETED" ? 100 : 0);
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); q.reload(); setNotice(ok); } catch (e) { setNotice(extractErrorMessage(e, "That didn't work. Please try again.")); } };
+  const setMs = (m: any, status: string, ok: string) => act(() => api.patch(`/contracts/${cur.id}/milestones/${m.id}/status`, { status }), ok);
+  const candidates = Array.from(new Map((accepted.data ?? []).filter((a: any) => ["ACCEPTED", "SHORTLISTED"].includes(a.application.status)).map((a: any) => [a.candidate.id, a.candidate])).values());
+  const sendOffer = () => act(async () => { const milestones = f.ms.split("\n").map((l: string) => l.trim()).filter(Boolean).map((l: string) => { const [t, a] = l.split("|").map((x) => x.trim()); return { title: t, amount: Number(a) || 0 }; }).filter((m: any) => m.title && m.amount > 0); await api.post("/contracts", { worker_id: f.worker, title: f.title.trim(), scope_description: f.scope.trim(), rate_type: f.rate_type, rate_amount: Number(f.amount), milestones }); setOffer(false); setTab("Pending signature"); }, "Offer sent — it will appear in the engineer’s contracts to sign.");
   return (
     <div className="bg-[#F1F2F4] py-6">
       <div className="mx-auto max-w-[1300px] px-4">
-        <div className="mb-4 flex items-center justify-between"><h1 className="text-3xl font-light">Contracts</h1><Btn v="primary" icon="plus">Send offer</Btn></div>
-        <Card p={false} c="rounded-lg"><Tabs items={["Active", "Paused", "Ended", "Disputes"]} v={tab} set={setTab} c="px-3" />
-          {rows.map((r, i) => <div key={r[0] as string} onClick={() => setOpen(i === 0)} className="flex cursor-pointer items-center gap-4 border-b border-slate-100 p-4 hover:bg-slate-50"><Lg name={String(r[1])} s={44} r={8} /><div className="flex-1"><p className="font-semibold" style={{ color: GR }}>{r[0]}</p><p className="text-sm text-slate-500">{r[1]} - {r[3]}</p></div><div className="hidden w-48 md:block"><Bar v={Number(r[4])} c="bg-[#0552CC]" /><p className="mt-1 text-xs text-slate-500">{r[4]}% complete</p></div><p className="w-24 text-right font-semibold">{r[2]}</p></div>)}
+        <div className="mb-4 flex items-center justify-between"><h1 className="text-3xl font-light">Contracts</h1>{user?.role === "COMPANY" && <Btn v="primary" icon="plus" onClick={() => setOffer(true)}>Send offer</Btn>}</div>
+        <Card p={false} c="rounded-lg"><Tabs items={Object.keys(CTABS)} v={tab} set={(t: string) => { setTab(t); setOpenId(null); }} c="px-3" />
+          {q.loading && <p className="p-4 text-sm text-slate-500">Loading contracts…</p>}
+          {rows.map((c: any) => { const other = c.client_id === user?.id ? c.worker : c.client; return <div key={c.id} onClick={() => setOpenId(c.id)} className={cx("flex cursor-pointer items-center gap-4 border-b border-slate-100 p-4 hover:bg-slate-50", cur?.id === c.id && "bg-slate-50")}><Lg name={other?.full_name || c.title} s={44} r={8} /><div className="flex-1"><p className="font-semibold" style={{ color: GR }}>{c.title}</p><p className="text-sm text-slate-500">{other?.full_name || "—"} - {c.status.charAt(0) + c.status.slice(1).toLowerCase()}</p></div><div className="hidden w-48 md:block"><Bar v={progress(c)} c="bg-[#0552CC]" /><p className="mt-1 text-xs text-slate-500">{progress(c)}% complete</p></div><p className="w-24 text-right font-semibold">{money(total(c), c.currency)}</p></div>; })}
+          {!q.loading && !rows.length && <p className="p-6 text-sm text-slate-500">No {tab.toLowerCase()} contracts.{user?.role === "COMPANY" && tab !== "Ended" ? " Send an offer to a candidate you’ve accepted." : ""}</p>}
         </Card>
-        {open && (
+        {cur && CTABS[tab].includes(cur.status) && (
           <Card c="mt-5 rounded-lg" p={false}>
-            <div className="flex flex-wrap items-start justify-between gap-4 p-6"><div><Tag v="blue">Active - Fixed price</Tag><h2 className="mt-2 text-2xl font-semibold">Databricks lakehouse migration</h2><p className="text-sm text-slate-500">Contract RC-2291 - Client Brightpath - Started Aug 4, 2026</p></div><div className="flex gap-6 text-right">{[["Budget", "$18,400"], ["In escrow", "$5,000"], ["Paid", "$10,200"]].map((s) => <div key={s[0]}><p className="text-xs text-slate-500">{s[0]}</p><p className="text-xl font-semibold">{s[1]}</p></div>)}</div></div>
-            <Tabs items={["Milestones", "Messages", "Files", "Time and activity", "Feedback"]} v={dt} set={setDt} c="px-4" />
+            <div className="flex flex-wrap items-start justify-between gap-4 p-6"><div><Tag v="blue">{cur.status.charAt(0) + cur.status.slice(1).toLowerCase()} - {cur.rate_type === "FIXED" ? "Fixed price" : cur.rate_type === "HOURLY" ? "Hourly" : "Monthly"}</Tag><h2 className="mt-2 text-2xl font-semibold">{cur.title}</h2><p className="text-sm text-slate-500">{isClient ? `Engineer ${cur.worker?.full_name || ""}` : `Client ${cur.client?.full_name || ""}`}{cur.start_date ? ` - Started ${new Date(cur.start_date).toLocaleDateString()}` : ""}</p></div><div className="flex gap-6 text-right">{[["Budget", money(total(cur), cur.currency)], ["Approved", money((cur.milestones || []).filter((m: any) => m.status === "APPROVED").reduce((a: number, m: any) => a + m.amount, 0), cur.currency)], ["Released", money((cur.milestones || []).filter((m: any) => m.status === "PAID").reduce((a: number, m: any) => a + m.amount, 0), cur.currency)]].map((s) => <div key={s[0]}><p className="text-xs text-slate-500">{s[0]}</p><p className="text-xl font-semibold">{s[1]}</p></div>)}</div></div>
+            <Tabs items={["Milestones", "Scope and terms"]} v={dt} set={setDt} c="px-4" />
             <div className="p-6">
-              {ms.map((m, i) => (
-                <div key={i} className="mb-3 flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 p-4">
-                  <span className={cx("flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold", m[2] === "Released" ? "bg-emerald-100 text-emerald-700" : m[2] === "In review" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500")}>{m[2] === "Released" ? <Ic n="check" s={16} /> : i + 1}</span>
-                  <div className="min-w-[200px] flex-1"><p className="font-semibold">{m[0]}</p><div className="mt-1 max-w-xs"><Bar v={Number(m[3])} c={m[2] === "Released" ? "bg-emerald-500" : "bg-amber-500"} /></div></div>
-                  <Tag t={m[2] === "Released" ? "primary" : m[2] === "In review" ? "amber" : "gray"}>{m[2]}</Tag><p className="w-20 text-right font-semibold">{m[1]}</p>
-                  {m[2] === "In review" && <><Btn v="line" sm onClick={() => setMs(ms.map((x, j) => j === i ? [x[0], x[1], "Not funded", 60] : x))}>Request changes</Btn><Btn v="primary" sm onClick={() => setMs(ms.map((x, j) => j === i ? [x[0], x[1], "Released", 100] : x))}>Approve and release</Btn></>}
-                  {m[2] === "Not funded" && <Btn v="outline" sm onClick={() => setMs(ms.map((x, j) => j === i ? [x[0], x[1], "In review", 20] : x))}>Fund milestone</Btn>}
-                </div>
-              ))}
-              <div className="mt-4 flex items-center gap-3 rounded-lg bg-slate-50 p-4 text-sm"><Ic n="shieldcheck" c="text-[#0552CC]" s={22} />Funds are held in escrow and released only when you approve the work. Need help? <button className="font-semibold" style={{ color: GR }}>Open a dispute</button></div>
+              {dt === "Scope and terms" ? <><p className="whitespace-pre-line text-slate-700">{cur.scope_description}</p>{cur.terms && <><h3 className="mt-4">Terms</h3><p className="mt-1 whitespace-pre-line text-slate-700">{cur.terms}</p></>}</> : <>
+              {["DRAFT", "OFFERED", "SIGNED"].includes(cur.status) && <div className="mb-4 flex items-center justify-between rounded-lg bg-amber-50 p-4 text-sm"><span>{(isClient ? cur.client_signed_at : cur.worker_signed_at) ? "You’ve signed — waiting for the other party." : "This contract needs your signature before work starts."}</span>{!(isClient ? cur.client_signed_at : cur.worker_signed_at) && <Btn sm onClick={() => { sessionStorage.setItem("rap-contract-id", cur.id); window.location.hash = "contractsign"; }}>Review and sign</Btn>}</div>}
+              {(cur.milestones || []).map((m: any, i: number) => { const label = MS_LABEL[m.status] || m.status; const pct = { PENDING: 0, IN_PROGRESS: 40, DELIVERED: 70, APPROVED: 90, PAID: 100 }[m.status as string] ?? 0; const live = cur.status === "ACTIVE"; return (
+                <div key={m.id} className="mb-3 flex flex-wrap items-center gap-4 rounded-lg border border-slate-200 p-4">
+                  <span className={cx("flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold", m.status === "PAID" ? "bg-emerald-100 text-emerald-700" : m.status === "DELIVERED" ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500")}>{m.status === "PAID" ? <Ic n="check" s={16} /> : i + 1}</span>
+                  <div className="min-w-[200px] flex-1"><p className="font-semibold">{m.title}</p><div className="mt-1 max-w-xs"><Bar v={pct} c={m.status === "PAID" ? "bg-emerald-500" : "bg-amber-500"} /></div>{m.due_date && <p className="mt-1 text-xs text-slate-500">Due {new Date(m.due_date).toLocaleDateString()}</p>}</div>
+                  <Tag t={m.status === "PAID" ? "primary" : m.status === "DELIVERED" ? "amber" : "gray"}>{label}</Tag><p className="w-20 text-right font-semibold">{money(m.amount, cur.currency)}</p>
+                  {live && !isClient && m.status === "PENDING" && <Btn v="outline" sm onClick={() => setMs(m, "IN_PROGRESS", "Milestone started")}>Start</Btn>}
+                  {live && !isClient && m.status === "IN_PROGRESS" && <Btn v="primary" sm onClick={() => setMs(m, "DELIVERED", "Delivered for review")}>Submit for review</Btn>}
+                  {live && isClient && m.status === "DELIVERED" && <><Btn v="line" sm onClick={() => setMs(m, "IN_PROGRESS", "Changes requested")}>Request changes</Btn><Btn v="primary" sm onClick={() => setMs(m, "APPROVED", "Milestone approved")}>Approve</Btn></>}
+                  {live && isClient && m.status === "APPROVED" && <Btn v="primary" sm onClick={() => setMs(m, "PAID", "Payment released")}>Release payment</Btn>}
+                </div>); })}
+              {!(cur.milestones || []).length && <p className="text-sm text-slate-500">This contract has no milestones.</p>}
+              {cur.status === "ACTIVE" && <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 p-4 text-sm"><Ic n="shieldcheck" c="text-[#0552CC]" s={22} /><span className="flex-1">Milestones are approved by the client before payment is released.</span><button className="font-semibold text-red-600" onClick={() => { if (window.confirm("End this contract? This can't be undone.")) act(() => api.post(`/contracts/${cur.id}/terminate`), "Contract ended"); }}>End contract</button></div>}
+              </>}
             </div>
           </Card>
         )}
       </div>
+      <Modal open={offer} onClose={() => setOffer(false)} title="Send a contract offer" w="max-w-xl"><div className="space-y-3"><Field label="Engineer"><select className={inputCls} value={f.worker} onChange={(e) => setF({ ...f, worker: e.target.value })}><option value="">Choose a shortlisted or accepted candidate</option>{candidates.map((c: any) => <option key={c.id} value={c.id}>{c.full_name}{c.headline ? ` — ${c.headline}` : ""}</option>)}</select></Field>{!candidates.length && <p className="text-xs text-slate-500">Shortlist or accept a candidate on the Candidates board first.</p>}<Field label="Contract title"><input className={inputCls} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></Field><Field label="Scope of work"><textarea rows={3} className={cx(inputCls, "h-auto py-2")} value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value })} /></Field><div className="grid grid-cols-2 gap-3"><Field label="Rate type"><select className={inputCls} value={f.rate_type} onChange={(e) => setF({ ...f, rate_type: e.target.value })}><option value="FIXED">Fixed price</option><option value="HOURLY">Hourly</option><option value="MONTHLY">Monthly</option></select></Field><Field label="Rate (USD)"><input type="number" min={1} className={inputCls} value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} /></Field></div><Field label="Milestones (one per line: title | amount)"><textarea rows={3} className={cx(inputCls, "h-auto py-2 font-mono text-xs")} placeholder={"Discovery | 2000\nDelivery | 5000"} value={f.ms} onChange={(e) => setF({ ...f, ms: e.target.value })} /></Field><Btn full onClick={() => { if (!f.worker || !f.title.trim() || !f.scope.trim() || !(Number(f.amount) > 0)) { setNotice("Choose an engineer and add a title, scope and rate."); return; } sendOffer(); }}>Send offer</Btn></div></Modal>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </div>
   );
 }
 
-export function Earnings() {
-  const [w, setW] = useState(false);
-  const tx = [["Sep 21", "Milestone 2 - Databricks lakehouse", "Brightpath", "+$6,200.00", "Paid"], ["Sep 14", "Weekly retainer - RAG delivery", "Helix Labs", "+$2,880.00", "Paid"], ["Sep 09", "Service fee (10%)", "Remote-AI", "-$620.00", "Fee"], ["Sep 02", "Milestone 1 - Discovery", "Brightpath", "+$4,000.00", "Paid"], ["Aug 28", "Withdrawal to bank", "Payout", "-$8,000.00", "Sent"]];
-  return (
-    <div className="bg-[#F1F2F4] py-6">
-      <div className="mx-auto max-w-[1300px] px-4">
-        <div className="mb-4 flex items-center justify-between"><h1 className="text-3xl font-light">Earnings and payments</h1><Btn v="primary" onClick={() => setW(true)}>Withdraw funds</Btn></div>
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-4">{[["Available now", "$8,420.00", "wallet"], ["In escrow", "$5,000.00", "lock"], ["Pending review", "$3,200.00", "clock"], ["Earned this year", "$96,340.00", "trend"]].map((s) => <Card key={s[0]} c="rounded-lg"><div className="flex items-center justify-between text-slate-500"><span className="text-sm">{s[0]}</span><Ic n={s[2]} s={18} /></div><p className="mt-2 text-2xl font-semibold">{s[1]}</p></Card>)}</div>
-        <div className="mt-4 grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <Card c="rounded-lg"><p className="font-semibold">Earnings by month</p><div className="mt-4"><Bars d={[4200, 6100, 5300, 7800, 9200, 8400, 11800, 14200, 13400]} c="#0552CC" h={180} /></div><div className="mt-2 flex justify-between text-xs text-slate-500">{["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"].map((m) => <span key={m}>{m}</span>)}</div></Card>
-          <Card c="rounded-lg"><p className="font-semibold">Payout methods</p>{[["Bank account (SEPA)", "DE89 **** 3000", true], ["PayPal", "gokul@***.com", false]].map((p) => <div key={String(p[0])} className="mt-3 flex items-center gap-3 rounded-lg border border-slate-200 p-3"><Ic n="wallet" c="text-slate-500" /><div className="flex-1"><p className="text-sm font-semibold">{p[0]}</p><p className="text-xs text-slate-500">{p[1]}</p></div>{p[2] && <Tag v="blue">Default</Tag>}</div>)}<Btn v="outline" full sm c="mt-3" icon="plus">Add method</Btn></Card>
-        </div>
-        <Card c="mt-4 rounded-lg" p={false}><p className="p-4 font-semibold">Transaction history</p><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Date", "Description", "Client", "Amount", "Status"].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead><tbody>{tx.map((r, i) => <tr key={i} className="border-t border-slate-100">{r.map((c, j) => <td key={j} className={cx("px-4 py-3", j === 3 && (String(c).startsWith("+") ? "font-semibold text-emerald-700" : "font-semibold"))}>{j === 4 ? <Tag t={c === "Paid" ? "primary" : "gray"}>{c}</Tag> : c}</td>)}</tr>)}</tbody></table></Card>
-      </div>
-      <Modal open={w} onClose={() => setW(false)} title="Withdraw funds"><p className="text-sm text-slate-500">Available: $8,420.00</p><div className="mt-3 space-y-3"><Field label="Amount"><input defaultValue="8,420.00" className={inputCls} /></Field><Field label="Method"><select className={inputCls}><option>Bank account (SEPA) - 1-2 business days</option><option>PayPal - instant</option></select></Field></div><Btn v="primary" full c="mt-5" onClick={() => setW(false)}>Confirm withdrawal</Btn></Modal>
-    </div>
-  );
-}
 
-export function CoPayments() {
-  const [modal, setModal] = useState<string | null>(null);
-  const escrows = [
-    { id: "ESC-4471", contract: "Priya Raman - Milestone 2", amount: "$6,200.00", status: "Held", milestone: "Lakehouse migration - Phase 2", due: "Sep 28" },
-    { id: "ESC-4460", contract: "Mateo Silva - Milestone 1", amount: "$3,500.00", status: "Held", milestone: "Agent console redesign - Discovery", due: "Oct 03" },
-    { id: "ESC-4452", contract: "Elena Petrova - Retainer", amount: "$2,880.00", status: "Released", milestone: "Weekly RAG evaluation retainer", due: "Sep 14" },
-    { id: "ESC-4438", contract: "Daniel Okafor - Milestone 3", amount: "$4,000.00", status: "Refunded", milestone: "Lakehouse migration - Phase 1 (disputed)", due: "Aug 30" },
-  ];
-  const tx = [["Sep 21", "Escrow funded - Milestone 2", "Priya Raman", "-$6,200.00", "Funded"], ["Sep 14", "Escrow released - Retainer", "Elena Petrova", "-$2,880.00", "Released"], ["Sep 09", "Platform fee (10%)", "Remote-AI", "-$288.00", "Fee"], ["Aug 30", "Escrow refunded - Milestone 1", "Daniel Okafor", "+$4,000.00", "Refunded"], ["Aug 24", "Wallet top-up", "Stripe", "+$25,000.00", "Received"]];
+function PaymentsView({ company }: { company: boolean }) {
+  // Live: /payments/wallet + /payments/transactions. Withdrawals are not available yet (no payout rail), so none are offered.
+  const { user } = useAuth();
+  const w = useApi<any>(user ? "/payments/wallet" : null);
+  const tq = useApi<any[]>(user ? "/payments/transactions" : null);
+  const [release, setRelease] = useState<string>("");
+  const [notice, setNotice] = useState("");
+  const tx = tq.data ?? [];
+  const cur = w.data?.currency || "USD";
+  const byMonth = Array.from({ length: 9 }, (_, i) => { const d = new Date(); d.setMonth(d.getMonth() - 8 + i); return d; });
+  const monthly = byMonth.map((d) => tx.filter((t: any) => t.status === "RELEASED" && (company ? t.payer_id : t.payee_id) === user?.id && new Date(t.released_at || t.created_at).getMonth() === d.getMonth() && new Date(t.released_at || t.created_at).getFullYear() === d.getFullYear()).reduce((a: number, t: any) => a + t.amount, 0));
+  const act = async (path: string, ok: string) => { try { await api.post(path); tq.reload(); w.reload(); setNotice(ok); } catch (e) { setNotice(extractErrorMessage(e, "That didn't work. Please try again.")); } setRelease(""); };
+  const stats = company ? [["Held in escrow", w.data?.escrow_held, "lock"], ["Released to engineers", w.data?.total_released, "check"], ["Total spent", w.data?.total_spent, "wallet"], ["Transactions", null, "history"]] : [["Earned (released)", w.data?.total_earned, "wallet"], ["In escrow for you", w.data?.escrow_held, "lock"], ["Released", w.data?.total_released, "check"], ["Transactions", null, "history"]];
   return (
     <div className="bg-[#F1F2F4] py-6">
       <div className="mx-auto max-w-[1300px] px-4">
-        <div className="mb-4 flex items-center justify-between"><h1 className="text-3xl font-light">Payments and escrow</h1><Btn v="primary" onClick={() => setModal("fund")}>Fund escrow</Btn></div>
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-4">{[["Wallet balance", "$18,120.00", "wallet"], ["In escrow", "$9,700.00", "lock"], ["Released this month", "$14,880.00", "check"], ["Spent this year", "$212,400.00", "trend"]].map((s) => <Card key={s[0]} c="rounded-lg"><div className="flex items-center justify-between text-slate-500"><span className="text-sm">{s[0]}</span><Ic n={s[2]} s={18} /></div><p className="mt-2 text-2xl font-semibold">{s[1]}</p></Card>)}</div>
+        <div className="mb-4 flex items-center justify-between"><h1 className="text-3xl font-light">{company ? "Payments and escrow" : "Earnings and payments"}</h1></div>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-4">{stats.map((s: any) => <Card key={s[0]} c="rounded-lg"><div className="flex items-center justify-between text-slate-500"><span className="text-sm">{s[0]}</span><Ic n={s[2]} s={18} /></div><p className="mt-2 text-2xl font-semibold">{s[1] == null ? tx.length : money(s[1], cur)}</p></Card>)}</div>
         <div className="mt-4 grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <Card c="rounded-lg"><p className="font-semibold">Escrow held - active milestones</p>{escrows.map((e) => <div key={e.id} className="flex items-center gap-3 border-t border-slate-100 py-3 first:border-0"><div className="flex-1"><p className="text-sm font-semibold">{e.milestone}</p><p className="text-xs text-slate-500">{e.contract} - due {e.due}</p></div><Tag t={e.status === "Held" ? "amber" : e.status === "Released" ? "green" : "red"}>{e.status}</Tag><b className="w-24 text-right">{e.amount}</b>{e.status === "Held" && <div className="flex gap-2"><Btn v="gray" sm onClick={() => setModal("refund:" + e.id)}>Refund</Btn><Btn v="primary" sm onClick={() => setModal("release:" + e.id)}>Release</Btn></div>}</div>)}</Card>
-          <Card c="rounded-lg"><p className="font-semibold">Payment method</p><div className="mt-3 flex items-center gap-3 rounded-lg border border-slate-200 p-3"><Ic n="wallet" s={20} c="text-[#0552CC]" /><div className="flex-1"><p className="text-sm font-semibold">Visa **** 4471</p><p className="text-xs text-slate-500">Stripe - default</p></div><Tag t="green">Active</Tag></div><Btn v="outline" full c="mt-3">Add payment method</Btn></Card>
+          <Card c="rounded-lg"><p className="font-semibold">{company ? "Released by month" : "Earnings by month"}</p><div className="mt-4"><Bars d={monthly} c="#0552CC" h={180} /></div><div className="mt-2 flex justify-between text-xs text-slate-500">{byMonth.map((d) => <span key={d.toISOString()}>{d.toLocaleString("en-US", { month: "short" })}</span>)}</div></Card>
+          <Card c="rounded-lg"><p className="font-semibold">{company ? "How escrow works" : "Payouts"}</p><p className="mt-3 text-sm text-slate-600">{company ? "Fund a milestone into escrow from the project workspace. Funds stay held until you approve the delivered work and release them." : "Released payments are credited to your balance. Withdrawals to a bank or PayPal account aren’t available yet — we’ll email you when payouts launch."}</p></Card>
         </div>
-        <Card c="mt-4 rounded-lg" p={false}><p className="p-4 font-semibold">Transaction history</p><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Date", "Description", "Party", "Amount", "Status"].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead><tbody>{tx.map((r, i) => <tr key={i} className="border-t border-slate-100"><td className="px-4 py-3 text-slate-500">{r[0]}</td><td className="px-4 py-3">{r[1]}</td><td className="px-4 py-3">{r[2]}</td><td className={cx("px-4 py-3 font-semibold", r[3].startsWith("+") ? "text-emerald-600" : "text-slate-900")}>{r[3]}</td><td className="px-4 py-3"><Tag t="gray">{r[4]}</Tag></td></tr>)}</tbody></table></Card>
+        <Card c="mt-4 rounded-lg" p={false}><p className="p-4 font-semibold">Transaction history</p><div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Date", company ? "Engineer" : "Client", "Reference", "Amount", "Status", ""].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead><tbody>{tx.map((t: any) => { const mine = t.payee_id === user?.id; return <tr key={t.id} className="border-t border-slate-100"><td className="px-4 py-3">{new Date(t.created_at).toLocaleDateString()}</td><td className="px-4 py-3">{(mine ? t.payer : t.payee)?.full_name || "—"}</td><td className="px-4 py-3 font-mono text-xs text-slate-500">{t.provider_reference?.slice(0, 18) || t.id.slice(0, 8)}</td><td className={cx("px-4 py-3 font-semibold", mine && "text-emerald-700")}>{mine ? "+" : "-"}{money(t.amount, t.currency)}</td><td className="px-4 py-3"><Tag t={t.status === "RELEASED" ? "primary" : "gray"}>{t.status.charAt(0) + t.status.slice(1).toLowerCase()}</Tag></td><td className="px-4 py-3 text-right">{company && t.payer_id === user?.id && t.status === "ESCROWED" && <><Btn v="line" sm onClick={() => act(`/payments/${t.id}/refund`, "Escrow refunded")}>Refund</Btn> <Btn sm onClick={() => setRelease(t.id)}>Release</Btn></>}</td></tr>; })}{!tq.loading && !tx.length && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No transactions yet.</td></tr>}</tbody></table></div></Card>
       </div>
-      <Modal open={!!modal} onClose={() => setModal(null)} title={modal && modal.indexOf("fund") === 0 ? "Fund escrow" : modal && modal.indexOf("release") === 0 ? "Release milestone" : modal && modal.indexOf("refund") === 0 ? "Refund escrow" : ""}>
-        <p className="text-sm text-slate-600">{modal && modal.indexOf("fund") === 0 ? "Move funds from your wallet into escrow for a contract milestone." : modal && modal.indexOf("release") === 0 ? "Approve this milestone and release the held funds to the engineer's wallet." : "Return the held funds to your wallet. The engineer will be notified."}</p>
-        <div className="mt-4 flex justify-end gap-2"><Btn v="gray" onClick={() => setModal(null)}>Cancel</Btn><Btn v="primary" onClick={() => setModal(null)}>Confirm</Btn></div>
-      </Modal>
+      <Modal open={!!release} onClose={() => setRelease("")} title="Release escrow payment?"><p className="text-sm text-slate-500">The engineer receives these funds. This can’t be undone.</p><div className="mt-5 flex justify-end gap-2"><Btn v="gray" onClick={() => setRelease("")}>Cancel</Btn><Btn onClick={() => act(`/payments/${release}/release`, "Payment released")}>Release payment</Btn></div></Modal>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </div>
   );
 }
+export function Earnings() { return <PaymentsView company={false} />; }
+export function CoPayments() { return <PaymentsView company />; }
 
 export function TaskMarketplace() {
-  const [tab, setTab] = useState("open");
-  const [modal, setModal] = useState<string | null>(null);
-  const open = [
-    { id: "T-812", title: "Wire hybrid retrieval scores into match explanation payload", project: "Matching v2 - Northstar Cloud", budget: "$1,200", offers: 3, due: "Sep 30" },
-    { id: "T-809", title: "Add CDC connector for orders table", project: "Lakehouse migration - Brightpath", budget: "$2,400", offers: 1, due: "Oct 05" },
-    { id: "T-804", title: "Write eval harness for agent tool-use accuracy", project: "Agent console redesign - Helix Labs", budget: "$900", offers: 5, due: "Sep 27" },
-  ];
-  const myOffers = [
-    { id: "T-798", title: "Add Okta SAML provisioning hooks", amount: "$1,800", status: "Pending" },
-    { id: "T-791", title: "Backfill trust score for legacy profiles", amount: "$650", status: "Accepted" },
-    { id: "T-780", title: "Reduce cold-start latency for match API", amount: "$1,100", status: "Declined" },
-  ];
-  const submissions = [
-    { id: "S-231", task: "Backfill trust score for legacy profiles", status: "Approved", ai: 92, note: "Clean migration, covered by tests. AI review flagged no regressions." },
-    { id: "S-225", task: "Fix duplicate job detection false positives", status: "In AI review", ai: null, note: "Awaiting automated quality pass before human review." },
-    { id: "S-219", task: "Add rate-limit backoff to job aggregator", status: "Changes requested", ai: 68, note: "AI review found missing retry-jitter and one untested branch." },
-  ];
-  const reviews = [
-    { from: "Northstar Cloud", rating: 5, text: "Shipped ahead of schedule and documented everything clearly.", proj: "Matching v2" },
-    { from: "Helix Labs", rating: 5, text: "Excellent communicator, caught issues before they became problems.", proj: "Agent console redesign" },
-    { from: "Brightpath", rating: 4, text: "Solid delivery, one milestone needed an extra review pass.", proj: "Lakehouse migration" },
-  ];
-  const TABS: [string, string][] = [["open", "Open tasks"], ["offers", "My offers"], ["submissions", "Submissions"], ["reviews", "Reputation"]];
+  // Live: engineers — /projects/my-offers, /my-tasks (+ submit work), submissions with AI review, /reputation;
+  // companies — offers they sent (/projects/task-offers) with cancel.
+  const { user } = useAuth();
+  const company = user?.role === "COMPANY";
+  const offersQ = useApi<any[]>(user && !company ? "/projects/my-offers" : null);
+  const tasksQ = useApi<any[]>(user && !company ? "/projects/my-tasks" : null);
+  const repQ = useApi<any>(user && !company ? `/projects/reputation/${user.id}` : null);
+  const sentQ = useApi<any[]>(company ? "/projects/task-offers" : null);
+  const [tab, setTab] = useState(company ? "sent" : "offers");
+  const [submit, setSubmit] = useState<any>(null);
+  const [summary, setSummary] = useState("");
+  const [links, setLinks] = useState("");
+  const [notice, setNotice] = useState("");
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); offersQ.reload(); tasksQ.reload(); sentQ.reload(); setNotice(ok); } catch (e) { setNotice(extractErrorMessage(e, "That didn't work. Please try again.")); } };
+  const pending = (offersQ.data ?? []).filter((o: any) => o.offer.status === "OFFERED");
+  const tasks = tasksQ.data ?? [];
+  const subs = tasks.filter((t: any) => t.latest_submission);
+  const subLabel: Record<string, string> = { SUBMITTED: "In review", CHANGES_REQUESTED: "Changes requested", APPROVED: "Approved" };
+  const TABS: [string, string][] = company ? [["sent", "Offers sent"]] : [["offers", `Offers for you${pending.length ? ` (${pending.length})` : ""}`], ["tasks", "My tasks"], ["submissions", "Submissions"], ["reviews", "Reputation"]];
   return (
     <div className="bg-[#F1F2F4] py-6">
       <div className="mx-auto max-w-[1300px] px-4">
-        <div className="mb-4"><h1 className="text-3xl font-light">Task marketplace</h1><p className="text-sm text-slate-500">Bid on open tasks inside active projects, track submissions and AI review, and see your reputation.</p></div>
+        <div className="mb-4"><h1 className="text-3xl font-light">Task marketplace</h1><p className="text-sm text-slate-500">{company ? "Track the tasks you’ve offered to engineers from your project boards." : "Accept task offers from active projects, submit your work for review and build your reputation."}</p></div>
         <div className="mb-4 flex gap-1 border-b border-slate-200">{TABS.map(([k, l]) => <button key={k} onClick={() => setTab(k)} className={cx("border-b-2 px-4 py-2 text-sm font-semibold", tab === k ? "border-[#0552CC] text-[#0552CC]" : "border-transparent text-slate-500 hover:text-slate-800")}>{l}</button>)}</div>
 
-        {tab === "open" && (
-          <div className="space-y-3">{open.map((t) => <Card key={t.id} c="rounded-lg"><div className="flex items-center gap-4"><div className="flex-1"><p className="font-semibold">{t.title}</p><p className="text-sm text-slate-500">{t.project} - due {t.due}</p></div><Tag t="blue">{t.offers} offers</Tag><b className="w-20 text-right">{t.budget}</b><Btn v="primary" sm onClick={() => setModal("offer:" + t.id)}>Make offer</Btn></div></Card>)}</div>
-        )}
+        {tab === "offers" && <div className="space-y-3">{pending.map((o: any) => <Card key={o.offer.id} c="rounded-lg"><div className="flex flex-wrap items-center gap-4"><div className="flex-1"><p className="font-semibold">{o.task.title}</p><p className="text-sm text-slate-500">{o.project_title}{o.task.deadline ? ` - due ${new Date(o.task.deadline).toLocaleDateString()}` : ""}{o.task.estimated_hours ? ` - ~${o.task.estimated_hours}h` : ""}</p>{o.offer.matched_skills?.length > 0 && <p className="mt-1 text-xs text-slate-500">Matched skills: {o.offer.matched_skills.join(", ")}</p>}</div><Tag t="blue">{Math.round(o.offer.match_score)}% match</Tag><Btn v="gray" sm onClick={() => act(() => api.patch(`/projects/task-offers/${o.offer.id}`, { status: "DECLINED" }), "Offer declined")}>Decline</Btn><Btn v="primary" sm onClick={() => act(() => api.patch(`/projects/task-offers/${o.offer.id}`, { status: "ACCEPTED" }), "Offer accepted — the task is now in My tasks")}>Accept</Btn></div></Card>)}{!offersQ.loading && !pending.length && <Card c="rounded-lg"><p className="text-sm text-slate-500">No open task offers right now. Companies offer tasks to engineers whose skills match.</p></Card>}</div>}
 
-        {tab === "offers" && (
-          <Card c="rounded-lg" p={false}><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Task", "Amount", "Status", ""].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead><tbody>{myOffers.map((o) => <tr key={o.id} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{o.title}</td><td className="px-4 py-3">{o.amount}</td><td className="px-4 py-3"><Tag t={o.status === "Accepted" ? "green" : o.status === "Declined" ? "red" : "amber"}>{o.status}</Tag></td><td className="px-4 py-3 text-right">{o.status === "Pending" && <Btn v="gray" sm onClick={() => setModal("cancel:" + o.id)}>Cancel</Btn>}</td></tr>)}</tbody></table></Card>
-        )}
+        {tab === "tasks" && <Card c="rounded-lg" p={false}><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Task", "Project", "Status", ""].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead><tbody>{tasks.map((t: any) => <tr key={t.task.id} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{t.task.title}</td><td className="px-4 py-3">{t.project_title}</td><td className="px-4 py-3"><Tag t={t.task.status === "COMPLETED" ? "green" : "amber"}>{t.task.status.replace(/_/g, " ").toLowerCase()}</Tag></td><td className="px-4 py-3 text-right">{t.task.status !== "COMPLETED" && t.latest_submission?.status !== "SUBMITTED" && <Btn v="primary" sm onClick={() => { setSubmit(t); setSummary(""); setLinks(""); }}>Submit work</Btn>}</td></tr>)}{!tasksQ.loading && !tasks.length && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-500">No assigned tasks yet.</td></tr>}</tbody></table></Card>}
 
-        {tab === "submissions" && (
-          <div className="space-y-3">{submissions.map((s) => <Card key={s.id} c="rounded-lg"><div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E8F0FC] text-[#0552CC]"><Ic n="code" s={20} /></div><div className="flex-1"><p className="font-semibold">{s.task}</p><p className="mt-1 text-sm text-slate-500">{s.note}</p></div><div className="text-right"><Tag t={s.status === "Approved" ? "green" : s.status === "Changes requested" ? "red" : "amber"}>{s.status}</Tag>{s.ai !== null && <p className="mt-1 text-xs text-slate-500">AI quality score: <b className="text-slate-800">{s.ai}/100</b></p>}</div></div></Card>)}</div>
-        )}
+        {tab === "submissions" && <div className="space-y-3">{subs.map((t: any) => { const s = t.latest_submission; const label = subLabel[s.status] || s.status; return <Card key={s.id} c="rounded-lg"><div className="flex items-start gap-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E8F0FC] text-[#0552CC]"><Ic n="code" s={20} /></div><div className="flex-1"><p className="font-semibold">{t.task.title} <span className="text-xs font-normal text-slate-500">v{s.version}</span></p><p className="mt-1 text-sm text-slate-500">{s.review_note || s.ai_feedback || s.summary}</p></div><div className="text-right"><Tag t={s.status === "APPROVED" ? "green" : s.status === "CHANGES_REQUESTED" ? "red" : "amber"}>{label}</Tag>{s.quality_score != null && <p className="mt-1 text-xs text-slate-500">AI quality score: <b className="text-slate-800">{Math.round(s.quality_score)}/100</b></p>}</div></div></Card>; })}{!subs.length && <Card c="rounded-lg"><p className="text-sm text-slate-500">Your work submissions and their AI review results appear here.</p></Card>}</div>}
 
-        {tab === "reviews" && (
-          <>
-            <div className="mb-4 grid gap-4 grid-cols-1 md:grid-cols-3">{[["Average rating", "4.8", "star"], ["Completed tasks", "64", "check"], ["Repeat clients", "9", "users"]].map((k) => <Card key={k[0]} c="rounded-lg"><div className="flex items-center justify-between text-slate-500"><span className="text-sm">{k[0]}</span><Ic n={k[2]} s={18} /></div><p className="mt-2 text-2xl font-semibold">{k[1]}</p></Card>)}</div>
-            <div className="space-y-3">{reviews.map((r, i) => <Card key={i} c="rounded-lg"><div className="mb-1 flex items-center justify-between"><p className="font-semibold">{r.from}</p><span className="text-amber-500">{"\u2605".repeat(r.rating)}{"\u2606".repeat(5 - r.rating)}</span></div><p className="text-sm text-slate-600">{r.text}</p><p className="mt-1 text-xs text-slate-400">{r.proj}</p></Card>)}</div>
-          </>
-        )}
+        {tab === "reviews" && <><div className="mb-4 grid gap-4 grid-cols-1 md:grid-cols-3">{[["Average rating", repQ.data?.average_rating != null ? repQ.data.average_rating.toFixed(1) : "—", "star"], ["Completion rate", repQ.data?.completion_rate != null ? `${repQ.data.completion_rate}%` : "—", "check"], ["Reviews", String(repQ.data?.rating_count ?? 0), "users"]].map((k) => <Card key={k[0]} c="rounded-lg"><div className="flex items-center justify-between text-slate-500"><span className="text-sm">{k[0]}</span><Ic n={k[2]} s={18} /></div><p className="mt-2 text-2xl font-semibold">{k[1]}</p></Card>)}</div>
+          <div className="space-y-3">{(repQ.data?.reviews ?? []).map((r: any) => <Card key={r.id} c="rounded-lg"><div className="mb-1 flex items-center justify-between"><p className="font-semibold">Project review</p><span className="text-amber-500">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span></div><p className="text-sm text-slate-600">{r.comment}</p><p className="mt-1 text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString()}</p></Card>)}{!(repQ.data?.reviews ?? []).length && <Card c="rounded-lg"><p className="text-sm text-slate-500">Reviews from completed projects will appear here.</p></Card>}</div></>}
+
+        {tab === "sent" && <Card c="rounded-lg" p={false}><table className="w-full text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr>{["Task", "Project", "Match", "Status", ""].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead><tbody>{(sentQ.data ?? []).map((o: any) => <tr key={o.offer.id} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold">{o.task.title}</td><td className="px-4 py-3">{o.project_title}</td><td className="px-4 py-3">{Math.round(o.offer.match_score)}%</td><td className="px-4 py-3"><Tag t={o.offer.status === "ACCEPTED" ? "green" : o.offer.status === "DECLINED" ? "red" : "amber"}>{o.offer.status.toLowerCase()}</Tag></td><td className="px-4 py-3 text-right">{o.offer.status === "OFFERED" && <Btn v="gray" sm onClick={() => act(() => api.patch(`/projects/task-offers/${o.offer.id}/cancel`), "Offer cancelled")}>Cancel</Btn>}</td></tr>)}{!sentQ.loading && !(sentQ.data ?? []).length && <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">No task offers sent yet. Offer tasks from a project board.</td></tr>}</tbody></table></Card>}
       </div>
-      <Modal open={!!modal} onClose={() => setModal(null)} title={modal && modal.indexOf("offer") === 0 ? "Make an offer" : "Cancel offer"}>
-        <p className="text-sm text-slate-600">{modal && modal.indexOf("offer") === 0 ? "Submit your bid amount and estimated delivery time for this task." : "Withdraw this offer. The client will be notified."}</p>
-        <div className="mt-4 flex justify-end gap-2"><Btn v="gray" onClick={() => setModal(null)}>Cancel</Btn><Btn v="primary" onClick={() => setModal(null)}>Confirm</Btn></div>
-      </Modal>
+      <Modal open={!!submit} onClose={() => setSubmit(null)} title="Submit work for review"><p className="text-sm text-slate-600">{submit?.task.title}</p><div className="mt-3 space-y-3"><Field label="Summary of what you delivered"><textarea rows={4} className={cx(inputCls, "h-auto py-2")} value={summary} onChange={(e) => setSummary(e.target.value)} /></Field><Field label="Links (PRs, docs), one per line"><textarea rows={2} className={cx(inputCls, "h-auto py-2")} value={links} onChange={(e) => setLinks(e.target.value)} /></Field></div><div className="mt-4 flex justify-end gap-2"><Btn v="gray" onClick={() => setSubmit(null)}>Cancel</Btn><Btn v="primary" onClick={() => { if (!summary.trim()) { setNotice("Describe what you delivered."); return; } const t = submit; setSubmit(null); act(() => api.post(`/projects/tasks/${t.task.id}/submissions`, { summary: summary.trim(), artifact_urls: links.split("\n").map((l) => l.trim()).filter(Boolean) }), "Work submitted for review"); }}>Submit</Btn></div></Modal>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </div>
   );
 }

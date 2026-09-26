@@ -108,15 +108,31 @@ export function JobDetail() {
 }
 
 export function ContractSign() {
-  const [signed, setSigned] = useState(false);
+  // Live: review and sign (or decline) a contract offer — /contracts/{id}, /sign, /terminate.
+  const { user } = useAuth();
+  const [id] = useState(() => new URLSearchParams(window.location.search).get("id") || sessionStorage.getItem("rap-contract-id") || "");
+  const q = useApi<any>(id ? `/contracts/${id}` : null);
+  const [notice, setNotice] = useState("");
+  const c = q.data;
+  if (!id || q.error) return <Wrap w="max-w-[900px]"><Card c="rounded-xl p-10 text-center"><h2>Contract not found</h2><Btn c="mt-4" onClick={() => nav("contracts")}>Go to contracts</Btn></Card></Wrap>;
+  if (!c) return <Wrap w="max-w-[900px]"><Card c="rounded-xl p-10 text-center text-slate-500">Loading contract…</Card></Wrap>;
+  const mine = c.client_id === user?.id ? c.client_signed_at : c.worker_signed_at;
+  const from = c.client_id === user?.id ? c.worker?.full_name : c.client?.full_name;
+  const total = c.milestones?.length ? c.milestones.reduce((a: number, m: any) => a + m.amount, 0) : c.rate_amount;
+  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: c.currency || "USD", maximumFractionDigits: 0 }).format(n);
+  const dur = c.start_date && c.end_date ? `${Math.max(1, Math.round((+new Date(c.end_date) - +new Date(c.start_date)) / 2629800000))} months` : "Open-ended";
+  const act = async (path: string, ok: string) => { try { await api.post(path); q.reload(); setNotice(ok); } catch (e) { setNotice(extractErrorMessage(e, "That didn't work. Please try again.")); } };
+  const ended = ["COMPLETED", "TERMINATED"].includes(c.status);
   return (
     <Wrap w="max-w-[900px]">
-      <Card c="rounded-xl"><div className="flex items-center justify-between"><div><h1>Contract offer</h1><p className="text-sm text-slate-500">RC-2291 - from Brightpath</p></div><Tag t={signed ? "green" : "amber"}>{signed ? "Signed" : "Awaiting signature"}</Tag></div>
-        <div className="mt-4 grid gap-3 grid-cols-1 md:grid-cols-3">{[["Type", "Fixed price"], ["Total", "$18,400"], ["Duration", "3 months"]].map((s) => <div key={s[0]} className="rounded-lg bg-slate-100 p-3"><p className="text-xs text-slate-500">{s[0]}</p><p className="font-bold">{s[1]}</p></div>)}</div>
-        <h3 className="mt-5">Scope</h3><p className="mt-1 text-slate-700">Migrate the legacy warehouse to Databricks with Delta Live Tables, Unity Catalog governance and CDC ingestion.</p>
-        <h3 className="mt-5">Milestones</h3>{[["Discovery and architecture", "$4,000"], ["Ingestion and CDC pipelines", "$6,200"], ["Unity Catalog and governance", "$5,000"], ["Cutover and handover", "$3,200"]].map((m, i) => <div key={m[0]} className="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 p-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E8F0FC] text-sm font-bold text-[#0552CC]">{i + 1}</span><span className="flex-1">{m[0]}</span><b>{m[1]}</b></div>)}
-        <div className="mt-5 flex items-center gap-2 rounded-lg bg-[#E8F0FC] p-3 text-sm text-[#0552CC]"><Ic n="shieldcheck" s={18} />Each milestone is funded into escrow and released only when the client approves.</div>
-        <div className="mt-5 flex justify-end gap-2"><Btn v="gray">Decline</Btn><Btn v="primary" onClick={() => setSigned(true)}>{signed ? "Signed" : "Sign digitally"}</Btn></div></Card>
+      <Card c="rounded-xl"><div className="flex items-center justify-between"><div><h1>Contract offer</h1><p className="text-sm text-slate-500">{c.title}{from ? ` - with ${from}` : ""}</p></div><Tag t={c.status === "ACTIVE" ? "green" : ended ? "gray" : "amber"}>{c.status === "ACTIVE" ? "Active" : ended ? c.status.charAt(0) + c.status.slice(1).toLowerCase() : mine ? "Waiting for the other party" : "Awaiting your signature"}</Tag></div>
+        <div className="mt-4 grid gap-3 grid-cols-1 md:grid-cols-3">{[["Type", c.rate_type === "FIXED" ? "Fixed price" : c.rate_type === "HOURLY" ? `Hourly - ${fmt(c.rate_amount)}/hr` : `Monthly - ${fmt(c.rate_amount)}`], ["Total", fmt(total)], ["Duration", dur]].map((s) => <div key={s[0]} className="rounded-lg bg-slate-100 p-3"><p className="text-xs text-slate-500">{s[0]}</p><p className="font-bold">{s[1]}</p></div>)}</div>
+        <h3 className="mt-5">Scope</h3><p className="mt-1 whitespace-pre-line text-slate-700">{c.scope_description}</p>
+        {c.terms && <><h3 className="mt-5">Terms</h3><p className="mt-1 whitespace-pre-line text-slate-700">{c.terms}</p></>}
+        {(c.milestones || []).length > 0 && <><h3 className="mt-5">Milestones</h3>{c.milestones.map((m: any, i: number) => <div key={m.id} className="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 p-3"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E8F0FC] text-sm font-bold text-[#0552CC]">{i + 1}</span><span className="flex-1">{m.title}</span><b>{fmt(m.amount)}</b></div>)}</>}
+        <div className="mt-5 flex items-center gap-2 rounded-lg bg-[#E8F0FC] p-3 text-sm text-[#0552CC]"><Ic n="shieldcheck" s={18} />Each milestone is approved by the client before its payment is released.</div>
+        {!ended && <div className="mt-5 flex justify-end gap-2">{!mine && <Btn v="gray" onClick={() => { if (window.confirm("Decline this contract?")) act(`/contracts/${c.id}/terminate`, "Contract declined"); }}>Decline</Btn>}<Btn v="primary" onClick={() => !mine && act(`/contracts/${c.id}/sign`, "Contract signed")}>{mine ? "Signed" : "Sign digitally"}</Btn></div>}</Card>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </Wrap>
   );
 }
@@ -130,53 +146,78 @@ const FINDINGS = [
 ];
 
 export function Workspace() {
-  const [tasks, setTasks] = useState([["Review reranker eval report", true], ["Push CDC connector PR", false], ["Reply to Brightpath on milestone 3", false], ["Update time log", false]]);
+  // Live: my tasks, active contracts, offers, reputation; the timer logs real time to a task's work ledger.
+  const { user } = useAuth();
+  const eng = user?.role === "ENGINEER";
+  const tasksQ = useApi<any[]>(eng ? "/projects/my-tasks" : null);
+  const offersQ = useApi<any[]>(eng ? "/projects/my-offers" : null);
+  const contractsQ = useApi<any[]>(user ? "/contracts/me" : null);
+  const repQ = useApi<any>(eng ? `/projects/reputation/${user!.id}` : null);
+  const projectsQ = useApi<any[]>(!eng && user ? "/projects" : null);
   const [run, setRun] = useState(false);
   const [secs, setSecs] = useState(0);
+  const [taskId, setTaskId] = useState("");
+  const [note, setNote] = useState("");
+  const [notice, setNotice] = useState("");
   useEffect(() => { if (!run) return; const t = setInterval(() => setSecs((x) => x + 1), 1000); return () => clearInterval(t); }, [run]);
   const clock = String(Math.floor(secs / 3600)).padStart(2, "0") + ":" + String(Math.floor((secs % 3600) / 60)).padStart(2, "0") + ":" + String(secs % 60).padStart(2, "0");
+  const tasks = (tasksQ.data ?? []).filter((t: any) => t.task.status !== "COMPLETED");
+  const active = (contractsQ.data ?? []).filter((c: any) => c.status === "ACTIVE");
+  const pendingOffers = (offersQ.data ?? []).filter((o: any) => o.offer.status === "OFFERED").length;
+  const prog = (c: any) => (c.milestones?.length ? Math.round((c.milestones.filter((m: any) => ["APPROVED", "PAID"].includes(m.status)).length / c.milestones.length) * 100) : 0);
+  const logTime = async () => { const minutes = Math.max(1, Math.round(secs / 60)); if (!taskId) { setNotice("Choose the task you worked on."); return; } try { await api.post(`/projects/tasks/${taskId}/ledger`, { duration_minutes: Math.min(minutes, 1440), description: note.trim() || "Tracked with the workspace timer" }); setRun(false); setSecs(0); setNote(""); setNotice(`Logged ${minutes} minute${minutes > 1 ? "s" : ""}`); } catch (e) { setNotice(extractErrorMessage(e, "Couldn't log that time.")); } };
+  const stats: any[] = eng ? [["Open tasks", String(tasks.length), `${pendingOffers} new offer${pendingOffers === 1 ? "" : "s"}`], ["Active contracts", String(active.length), `${(contractsQ.data ?? []).filter((c: any) => ["OFFERED", "SIGNED", "DRAFT"].includes(c.status)).length} awaiting signature`], ["Completion rate", repQ.data?.completion_rate != null ? `${repQ.data.completion_rate}%` : "—", "Of assigned tasks"], ["Client rating", repQ.data?.average_rating != null ? repQ.data.average_rating.toFixed(1) : "—", `${repQ.data?.rating_count ?? 0} reviews`]] : [["Projects", String((projectsQ.data ?? []).length), "On your boards"], ["Active contracts", String(active.length), "With engineers"], ["Awaiting signature", String((contractsQ.data ?? []).filter((c: any) => ["OFFERED", "SIGNED", "DRAFT"].includes(c.status)).length), "Offers sent"], ["Completed", String((contractsQ.data ?? []).filter((c: any) => c.status === "COMPLETED").length), "Contracts"]];
   return (
     <Wrap w="max-w-none">
       <div className="mb-4"><h1 className="text-2xl font-bold">My workspace</h1><p className="text-sm text-slate-500">Active contracts, tasks and time in one place</p></div>
-      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">{[["Hours this week", "31.5 h", "Target 40 h"], ["Active contracts", "3", "1 awaiting review"], ["Next payout", "USD 3,200", "Fri, Sep 26"], ["Client rating", "4.9", "48 reviews"]].map((x) => <Card key={x[0]} c="rounded-xl" p="p-4"><p className="text-sm text-slate-500">{x[0]}</p><p className="text-2xl font-bold">{x[1]}</p><p className="text-sm text-[#0552CC]">{x[2]}</p></Card>)}</div>
+      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">{stats.map((x) => <Card key={x[0]} c="rounded-xl" p="p-4"><p className="text-sm text-slate-500">{x[0]}</p><p className="text-2xl font-bold">{x[1]}</p><p className="text-sm text-[#0552CC]">{x[2]}</p></Card>)}</div>
       <div className="grid gap-4 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
-          <Card c="rounded-xl" p="p-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-bold">Today</h2><span className="text-sm text-slate-500">{tasks.filter((t: any) => t[1]).length} of {tasks.length} done</span></div>
-            {tasks.map((t: any, i: number) => <label key={t[0]} className="flex items-center gap-3 border-t border-slate-100 py-3 text-[15px]"><input type="checkbox" checked={t[1]} onChange={() => setTasks(tasks.map((x: any, j: number) => (j === i ? [x[0], !x[1]] : x)))} /><span className={t[1] ? "text-slate-400 line-through" : ""}>{t[0]}</span></label>)}</Card>
+          {eng ? <Card c="rounded-xl" p="p-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-bold">My tasks</h2><button className="text-sm text-[#0552CC]" onClick={() => nav("taskmarket")}>Task offers →</button></div>
+            {tasks.map((t: any) => <div key={t.task.id} className="flex items-center gap-3 border-t border-slate-100 py-3 text-[15px]"><Ic n="board" s={18} c="text-slate-500" /><span className="flex-1">{t.task.title}<span className="block text-xs text-slate-500">{t.project_title} - {t.task.status.replace(/_/g, " ").toLowerCase()}</span></span>{t.latest_submission && <Tag t="gray">{t.latest_submission.status.replace(/_/g, " ").toLowerCase()}</Tag>}</div>)}{!tasksQ.loading && !tasks.length && <p className="border-t border-slate-100 pt-3 text-sm text-slate-500">No open tasks. Accept a task offer to get started.</p>}</Card>
+          : <Card c="rounded-xl" p="p-5"><div className="mb-3 flex items-center justify-between"><h2 className="text-[17px] font-bold">Your projects</h2><button className="text-sm text-[#0552CC]" onClick={() => nav("projects")}>Open board →</button></div>{(projectsQ.data ?? []).map((p: any) => <div key={p.id} className="flex items-center gap-3 border-t border-slate-100 py-3"><Lg name={p.title || p.name || "Project"} s={36} /><span className="flex-1 font-semibold">{p.title || p.name}</span><Tag t="gray">{(p.status || "").toLowerCase()}</Tag></div>)}{!projectsQ.loading && !(projectsQ.data ?? []).length && <p className="border-t border-slate-100 pt-3 text-sm text-slate-500">No projects yet.</p>}</Card>}
           <Card c="rounded-xl" p="p-5"><h2 className="mb-3 text-[17px] font-bold">Active contracts</h2>
-            {[["Databricks lakehouse migration", "Brightpath", 68, "Milestone 3 in review"], ["RAG platform delivery sprint", "Helix Labs", 42, "Weekly retainer active"], ["LLM evaluation audit", "Northstar Cloud", 12, "Awaiting kickoff"]].map((c: any) => <div key={c[0]} className="flex items-center gap-4 border-t border-slate-100 py-3"><Lg name={c[1]} s={44} /><div className="min-w-0 flex-1"><button onClick={() => nav("contracts")} className="text-[15px] font-semibold text-[#0552CC] hover:underline">{c[0]}</button><p className="text-sm text-slate-500">{c[1]} - {c[3]}</p><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-[#0552CC]" style={{ width: c[2] + "%" }} /></div></div><span className="text-sm font-semibold">{c[2]}%</span></div>)}</Card>
+            {active.map((c: any) => { const other = c.client_id === user?.id ? c.worker : c.client; return <div key={c.id} className="flex items-center gap-4 border-t border-slate-100 py-3"><Lg name={other?.full_name || c.title} s={44} /><div className="min-w-0 flex-1"><button onClick={() => nav("contracts")} className="text-[15px] font-semibold text-[#0552CC] hover:underline">{c.title}</button><p className="text-sm text-slate-500">{other?.full_name || ""}</p><div className="mt-1 h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-[#0552CC]" style={{ width: prog(c) + "%" }} /></div></div><span className="text-sm font-semibold">{prog(c)}%</span></div>; })}{!contractsQ.loading && !active.length && <p className="border-t border-slate-100 pt-3 text-sm text-slate-500">No active contracts.</p>}</Card>
         </div>
         <div className="space-y-4">
-          <Card c="rounded-xl" p="p-5"><h2 className="mb-2 text-[17px] font-bold">Time tracker</h2><p className="text-4xl font-bold tabular-nums">{clock}</p><p className="mb-3 text-sm text-slate-500">Databricks lakehouse migration</p><div className="flex gap-2"><Btn v={run ? "danger" : "primary"} icon={run ? "clock" : "play"} full onClick={() => setRun(!run)}>{run ? "Stop" : "Start timer"}</Btn><Btn v="gray" onClick={() => { setRun(false); setSecs(0); }}>Reset</Btn></div></Card>
-          <Card c="rounded-xl" p="p-5"><h2 className="mb-2 text-[17px] font-bold">Upcoming</h2>{[["Kickoff call - Brightpath", "Today 15:00", "calendar"], ["Milestone 3 review", "Fri 10:00", "check"], ["Weekly sync - Helix Labs", "Mon 09:30", "users"]].map((x: any) => <div key={x[0]} className="flex items-center gap-3 py-2"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n={x[2]} s={18} /></span><div><p className="text-sm font-semibold">{x[0]}</p><p className="text-xs text-slate-500">{x[1]}</p></div></div>)}</Card>
+          {eng && <Card c="rounded-xl" p="p-5"><h2 className="mb-2 text-[17px] font-bold">Time tracker</h2><p className="text-4xl font-bold tabular-nums">{clock}</p><select aria-label="Task" className={cx(inputCls, "my-3")} value={taskId} onChange={(e) => setTaskId(e.target.value)}><option value="">Choose a task…</option>{tasks.map((t: any) => <option key={t.task.id} value={t.task.id}>{t.task.title}</option>)}</select><input aria-label="What did you work on?" placeholder="What did you work on?" className={cx(inputCls, "mb-3")} value={note} onChange={(e) => setNote(e.target.value)} /><div className="flex gap-2"><Btn v={run ? "danger" : "primary"} icon={run ? "clock" : "play"} full onClick={() => setRun(!run)}>{run ? "Pause" : secs ? "Resume" : "Start timer"}</Btn>{secs > 0 && <Btn v="gray" onClick={logTime}>Log time</Btn>}</div></Card>}
+          <Card c="rounded-xl" p="p-5"><h2 className="mb-2 text-[17px] font-bold">Upcoming</h2>{[...(tasksQ.data ?? []).filter((t: any) => t.task.deadline).map((t: any) => [t.task.title, new Date(t.task.deadline), "check"]), ...active.flatMap((c: any) => (c.milestones || []).filter((m: any) => m.due_date && !["APPROVED", "PAID"].includes(m.status)).map((m: any) => [`${m.title} - ${c.title}`, new Date(m.due_date), "calendar"]))].sort((a: any, b: any) => a[1] - b[1]).slice(0, 5).map((x: any) => <div key={x[0]} className="flex items-center gap-3 py-2"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n={x[2]} s={18} /></span><div><p className="text-sm font-semibold">{x[0]}</p><p className="text-xs text-slate-500">{x[1].toLocaleDateString()}</p></div></div>)}{![...(tasksQ.data ?? []).filter((t: any) => t.task.deadline), ...active].length && <p className="text-sm text-slate-500">No upcoming deadlines.</p>}</Card>
         </div>
       </div>
+      {notice && <button onClick={() => setNotice("")} className="v2-toast">{notice} · Dismiss</button>}
     </Wrap>
   );
 }
 
 export function Quality() {
-  const [url, setUrl] = useState("https://github.com/gokul-227/remote-ai-platform");
+  // Live: POST /quality/review-code — AI review of a pasted snippet (the API reviews code, not whole repositories).
+  const [task, setTask] = useState("");
+  const [code, setCode] = useState("");
+  const [lang, setLang] = useState("python");
   const [state, setState] = useState("idle");
-  const start = () => { setState("run"); setTimeout(() => setState("done"), 1800); };
-  const cats = [["Correctness", 91], ["Security", 74], ["Maintainability", 86], ["Test coverage", 68], ["Performance", 89]];
-  const sev: any = { High: "red", Medium: "amber", Low: "gray" };
+  const [r, setR] = useState<any>(null);
+  const [err, setErr] = useState("");
+  const start = async () => { if (!code.trim() || !task.trim()) { setErr("Describe the task and paste the code to review."); return; } setErr(""); setState("run"); try { const res = await api.post("/quality/review-code", { task_description: task.trim(), code_snippet: code, language: lang }); setR(res.data); setState("done"); } catch (e) { setErr(extractErrorMessage(e, "The AI review is unavailable right now. Please try again shortly.")); setState("idle"); } };
+  const sev: any = { critical: "red", high: "red", warning: "amber", medium: "amber", info: "gray", low: "gray" };
+  const exportReport = () => { const blob = new Blob([JSON.stringify(r, null, 2)], { type: "application/json" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "code-review.json"; a.click(); };
   return (
     <Wrap w="max-w-none">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-bold">AI code quality review</h1><p className="text-sm text-slate-500">Paste a repository or snippet for an explainable evaluation report</p></div>{state === "done" && <Btn v="outline" icon="download">Export report</Btn>}</div>
-      <Card c="mb-4 rounded-xl" p="p-4"><div className="flex flex-wrap gap-2"><input value={url} onChange={(e) => setUrl(e.target.value)} className={cx(inputCls, "flex-1")} style={{ minWidth: 240 }} /><Btn v="primary" icon="spark" onClick={start}>{state === "run" ? "Reviewing..." : "Run review"}</Btn></div></Card>
-      {state === "idle" && <Card c="rounded-xl" p="p-10"><div className="text-center text-slate-500"><span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n="code" s={26} /></span><p className="font-semibold text-slate-900">No review yet</p><p className="text-sm">Run a review to see scores, findings and suggested fixes.</p></div></Card>}
-      {state === "run" && <Card c="rounded-xl" p="p-10"><div className="text-center"><div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-[#E8F0FC] border-t-[#0552CC]" /><p className="font-semibold">Analyzing 214 files...</p><p className="text-sm text-slate-500">Static analysis, dependency audit and AI review</p></div></Card>}
-      {state === "done" && (
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h1 className="text-2xl font-bold">AI code quality review</h1><p className="text-sm text-slate-500">Paste a snippet for an explainable evaluation report</p></div>{state === "done" && <Btn v="outline" icon="download" onClick={exportReport}>Export report</Btn>}</div>
+      <Card c="mb-4 rounded-xl" p="p-4"><div className="space-y-2"><div className="flex flex-wrap gap-2"><input aria-label="What should this code do?" placeholder="What should this code do?" value={task} onChange={(e) => setTask(e.target.value)} className={cx(inputCls, "flex-1")} style={{ minWidth: 240 }} /><select aria-label="Language" value={lang} onChange={(e) => setLang(e.target.value)} className={cx(inputCls, "w-40")}>{["python", "typescript", "javascript", "go", "rust", "java", "sql"].map((l) => <option key={l}>{l}</option>)}</select><Btn v="primary" icon="spark" onClick={start}>{state === "run" ? "Reviewing..." : "Run review"}</Btn></div><textarea aria-label="Code to review" rows={8} value={code} onChange={(e) => setCode(e.target.value)} placeholder="Paste code here…" className={cx(inputCls, "h-auto py-2 font-mono text-xs")} />{err && <p role="alert" className="text-sm text-red-600">{err}</p>}</div></Card>
+      {state === "idle" && !r && <Card c="rounded-xl" p="p-10"><div className="text-center text-slate-500"><span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]"><Ic n="code" s={26} /></span><p className="font-semibold text-slate-900">No review yet</p><p className="text-sm">Run a review to see scores, findings and suggested fixes.</p></div></Card>}
+      {state === "run" && <Card c="rounded-xl" p="p-10"><div className="text-center"><div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-[#E8F0FC] border-t-[#0552CC]" /><p className="font-semibold">Reviewing your code…</p><p className="text-sm text-slate-500">AI review of correctness, security and maintainability</p></div></Card>}
+      {state === "done" && r && (
         <div className="grid gap-4 grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)]">
           <div className="space-y-4">
-            <Card c="rounded-xl" p="p-5"><p className="text-sm text-slate-500">Overall quality score</p><p className="text-5xl font-bold text-[#0552CC]">82<span className="text-xl text-slate-400">/100</span></p><p className="text-sm text-slate-600">Above 71% of reviewed repositories</p></Card>
-            <Card c="rounded-xl" p="p-5"><p className="mb-3 text-[17px] font-bold">Category scores</p>{cats.map((c: any) => <div key={c[0]} className="mb-3"><div className="flex justify-between text-sm"><span>{c[0]}</span><span className="font-semibold">{c[1]}</span></div><div className="h-2 rounded-full bg-slate-100"><div className="h-2 rounded-full bg-[#0552CC]" style={{ width: c[1] + "%" }} /></div></div>)}</Card>
+            <Card c="rounded-xl" p="p-5"><p className="text-sm text-slate-500">Overall quality score</p><p className="text-5xl font-bold text-[#0552CC]">{r.overall_score}<span className="text-xl text-slate-400">/100</span></p><p className="text-sm text-slate-600">Grade {r.grade} - {String(r.verdict).replace(/_/g, " ")}</p></Card>
+            {Object.keys(r.complexity_analysis || {}).length > 0 && <Card c="rounded-xl" p="p-5"><p className="mb-3 text-[17px] font-bold">Complexity</p>{Object.entries(r.complexity_analysis).filter(([, v]) => v).map(([k, v]: any) => <div key={k} className="mb-2 text-sm"><span className="text-slate-500">{k.replace(/_/g, " ")}</span><p className="font-semibold">{String(v)}</p></div>)}</Card>}
+            {(r.security_flags || []).length > 0 && <Card c="rounded-xl" p="p-5"><p className="mb-2 text-[17px] font-bold">Security flags</p>{r.security_flags.map((f: string) => <p key={f} className="mb-1 text-sm text-red-700">• {f}</p>)}</Card>}
           </div>
           <div className="space-y-4">
-            <Card c="rounded-xl bg-[#F3F0FF]" p="p-5"><p className="mb-1 flex items-center gap-2 font-bold text-[#5B4BDB]"><Ic n="spark" s={16} />AI summary</p><p className="text-slate-700">Solid architecture with clear module boundaries. Priority is removing the hard-coded credential and adding validation on financial inputs. Test coverage on payout paths is the largest quality gap.</p></Card>
-            <Card c="rounded-xl" p="p-0"><div className="border-b border-slate-200 p-4"><p className="text-[17px] font-bold">Findings ({FINDINGS.length})</p></div>
-              {FINDINGS.map((f: any) => <div key={f[1]} className="flex flex-wrap items-start gap-3 border-b border-slate-100 p-4 last:border-0"><Tag v={sev[f[0]]}>{f[0]}</Tag><div className="min-w-0 flex-1"><p className="font-semibold">{f[1]}</p><p className="font-mono text-xs text-slate-500">{f[2]}</p><p className="mt-1 text-sm text-slate-600">{f[3]}</p></div></div>)}</Card>
+            <Card c="rounded-xl bg-[#F3F0FF]" p="p-5"><p className="mb-1 flex items-center gap-2 font-bold text-[#5B4BDB]"><Ic n="spark" s={16} />AI summary</p><p className="text-slate-700">{r.summary}</p></Card>
+            <Card c="rounded-xl" p="p-0"><div className="border-b border-slate-200 p-4"><p className="text-[17px] font-bold">Findings ({(r.line_comments || []).length})</p></div>
+              {(r.line_comments || []).map((f: any, i: number) => <div key={i} className="flex flex-wrap items-start gap-3 border-b border-slate-100 p-4 last:border-0"><Tag v={sev[String(f.severity).toLowerCase()] || "gray"}>{f.severity}</Tag><div className="min-w-0 flex-1"><p className="font-semibold">{f.comment}</p>{f.line != null && <p className="font-mono text-xs text-slate-500">line {f.line}</p>}</div></div>)}{!(r.line_comments || []).length && <p className="p-4 text-sm text-slate-500">No line-level findings.</p>}</Card>
+            {(r.suggestions || []).length > 0 && <Card c="rounded-xl" p="p-5"><p className="mb-2 text-[17px] font-bold">Suggestions</p><ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">{r.suggestions.map((s: string) => <li key={s}>{s}</li>)}</ul></Card>}
           </div>
         </div>
       )}
