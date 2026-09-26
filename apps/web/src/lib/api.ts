@@ -51,7 +51,8 @@ api.interceptors.response.use(
 
     // On 401 — attempt a silent Supabase session refresh, since Supabase
     // (not this app) issues and owns the token lifecycle now.
-    if (error.response?.status === 401 && config && !config._retry && !config.url?.includes("/auth/")) {
+    // Sign-out calls must not try to revive the session they are ending.
+    if (error.response?.status === 401 && config && !config._retry && !config.url?.includes("/auth/logout")) {
       config._retry = true;
       try {
         const { data, error: refreshError } = await supabase.auth.refreshSession();
@@ -68,7 +69,7 @@ api.interceptors.response.use(
         localStorage.removeItem("remote_ai_platform_refresh_token");
         localStorage.removeItem("remote_ai_platform_user");
         if (typeof window !== "undefined") {
-          window.location.href = "/auth/login?reason=session_expired";
+          window.location.hash = "login";
         }
         return Promise.reject(error);
       }
