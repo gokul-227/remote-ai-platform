@@ -12,19 +12,20 @@ from app.domains.admin.repository import AdminRepository
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.jobs.models import JobPost
+from app.domains.social.models import Post
 
 router = APIRouter(prefix="/moderation", tags=["Moderation"])
 
 
 class ModerationReportCreate(BaseModel):
-    target_type: str = Field(pattern="^(USER|JOB)$")
+    target_type: str = Field(pattern="^(USER|JOB|POST)$")
     target_id: uuid.UUID
     reason: str = Field(min_length=5, max_length=5000)
 
 
 class ModerationDecision(BaseModel):
     status: str = Field(pattern="^(RESOLVED|DISMISSED)$")
-    decision: str = Field(pattern="^(HIDE_JOB|SUSPEND_USER|NO_ACTION)$")
+    decision: str = Field(pattern="^(HIDE_JOB|SUSPEND_USER|REMOVE_POST|NO_ACTION)$")
     note: str | None = Field(default=None, max_length=5000)
 
 
@@ -37,6 +38,10 @@ async def create_report(
     if data.target_type == "USER":
         user_target = await db.get(User, data.target_id)
         if not user_target or user_target.id == current_user.id:
+            raise HTTPException(status_code=404, detail="Report target not found")
+    elif data.target_type == "POST":
+        post_target = await db.get(Post, data.target_id)
+        if not post_target or post_target.author_id == current_user.id:
             raise HTTPException(status_code=404, detail="Report target not found")
     else:
         job_target = await db.get(JobPost, data.target_id)
@@ -95,6 +100,12 @@ async def decide_report(
         if not job_target:
             raise HTTPException(status_code=404, detail="Reported job no longer exists")
         job_target.is_active = False
+    elif data.decision == "REMOVE_POST":
+        if report.target_type != "POST":
+            raise HTTPException(status_code=422, detail="REMOVE_POST requires a post report")
+        post_target = await db.get(Post, uuid.UUID(report.target_id))
+        if post_target:
+            await db.delete(post_target)
     elif data.decision == "SUSPEND_USER":
         if report.target_type != "USER":
             raise HTTPException(status_code=422, detail="SUSPEND_USER requires a user report")

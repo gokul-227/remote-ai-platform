@@ -91,3 +91,28 @@ async def test_moderation_report_and_admin_decision_lifecycle(client: AsyncClien
     assert bad_user is not None
     assert bad_user.is_active is False
 
+
+
+@pytest.mark.asyncio
+async def test_posts_can_be_reported_and_removed_by_admin(client: AsyncClient, test_user: User, auth_headers: dict[str, str], db: AsyncSession):
+    author = await client.post("/api/v1/auth/register", json={"email": "poster@example.com", "password": "PostPassword123!", "full_name": "Poster", "role": "ENGINEER"})
+    author_headers = {"Authorization": f"Bearer {author.json()['access_token']}"}
+    post = await client.post("/api/v1/social/posts", headers=author_headers, json={"content": "Buy followers now!!!"})
+    assert post.status_code == 201, post.text
+    post_id = post.json()["id"]
+
+    # Authors can't report their own post; others can, once.
+    own = await client.post("/api/v1/moderation/reports", headers=author_headers, json={"target_type": "POST", "target_id": post_id, "reason": "Reporting myself"})
+    assert own.status_code == 404
+    report = await client.post("/api/v1/moderation/reports", headers=auth_headers, json={"target_type": "POST", "target_id": post_id, "reason": "Spam or misleading content"})
+    assert report.status_code == 201
+    dup = await client.post("/api/v1/moderation/reports", headers=auth_headers, json={"target_type": "POST", "target_id": post_id, "reason": "Spam or misleading content"})
+    assert dup.status_code == 409
+
+    test_user.role = UserRole.ADMIN
+    await db.commit()
+    wrong = await client.patch(f"/api/v1/moderation/reports/{report.json()['id']}", headers=auth_headers, json={"status": "RESOLVED", "decision": "HIDE_JOB"})
+    assert wrong.status_code == 422
+    removed = await client.patch(f"/api/v1/moderation/reports/{report.json()['id']}", headers=auth_headers, json={"status": "RESOLVED", "decision": "REMOVE_POST", "note": "Spam"})
+    assert removed.status_code == 200
+    assert (await client.get(f"/api/v1/social/posts/{post_id}", headers=author_headers)).status_code == 404
