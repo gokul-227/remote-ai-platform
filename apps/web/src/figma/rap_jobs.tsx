@@ -13,7 +13,7 @@ export function Jobs() {
   const [skill, setSkill] = useState("");
   const [search, setSearch] = useState({ q: "", skill: "" });
   const [easy, setEasy] = useState(false);
-  const [selId, setSelId] = useState<string | null>(null);
+  const [selId, setSelId] = useState<string | null>(() => { try { return localStorage.getItem("rap-selected-job"); } catch { return null; } });
   const [apply, setApply] = useState(false);
   const [step, setStep] = useState(0);
   const [note, setNote] = useState("");
