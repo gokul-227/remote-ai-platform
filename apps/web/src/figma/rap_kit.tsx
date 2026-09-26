@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 export const cx = (...a: any[]) => a.filter(Boolean).join(" ");
 
 const P: Record<string, string> = {
@@ -139,11 +139,33 @@ export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; se
   );
 }
 export function Modal({ open, onClose, title, children, w = "max-w-lg" }: { open: boolean; onClose: () => void; title: string; children: ReactNode; w?: string }) {
+  const titleId = useId();
+  const box = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  useEffect(() => { close.current = onClose; });
+  useEffect(() => {
+    if (!open) return;
+    // Move focus into the dialog, keep Tab inside it, close on Escape, and
+    // return focus to whatever opened it.
+    const opener = document.activeElement as HTMLElement | null;
+    const focusables = () => Array.from(box.current?.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])') ?? []);
+    (focusables()[1] ?? focusables()[0] ?? box.current)?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.preventDefault(); close.current(); return; }
+      if (e.key !== "Tab") return;
+      const items = focusables(); if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); opener?.focus?.(); };
+  }, [open]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div className={cx("max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl", w)} onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-xl font-bold">{title}</h3><button onClick={onClose} className="rounded-full p-1.5 hover:bg-slate-100"><Ic n="x" /></button></div>
+      <div ref={box} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className={cx("max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none", w)} onClick={(e) => e.stopPropagation()}>
+        <div className="mb-4 flex items-center justify-between"><h3 id={titleId} className="text-xl font-bold">{title}</h3><button type="button" aria-label="Close" onClick={onClose} className="rounded-full p-1.5 hover:bg-slate-100"><Ic n="x" /></button></div>
         {children}
       </div>
     </div>
