@@ -4,7 +4,7 @@ API Router for Job Post domain.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +34,7 @@ async def get_job_service(db: AsyncSession = Depends(get_db)) -> JobService:
 
 @router.get("", response_model=list[JobPostResponse])
 async def list_jobs(
+    response: Response,
     query: str | None = Query(None, description="Keywords search in title or description"),
     is_remote: bool = Query(True, description="Filter for remote jobs"),
     job_type: str | None = Query(None, description="full-time, contract, part-time"),
@@ -47,7 +48,10 @@ async def list_jobs(
     limit: int = Query(20, ge=1, le=100),
     service: JobService = Depends(get_job_service),
 ) -> list[JobPostResponse]:
-    """Search & filter active remote jobs aggregated from public APIs."""
+    """Search & filter active remote jobs aggregated from public APIs.
+
+    The total number of matches is returned in the X-Total-Count header.
+    """
     search_params = JobSearchQuery(
         query=query,
         is_remote=is_remote,
@@ -61,7 +65,8 @@ async def list_jobs(
         skip=skip,
         limit=limit,
     )
-    raw_jobs = await service.search_jobs_cached(search_params)
+    raw_jobs, total = await service.search_jobs_cached(search_params)
+    response.headers["X-Total-Count"] = str(total)
     return [JobPostResponse.model_validate(j) for j in raw_jobs]
 
 

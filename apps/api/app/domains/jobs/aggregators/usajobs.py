@@ -26,7 +26,7 @@ class USAJobsAggregator(BaseAggregator):
                 "User-Agent": settings.USAJOBS_USER_AGENT,
                 "Authorization-Key": settings.USAJOBS_AUTH_KEY,
             }
-            url = f"{settings.USAJOBS_API_URL}?Keyword=Software%20Engineer&Telework=true"
+            url = f"{settings.USAJOBS_API_URL}?RemoteIndicator=True&ResultsPerPage=100"
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.get(url, headers=headers)
                 if response.status_code != 200:
@@ -56,8 +56,8 @@ class USAJobsAggregator(BaseAggregator):
                         company_name=company,
                         location="Remote / Telework",
                         is_remote=True,
-                        job_type="full-time",
-                        experience_level="mid",
+                        job_type="unspecified",
+                        experience_level=None,
                         skills=skills,
                         external_id=ext_id,
                         external_url=item.get("PositionURI"),

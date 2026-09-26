@@ -5,8 +5,9 @@ Repository pattern for Job Post domain.
 import re
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
-from sqlalchemy import Text, cast, func, or_, select
+from sqlalchemy import Select, Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.jobs.models import JobPost
@@ -111,8 +112,9 @@ class JobRepository:
 
         return await self.create(data), True
 
-    async def search(
+    def _filtered(
         self,
+        stmt: Select,
         query: str | None = None,
         skills: list[str] | None = None,
         is_remote: bool | None = None,
@@ -122,10 +124,8 @@ class JobRepository:
         max_salary: float | None = None,
         source: str | None = None,
         company_id: uuid.UUID | None = None,
-        skip: int = 0,
-        limit: int = 20,
-    ) -> Sequence[JobPost]:
-        stmt = select(JobPost).where(JobPost.is_active.is_(True))
+    ) -> Select:
+        stmt = stmt.where(JobPost.is_active.is_(True))
 
         if company_id is not None:
             stmt = stmt.where(JobPost.company_id == company_id)
@@ -186,6 +186,33 @@ class JobRepository:
             if skill_filters:
                 stmt = stmt.where(or_(*skill_filters))
 
-        stmt = stmt.offset(skip).limit(limit).order_by(JobPost.posted_at.desc())
+        return stmt
+
+    async def search(
+        self,
+        query: str | None = None,
+        skills: list[str] | None = None,
+        is_remote: bool | None = None,
+        job_type: str | None = None,
+        experience_level: str | None = None,
+        min_salary: float | None = None,
+        max_salary: float | None = None,
+        source: str | None = None,
+        company_id: uuid.UUID | None = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> Sequence[JobPost]:
+        stmt = self._filtered(
+            select(JobPost),
+            query=query, skills=skills, is_remote=is_remote, job_type=job_type,
+            experience_level=experience_level, min_salary=min_salary, max_salary=max_salary,
+            source=source, company_id=company_id,
+        )
+        # id breaks ties so consecutive pages never overlap or skip rows.
+        stmt = stmt.order_by(JobPost.posted_at.desc(), JobPost.id.desc()).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
+
+    async def count(self, **filters: Any) -> int:
+        stmt = self._filtered(select(func.count()).select_from(JobPost), **filters)
+        return int(await self.db.scalar(stmt) or 0)

@@ -19,7 +19,7 @@ class TheMuseAggregator(BaseAggregator):
         jobs: list[JobPostCreate] = []
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
-                url = f"{settings.THEMUSE_API_URL}?category=Software%20Engineering&page=1"
+                url = f"{settings.THEMUSE_API_URL}?page=1"
                 response = await client.get(url)
                 if response.status_code != 200:
                     logger.warning(f"TheMuse API returned status {response.status_code}")
@@ -60,8 +60,8 @@ class TheMuseAggregator(BaseAggregator):
                         company_name=company,
                         location=loc_str,
                         is_remote="flexible" in loc_str.lower() or "remote" in loc_str.lower(),
-                        job_type="full-time",
-                        experience_level="mid",
+                        job_type="unspecified",
+                        experience_level=None,
                         skills=skills,
                         external_id=ext_id,
                         external_url=item.get("refs", {}).get("landing_page"),

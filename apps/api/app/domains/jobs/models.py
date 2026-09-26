@@ -42,8 +42,8 @@ class JobPost(Base):
     is_remote: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
     job_type: Mapped[str] = mapped_column(
-        String(50), default="full-time", nullable=False
-    )  # full-time, contract, part-time
+        String(50), default="unspecified", nullable=False
+    )  # full-time, part-time, contract, freelance, internship, temporary, unspecified
     experience_level: Mapped[str | None] = mapped_column(
         String(50), nullable=True
     )  # junior, mid, senior, lead
@@ -54,6 +54,7 @@ class JobPost(Base):
 
     salary_min: Mapped[float | None] = mapped_column(Float, nullable=True)
     salary_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    salary_period: Mapped[str | None] = mapped_column(String(20), nullable=True)
     currency: Mapped[str] = mapped_column(String(10), default="USD", nullable=False)
 
     skills: Mapped[list[str]] = mapped_column(

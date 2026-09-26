@@ -19,7 +19,7 @@ class RemotiveAggregator(BaseAggregator):
         jobs: list[JobPostCreate] = []
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
-                url = f"{settings.REMOTIVE_API_URL}?category=software-dev"
+                url = settings.REMOTIVE_API_URL
                 response = await client.get(url)
                 if response.status_code != 200:
                     logger.warning(f"Remotive API returned status {response.status_code}")
@@ -49,8 +49,8 @@ class RemotiveAggregator(BaseAggregator):
                             item.get("candidate_required_location") or "Worldwide Remote"
                         ),
                         is_remote=True,
-                        job_type=item.get("job_type", "full-time").lower(),
-                        experience_level="mid",
+                        job_type=self.normalize_job_type(item.get("job_type")),
+                        experience_level=None,
                         skills=skills,
                         external_id=ext_id,
                         external_url=item.get("url"),

@@ -25,7 +25,7 @@ export function Work() {
   const saved = new Set((savedQ.data ?? []).map((j: any) => j.id));
   const score: Record<string, number> = Object.fromEntries((recs.data ?? []).map((m: any) => [m.job_id, m.overall_score]));
   const all = [...(contract.data ?? []), ...(freelance.data ?? [])];
-  const WORK = all.map((j: any) => { const f = toFigmaJob(j); return { ...f, id: j.id, tm: `Posted ${f.post}`, kind: f.pay ? `${f.type} - ${f.pay}` : f.type, est: j.timeline ? `Est. time: ${j.timeline}` : "", d: j.description || "", sk: f.tags, co: f.co, raw: j }; });
+  const WORK = all.map((j: any) => { const f = toFigmaJob(j); return { ...f, id: j.id, tm: `Posted ${f.post}`, kind: [f.type, f.pay].filter(Boolean).join(" - "), est: j.timeline ? `Est. time: ${j.timeline}` : "", d: j.description || "", sk: f.tags, co: f.co, raw: j }; });
   const list = (tab.startsWith("Saved") ? WORK.filter((w) => saved.has(w.id)) : tab === "Most Recent" ? [...WORK].sort((a, b) => +new Date(b.raw.posted_at) - +new Date(a.raw.posted_at)) : [...WORK].sort((a, b) => (score[b.id] ?? -1) - (score[a.id] ?? -1)));
   const toggle = async (id: string) => { if (!eng) { goRoute("login"); return; } await (saved.has(id) ? api.delete(`/saved-jobs/${id}`) : api.post(`/saved-jobs/${id}`)); savedQ.reload(); };
   const startApply = () => { if (!user) { goRoute("login"); return; } if (!sel.easy && sel.raw.external_url) { window.open(sel.raw.external_url, "_blank", "noopener"); return; } setBid(prof.data?.hourly_rate || 0); setCover(""); setProp(true); };

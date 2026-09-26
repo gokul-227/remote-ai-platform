@@ -54,11 +54,13 @@ class RemoteOKAggregator(BaseAggregator):
                         company_logo=item.get("company_logo"),
                         location=self.clean_text(item.get("location") or "Worldwide Remote"),
                         is_remote=True,
-                        job_type="full-time",
-                        experience_level="mid",
+                        job_type="unspecified",
+                        experience_level=None,
                         salary_min=salary_min,
                         salary_max=salary_max,
                         currency="USD",
+                        # RemoteOK publishes annual USD salaries.
+                        salary_period="year" if (salary_min or salary_max) else None,
                         skills=skills,
                         external_id=ext_id,
                         external_url=item.get("url")

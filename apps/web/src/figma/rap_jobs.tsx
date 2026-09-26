@@ -18,7 +18,11 @@ export function Jobs() {
   const [step, setStep] = useState(0);
   const [note, setNote] = useState("");
   const [notice, setNotice] = useState("");
-  const jobsQ = useApi<ApiJob[]>("/jobs", { query: search.q || undefined, skills: search.skill ? [search.skill] : undefined, limit: 50 });
+  const PAGE = 25;
+  const [page, setPage] = useState(0);
+  // Easy Apply = jobs posted directly on the platform; filtered server-side so it covers every page.
+  const jobsQ = useApi<ApiJob[]>("/jobs", { query: search.q || undefined, skills: search.skill ? [search.skill] : undefined, source: easy ? "DIRECT" : undefined, skip: page * PAGE, limit: PAGE });
+  const total = jobsQ.total ?? jobsQ.data?.length ?? 0;
   const savedQ = useApi<ApiJob[]>(engineer ? "/saved-jobs" : null, { limit: 100 });
   const appsQ = useApi<{ application: { status: string }; job: { id: string } }[]>(engineer ? "/applications/me" : null, { limit: 100 });
   const jobs = (jobsQ.data ?? []).map(toFigmaJob);
@@ -35,27 +39,28 @@ export function Jobs() {
   return (
     <div className="bg-[#F0F2F5]">
       <div className="border-b border-slate-200 bg-white">
-        <form onSubmit={(e) => { e.preventDefault(); setSearch({ q: q.trim(), skill: skill.trim() }); setSelId(null); }} className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2.5">
+        <form onSubmit={(e) => { e.preventDefault(); setSearch({ q: q.trim(), skill: skill.trim() }); setPage(0); setSelId(null); }} className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2.5">
           <div className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-md bg-[#E8F0FC] px-3"><Ic n="search" s={18} c="text-slate-500" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Title, skill or company" aria-label="Search jobs" className="flex-1 bg-transparent text-sm outline-none" /></div>
           <div className="flex h-10 w-64 items-center gap-2 rounded-md bg-[#E8F0FC] px-3"><Ic n="code" s={18} c="text-slate-500" /><input value={skill} onChange={(e) => setSkill(e.target.value)} placeholder="Skill, e.g. Python" aria-label="Filter by skill" className="flex-1 bg-transparent text-sm outline-none" /></div>
           <button type="submit" className="h-10 rounded-full px-6 text-sm font-bold text-white" style={{ background: BL }}>Search</button>
         </form>
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 pb-2.5">
-          <button onClick={() => setEasy(!easy)} className={cx("rounded-full border px-3 py-1 text-sm font-semibold", easy ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-400 text-slate-600 hover:bg-slate-50")}>Easy Apply</button>
+          <button onClick={() => { setEasy(!easy); setPage(0); }} className={cx("rounded-full border px-3 py-1 text-sm font-semibold", easy ? "border-emerald-700 bg-emerald-700 text-white" : "border-slate-400 text-slate-600 hover:bg-slate-50")}>Easy Apply</button>
         </div>
       </div>
       <div className="mx-auto grid max-w-[1400px] gap-4 px-4 py-4 grid-cols-1 lg:grid-cols-[440px_minmax(0,1fr)]">
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 p-4"><p className="text-lg font-bold">{search.q ? `Jobs matching “${search.q}”` : "Top job picks for you"}</p><p className="text-sm text-slate-500">Live remote roles - {jobsQ.loading ? "loading…" : `${list.length} results`}</p></div>
+          <div className="border-b border-slate-200 p-4"><p className="text-lg font-bold">{search.q ? `Jobs matching “${search.q}”` : "Top job picks for you"}</p><p className="text-sm text-slate-500">Live remote roles - {jobsQ.loading ? "loading…" : `${total.toLocaleString()} results`}</p></div>
           {!!jobsQ.error && <div className="p-10 text-center text-slate-500"><Ic n="flag" s={32} c="mx-auto mb-2" />We couldn’t load jobs. <button className="font-bold" style={{ color: BL }} onClick={jobsQ.reload}>Try again</button></div>}
           {!jobsQ.loading && !jobsQ.error && list.length === 0 && <div className="p-10 text-center text-slate-500"><Ic n="search" s={32} c="mx-auto mb-2" />No jobs match your filters.</div>}
           {list.map((j) => (
             <div key={j.id} onClick={() => setSelId(j.id)} className={cx("flex cursor-pointer gap-3 border-b border-slate-100 p-4 hover:bg-slate-50", sel?.id === j.id && "border-l-4 bg-[#F0F6FF]")} style={sel?.id === j.id ? { borderLeftColor: BL } : {}}>
               <Lg name={j.co} s={56} r={4} />
-              <div className="min-w-0 flex-1"><p className="truncate font-bold" style={{ color: BL }}>{j.t}</p><p className="text-sm">{j.co}</p><p className="text-sm text-slate-500">{j.loc} ({j.type})</p><p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500"><span className="font-semibold text-emerald-700">{j.post}</span>{j.m != null && <Tag t="indigo">{j.m}% match</Tag>}{j.easy && <span className="flex items-center gap-1 font-semibold"><Ic n="bolt" s={12} c="text-[#0552CC]" />Easy Apply</span>}</p></div>
+              <div className="min-w-0 flex-1"><p className="truncate font-bold" style={{ color: BL }}>{j.t}</p><p className="text-sm">{j.co}</p><p className="text-sm text-slate-500">{j.loc}{j.type && ` (${j.type})`}</p><p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500"><span className="font-semibold text-emerald-700">{j.post}</span>{j.m != null && <Tag t="indigo">{j.m}% match</Tag>}{j.easy && <span className="flex items-center gap-1 font-semibold"><Ic n="bolt" s={12} c="text-[#0552CC]" />Easy Apply</span>}</p></div>
               {engineer && <button aria-label={saved.has(j.id) ? "Unsave job" : "Save job"} onClick={(e) => { e.stopPropagation(); toggleSave(j.id); }} className="self-start p-1 text-slate-500"><Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-[#0552CC]" : ""} /></button>}
             </div>
           ))}
+          {total > PAGE && <div className="flex items-center justify-between border-t border-slate-200 p-3 text-sm text-slate-600"><span>{page * PAGE + 1}–{Math.min((page + 1) * PAGE, total)} of {total.toLocaleString()}</span><div className="flex gap-2"><button className="rounded-full px-3 py-1 font-semibold hover:bg-slate-100 disabled:opacity-40" disabled={page === 0 || jobsQ.loading} onClick={() => { setPage(page - 1); window.scrollTo(0, 0); }}>Previous</button><button className="rounded-full px-3 py-1 font-semibold hover:bg-slate-100 disabled:opacity-40" disabled={(page + 1) * PAGE >= total || jobsQ.loading} onClick={() => { setPage(page + 1); window.scrollTo(0, 0); }}>Next</button></div></div>}
         </section>
         {sel && <section className="mt-4 max-h-[calc(100vh-190px)] self-start overflow-y-auto rounded-lg border border-slate-200 bg-white lg:mt-0 lg:sticky lg:top-40 lg:block">
           <div className="p-6">

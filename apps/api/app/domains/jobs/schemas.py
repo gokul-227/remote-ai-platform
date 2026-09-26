@@ -20,14 +20,17 @@ class JobPostBase(BaseModel):
     company_logo: str | None = None
     location: str | None = "Remote"
     is_remote: bool = True
-    job_type: str = "full-time"
-    experience_level: str | None = "mid"
+    # "unspecified" / None when the source doesn't say; never guessed.
+    job_type: str = "unspecified"
+    experience_level: str | None = None
     budget_min: float | None = Field(default=None, ge=0)
     budget_max: float | None = Field(default=None, ge=0)
     timeline: str | None = None
     remote_preference: str | None = None
     salary_min: float | None = None
     salary_max: float | None = None
+    # year | month | hour | project; None when the source doesn't say.
+    salary_period: str | None = Field(default=None, pattern="^(year|month|hour|project)$")
     currency: str = "USD"
     skills: list[str] = []
     external_url: str | None = None
@@ -55,6 +58,7 @@ class JobPostUpdate(BaseModel):
     remote_preference: str | None = None
     salary_min: float | None = None
     salary_max: float | None = None
+    salary_period: str | None = Field(default=None, pattern="^(year|month|hour|project)$")
     currency: str | None = None
     skills: list[str] | None = None
     external_url: str | None = None

@@ -109,17 +109,29 @@ class JobService:
             limit=query.limit,
         )
 
-    async def search_jobs_cached(self, query: JobSearchQuery) -> list[dict]:
+    async def search_jobs_cached(self, query: JobSearchQuery) -> tuple[list[dict], int]:
+        """One page of matching jobs plus the total number of matches."""
         payload = query.model_dump(mode="json")
         digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-        cache_key = f"search:{digest}"
+        cache_key = f"search:v2:{digest}"
         cached = await self.cache.get_json(cache_key)
         if cached is not None:
-            return cached
+            return cached["items"], cached["total"]
         jobs = await self.search_jobs(query)
+        total = await self.repo.count(
+            query=query.query,
+            skills=query.skills,
+            is_remote=query.is_remote,
+            job_type=query.job_type,
+            experience_level=query.experience_level,
+            min_salary=query.min_salary,
+            max_salary=query.max_salary,
+            source=query.source,
+            company_id=query.company_id,
+        )
         serialized = [JobPostResponse.model_validate(job).model_dump(mode="json") for job in jobs]
-        await self.cache.set_json(cache_key, serialized, ttl_seconds=30)
-        return serialized
+        await self.cache.set_json(cache_key, {"items": serialized, "total": total}, ttl_seconds=30)
+        return serialized, total
 
     async def sync_all_job_sources(
         self,
