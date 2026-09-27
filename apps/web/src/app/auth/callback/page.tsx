@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { takeReturnTo } from "@/figma/live";
 import { supabase, fetchBackendUser, applyPendingRegistration } from "@/lib/supabase";
 
 const homeFor = (role?: string) => (role === "COMPANY" ? "codash" : role === "ADMIN" ? "admin" : "feed");
@@ -25,7 +26,7 @@ export default function OAuthCallback() {
         let user = await fetchBackendUser(data.session);
         user = await applyPendingRegistration(data.session, user);
         login(data.session.access_token, user, data.session.refresh_token);
-        window.location.replace(`/#${homeFor(user.role)}`);
+        window.location.replace(`/#${takeReturnTo(homeFor(user.role))}`);
       } catch (e) {
         // The app refused this sign-in (e.g. the email belongs to an account
         // that uses another method): end the Supabase session and say why.

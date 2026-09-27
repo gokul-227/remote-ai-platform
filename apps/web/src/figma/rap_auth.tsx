@@ -3,6 +3,7 @@ import { Ic, Brand, cx, inputCls } from "./rap_kit";
 import { supabase, fetchBackendUser, applyPendingRegistration } from "@/lib/supabase";
 import { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { takeReturnTo } from "./live";
 
 // Figma Make "AuthFlow" — markup unchanged; the simulated steps are replaced
 // with the real Supabase email-code / OAuth sign-in and the backend's
@@ -84,7 +85,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
       let user = await fetchBackendUser(data.session);
       user = await applyPendingRegistration(data.session, user);
       login(data.session.access_token, user, data.session.refresh_token);
-      go(join ? (user.role === "COMPANY" ? "coprofile" : "onboarding") : homeFor(user.role));
+      go(join ? (user.role === "COMPANY" ? "coprofile" : "onboarding") : takeReturnTo(homeFor(user.role)));
     } catch (e) {
       // The API's own explanation (e.g. an account that uses another sign-in
       // method) beats axios's generic "Request failed with status code …".

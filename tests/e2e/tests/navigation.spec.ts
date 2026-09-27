@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signUp, unique } from "./support";
+import { API, signIn, signUp, unique } from "./support";
 
 const mainNav = (page: import("@playwright/test").Page) => page.getByRole("navigation", { name: "Main navigation" });
 
@@ -25,4 +25,19 @@ test("professionals see careers, not hiring; organisations see hiring, not job s
   await signUp(org, { as: "organisation", name: "Nav Org", email: unique("navorg") });
   await expect(mainNav(org).getByRole("button", { name: "Hiring" })).toBeVisible();
   await expect(mainNav(org).getByRole("button", { name: "Jobs" })).toHaveCount(0);
+});
+
+test("signing in returns you to the page you were on", async ({ browser, request }) => {
+  const baseURL = test.info().project.use.baseURL;
+  const email = unique("returner");
+  const first = await (await browser.newContext({ baseURL })).newPage();
+  await signUp(first, { as: "professional", name: "Re Turner", email });
+
+  const jobs = await (await request.get(`${API}/api/v1/jobs?limit=1`)).json();
+  test.skip(!jobs.length, "needs at least one job in the stack");
+  const visitor = await (await browser.newContext({ baseURL })).newPage();
+  await visitor.goto(`/#jobdetail/${jobs[0].id}`);
+  await visitor.locator(".rap-auth-link", { hasText: "Sign in" }).click();
+  await signIn(visitor, email);
+  await expect(visitor).toHaveURL(new RegExp(`#jobdetail/${jobs[0].id}$`));
 });

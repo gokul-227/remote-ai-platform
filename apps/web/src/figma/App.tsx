@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { goRoute } from "./live";
+import { AUTH_ROUTES, goRoute, rememberReturnTo } from "./live";
 import { useAuth } from "@/lib/auth";
 import { Feed, Groups, Messenger, Notifications } from "./rap_social";
 import { Jobs, Profile, Network, Company } from "./rap_jobs";
@@ -141,19 +141,25 @@ export function readRoute(): { route: string; id: string | null } {
 function App() {
   const { user } = useAuth();
   const [loc, setLoc] = useState(readRoute);
+  // Going to sign in remembers where you were, so signing in brings you back.
+  const moveTo = (next: ReturnType<typeof readRoute>, from: ReturnType<typeof readRoute>) => {
+    if (next.route === "login" && !AUTH_ROUTES.includes(from.route))
+      rememberReturnTo(from.id ? `${from.route}/${encodeURIComponent(from.id)}` : from.route);
+    return next;
+  };
   useEffect(() => {
-    const f = () => setLoc(readRoute());
+    const f = () => setLoc((from) => moveTo(readRoute(), from));
     window.addEventListener("hashchange", f);
     return () => window.removeEventListener("hashchange", f);
   }, []);
   const go = (x: string) => {
     goRoute(x);
-    setLoc(readRoute());
+    setLoc((from) => moveTo(readRoute(), from));
     window.scrollTo(0, 0);
   };
   // Visitors land on public job discovery rather than a members-only home feed.
   const r = !user && loc.route === "feed" ? "jobs" : loc.route;
-  if (["login", "register", "forgot", "reset", "callback"].includes(r)) return <AuthFlow key={r} route={r} go={go} />;
+  if (AUTH_ROUTES.includes(r)) return <AuthFlow key={r} route={r} go={go} />;
   const Page = REG[r] || NotFound;
   return (
     <AppShell r={r} go={go}>

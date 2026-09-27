@@ -52,3 +52,21 @@ describe("safeHref", () => {
     }
   });
 });
+
+describe("return after sign-in", () => {
+  it("returns once to the page the visitor was on", async () => {
+    const { rememberReturnTo, takeReturnTo } = await import("./live");
+    rememberReturnTo("jobdetail/3f2a-uuid");
+    expect(takeReturnTo("feed")).toBe("jobdetail/3f2a-uuid");
+    expect(takeReturnTo("feed")).toBe("feed");
+  });
+  it("never returns to an auth screen or anything that isn't a plain route", async () => {
+    const { rememberReturnTo, takeReturnTo } = await import("./live");
+    rememberReturnTo("login");
+    expect(takeReturnTo("feed")).toBe("feed");
+    for (const bad of ["https://evil.example", "//evil.example", "jobs?x=1", "javascript:alert(1)", "jobs/../../x/y"]) {
+      sessionStorage.setItem("rap-return-to", bad);
+      expect(takeReturnTo("feed")).toBe("feed");
+    }
+  });
+});

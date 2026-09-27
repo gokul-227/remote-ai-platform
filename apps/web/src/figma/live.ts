@@ -122,6 +122,34 @@ export function safeHref(url: string | null | undefined): string | undefined {
   }
 }
 
+const RETURN_KEY = "rap-return-to";
+export const AUTH_ROUTES = ["login", "register", "forgot", "reset", "callback"];
+
+/** Remember the page a visitor was on when they were sent to sign in. */
+export function rememberReturnTo(route: string) {
+  if (!route || AUTH_ROUTES.includes(route.split("/")[0])) return;
+  try {
+    sessionStorage.setItem(RETURN_KEY, route);
+  } catch {
+    // Storage unavailable: they land on their home page instead.
+  }
+}
+
+/** Where to go after signing in: the remembered page (once), else `fallback`. */
+export function takeReturnTo(fallback: string): string {
+  try {
+    const route = sessionStorage.getItem(RETURN_KEY);
+    sessionStorage.removeItem(RETURN_KEY);
+    // Only a plain hash route of this app (name + optional id); never a URL.
+    if (route && /^[a-z0-9]+(\/[A-Za-z0-9%._-]+)?$/.test(route) && !AUTH_ROUTES.includes(route.split("/")[0])) {
+      return route;
+    }
+  } catch {
+    // fall through
+  }
+  return fallback;
+}
+
 /** Navigate the hash router. Kept in one place so components never write window state directly. */
 export function goRoute(route: string) {
   window.location.hash = route;
