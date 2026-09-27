@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { goRoute } from "./live";
+import { useAuth } from "@/lib/auth";
 import { Feed, Groups, Messenger, Notifications } from "./rap_social";
 import { Jobs, Profile, Network, Company } from "./rap_jobs";
 import { Admin } from "./rap_admin";
@@ -50,10 +51,12 @@ export function readRoute(): { route: string; id: string | null } {
 }
 
 function App() {
+  const { user } = useAuth();
   const [loc, setLoc] = useState(readRoute);
   useEffect(() => { const f = () => setLoc(readRoute()); window.addEventListener("hashchange", f); return () => window.removeEventListener("hashchange", f); }, []);
   const go = (x: string) => { goRoute(x); setLoc(readRoute()); window.scrollTo(0, 0); };
-  const r = loc.route;
+  // Visitors land on public job discovery rather than a members-only home feed.
+  const r = !user && loc.route === "feed" ? "jobs" : loc.route;
   if (["login", "register", "forgot", "reset", "callback"].includes(r)) return <AuthFlow key={r} route={r} go={go} />;
   const Page = REG[r] || NotFound;
   return (

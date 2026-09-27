@@ -38,7 +38,7 @@ test("sign-in is real: an unregistered email gets a friendly error, not a code s
 });
 
 test("jobs screen lists real jobs from the API", async ({ page }) => {
-  const res = await page.request.get(`${process.env.E2E_API_URL || "http://localhost:8000"}/api/v1/jobs?limit=1`).catch(() => null);
+  const res = await page.request.get(`${process.env.E2E_API_URL || "http://localhost:18000"}/api/v1/jobs?limit=1`).catch(() => null);
   test.skip(!res?.ok() || !(await res.json()).length, "no jobs in this environment's API");
   await page.goto("/#jobs");
   await expect(page.getByText(/live remote roles - [1-9]\d* results/i)).toBeVisible({ timeout: 20_000 });

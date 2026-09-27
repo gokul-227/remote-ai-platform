@@ -1,0 +1,47 @@
+# E2E overlay for infra/docker/docker-compose.yml. Runs a fully isolated stack
+# (own project, container names, volumes and host ports) so it never touches a
+# developer's local dev containers or data, and signs in against the mock
+# Supabase Auth in ./mock-supabase instead of a real Supabase project.
+#
+#   python3 tests/e2e/mock-supabase/server.py &   # ISSUER=http://host.docker.internal:9999/auth/v1
+#   docker compose -p rap-e2e -f infra/docker/docker-compose.yml \
+#     -f tests/e2e/docker-compose.e2e.yml up -d --build postgres redis minio minio-init api web
+#
+# Web: http://localhost:13000  API: http://localhost:18000
+services:
+  postgres:
+    container_name: rap-e2e-postgres
+    ports: !reset []
+  redis:
+    container_name: rap-e2e-redis
+    ports: !reset []
+  minio:
+    container_name: rap-e2e-minio
+    ports: !reset []
+  minio-init:
+    container_name: rap-e2e-minio-init
+  api:
+    container_name: rap-e2e-api
+    ports: !override
+      - "18000:8000"
+    environment:
+      SUPABASE_URL: http://host.docker.internal:9999
+      CORS_ORIGINS: http://localhost:13000
+      # No AI keys: the suite checks that AI-dependent features fail honestly.
+      AI_PROVIDER: auto
+      GROQ_API_KEY: ""
+      RATE_LIMIT_MAX_REQUESTS: "1000"
+  web:
+    container_name: rap-e2e-web
+    build:
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:18000
+        NEXT_PUBLIC_SUPABASE_URL: http://localhost:9999
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: e2e-publishable-key
+    ports: !override
+      - "13000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:18000
+  test:
+    container_name: rap-e2e-test
+    profiles: ["never"]
