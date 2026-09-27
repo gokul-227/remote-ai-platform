@@ -4,6 +4,8 @@
   "name": "remote-ai-platform",
   "compatibility_date": "2026-09-03",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Workers Logs (included in the free plan) so production errors are visible.
+  "observability": { "enabled": true },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"

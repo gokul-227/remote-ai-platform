@@ -7,6 +7,15 @@ import { withSentryConfig } from "@sentry/nextjs";
 // actually talks to instead of hardcoding one environment's URL.
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+// Browser error reports go to the Sentry ingest host named in the DSN; without
+// it in connect-src the browser silently blocks every report.
+const sentryOrigin = (() => {
+  try {
+    return process.env.NEXT_PUBLIC_SENTRY_DSN ? new URL(process.env.NEXT_PUBLIC_SENTRY_DSN).origin : "";
+  } catch {
+    return "";
+  }
+})();
 
 // unsafe-inline on script-src is a known, deliberate relaxation: the app
 // router's theme-init script (src/lib/theme.ts, inlined via
@@ -16,8 +25,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder
 // this app later renders more user-supplied content, not yet in place.
 const csp = [
   "default-src 'self'",
-  `connect-src 'self' ${apiUrl} ${supabaseUrl}`,
-  "img-src 'self' data: https://logo.clearbit.com https://*.supabase.co",
+  `connect-src 'self' ${apiUrl} ${supabaseUrl} ${sentryOrigin}`.trim(),
+  // Organisations link logos hosted anywhere; images can't run code, so any
+  // HTTPS source is allowed (plain HTTP and other schemes are not).
+  "img-src 'self' data: https:",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",

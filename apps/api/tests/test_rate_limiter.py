@@ -10,7 +10,7 @@ async def test_rate_limiter_allows_and_throttles(monkeypatch):
     from app.core.config import settings
     monkeypatch.setattr(settings, "RATE_LIMIT_MAX_REQUESTS", 5)
     identifier = f"test_rate_{uuid.uuid4().hex}"
-    path = "/api/v1/auth/login"
+    path = "/api/v1/auth/me/export"
     tier = get_route_tier(path)
     assert tier is not None
     limit, window = tier

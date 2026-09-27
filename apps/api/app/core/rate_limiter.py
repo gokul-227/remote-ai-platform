@@ -71,15 +71,9 @@ def get_route_tier(path: str, method: str = "GET") -> tuple[int, int] | None:
     window = settings.RATE_LIMIT_WINDOW_SECONDS
     method = method.upper()
 
-    if any(
-        path.startswith(p)
-        for p in (
-            "/api/v1/auth/login",
-            "/api/v1/auth/register",
-            "/api/v1/auth/forgot-password",
-            "/api/v1/auth/reset-password",
-        )
-    ):
+    # Sign-in itself happens at Supabase; account deletion and data export
+    # are the sensitive self-service actions here.
+    if path in {"/api/v1/auth/me/export"} or (method == "DELETE" and path == "/api/v1/auth/me"):
         return (base_limit, window)
 
     if any(path.startswith(p) for p in AI_CALL_ROUTE_PREFIXES):

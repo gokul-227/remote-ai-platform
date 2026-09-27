@@ -25,6 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.logging import get_logger
 
 router = APIRouter(tags=["Health & Operations"])
 
@@ -84,7 +85,7 @@ async def _check_database(db: AsyncSession) -> ServiceCheckResult:
             status="DOWN",
             latency_ms=latency_ms,
             checked_at=checked_at,
-            error=str(exc)[:120],
+            error=_public_error(exc),
         )
 
 
@@ -114,7 +115,7 @@ async def _check_redis() -> ServiceCheckResult:
             status="DOWN",
             latency_ms=latency_ms,
             checked_at=checked_at,
-            error=str(exc)[:120],
+            error=_public_error(exc),
         )
     finally:
         if client:
@@ -162,8 +163,20 @@ async def _check_storage() -> ServiceCheckResult:
             status="DOWN",
             latency_ms=latency_ms,
             checked_at=checked_at,
-            error=str(exc)[:120],
+            error=_public_error(exc),
         )
+
+
+logger = get_logger("health")
+
+
+def _public_error(exc: Exception) -> str:
+    """Health endpoints are public: in production, log the detail and return a
+    generic message so connection strings and internals never leak."""
+    if settings.is_production:
+        logger.warning("Health check failed", error=str(exc)[:300])
+        return "unavailable"
+    return str(exc)[:120]
 
 
 async def _check_ai_provider() -> ServiceCheckResult:
@@ -203,7 +216,7 @@ async def _check_ai_provider() -> ServiceCheckResult:
                 status="DOWN",
                 latency_ms=latency_ms,
                 checked_at=checked_at,
-                error=str(exc)[:120],
+                error=_public_error(exc),
             )
     else:
         # For cloud providers (Groq/OpenAI), verify API key presence

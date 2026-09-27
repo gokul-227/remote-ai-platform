@@ -44,7 +44,11 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             status_code=response.status_code,
             duration_ms=duration_ms,
         )
-        HTTP_REQUESTS.labels(request.method, request.url.path, str(response.status_code)).inc()
+        # Label by route template (/api/v1/jobs/{job_id}), never the raw path:
+        # one label per id would make the metric's cardinality unbounded.
+        route = request.scope.get("route")
+        path_label = getattr(route, "path", None) or "unmatched"
+        HTTP_REQUESTS.labels(request.method, path_label, str(response.status_code)).inc()
 
         return response
 
