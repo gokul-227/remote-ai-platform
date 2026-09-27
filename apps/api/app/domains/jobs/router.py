@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.admin.repository import AdminRepository
-from app.domains.auth.dependencies import require_role
+from app.domains.auth.dependencies import get_optional_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.jobs.models import JobPost
@@ -107,13 +107,31 @@ async def list_public_company_jobs(
     return [JobPostResponse.model_validate(job) for job in result.scalars().all()]
 
 
+async def _owns_job(db: AsyncSession, job: JobPost, user: User | None) -> bool:
+    if user is None or job.company_id is None:
+        return False
+    owner = await db.scalar(select(CompanyProfile.user_id).where(CompanyProfile.id == job.company_id))
+    return owner == user.id
+
+
 @router.get("/{job_id}", response_model=JobPostResponse)
 async def get_job_by_id(
     job_id: uuid.UUID,
     service: JobService = Depends(get_job_service),
+    current_user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
 ) -> JobPostResponse:
-    """Get single job details by UUID."""
+    """Get single job details by UUID.
+
+    Closed, hidden (e.g. by moderation) and removed postings are visible only
+    to their organisation and admins; everyone else gets 404.
+    """
     job = await service.get_by_id(job_id)
+    is_admin = current_user is not None and current_user.role == UserRole.ADMIN
+    if job.is_deleted and not is_admin:
+        raise HTTPException(status_code=404, detail="Job post not found")
+    if not job.is_active and not is_admin and not await _owns_job(db, job, current_user):
+        raise HTTPException(status_code=404, detail="Job post not found")
     return JobPostResponse.model_validate(job)
 
 
