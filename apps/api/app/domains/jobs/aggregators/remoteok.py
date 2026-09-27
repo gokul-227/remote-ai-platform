@@ -36,7 +36,7 @@ class RemoteOKAggregator(BaseAggregator):
                     title = self.clean_text(item.get("position", ""))
                     company = self.clean_text(item.get("company", "Unknown Company"))
                     ext_id = f"remoteok_{item.get('id', item.get('slug'))}"
-                    description = self.clean_text(item.get("description", title))
+                    description = self.clean_rich_text(item.get("description", title))
                     tags = item.get("tags", [])
                     skills = self.extract_skills(f"{title} {' '.join(tags)} {description}")
 

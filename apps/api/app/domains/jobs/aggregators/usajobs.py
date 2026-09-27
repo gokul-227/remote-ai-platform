@@ -47,7 +47,7 @@ class USAJobsAggregator(BaseAggregator):
 
                     user_area = item.get("UserArea", {}).get("Details", {})
                     summary = user_area.get("JobSummary") or title
-                    description = self.clean_text(summary)
+                    description = self.clean_rich_text(summary)
                     skills = self.extract_skills(f"{title} {description}")
 
                     job = JobPostCreate(

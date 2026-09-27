@@ -35,7 +35,7 @@ class ArbeitnowAggregator(BaseAggregator):
                     company = self.clean_text(item.get("company_name", "Unknown Company"))
                     slug = item.get("slug", "")
                     ext_id = f"arbeitnow_{slug}"
-                    description = self.clean_text(item.get("description", title))
+                    description = self.clean_rich_text(item.get("description", title))
                     tags = item.get("tags", [])
                     skills = self.extract_skills(f"{title} {' '.join(tags)} {description}")
 

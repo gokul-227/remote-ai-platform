@@ -306,7 +306,7 @@ async def reclean_job_text(
     for job in jobs:
         new_title = BaseAggregator.clean_text(job.title)
         new_company = BaseAggregator.clean_text(job.company_name)
-        new_description = BaseAggregator.clean_text(job.description)
+        new_description = BaseAggregator.clean_rich_text(job.description)
         if new_title != job.title or new_company != job.company_name or new_description != job.description:
             job.title = new_title
             job.company_name = new_company

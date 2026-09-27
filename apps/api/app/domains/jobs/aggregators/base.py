@@ -2,6 +2,7 @@ import html
 import re
 import unicodedata
 from abc import ABC, abstractmethod
+from html.parser import HTMLParser
 
 from app.domains.jobs.schemas import JobPostCreate
 
@@ -16,6 +17,58 @@ _JOB_TYPES = {
     "internship": "internship",
     "temporary": "temporary",
 }
+
+
+_BLOCK_TAGS = {
+    "p", "div", "section", "article", "header", "footer", "ul", "ol", "table", "tr",
+    "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "hr",
+}
+_SKIP_TAGS = {"script", "style", "noscript", "template"}
+
+
+class _TextWithStructure(HTMLParser):
+    """HTML -> plain text that keeps paragraphs, headings and list items."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._skip = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in _SKIP_TAGS:
+            self._skip += 1
+        elif tag == "li":
+            self.parts.append("\n- ")
+        elif tag == "br":
+            self.parts.append("\n")
+        elif tag in _BLOCK_TAGS:
+            self.parts.append("\n\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in _SKIP_TAGS:
+            self._skip = max(0, self._skip - 1)
+        elif tag in _BLOCK_TAGS or tag == "li":
+            self.parts.append("\n\n" if tag in _BLOCK_TAGS else "\n")
+
+    def handle_data(self, data: str) -> None:
+        if not self._skip:
+            self.parts.append(" ".join(data.split("\n")))
+
+
+def _tidy_lines(text: str) -> str:
+    """Collapse spaces within lines and blank-line runs; keep bullets together."""
+    lines = [" ".join(line.split()) for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    out: list[str] = []
+    for line in lines:
+        if line in {"-", ""}:
+            if out and out[-1] != "":
+                out.append("")
+            continue
+        # Consecutive bullets form one list, not one paragraph each.
+        if line.startswith("- ") and len(out) >= 2 and out[-1] == "" and out[-2].startswith("- "):
+            out.pop()
+        out.append(line)
+    return "\n".join(out).strip()
 
 
 class BaseAggregator(ABC):
@@ -64,6 +117,22 @@ class BaseAggregator(ABC):
         # corrupts text and hides mojibake from later repair.
         normalized = unicodedata.normalize("NFC", clean)
         return " ".join(normalized.split())
+
+    @classmethod
+    def clean_rich_text(cls, text: str | None = None) -> str:
+        """Like clean_text, but keeps paragraphs, headings and bullet lists as
+        lines (plain text only; no markup survives). Used for descriptions."""
+        if not text or not text.strip():
+            return ""
+        repaired = cls.repair_mojibake(text)
+        if re.search(r"<[a-zA-Z/!][^>]*>", repaired):
+            parser = _TextWithStructure()
+            parser.feed(repaired)
+            parser.close()
+            body = "".join(parser.parts)
+        else:
+            body = html.unescape(repaired)
+        return unicodedata.normalize("NFC", _tidy_lines(cls.repair_mojibake(body)))
 
     @staticmethod
     def normalize_job_type(value: str | None) -> str:

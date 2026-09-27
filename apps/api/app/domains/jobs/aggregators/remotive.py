@@ -36,7 +36,7 @@ class RemotiveAggregator(BaseAggregator):
                     company = self.clean_text(item.get("company_name", "Unknown Company"))
                     job_id = item.get("id")
                     ext_id = f"remotive_{job_id}"
-                    description = self.clean_text(item.get("description", title))
+                    description = self.clean_rich_text(item.get("description", title))
                     tags = item.get("tags", [])
                     skills = self.extract_skills(f"{title} {' '.join(tags)} {description}")
 

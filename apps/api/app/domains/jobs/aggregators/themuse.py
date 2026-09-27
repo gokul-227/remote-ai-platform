@@ -42,7 +42,7 @@ class TheMuseAggregator(BaseAggregator):
                     company = self.clean_text(raw_company)
                     job_id = item.get("id")
                     ext_id = f"themuse_{job_id}"
-                    description = self.clean_text(item.get("contents", title))
+                    description = self.clean_rich_text(item.get("contents", title))
 
                     locations = item.get("locations", [])
                     raw_loc = (
