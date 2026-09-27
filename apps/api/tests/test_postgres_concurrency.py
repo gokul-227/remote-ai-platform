@@ -148,3 +148,19 @@ async def test_concurrent_ai_calls_cannot_all_slip_under_the_allowance(sessions,
 
         results = await asyncio.gather(*[attempt() for _ in range(5)])
     assert results.count(True) == 1
+
+
+@pytest.mark.asyncio
+async def test_every_public_table_has_row_level_security(sessions):
+    """DATA-03: Supabase serves the public schema to the browser's public key.
+    A table added without RLS (migration 042 covered the existing ones) would
+    be readable there if the project grants the Data API roles access."""
+    from sqlalchemy import text
+
+    async with sessions() as db:
+        missing = (
+            await db.scalars(
+                text("SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND NOT rowsecurity ORDER BY 1")
+            )
+        ).all()
+    assert missing == [], f"enable row level security on: {missing}"
