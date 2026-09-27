@@ -28,15 +28,19 @@ client_major() { pg "$1" --version | sed -E 's/.* ([0-9]+)\..*/\1/'; }
 start=$(date +%s)
 
 mkdir -p "$work/backup/objects" "$OUT_DIR"
+# Consistency boundary (OPS-07): pg_dump reads one snapshot, and the expected
+# row counts are taken from the dump itself, so data and counts describe the
+# same moment. Objects are listed afterwards: an object uploaded meanwhile is an
+# unreferenced extra, one deleted meanwhile is reported by restore.sh (refcheck).
+dump_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 pg pg_dump --format=custom --no-owner --no-privileges --schema=public \
   --file="$work/backup/db.dump" "$SOURCE_DATABASE_URL"
-pg psql "$SOURCE_DATABASE_URL" -At -F $'\t' -c \
-  "SELECT table_name, (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from public.%I', table_name), false, true, '')))[1]::text::bigint
-     FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1" \
-  > "$work/backup/row-counts.tsv"
+pg pg_restore --data-only --file=- "$work/backup/db.dump" | "$PYTHON" "$HERE/dumpcounts.py" > "$work/backup/row-counts.tsv"
+objects_listed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 objects="$("$PYTHON" "$HERE/objects.py" download "$work/backup/objects")"
 ( cd "$work/backup" && find . -type f ! -name SHA256SUMS | sort | while read -r f; do sha "$f"; done > SHA256SUMS )
-printf 'created_at=%s\ntables=%s\nobjects=%s\nsource_server_major=%s\ndump_client_major=%s\n' "$stamp" \
+printf 'created_at=%s\ndump_started_at=%s\nobjects_listed_at=%s\ntables=%s\nobjects=%s\nsource_server_major=%s\ndump_client_major=%s\nincludes=public schema (tables, data, RLS policies); object bytes + content type/metadata\nexcludes=Supabase Auth users and sessions, grants/roles, storage bucket policies, provider configuration\n' \
+  "$stamp" "$dump_started_at" "$objects_listed_at" \
   "$(wc -l < "$work/backup/row-counts.tsv" | tr -d ' ')" "$objects" "$(server_major "$SOURCE_DATABASE_URL")" "$(client_major pg_dump)" \
   > "$work/backup/MANIFEST"
 
