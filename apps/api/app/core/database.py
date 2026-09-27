@@ -39,7 +39,13 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.is_development,
     poolclass=NullPool,
-    connect_args={"statement_cache_size": 0},
+    connect_args={
+        "statement_cache_size": 0,
+        # Client-side limits (not server startup parameters, which a pooler
+        # may reject): a hung connect or query can't hold a request forever.
+        "timeout": 10,
+        "command_timeout": settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+    },
 )
 
 # Session factory
