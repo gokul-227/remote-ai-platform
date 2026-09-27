@@ -30,6 +30,7 @@ permissions: {}
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Log in and trigger job sync
         run: |
@@ -40,12 +41,12 @@ jobs:
             exit 0
           fi
 
-          TOKEN=$(curl -sf -X POST "${{ secrets.SUPABASE_URL }}/auth/v1/token?grant_type=password" \
+          TOKEN=$(curl -sf --max-time 30 -X POST "${{ secrets.SUPABASE_URL }}/auth/v1/token?grant_type=password" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json" \
             -d "{\"email\":\"${{ secrets.PROD_ADMIN_EMAIL }}\",\"password\":\"${{ secrets.PROD_ADMIN_PASSWORD }}\"}" \
             | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
 
-          curl -sf -X POST "$API_URL/jobs/sync" \
+          curl -sf --max-time 900 -X POST "$API_URL/jobs/sync" \
             -H "Authorization: Bearer $TOKEN" \
             -w "\nHTTP %{http_code}\n"

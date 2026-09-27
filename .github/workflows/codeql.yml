@@ -5,7 +5,8 @@ name: CodeQL
 # vulnerability patterns in code that hasn't changed).
 on:
   push:
-    branches: [main, dev]
+    # prod is the default branch; there is no main (OPS-05).
+    branches: [prod, dev]
   pull_request:
   schedule:
     - cron: "0 3 * * 1"
