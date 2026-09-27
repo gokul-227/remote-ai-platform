@@ -45,7 +45,8 @@ COPY . .
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-CMD ["python", "-m", "pytest", "-v"]
+# Coverage floor: fail the build if critical-path coverage regresses (86% on 2026-09-27).
+CMD ["python", "-m", "pytest", "-v", "--cov=app", "--cov-report=term", "--cov-fail-under=80"]
 
 # ─── Production ───────────────────────────────────────────────────────────────
 # Intentionally the LAST stage in this file: platforms that build a

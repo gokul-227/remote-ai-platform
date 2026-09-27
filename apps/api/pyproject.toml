@@ -104,3 +104,6 @@ filterwarnings = ["ignore::DeprecationWarning"]
 [tool.coverage.run]
 source = ["app"]
 omit = ["tests/*", "alembic/*"]
+# SQLAlchemy's async layer runs code inside greenlets; without this, coverage
+# misses everything after the first database await (e.g. whole endpoints).
+concurrency = ["greenlet", "thread"]

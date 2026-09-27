@@ -215,4 +215,5 @@ services:
         condition: service_healthy
     networks:
       - remote_ai_platform
-    command: python -m pytest /app/tests -v
+    # Coverage floor: fail if coverage regresses (86% on 2026-09-27).
+    command: python -m pytest /app/tests -v --cov=app --cov-report=term --cov-fail-under=80
