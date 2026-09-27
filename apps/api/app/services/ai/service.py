@@ -1,11 +1,11 @@
 import time
+import uuid
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.llm_client import AIProviderError, AIQuotaExceededError, LLMClient
-from app.services.ai.metering import AIQuotaExceeded, check_ai_quota, current_ai_actor
-from app.services.ai.models import AIUsageLog
+from app.services.ai.metering import AIQuotaExceeded, reserve_ai_tokens, settle_ai_tokens
 from app.services.ai.prompts import get_prompt
 from app.services.ai.schemas import AIResponse
 
@@ -32,20 +32,22 @@ class AIService:
         please retry" error/fallback, as `QualityEngineAgent` does).
         """
         try:
-            await check_ai_quota()
+            reservation = await reserve_ai_tokens(prompt_key=prompt_key, prompt_version=prompt_version)
         except AIQuotaExceeded as exc:
             raise AIQuotaExceededError(str(exc)) from exc
         started = time.perf_counter()
         try:
             raw: dict[str, Any] = await self.client.complete_structured_json(prompt, system_prompt)
         except AIProviderError as exc:
-            # Don't rely solely on LLMClient's internal last_error bookkeeping to mark this
-            # usage row FAILED -- record the failure directly from the exception we actually
-            # caught, so a FAILED row is never silently mislabeled SUCCESS.
+            # Record the failure from the exception actually caught, so a FAILED
+            # row is never silently mislabeled SUCCESS.
             self.client.last_error = self.client.last_error or str(exc)
-            await self._record_usage(started, prompt_key=prompt_key, prompt_version=prompt_version)
+            await self._settle(reservation, started)
             raise
-        await self._record_usage(started, prompt_key=prompt_key, prompt_version=prompt_version)
+        except BaseException:
+            await self._settle(reservation, started)
+            raise
+        await self._settle(reservation, started)
         reason = raw.get("reason", raw.get("summary", ""))
         if isinstance(reason, str):
             reason = [reason] if reason else []
@@ -72,26 +74,15 @@ class AIService:
             prompt_version=template.version,
         )
 
-    async def _record_usage(
-        self, started: float, prompt_key: str | None, prompt_version: str | None
-    ) -> None:
-        actor = current_ai_actor()
-        db = self.db or (actor.db if actor else None)
-        if db is None:
-            return
+    async def _settle(self, reservation: uuid.UUID, started: float) -> None:
         usage = self.client.last_usage
-        db.add(
-            AIUsageLog(
-                user_id=actor.user_id if actor else None,
-                prompt_key=prompt_key,
-                prompt_version=prompt_version,
-                provider_model=usage.get("provider_model"),
-                status="FAILED" if self.client.last_error and not usage else "SUCCESS",
-                latency_ms=int((time.perf_counter() - started) * 1000),
-                prompt_tokens=usage.get("prompt_tokens", 0),
-                completion_tokens=usage.get("completion_tokens", 0),
-                total_tokens=usage.get("total_tokens", 0),
-                error_message=self.client.last_error if not usage else None,
-            )
+        await settle_ai_tokens(
+            reservation,
+            provider_model=usage.get("provider_model"),
+            status="FAILED" if self.client.last_error and not usage else "SUCCESS",
+            latency_ms=int((time.perf_counter() - started) * 1000),
+            prompt_tokens=usage.get("prompt_tokens", 0),
+            completion_tokens=usage.get("completion_tokens", 0),
+            total_tokens=usage.get("total_tokens", 0),
+            error_message=self.client.last_error if not usage else None,
         )
-        await db.flush()

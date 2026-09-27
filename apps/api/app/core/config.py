@@ -139,6 +139,9 @@ class Settings(BaseSettings):
     AI_PRO_MONTHLY_TOKENS: int = 50_000
     # Platform-wide cap per UTC day, protecting the providers' free quotas.
     AI_GLOBAL_DAILY_TOKENS: int = 300_000
+    # Held against allowances while a call is in flight (replaced by the real
+    # count when it settles), so concurrent calls can't all slip under a limit.
+    AI_RESERVATION_TOKENS: int = 2000
 
     # ── Job Aggregator ────────────────────────────────────────────────────────
     REMOTEOK_API_URL: str = "https://remoteok.com/api"

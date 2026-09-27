@@ -80,6 +80,15 @@ def supabase_test_keys(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def independent_sessions_use_test_db(monkeypatch):
+    """Code that opens its own session (e.g. AI usage metering, which must not
+    share the request's transaction) uses the test database too."""
+    from app.core import database
+
+    monkeypatch.setattr(database, "AsyncSessionFactory", TestingSessionLocal)
+
+
+@pytest.fixture(autouse=True)
 def isolate_rate_limiting():
     """
     Isolate rate limiter state between tests.

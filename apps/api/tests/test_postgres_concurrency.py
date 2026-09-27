@@ -111,3 +111,39 @@ async def test_same_person_double_like_is_not_a_server_error(sessions):
         rows = await db.scalar(select(func.count()).select_from(PostLike).where(PostLike.post_id == post_id))
         stored = (await db.get(Post, post_id)).like_count
     assert rows == stored
+
+
+@pytest.mark.asyncio
+async def test_concurrent_ai_calls_cannot_all_slip_under_the_allowance(sessions, monkeypatch):
+    """AI-01: quota was read before the call and written after, so N parallel
+    requests all passed the check. Reservations are serialised and counted."""
+    from app.core import database
+    from app.core.config import settings
+    from app.services.ai import metering
+
+    monkeypatch.setattr(database, "AsyncSessionFactory", sessions)
+    monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 1)
+    monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 10**12)
+    (user,), _, _ = await _seed(sessions, 1)
+    # Widen the gap between reading usage and reserving, so overlapping
+    # requests really overlap (without the lock, all of them get through).
+    real_tokens_used = metering.tokens_used
+
+    async def slow_tokens_used(*args, **kwargs):
+        value = await real_tokens_used(*args, **kwargs)
+        await asyncio.sleep(0.05)
+        return value
+
+    monkeypatch.setattr(metering, "tokens_used", slow_tokens_used)
+    async with sessions() as db:
+        metering.set_ai_actor(user.id, db)
+
+        async def attempt():
+            try:
+                await metering.reserve_ai_tokens()
+                return True
+            except metering.AIQuotaExceeded:
+                return False
+
+        results = await asyncio.gather(*[attempt() for _ in range(5)])
+    assert results.count(True) == 1

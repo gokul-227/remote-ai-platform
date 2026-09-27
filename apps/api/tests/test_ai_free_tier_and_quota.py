@@ -169,3 +169,68 @@ def test_generic_key_never_overrides_or_enables_other_providers(auto_chain, monk
     monkeypatch.setattr(settings, "GEMINI_API_KEY", "gemini-key")
     assert get_ai_model_config().candidates == ("gemini/b",)
     assert api_key_for("gemini/b") == "gemini-key"
+
+
+# ── AI-01: reservations ──────────────────────────────────────────────────────
+
+
+async def _usage_rows():
+    from conftest import TestingSessionLocal
+    from sqlalchemy import select
+
+    from app.services.ai.models import AIUsageLog
+
+    async with TestingSessionLocal() as db:
+        return (await db.scalars(select(AIUsageLog))).all()
+
+
+@pytest.mark.asyncio
+async def test_usage_survives_a_request_that_rolls_back(auto_chain, monkeypatch):
+    """Recording usage in the request's own transaction let a request that
+    failed after the AI call erase what it spent (an allowance bypass)."""
+    import litellm
+    from conftest import TestingSessionLocal
+
+    from app.services.ai.metering import set_ai_actor
+    from app.services.ai.service import AIService
+
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "k")
+    monkeypatch.setattr(litellm, "acompletion", lambda **kw: asyncio.sleep(0, _fake_response(tokens=120)))
+    monkeypatch.setattr(litellm, "completion_cost", lambda completion_response: 0)
+    before = len(await _usage_rows())
+    async with TestingSessionLocal() as request_db:
+        set_ai_actor(uuid.uuid4(), request_db)
+        await AIService().analyze("x", "y", prompt_key="k")
+        await request_db.rollback()  # the request fails after the AI call
+    rows = await _usage_rows()
+    assert len(rows) == before + 1
+    assert rows[-1].status == "SUCCESS" and rows[-1].total_tokens == 120
+
+
+@pytest.mark.asyncio
+async def test_platform_cap_applies_without_a_signed_in_user(auto_chain, monkeypatch):
+    from app.agents.llm_client import AIQuotaExceededError
+    from app.services.ai import metering
+    from app.services.ai.service import AIService
+
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "k")
+    monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 1)
+    metering._actor.set(None)
+    await metering.reserve_ai_tokens()  # someone used today's budget
+    with pytest.raises(AIQuotaExceededError):
+        await AIService().analyze("x", "y")
+
+
+@pytest.mark.asyncio
+async def test_a_call_in_flight_counts_against_the_allowance(auto_chain, monkeypatch):
+    from conftest import TestingSessionLocal
+
+    from app.services.ai import metering
+
+    monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 1500)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 2000)
+    async with TestingSessionLocal() as db:
+        metering.set_ai_actor(uuid.uuid4(), db)
+        await metering.reserve_ai_tokens()  # first call still running
+        with pytest.raises(metering.AIQuotaExceeded):
+            await metering.reserve_ai_tokens()

@@ -1,10 +1,15 @@
 """Per-user and platform-wide AI token allowances.
 
-The signed-in user (and their request's DB session) is attached to the
-request context during authentication, so every AI call made while handling
-that request is checked against and recorded to that user without threading
-the user through every agent. Calls with no signed-in user (background jobs)
-are only subject to the platform-wide daily cap when a session is known.
+The signed-in user is attached to the request context during
+authentication, so every AI call made while handling that request is
+checked against and recorded to that user without threading the user
+through every agent. Calls with no signed-in user are still held to the
+platform-wide daily cap.
+
+Each call first *reserves* an estimate (a RESERVED usage row, committed in
+its own transaction under a lock, so concurrent calls see each other), then
+*settles* it with the real token count, again in its own transaction: a
+request that fails or rolls back after the call cannot erase what it spent.
 """
 
 import uuid
@@ -12,11 +17,15 @@ from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import database
 from app.core.config import settings
 from app.services.ai.models import AIUsageLog
+
+# Serialises the check-and-reserve step (milliseconds, not the AI call itself).
+_RESERVE_LOCK_KEY = 7_241_093_552
 
 
 @dataclass(frozen=True)
@@ -66,21 +75,46 @@ async def monthly_allowance(actor: AIActor) -> int | None:
     return settings.AI_FREE_MONTHLY_TOKENS
 
 
-async def check_ai_quota() -> None:
+async def reserve_ai_tokens(prompt_key: str | None = None, prompt_version: str | None = None) -> uuid.UUID:
+    """Check the platform cap (always) and the caller's allowance, then commit a
+    RESERVED usage row for an estimate. Returns the reservation to settle."""
     actor = current_ai_actor()
-    if actor is None:
-        return
-    if await tokens_used(actor.db, since=_day_start()) >= settings.AI_GLOBAL_DAILY_TOKENS:
-        raise AIQuotaExceeded(
-            "AI features have reached today's platform limit. Please try again tomorrow."
+    user_id = actor.user_id if actor else None
+    async with database.AsyncSessionFactory() as db:
+        if db.bind.dialect.name == "postgresql":
+            await db.execute(text(f"SELECT pg_advisory_xact_lock({_RESERVE_LOCK_KEY})"))
+        if await tokens_used(db, since=_day_start()) >= settings.AI_GLOBAL_DAILY_TOKENS:
+            raise AIQuotaExceeded(
+                "AI features have reached today's platform limit. Please try again tomorrow."
+            )
+        allowance = await monthly_allowance(actor) if actor else None
+        if allowance is not None and (
+            await tokens_used(db, since=_month_start(), user_id=user_id) >= allowance
+        ):
+            raise AIQuotaExceeded(
+                "You've used this month's AI allowance. It resets on the 1st of next month."
+            )
+        row = AIUsageLog(
+            user_id=user_id,
+            prompt_key=prompt_key,
+            prompt_version=prompt_version,
+            status="RESERVED",
+            total_tokens=settings.AI_RESERVATION_TOKENS,
         )
-    allowance = await monthly_allowance(actor)
-    if allowance is not None and (
-        await tokens_used(actor.db, since=_month_start(), user_id=actor.user_id) >= allowance
-    ):
-        raise AIQuotaExceeded(
-            "You've used this month's AI allowance. It resets on the 1st of next month."
-        )
+        db.add(row)
+        await db.commit()
+        return row.id
+
+
+async def settle_ai_tokens(reservation_id: uuid.UUID, **fields: object) -> None:
+    """Replace a reservation's estimate with what the call actually used."""
+    async with database.AsyncSessionFactory() as db:
+        row = await db.get(AIUsageLog, reservation_id)
+        if row is None:
+            return
+        for key, value in fields.items():
+            setattr(row, key, value)
+        await db.commit()
 
 
 async def usage_summary(actor: AIActor) -> dict[str, int | None]:
