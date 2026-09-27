@@ -22,6 +22,7 @@ describe("logout", () => {
     act(() => result.current.login("token", user, "refresh"));
     localStorage.setItem("rap-selected-job", "job-1");
     sessionStorage.setItem("rap-contract-id", "c-1");
+    localStorage.setItem("pending_registration", JSON.stringify({ email: "a@example.com" }));
     localStorage.setItem("unrelated", "kept");
 
     await act(() => result.current.logout());
@@ -32,6 +33,7 @@ describe("logout", () => {
     expect(localStorage.getItem("remote_ai_platform_refresh_token")).toBeNull();
     expect(localStorage.getItem("rap-selected-job")).toBeNull();
     expect(sessionStorage.getItem("rap-contract-id")).toBeNull();
+    expect(localStorage.getItem("pending_registration")).toBeNull();
     expect(localStorage.getItem("unrelated")).toBe("kept");
   });
 

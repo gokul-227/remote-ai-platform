@@ -145,6 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    // An abandoned sign-up's email/name must not stay on a shared browser.
+    localStorage.removeItem("pending_registration");
     // Per-user UI selections (selected job, contact, contract, ...) must not
     // leak into the next account that signs in on this browser.
     for (const store of [localStorage, sessionStorage]) {
