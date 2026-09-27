@@ -50,7 +50,7 @@ export function Jobs() {
       </div>
       <div className="mx-auto grid max-w-[1400px] gap-4 px-4 py-4 grid-cols-1 lg:grid-cols-[440px_minmax(0,1fr)]">
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 p-4"><p className="text-lg font-bold">{search.q ? `Jobs matching “${search.q}”` : "Top job picks for you"}</p><p className="text-sm text-slate-500">Live remote roles - {jobsQ.loading ? "loading…" : `${total.toLocaleString()} results`}</p></div>
+          <div className="border-b border-slate-200 p-4"><p className="text-lg font-bold">{search.q ? `Jobs matching “${search.q}”` : "Latest remote jobs"}</p><p className="text-sm text-slate-500">Live remote roles - {jobsQ.loading ? "loading…" : `${total.toLocaleString()} results`}</p></div>
           {!!jobsQ.error && <div className="p-10 text-center text-slate-500"><Ic n="flag" s={32} c="mx-auto mb-2" />We couldn’t load jobs. <button className="font-bold" style={{ color: BL }} onClick={jobsQ.reload}>Try again</button></div>}
           {!jobsQ.loading && !jobsQ.error && list.length === 0 && <div className="p-10 text-center text-slate-500"><Ic n="search" s={32} c="mx-auto mb-2" />No jobs match your filters.</div>}
           {list.map((j) => (
