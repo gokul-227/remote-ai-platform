@@ -116,6 +116,13 @@ jobs:
           echo "Frontend live at $live"
           curl -sf --max-time 15 https://remote-ai-platform-dev.gokulraj22797.workers.dev/ -o /dev/null -w "dev homepage (workers.dev): %{http_code}\n"
 
+      - name: Smoke test the live site
+        # The right SHA is not enough: the page must serve and crawler policy
+        # must match the environment (production indexable, dev not).
+        run: |
+          curl -sf --max-time 15 "https://remote-ai-platform-dev.gokulraj22797.workers.dev/robots.txt" | tee /dev/stderr | grep -qx "Disallow: /"
+          curl -sf --max-time 15 -o /dev/null "https://remote-ai-platform-dev.gokulraj22797.workers.dev/#jobs"
+
   deploy-backend:
     # Render's own GitHub-integration auto-deploy has been unreliable (real
     # incident: several merges to dev sat undeployed for hours with no error
@@ -165,3 +172,11 @@ jobs:
           done
           echo "Backend never reported git_sha ${expected_sha} within 10 minutes (last saw: ${live_sha:-no response})"
           exit 1
+
+      - name: Smoke test the live API
+        run: |
+          ready=$(curl -s --max-time 30 -o /dev/null -w "%{http_code}" "https://remote-ai-platform-api-dev.onrender.com/health/ready")
+          [ "$ready" = "200" ] || { echo "/health/ready answered $ready"; exit 1; }
+          total=$(curl -sf --max-time 30 -D - -o /dev/null "https://remote-ai-platform-api-dev.onrender.com/api/v1/jobs?limit=1" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-total-count"{print $2}')
+          [ "${total:-0}" -gt 0 ] || { echo "public job list returned no jobs (X-Total-Count=${total:-missing})"; exit 1; }
+          echo "API ready; $total public jobs"

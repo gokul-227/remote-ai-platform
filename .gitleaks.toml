@@ -1,0 +1,23 @@
+# Secret-scan configuration: gitleaks' default rules plus reviewed exceptions.
+# Every exception says why it is not a secret. Add new ones only after review.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Reviewed test fixtures and public-by-design values"
+regexes = [
+  # Dummy publishable key the hermetic E2E stack passes to mock Supabase.
+  '''e2e-publishable-key''',
+  # CI-only JWT fixture from before Supabase became the only identity provider.
+  '''ci-test-secret-key-at-least-32-characters-long''',
+]
+commits = [
+  # 2026-09-04: a Supabase *publishable* key (public by design, shipped in the
+  # browser bundle; access is governed by RLS) committed in ci.yml and
+  # apps/web/.env.example; both now use placeholders.
+  "e708afa30b955b3e7277bfd2b0f2de6c96f341fc",
+  "6cfa0c85577a1bf92e1577fb054a2aad30fd83f1",
+  # 2026-08-09: a local-development default for the self-issued JWT secret
+  # (removed with Supabase-only auth, migration 036); not in the tree any more.
+  "8ce22c98aa097940504ee592ea62537b51e2f1b5",
+]
