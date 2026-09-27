@@ -13,9 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit_event
 from app.core.database import get_db
-from app.domains.auth.dependencies import get_current_user, require_role
+from app.domains.auth.dependencies import get_current_user, get_optional_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
+from app.domains.engineers.models import EngineerProfile
+from app.domains.engineers.router import _engineer_applied_to_company
 from app.domains.projects.models import ProjectMember, ProjectReview
 from app.domains.projects.router import require_project_access
 from app.domains.trust.models import UserVerification
@@ -25,6 +27,7 @@ from app.domains.trust.schemas import (
     ReviewerSummary,
     TrustScoreResponse,
     VerificationCreate,
+    VerificationPublicResponse,
     VerificationResponse,
     VerificationReviewUpdate,
 )
@@ -42,17 +45,38 @@ def _reviewer_summary(user: User) -> ReviewerSummary:
     )
 
 
+async def _visible_user_or_404(db: AsyncSession, user_id: uuid.UUID, viewer: User | None) -> User:
+    """The person whose trust data is requested, if this viewer may see it.
+
+    Same rule as the profile page: yourself and admins always; organisations
+    publicly; a professional only while their profile is public, or to an
+    organisation they applied to. Otherwise 404, so hidden people can't be
+    confirmed to exist.
+    """
+    target = await db.get(User, user_id)
+    if target is not None:
+        if viewer is not None and (viewer.id == target.id or viewer.role == UserRole.ADMIN):
+            return target
+        if target.role == UserRole.COMPANY:
+            return target
+        is_public = await db.scalar(select(EngineerProfile.is_public).where(EngineerProfile.user_id == target.id))
+        if is_public:
+            return target
+        if viewer is not None and await _engineer_applied_to_company(db, target.id, viewer.id):
+            return target
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+
 @router.get(
     "/scores/{user_id}", response_model=TrustScoreResponse, summary="Get explainable trust score"
 )
 async def get_user_trust_score(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
 ) -> TrustScoreResponse:
-    """Calculate and return explainable trust score for any user."""
-    user = await db.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    """Explainable trust score of a user this caller may see."""
+    await _visible_user_or_404(db, user_id, current_user)
 
     score_record = await TrustService.calculate_trust_score(user_id, db)
     return TrustScoreResponse.model_validate(score_record)
@@ -64,10 +88,12 @@ async def get_user_trust_score(
 async def get_user_reviews(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ) -> list[ProjectReviewResponse]:
-    """Get project reviews received by a user."""
+    """Project reviews received by a user this caller may see."""
+    await _visible_user_or_404(db, user_id, current_user)
     result = await db.execute(
         select(ProjectReview)
         .where(ProjectReview.reviewee_id == user_id)
@@ -227,24 +253,28 @@ async def list_verification_queue(
 
 @router.get(
     "/verifications/{user_id}",
-    response_model=list[VerificationResponse],
+    response_model=list[VerificationResponse] | list[VerificationPublicResponse],
     summary="List user verifications",
 )
 async def get_verifications(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
-) -> list[VerificationResponse]:
-    result = await db.execute(
-        select(UserVerification)
-        .where(UserVerification.user_id == user_id)
-        .order_by(UserVerification.created_at.desc())
-        .offset(skip)
-        .limit(limit)
-    )
+) -> list[VerificationResponse] | list[VerificationPublicResponse]:
+    """The person themselves and admins see every request with staff notes;
+    everyone else sees verified badges only."""
+    await _visible_user_or_404(db, user_id, current_user)
+    full = current_user is not None and (current_user.id == user_id or current_user.role == UserRole.ADMIN)
+    query = select(UserVerification).where(UserVerification.user_id == user_id)
+    if not full:
+        query = query.where(UserVerification.status == "VERIFIED")
+    result = await db.execute(query.order_by(UserVerification.created_at.desc()).offset(skip).limit(limit))
     verifications = result.scalars().all()
-    return [VerificationResponse.model_validate(v) for v in verifications]
+    if full:
+        return [VerificationResponse.model_validate(v) for v in verifications]
+    return [VerificationPublicResponse.model_validate(v) for v in verifications]
 
 
 @router.post(

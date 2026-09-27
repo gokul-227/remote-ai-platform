@@ -12,7 +12,7 @@ from app.domains.projects.models import Project, ProjectMember
 @pytest.mark.asyncio
 async def test_get_trust_score(client: AsyncClient, test_user: User, auth_headers: dict[str, str]):
     # Fetch trust score for test user
-    res = await client.get(f"/api/v1/trust/scores/{test_user.id}")
+    res = await client.get(f"/api/v1/trust/scores/{test_user.id}", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert "overall_score" in data
@@ -36,7 +36,7 @@ async def test_add_verification_badge_starts_self_reported(
     assert res.json()["status"] == "SELF_REPORTED"
 
     # A self-reported (unverified) badge must not count toward the trust score.
-    score_res = await client.get(f"/api/v1/trust/scores/{test_user.id}")
+    score_res = await client.get(f"/api/v1/trust/scores/{test_user.id}", headers=auth_headers)
     assert score_res.status_code == 200
     assert score_res.json()["verified_skills_count"] == 0
 
@@ -84,7 +84,7 @@ async def test_admin_review_verifies_badge_and_updates_score(
     assert review_res.json()["reviewed_by_id"] == str(test_user.id)
     assert review_res.json()["verified_at"] is not None
 
-    score_res = await client.get(f"/api/v1/trust/scores/{test_user.id}")
+    score_res = await client.get(f"/api/v1/trust/scores/{test_user.id}", headers=auth_headers)
     assert score_res.json()["verified_skills_count"] == 1
 
 
@@ -141,7 +141,10 @@ async def test_submit_project_review(client: AsyncClient, test_user: User, auth_
     assert review_res.json()["rating"] == 5
 
     # Check reviewee trust score
-    worker_score_res = await client.get(f"/api/v1/trust/scores/{worker_id}")
+    worker_score_res = await client.get(
+        f"/api/v1/trust/scores/{worker_id}",
+        headers={"Authorization": f"Bearer {worker_res.json()['access_token']}"},  # score is visible to its owner
+    )
     assert worker_score_res.status_code == 200
     assert worker_score_res.json()["rating_avg"] == 5.0
     assert worker_score_res.json()["review_count"] == 1
@@ -201,5 +204,8 @@ async def test_cannot_review_uninvolved_user_on_unrelated_project(
     assert review_res.status_code == 403
 
     # No review was recorded and the victim's trust score is unaffected.
-    victim_score_res = await client.get(f"/api/v1/trust/scores/{victim_id}")
+    victim_score_res = await client.get(
+        f"/api/v1/trust/scores/{victim_id}",
+        headers={"Authorization": f"Bearer {victim_res.json()['access_token']}"},  # visible to its owner
+    )
     assert victim_score_res.json()["review_count"] == 0

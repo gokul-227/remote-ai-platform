@@ -31,6 +31,17 @@ class VerificationReviewUpdate(BaseModel):
     verifier_notes: str | None = None
 
 
+class VerificationPublicResponse(BaseModel):
+    """A verified badge as anyone else sees it: no staff notes or reviewer."""
+
+    id: uuid.UUID
+    verification_type: str
+    status: str
+    verified_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class VerificationResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
