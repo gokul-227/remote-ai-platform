@@ -198,30 +198,40 @@ export function Jobs() {
               )}
               style={sel?.id === j.id ? { borderLeftColor: BL } : {}}
             >
-              <Lg name={j.co} s={56} r={4} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-bold" style={{ color: BL }}>
-                  {j.t}
-                </p>
-                <p className="text-sm">{j.co}</p>
-                <p className="text-sm text-slate-500">
-                  {j.loc}
-                  {j.type && ` (${j.type})`}
-                </p>
-                <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                  <span className="font-semibold text-emerald-700">{j.post}</span>
-                  {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
-                  {j.easy && (
-                    <span className="flex items-center gap-1 font-semibold">
-                      <Ic n="bolt" s={12} c="text-[#0552CC]" />
-                      Easy Apply
-                    </span>
-                  )}
-                </p>
-              </div>
+              {/* The row's keyboard/screen-reader control (UX-04). The save
+                  button stays a sibling, never nested inside it. */}
+              <button
+                type="button"
+                onClick={() => setSelId(j.id)}
+                aria-current={sel?.id === j.id ? "true" : undefined}
+                className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0552CC]"
+              >
+                <Lg name={j.co} s={56} r={4} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold" style={{ color: BL }}>
+                    {j.t}
+                  </p>
+                  <p className="text-sm">{j.co}</p>
+                  <p className="text-sm text-slate-500">
+                    {j.loc}
+                    {j.type && ` (${j.type})`}
+                  </p>
+                  <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <span className="font-semibold text-emerald-700">{j.post}</span>
+                    {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
+                    {j.easy && (
+                      <span className="flex items-center gap-1 font-semibold">
+                        <Ic n="bolt" s={12} c="text-[#0552CC]" />
+                        Easy Apply
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </button>
               {engineer && (
                 <button
-                  aria-label={saved.has(j.id) ? "Unsave job" : "Save job"}
+                  aria-label={saved.has(j.id) ? `Unsave ${j.t}` : `Save ${j.t}`}
+                  aria-pressed={saved.has(j.id)}
                   onClick={(e) => {
                     e.stopPropagation();
                     toggleSave(j.id);
@@ -263,8 +273,14 @@ export function Jobs() {
             </div>
           )}
         </section>
+        <p className="sr-only" aria-live="polite">
+          {sel ? `Showing ${sel.t} at ${sel.co}` : ""}
+        </p>
         {sel && (
-          <section className="mt-4 max-h-[calc(100vh-190px)] self-start overflow-y-auto rounded-lg border border-slate-200 bg-white lg:mt-0 lg:sticky lg:top-40 lg:block">
+          <section
+            aria-label="Job details"
+            className="mt-4 max-h-[calc(100vh-190px)] self-start overflow-y-auto rounded-lg border border-slate-200 bg-white lg:mt-0 lg:sticky lg:top-40 lg:block"
+          >
             <div className="p-6">
               <div className="flex items-start gap-4">
                 <Lg name={sel.co} s={64} r={4} />
