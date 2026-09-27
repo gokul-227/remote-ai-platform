@@ -9,7 +9,8 @@ can be introduced later via the feed algorithm abstraction.
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -334,22 +335,24 @@ async def toggle_like(
         select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == current_user.id)
     )
 
+    # The counter is changed with an SQL expression, not read-modify-write, so
+    # concurrent likes from different people are all counted.
     if existing:
-        # Unlike
         await db.delete(existing)
-        new_count = max(0, post.like_count - 1)
-        post.like_count = new_count
-        liked = False
+        await db.flush()
+        delta, liked = -1, False
     else:
-        # Like
-        like = PostLike(post_id=post_id, user_id=current_user.id)
-        db.add(like)
-        new_count = post.like_count + 1
-        post.like_count = new_count
+        try:
+            async with db.begin_nested():
+                db.add(PostLike(post_id=post_id, user_id=current_user.id))
+            delta = 1
+        except IntegrityError:
+            delta = 0  # a concurrent request from this person already liked it
         liked = True
-
-    await db.flush()
-    return {"liked": liked, "like_count": new_count}
+    if delta:
+        await db.execute(update(Post).where(Post.id == post_id).values(like_count=Post.like_count + delta))
+    await db.refresh(post, ["like_count"])
+    return {"liked": liked, "like_count": max(post.like_count, 0)}
 
 
 # ── Comments ───────────────────────────────────────────────────────────────────

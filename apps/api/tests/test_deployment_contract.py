@@ -94,3 +94,19 @@ def test_production_settings_reject_wildcard_cors(monkeypatch):
     monkeypatch.setattr(settings, "CORS_ORIGINS_RAW", "*")
     with pytest.raises(RuntimeError, match="CORS_ORIGINS"):
         settings.validate_production_settings()
+
+
+def test_migration_revision_ids_fit_alembic_version_column():
+    """alembic_version.version_num is VARCHAR(32) on PostgreSQL; a longer
+    revision id fails the startup migration (SQLite does not enforce it)."""
+    import re
+    from pathlib import Path
+
+    versions = Path(__file__).resolve().parents[1] / "alembic" / "versions"
+    too_long = [
+        rev
+        for f in versions.glob("*.py")
+        for rev in re.findall(r'^revision = "([^"]+)"', f.read_text(), re.M)
+        if len(rev) > 32
+    ]
+    assert too_long == []

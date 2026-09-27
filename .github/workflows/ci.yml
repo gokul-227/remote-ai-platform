@@ -192,3 +192,11 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://remote_ai_platform:ci_test_password@localhost:5432/remote_ai_platform
           JWT_SECRET_KEY: ci-test-secret-key-at-least-32-characters-long # gitleaks:allow -- CI-only fixture, not a real secret
         run: alembic upgrade head
+
+      - name: Concurrency tests on PostgreSQL
+        # The unit suite runs on SQLite, which cannot prove row locking or
+        # unique-constraint races; these run against the migrated database.
+        env:
+          TEST_POSTGRES_URL: postgresql+asyncpg://remote_ai_platform:ci_test_password@localhost:5432/remote_ai_platform
+          JWT_SECRET_KEY: ci-test-secret-key-at-least-32-characters-long # gitleaks:allow -- CI-only fixture, not a real secret
+        run: pytest -q -p no:cacheprovider tests/test_postgres_concurrency.py

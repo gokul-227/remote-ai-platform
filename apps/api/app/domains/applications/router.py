@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -104,8 +105,12 @@ async def apply_to_job(
     application = JobApplication(
         user_id=current_user.id, job_id=job_id, status="SUBMITTED", cover_note=data.cover_note
     )
-    db.add(application)
-    await db.flush()
+    try:
+        # A concurrent duplicate (double click, retry) loses on the unique constraint.
+        async with db.begin_nested():
+            db.add(application)
+    except IntegrityError:
+        raise HTTPException(status_code=409, detail="Application already exists") from None
     await emit_analytics_event(
         db, "application_submitted", current_user.id, {"job_id": str(job_id)}
     )
