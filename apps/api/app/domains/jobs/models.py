@@ -75,6 +75,10 @@ class JobPost(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    # Imported jobs: when a sync last saw it, and when it expired for not being
+    # seen. Separate from is_active, which is the moderation switch.
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expired_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     posted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

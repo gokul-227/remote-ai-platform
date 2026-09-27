@@ -5,11 +5,13 @@ Repository pattern for Job Post domain.
 import re
 import uuid
 from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Select, Text, cast, func, or_, select
+from sqlalchemy import Select, Text, cast, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate
 
@@ -95,7 +97,10 @@ class JobRepository:
             return await self.create(data), True
 
         existing = await self.get_by_external_id(data.external_id)
+        now = datetime.now(UTC)
         if existing:
+            existing.last_seen_at = now
+            existing.expired_at = None  # listed again by its source
             existing.title = data.title
             existing.description = data.description
             existing.company_name = data.company_name or existing.company_name
@@ -113,7 +118,28 @@ class JobRepository:
             await self.db.flush()
             return existing, False
 
-        return await self.create(data), True
+        job = await self.create(data)
+        job.last_seen_at = now
+        await self.db.flush()
+        return job, True
+
+    async def expire_unseen_jobs(self, source: str) -> int:
+        """Take this source's imported jobs off the public list when no sync has
+        seen them among the source's recent listings for JOB_UNSEEN_EXPIRY_DAYS
+        (a freshness policy: they may still be open at the source). Called only
+        after that source synced successfully; posted jobs never auto-expire."""
+        cutoff = datetime.now(UTC) - timedelta(days=settings.JOB_UNSEEN_EXPIRY_DAYS)
+        result = await self.db.execute(
+            update(JobPost)
+            .where(
+                JobPost.source == source,
+                JobPost.company_id.is_(None),
+                JobPost.expired_at.is_(None),
+                JobPost.last_seen_at < cutoff,
+            )
+            .values(expired_at=datetime.now(UTC))
+        )
+        return int(result.rowcount or 0)
 
     def _filtered(
         self,
@@ -128,7 +154,7 @@ class JobRepository:
         source: str | None = None,
         company_id: uuid.UUID | None = None,
     ) -> Select:
-        stmt = stmt.where(JobPost.is_active.is_(True))
+        stmt = stmt.where(JobPost.is_active.is_(True), JobPost.expired_at.is_(None))
 
         if company_id is not None:
             stmt = stmt.where(JobPost.company_id == company_id)

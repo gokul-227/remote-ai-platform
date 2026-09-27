@@ -75,6 +75,8 @@ class JobPostResponse(JobPostBase):
     source: str
     is_active: bool
     posted_at: datetime
+    # Set when an imported listing's source stopped listing it.
+    expired_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     budget_min: float | None = None

@@ -164,8 +164,12 @@ class JobService:
                     _, created = await self.repo.upsert_external_job(job_data)
                     inserted += int(created)
                     updated += int(not created)
+                # Only after a successful fetch: an outage must not expire a whole source.
+                expired = await self.repo.expire_unseen_jobs(aggregator.source_name)
                 await self.repo.db.commit()
                 stats[aggregator.source_name] = inserted + updated
+                if expired:
+                    logger.info(f"Expired {expired} {aggregator.source_name} jobs no longer listed")
                 logger.info(
                     f"Aggregated {aggregator.source_name}: {inserted} new, {updated} updated"
                 )

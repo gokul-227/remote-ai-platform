@@ -154,6 +154,10 @@ class Settings(BaseSettings):
 
     JOB_SYNC_SCHEDULE: str = "0 */6 * * *"  # Every 6 hours
     JOB_SYNC_MAX_PER_SOURCE: int = 500
+    # Freshness policy: imported jobs that no sync has seen among their
+    # source's recent listings (each sync reads each source's newest ~30) for
+    # this long are taken off the public list; they may still be open.
+    JOB_UNSEEN_EXPIRY_DAYS: int = 30
 
     # ── Payments ──────────────────────────────────────────────────────────────
     # "sandbox" (default, no real payment network contact) or "stripe". Never

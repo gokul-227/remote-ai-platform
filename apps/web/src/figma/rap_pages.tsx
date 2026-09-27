@@ -409,6 +409,12 @@ export function JobDetail() {
           {tab === "Overview" && (
             <Card c="rounded-xl" p="p-6">
               <h2 className="mb-2 text-xl font-bold">About the role</h2>
+              {j.expired_at && (
+                <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                  This listing is over a month old and may no longer be open. Check the original posting before
+                  applying.
+                </p>
+              )}
               <RichText text={j.description || "No description provided."} />
               {fj.tags.length > 0 && (
                 <>

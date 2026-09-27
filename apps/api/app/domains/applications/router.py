@@ -93,7 +93,7 @@ async def apply_to_job(
             status_code=409,
             detail="This listing is imported from another job board. Apply on the source site.",
         )
-    if not job.is_active:
+    if not job.is_active or job.expired_at is not None:
         raise HTTPException(status_code=409, detail="This job is no longer accepting applications")
     existing = await db.scalar(
         select(JobApplication).where(

@@ -99,7 +99,7 @@ async def list_public_company_jobs(
     """Get public job listings for a specific company profile (no auth required)."""
     result = await service.repo.db.execute(
         select(JobPost)
-        .where(JobPost.company_id == company_id, JobPost.is_active.is_(True))
+        .where(JobPost.company_id == company_id, JobPost.is_active.is_(True), JobPost.expired_at.is_(None))
         .order_by(JobPost.posted_at.desc())
         .offset(skip)
         .limit(limit)

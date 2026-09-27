@@ -30,6 +30,7 @@ export interface ApiJob {
   source?: string | null;
   external_url?: string | null;
   posted_at?: string;
+  expired_at?: string | null;
   match_score?: number;
 }
 
