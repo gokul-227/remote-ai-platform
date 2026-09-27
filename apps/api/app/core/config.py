@@ -114,7 +114,8 @@ class Settings(BaseSettings):
     # provider whose API key is not set. Override the list via env to follow
     # the providers' current free model names.
     AI_FREE_TIER_CHAIN: str = (
-        "groq/llama-3.3-70b-versatile,"
+        "groq/openai/gpt-oss-120b,"
+        "groq/openai/gpt-oss-20b,"
         "gemini/gemini-2.0-flash,"
         "cerebras/llama-3.3-70b,"
         "openrouter/meta-llama/llama-3.3-70b-instruct:free,"
