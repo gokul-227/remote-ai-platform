@@ -9,6 +9,7 @@ import structlog
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db
 from app.core.exceptions import AuthenticationError
@@ -35,7 +36,9 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
     endpoint (where the token arrives as a query parameter). Fails closed: a
     token that doesn't verify never resolves to a user.
     """
-    identity = supabase_auth.verify_supabase_token(token)
+    # Verification may fetch the JWKS over the network (synchronously); keep
+    # that off the event loop so one slow fetch can't stall every request.
+    identity = await run_in_threadpool(supabase_auth.verify_supabase_token, token)
     repo = UserRepository(db)
     user = await AuthService(repo).get_or_create_user(identity)
     if not user.is_active:

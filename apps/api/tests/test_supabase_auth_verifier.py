@@ -162,3 +162,31 @@ def test_malformed_tokens_rejected(token):
     with pytest.raises(HTTPException) as exc_info:
         supabase_auth.verify_supabase_token(token)
     assert exc_info.value.status_code == 401
+
+
+def test_unknown_key_ids_cannot_force_a_jwks_fetch_per_request(monkeypatch):
+    """An unauthenticated caller must not be able to make every request trigger
+    a (blocking) JWKS refetch by sending tokens with made-up `kid`s."""
+    fetches: list[str] = []
+    known = SimpleNamespace(key_id="real-kid", key=_PUBLIC_KEY)
+
+    def get_signing_key_from_jwt(token):
+        fetches.append(jwt.get_unverified_header(token).get("kid"))
+        raise jwt.PyJWKClientError("Unable to find a signing key that matches")
+
+    fake = SimpleNamespace(get_signing_keys=lambda: [known], get_signing_key_from_jwt=get_signing_key_from_jwt)
+    monkeypatch.setattr(supabase_auth, "_last_unknown_kid_refresh", 0.0)
+    with patch.object(supabase_auth, "_jwks_client", fake):
+        for i in range(5):
+            token = jwt.encode(_claims(), _PRIVATE_KEY, algorithm="ES256", headers={"kid": f"made-up-{i}"})
+            with pytest.raises(HTTPException) as exc_info:
+                supabase_auth.verify_supabase_token(token)
+            assert exc_info.value.status_code == 401
+    assert len(fetches) == 1  # one refresh allowed (a real key rotation), not one per request
+
+
+def test_jwks_fetch_has_a_short_timeout(monkeypatch):
+    monkeypatch.setattr(supabase_auth, "_jwks_client", None)
+    client = supabase_auth._get_jwks_client()
+    assert client.timeout <= 5
+    monkeypatch.setattr(supabase_auth, "_jwks_client", None)

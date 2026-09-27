@@ -10,6 +10,7 @@ Supabase secret and never calls back into Supabase on the request path
 (the JWKS client caches keys in-process).
 """
 
+import time
 from dataclasses import dataclass
 
 import jwt
@@ -40,8 +41,32 @@ def _get_jwks_client() -> PyJWKClient:
             settings.SUPABASE_JWKS_URL,
             cache_keys=True,
             lifespan=settings.SUPABASE_JWKS_CACHE_SECONDS,
+            # A slow Supabase must not hold a request (or thread) for 30 s.
+            timeout=5,
         )
     return _jwks_client
+
+
+# PyJWKClient refetches the key set whenever a token names a key id it
+# hasn't seen, so made-up `kid`s would let anyone force an outbound fetch
+# per request. Allow one such refresh per interval (enough for a real key
+# rotation) and reject other unknown ids from the cached set.
+UNKNOWN_KID_REFRESH_SECONDS = 60
+_last_unknown_kid_refresh = 0.0
+
+
+def _signing_key(token: str):  # noqa: ANN202 - PyJWK
+    global _last_unknown_kid_refresh
+    client = _get_jwks_client()
+    kid = jwt.get_unverified_header(token).get("kid")
+    if kid is not None:
+        known = {k.key_id for k in client.get_signing_keys()}
+        if kid not in known:
+            now = time.monotonic()
+            if now - _last_unknown_kid_refresh < UNKNOWN_KID_REFRESH_SECONDS:
+                raise jwt.InvalidTokenError("Unknown signing key")
+            _last_unknown_kid_refresh = now
+    return client.get_signing_key_from_jwt(token)
 
 
 def verify_supabase_token(token: str) -> SupabaseIdentity:
@@ -55,7 +80,7 @@ def verify_supabase_token(token: str) -> SupabaseIdentity:
     in its own `users` table, looked up by the verified user_id.
     """
     try:
-        signing_key = _get_jwks_client().get_signing_key_from_jwt(token)
+        signing_key = _signing_key(token)
         payload = jwt.decode(
             token,
             signing_key.key,
