@@ -5,15 +5,10 @@ def test_observability_defines_http_metrics():
     assert HTTP_REQUESTS._name == "remote_ai_platform_http_requests"
 
 
-def test_request_metric_is_labelled_by_route_template_not_raw_path():
+async def test_request_metric_is_labelled_by_route_template_not_raw_path(client):
     import uuid
 
-    from fastapi.testclient import TestClient
-
-    from app.main import app
-
-    with TestClient(app) as client:
-        client.get(f"/api/v1/jobs/{uuid.uuid4()}")
+    await client.get(f"/api/v1/jobs/{uuid.uuid4()}")
     labels = {s.labels["path"] for m in HTTP_REQUESTS.collect() for s in m.samples}
     assert any(label.endswith("/jobs/{job_id}") for label in labels), labels
     assert not any(label.count("-") >= 4 for label in labels), labels
