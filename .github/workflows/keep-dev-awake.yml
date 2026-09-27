@@ -1,0 +1,26 @@
+name: Keep dev database awake
+
+# Supabase pauses free projects after about a week without activity, which
+# broke every dev deploy until the project was restored by hand (2026-09-27).
+# One readiness check (a database round trip) twice a week keeps it active.
+on:
+  schedule:
+    - cron: "23 5 * * 1,4"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dev API readiness (touches the dev database)
+        run: |
+          # Free Render services sleep; the first request may take a minute.
+          for i in 1 2 3; do
+            code=$(curl -s --max-time 90 -o /dev/null -w "%{http_code}" https://remote-ai-platform-api-dev.onrender.com/health/ready)
+            [ "$code" = "200" ] && { echo "dev ready"; exit 0; }
+            sleep 30
+          done
+          echo "::warning::dev API not ready ($code): the dev Supabase project may be paused"

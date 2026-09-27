@@ -53,6 +53,13 @@ time budget and job sync is `.github/workflows/scheduled-job-sync.yml`. Money mo
 The frontend is a hash-routed client app in `apps/web/src/figma` (routes in `App.tsx`, role-aware shell in
 `rap_shell.tsx`), styled via its own CSS/Tailwind utilities — not a component library.
 
+Conventions that tests enforce: AI calls reserve then settle quota (`services/ai/metering.py`); the data
+export is an explicit list (`auth/export.py`, a test fails for unclassified user-linked tables); deleting an
+account is refused while signed contracts/payments exist (`auth/retention.py`); links from users must be
+http(s) (`HttpUrlIn`, `safeHref`); migration ids fit VARCHAR(32); product copy may not claim escrow, personal
+picks or unverified numbers (`claims.test.ts`); CI fails below 80% backend coverage. Concurrency is tested on
+PostgreSQL (`tests/test_postgres_concurrency.py`), not SQLite.
+
 ## Documentation
 
 In-depth docs (architecture, deployment, audits, UI screenshots) live in the companion private repo, not

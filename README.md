@@ -15,19 +15,24 @@ flowchart LR
     API -- verifies tokens (JWKS) --> Auth
     API --> PG[("PostgreSQL<br/>(Supabase, EU)")]
     API --> S3[("Object storage<br/>(Supabase Storage, S3 API)")]
-    API --> Redis[("Redis<br/>rate limits, cache, chat fan-out")]
+    API --> Redis[("Redis<br/>rate limits (in-memory fallback)")]
     API -- LiteLLM --> LLM["Free-tier AI chain<br/>Groq → Gemini → Cerebras → OpenRouter → Mistral"]
-    Cron["GitHub Actions (every 6h)"] -- POST /jobs/sync --> API
+    Cron["GitHub Actions (every 6h)"] -- "POST /jobs/sync/scheduled (JOB_SYNC_TOKEN)" --> API
     API --> Boards["RemoteOK · Arbeitnow · Remotive · USAJobs · The Muse"]
 ```
 
 - **apps/web** — Next.js 16 / React 19. The product UI is a client-rendered, hash-routed app in
   `src/figma/*` (derived from the Figma design) inside a thin Next.js shell. Resource URLs are shareable
-  (`/#jobdetail/<id>`, `/#engineer/<id>`, …).
+  (`/#jobdetail/<id>`, `/#engineer/<id>`, …). Public job pages are server-rendered at `/jobs/<id>` (title,
+  canonical, Open Graph), with a sitemap and real 404s; only production is indexable.
 - **apps/api** — FastAPI modular monolith (`app/domains/*`: auth, engineers, companies, jobs, applications,
   matching, network/messaging, social, groups, projects, contracts, payments, trust, moderation, admin …).
   Async SQLAlchemy 2 + Alembic.
 - **No background worker.** Resume parsing runs inline with a time budget; job sync is a scheduled workflow.
+  Imported jobs unseen by the sync for 30 days leave the public list. Messaging and notifications poll;
+  the WebSocket endpoints stay off (`FEATURE_REALTIME_WEBSOCKETS`).
+- **Secrets** live in Infisical and reach Render through an Infisical Secret Sync; never commit or paste them.
+- **Backups:** `ops/backup/` (encrypted dump + storage copy, self-verifying restore).
 - **Payments are switched off** (`MARKETPLACE_PAYMENTS_ENABLED=false`): nothing is charged or held. Freelance
   work is paid directly between client and professional.
 
