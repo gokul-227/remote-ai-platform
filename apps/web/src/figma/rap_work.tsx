@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
@@ -18,6 +18,7 @@ import {
   inputCls,
   TableScroll,
   RichText,
+  useDialogFocus,
 } from "./rap_kit";
 
 const GR = "#0552CC";
@@ -29,6 +30,8 @@ export function Work() {
   const [q, setQ] = useState("");
   const [term, setTerm] = useState("");
   const [sel, setSel] = useState<any>(null);
+  const drawer = useRef<HTMLDivElement>(null);
+  useDialogFocus(drawer, !!sel, () => setSel(null));
   const [prop, setProp] = useState(false);
   const [bid, setBid] = useState(0);
   const [cover, setCover] = useState("");
@@ -253,6 +256,11 @@ export function Work() {
       {sel && (
         <div className="fixed inset-0 z-[90] flex justify-end bg-black/40" onClick={() => setSel(null)}>
           <div
+            ref={drawer}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-label={sel.t}
             className="h-full w-full max-w-3xl overflow-y-auto bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >

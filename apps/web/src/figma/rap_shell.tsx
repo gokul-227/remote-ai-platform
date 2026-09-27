@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Ic, Av, Brand, cx } from "./rap_kit";
+import { useState, useEffect, useRef } from "react";
+import { Ic, Av, Brand, cx, useDialogFocus } from "./rap_kit";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { useApi } from "./live";
@@ -99,6 +99,8 @@ export function AppShell({ r, go, children }: any) {
     go("login");
   };
   const [menu, setMenu] = useState("");
+  const menuBox = useRef<HTMLDivElement>(null);
+  useDialogFocus(menuBox, !!menu, () => setMenu(""));
   const [q, setQ] = useState("");
   useEffect(() => {
     setMenu("");
@@ -380,6 +382,8 @@ export function AppShell({ r, go, children }: any) {
       {menu && (
         <div className="rap-overlay" onClick={() => setMenu("")}>
           <div
+            ref={menuBox}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-label={menu === "pages" ? "Product menu" : "Your account"}

@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, goRoute } from "./live";
-import { Ic, Av, Btn, Card, Tag, Modal, Bar, cx, Field, inputCls, TableScroll } from "./rap_kit";
+import { Ic, Av, Btn, Card, Tag, Modal, Bar, cx, Field, inputCls, TableScroll, useDialogFocus } from "./rap_kit";
 
 type Issue = {
   id: string;
@@ -175,6 +175,8 @@ export function Projects() {
   }));
   const shown = iss.filter((i) => (i.t + i.as + i.ep).toLowerCase().includes(q.toLowerCase()));
   const open = iss.find((i) => i.id === openId) || null;
+  const issueBox = useRef<HTMLDivElement>(null);
+  useDialogFocus(issueBox, !!open, () => setOpenId(null));
   const done = iss.filter((i) => i.st === "done").length;
   const members: string[] = d?.member_ids ?? [];
   const act = async (fn: () => Promise<unknown>, ok?: string) => {
@@ -711,7 +713,15 @@ export function Projects() {
           className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/50 p-6"
           onClick={() => setOpenId(null)}
         >
-          <div className="w-full max-w-4xl rounded-lg bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            ref={issueBox}
+            tabIndex={-1}
+            role="dialog"
+            aria-modal="true"
+            aria-label={open.t}
+            className="w-full max-w-4xl rounded-lg bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-slate-200 p-4">
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 {open.ep !== "—" && (

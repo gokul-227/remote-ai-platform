@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 export const cx = (...a: any[]) => a.filter(Boolean).join(" ");
 
 const P: Record<string, string> = {
@@ -316,29 +316,17 @@ export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; se
     </div>
   );
 }
-export function Modal({
-  open,
-  onClose,
-  title,
-  children,
-  w = "max-w-lg",
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: ReactNode;
-  w?: string;
-}) {
-  const titleId = useId();
-  const box = useRef<HTMLDivElement>(null);
+/**
+ * Dialog keyboard behaviour: move focus into `box` when it opens, keep Tab
+ * inside it, close on Escape, and return focus to whatever opened it.
+ */
+export function useDialogFocus(box: RefObject<HTMLElement | null>, open: boolean, onClose: () => void) {
   const close = useRef(onClose);
   useEffect(() => {
     close.current = onClose;
   });
   useEffect(() => {
     if (!open) return;
-    // Move focus into the dialog, keep Tab inside it, close on Escape, and
-    // return focus to whatever opened it.
     const opener = document.activeElement as HTMLElement | null;
     const focusables = () =>
       Array.from(
@@ -371,7 +359,25 @@ export function Modal({
       document.removeEventListener("keydown", onKey);
       opener?.focus?.();
     };
-  }, [open]);
+  }, [open, box]);
+}
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  w = "max-w-lg",
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  w?: string;
+}) {
+  const titleId = useId();
+  const box = useRef<HTMLDivElement>(null);
+  useDialogFocus(box, open, onClose);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
