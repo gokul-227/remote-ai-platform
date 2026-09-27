@@ -48,12 +48,21 @@ class Settings(BaseSettings):
 
     # ── Database ───────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost:5432/remote_ai_platform"
-    DATABASE_POOL_SIZE: int = 10
-    DATABASE_MAX_OVERFLOW: int = 20
+    # Keep connections open between requests (production uses Supabase's
+    # session-mode pooler, where that is safe). False = a new connection per
+    # request (the old behaviour): the rollback switch.
+    DATABASE_POOL_ENABLED: bool = True
+    # Per uvicorn worker. Supabase's free session pooler allows ~15 backend
+    # connections in total: 2 workers x (3 + 2) = 10 leaves room for
+    # migrations, job sync and admin tools. Beyond that, requests queue.
+    DATABASE_POOL_SIZE: int = 3
+    DATABASE_MAX_OVERFLOW: int = 2
     DATABASE_POOL_TIMEOUT: int = 30
     DATABASE_POOL_RECYCLE: int = 1800
     # Longest a single SQL statement may run before the request fails.
     DATABASE_COMMAND_TIMEOUT_SECONDS: int = 30
+    # None = automatic (see database._statement_cache_size); 0 disables.
+    DATABASE_STATEMENT_CACHE_SIZE: int | None = None
 
     # ── Redis ─────────────────────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"

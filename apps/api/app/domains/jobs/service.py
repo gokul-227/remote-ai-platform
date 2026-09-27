@@ -2,7 +2,6 @@
 Service layer for Job Post domain & Aggregator coordination.
 """
 
-import hashlib
 import json
 import time
 import uuid
@@ -10,10 +9,10 @@ from collections.abc import Sequence
 
 from app.agents.job_enricher import JobEnricherAgent
 from app.agents.llm_client import AIProviderError
-from app.core.cache import RedisCache
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
 from app.domains.admin.repository import AdminRepository
+from app.domains.jobs import list_cache
 from app.domains.jobs.aggregators.arbeitnow import ArbeitnowAggregator
 from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.remotive import RemotiveAggregator
@@ -37,7 +36,6 @@ class JobService:
             TheMuseAggregator(),
             USAJobsAggregator(),
         ]
-        self.cache = RedisCache("jobs")
 
     async def get_by_id(self, job_id: uuid.UUID) -> JobPost:
         job = await self.repo.get_by_id(job_id)
@@ -111,12 +109,10 @@ class JobService:
 
     async def search_jobs_cached(self, query: JobSearchQuery) -> tuple[list[dict], int]:
         """One page of matching jobs plus the total number of matches."""
-        payload = query.model_dump(mode="json")
-        digest = hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-        cache_key = f"search:v2:{digest}"
-        cached = await self.cache.get_json(cache_key)
+        key = json.dumps(query.model_dump(mode="json"), sort_keys=True)
+        cached = list_cache.get(key)
         if cached is not None:
-            return cached["items"], cached["total"]
+            return cached
         jobs = await self.search_jobs(query)
         total = await self.repo.count(
             query=query.query,
@@ -130,7 +126,7 @@ class JobService:
             company_id=query.company_id,
         )
         serialized = [JobPostResponse.model_validate(job).model_dump(mode="json") for job in jobs]
-        await self.cache.set_json(cache_key, {"items": serialized, "total": total}, ttl_seconds=30)
+        list_cache.put(key, (serialized, total))
         return serialized, total
 
     async def sync_all_job_sources(
