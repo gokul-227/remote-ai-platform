@@ -86,10 +86,16 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
       login(data.session.access_token, user, data.session.refresh_token);
       go(join ? (user.role === "COMPANY" ? "coprofile" : "onboarding") : homeFor(user.role));
     } catch (e) {
+      // The API's own explanation (e.g. an account that uses another sign-in
+      // method) beats axios's generic "Request failed with status code …".
+      const server = extractErrorMessage(e, "");
+      // The app refused this sign-in: don't leave a Supabase session behind.
+      if (server) void supabase.auth.signOut({ scope: "local" }).catch(() => {});
       setError(
-        /expired|invalid/i.test(msg(e))
-          ? "That code is invalid or has expired. Request a new code."
-          : msg(e) || extractErrorMessage(e, "We couldn't verify that code. Please try again."),
+        server ||
+          (/expired|invalid/i.test(msg(e))
+            ? "That code is invalid or has expired. Request a new code."
+            : msg(e) || "We couldn't verify that code. Please try again."),
       );
     } finally {
       setBusy(false);

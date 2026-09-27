@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { supabase, fetchBackendUser, applyPendingRegistration } from "@/lib/supabase";
 
@@ -25,8 +26,11 @@ export default function OAuthCallback() {
         user = await applyPendingRegistration(data.session, user);
         login(data.session.access_token, user, data.session.refresh_token);
         window.location.replace(`/#${homeFor(user.role)}`);
-      } catch {
-        setError("Signed in, but we couldn't load your account. Please try again.");
+      } catch (e) {
+        // The app refused this sign-in (e.g. the email belongs to an account
+        // that uses another method): end the Supabase session and say why.
+        await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+        setError(extractErrorMessage(e, "Signed in, but we couldn't load your account. Please try again."));
       }
     };
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {

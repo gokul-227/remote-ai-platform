@@ -109,3 +109,50 @@ async def test_logout_all_revokes_already_issued_supabase_tokens(client: AsyncCl
     await asyncio.sleep(1.1)
     fresh = {"Authorization": f"Bearer {token_issued_at(int(time.time()))}"}
     assert (await client.get("/api/v1/auth/me", headers=fresh)).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_second_identity_with_same_email_cannot_take_over_account(client: AsyncClient):
+    """API-01: a different Supabase identity (e.g. an OAuth account whose
+    provider did not verify the email) must not be relinked onto an existing
+    user just because the email matches."""
+    from sqlalchemy import func, select
+
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User
+
+    email = f"victim-{uuid.uuid4().hex[:8]}@example.com"
+    owner_sub, attacker_sub = str(uuid.uuid4()), str(uuid.uuid4())
+    first = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {_make_token(owner_sub, email)}"})
+    assert first.status_code == 200
+
+    other = await client.get(
+        "/api/v1/auth/me", headers={"Authorization": f"Bearer {_make_token(attacker_sub, email.upper())}"}
+    )
+    assert other.status_code == 409
+    assert "support" in other.json()["detail"].lower()
+
+    async with TestingSessionLocal() as db:
+        rows = (await db.scalars(select(User).where(func.lower(User.email) == email))).all()
+        assert len(rows) == 1
+        assert rows[0].auth_subject == owner_sub
+    again = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {_make_token(owner_sub, email)}"})
+    assert again.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_row_without_identity_is_linked_on_first_sign_in(client: AsyncClient):
+    """Rows created before the account's first Supabase sign-in (no subject yet) still link by email."""
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
+
+    email = f"prelinked-{uuid.uuid4().hex[:8]}@example.com"
+    async with TestingSessionLocal() as db:
+        db.add(User(email=email, full_name="Pre", role=UserRole.ENGINEER, is_active=True, auth_subject=None))
+        await db.commit()
+    sub = str(uuid.uuid4())
+    resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {_make_token(sub, email)}"})
+    assert resp.status_code == 200
+    assert resp.json()["email"] == email

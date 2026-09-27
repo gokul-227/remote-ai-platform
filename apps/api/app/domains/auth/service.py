@@ -6,6 +6,8 @@ profile) lives in this app's own `users` table. Tokens are verified in
 `supabase_auth.verify_supabase_token`; this module never issues tokens.
 """
 
+from fastapi import HTTPException, status
+
 from app.core.logging import get_logger
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
@@ -28,13 +30,23 @@ class AuthService:
         if identity.email:
             user = await self.user_repo.get_by_email(identity.email)
             if user:
-                # Supabase has verified this email address (code or OAuth).
-                # Link rows created before the account's first Supabase sign-in.
-                if user.auth_subject and user.auth_subject != identity.user_id:
+                if user.auth_subject:
+                    # A different identity claims this email. Supabase does not
+                    # link identities whose email a provider hasn't verified, so
+                    # this can be someone else: never move the account to it.
+                    # Merging accounts is a verified, manual support process.
                     logger.warning(
-                        "Relinking user to a new identity subject",
+                        "Sign-in refused: email belongs to an account with another identity",
                         user_id=str(user.id),
                     )
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            "An account with this email already exists and uses a different sign-in method. "
+                            "Sign in the way you did before, or contact support to link them."
+                        ),
+                    )
+                # Rows created before the account's first Supabase sign-in.
                 user.auth_subject = identity.user_id
                 await self.user_repo.db.flush()
                 return user
