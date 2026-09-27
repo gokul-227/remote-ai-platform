@@ -1,0 +1,43 @@
+name: Production canary
+
+# Alerting at $0: when a check fails this scheduled run fails, and GitHub
+# emails the repository owner. (keep-render-warm.yml only wakes the API
+# and never fails.) Checks what users depend on, not just "is it up".
+on:
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: API is ready
+        run: |
+          code=$(curl -s --max-time 60 -o /dev/null -w "%{http_code}" "${{ vars.PROD_API_BASE_URL }}/health/ready")
+          [ "$code" = "200" ] || { echo "::error::/health/ready answered $code"; exit 1; }
+
+      - name: Public job list works and ingestion is fresh
+        # A stale newest posting means the six-hourly sync has stopped.
+        run: |
+          body=$(curl -sf --max-time 60 "${{ vars.PROD_API_BASE_URL }}/api/v1/jobs?limit=1")
+          newest=$(echo "$body" | python3 -c "import json,sys; j=json.load(sys.stdin); print(j[0]['posted_at'] if j else '')")
+          [ -n "$newest" ] || { echo "::error::public job list is empty"; exit 1; }
+          python3 - "$newest" <<'PY'
+          import sys
+          from datetime import datetime, timezone
+          newest = datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00"))
+          if newest.tzinfo is None:
+              newest = newest.replace(tzinfo=timezone.utc)
+          age_h = (datetime.now(timezone.utc) - newest).total_seconds() / 3600
+          print(f"newest job is {age_h:.1f} h old")
+          if age_h > 48:
+              print("::error::no new jobs for 48 h: check scheduled-job-sync.yml")
+              sys.exit(1)
+          PY
+
+      - name: Website serves
+        run: curl -sf --max-time 30 -o /dev/null "${{ vars.PROD_FRONTEND_URL }}/"
