@@ -2,7 +2,7 @@ import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref } from "./live";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, grad, Field, inputCls } from "./rap_kit";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, grad, Field, inputCls, RichText } from "./rap_kit";
 
 const BL = "#0552CC";
 export function Jobs() {
@@ -356,9 +356,7 @@ export function Jobs() {
                 </div>
               )}
               <h3 className="mt-6 text-lg font-bold">About the job</h3>
-              <p className="mt-2 whitespace-pre-line text-[15px] leading-6 text-slate-700">
-                {sel.raw.description || "No description provided."}
-              </p>
+              <RichText c="mt-2" text={sel.raw.description || "No description provided."} />
               {sel.tags.length > 0 && (
                 <>
                   <p className="mt-4 font-bold">Skills</p>

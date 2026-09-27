@@ -4,7 +4,7 @@ import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
 import { Groups } from "./rap_social";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls } from "./rap_kit";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls, RichText } from "./rap_kit";
 
 const nav = (h: string) => {
   goRoute(h);
@@ -413,7 +413,7 @@ export function JobDetail() {
           {tab === "Overview" && (
             <Card c="rounded-xl" p="p-6">
               <h2 className="mb-2 text-xl font-bold">About the role</h2>
-              <p className="whitespace-pre-line text-slate-700">{j.description || "No description provided."}</p>
+              <RichText text={j.description || "No description provided."} />
               {fj.tags.length > 0 && (
                 <>
                   <h3 className="mb-2 mt-5 text-[17px] font-bold">Skills</h3>

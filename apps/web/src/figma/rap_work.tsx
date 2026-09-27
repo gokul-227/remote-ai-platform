@@ -2,7 +2,23 @@ import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, cx, Field, inputCls, TableScroll } from "./rap_kit";
+import {
+  Ic,
+  Av,
+  Lg,
+  Btn,
+  Card,
+  Tag,
+  Tabs,
+  Modal,
+  Bar,
+  Bars,
+  cx,
+  Field,
+  inputCls,
+  TableScroll,
+  RichText,
+} from "./rap_kit";
 
 const GR = "#0552CC";
 export function Work() {
@@ -263,7 +279,7 @@ export function Work() {
                 <p className="mt-1 text-sm text-slate-500">
                   {sel.tm} - {sel.loc}
                 </p>
-                <p className="mt-4 whitespace-pre-line text-[15px] leading-7 text-slate-700">{sel.d}</p>
+                <RichText c="mt-4" text={sel.d || ""} />
                 <div className="mt-5 grid grid-cols-3 gap-4 border-y border-slate-200 py-4 text-sm">
                   <div>
                     <p className="font-semibold">{sel.lvl || "—"}</p>
