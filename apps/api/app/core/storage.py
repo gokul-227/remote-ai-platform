@@ -100,6 +100,15 @@ class StorageService:
             )
             raise RuntimeError("Object storage upload failed") from e
 
+    async def delete_file(self, bucket_name: str, object_name: str) -> bool:
+        """Delete one object. Returns False (and logs) instead of raising."""
+        try:
+            self.client.delete_object(Bucket=bucket_name, Key=object_name)
+            return True
+        except Exception as e:
+            logger.error("Storage delete failed", bucket=bucket_name, error=str(e))
+            return False
+
 
 @lru_cache
 def get_storage() -> StorageService:

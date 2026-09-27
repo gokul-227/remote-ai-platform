@@ -136,7 +136,7 @@ class Settings(BaseSettings):
     ARBEITNOW_API_URL: str = "https://www.arbeitnow.com/api/job-board-api"
     REMOTIVE_API_URL: str = "https://remotive.com/api/remote-jobs"
     USAJOBS_API_URL: str = "https://data.usajobs.gov/api/search"
-    USAJOBS_USER_AGENT: str = "RemoteAIPlatform/0.1 (support@remoteaiplatform.com)"
+    USAJOBS_USER_AGENT: str = "RemoteAIPlatform/0.1 (contact@remoteaiplatform.com)"
     USAJOBS_AUTH_KEY: str | None = None
     THEMUSE_API_URL: str = "https://www.themuse.com/api/public/jobs"
 

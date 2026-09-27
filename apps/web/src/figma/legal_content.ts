@@ -119,7 +119,7 @@ export const PRIVACY: Section[] = [
   {
     h: "Your rights",
     body: [
-      "Depending on where you live (for example under the GDPR), you have the right to access your data, correct it, have it deleted, receive it in a portable format, object to or restrict processing, and withdraw consent at any time. You can correct most profile data yourself in your profile. For anything else, including account deletion and data export, contact us at the address above; these requests are handled manually for now.",
+      "Depending on where you live (for example under the GDPR), you have the right to access your data, correct it, have it deleted, receive it in a portable format, object to or restrict processing, and withdraw consent at any time. You can correct most profile data yourself in your profile. You can download your data and delete your account yourself in Settings > Privacy. For anything else, contact us at the address above.",
       "You also have the right to lodge a complaint with a data protection supervisory authority.",
       fact(OPERATOR.supervisoryAuthority, "Supervisory authority responsible for the operator"),
     ],
