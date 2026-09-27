@@ -1,6 +1,8 @@
 """Small, reusable security validation helpers."""
 
+import io
 import secrets
+import zipfile
 from pathlib import PurePosixPath
 from uuid import UUID
 
@@ -24,9 +26,28 @@ def validate_resume_upload(
     suffix = ".docx" if name.endswith(".docx") else ".pdf"
     if suffix == ".pdf" and not data.startswith(b"%PDF"):
         raise ValueError("PDF resume content could not be verified")
-    if suffix == ".docx" and not data.startswith(b"PK"):
-        raise ValueError("DOCX resume content could not be verified")
+    if suffix == ".docx":
+        _check_docx_package(data)
     return suffix
+
+
+# A DOCX is a zip: a few KB can expand to gigabytes when parsed.
+_DOCX_MAX_UNCOMPRESSED = 30 * 1024 * 1024
+_DOCX_MAX_ENTRIES = 1000
+
+
+def _check_docx_package(data: bytes) -> None:
+    if not data.startswith(b"PK"):
+        raise ValueError("DOCX resume content could not be verified")
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as package:
+            entries = package.infolist()
+    except zipfile.BadZipFile as exc:
+        raise ValueError("DOCX resume content could not be verified") from exc
+    if not any(e.filename == "word/document.xml" for e in entries):
+        raise ValueError("DOCX resume content could not be verified")
+    if len(entries) > _DOCX_MAX_ENTRIES or sum(e.file_size for e in entries) > _DOCX_MAX_UNCOMPRESSED:
+        raise ValueError("DOCX resume is too large once unpacked")
 
 
 def build_private_resume_object_name(user_id: UUID, suffix: str) -> str:

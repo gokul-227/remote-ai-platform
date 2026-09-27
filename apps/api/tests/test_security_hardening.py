@@ -89,8 +89,8 @@ class _FakeUploadFile:
         self.content_type = content_type
         self._data = data
 
-    async def read(self):
-        return self._data
+    async def read(self, size: int = -1):  # same signature as starlette's UploadFile
+        return self._data if size < 0 else self._data[:size]
 
 
 @pytest.mark.asyncio

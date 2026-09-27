@@ -201,7 +201,8 @@ class EngineerService:
             raise NotFoundError("Create your professional profile first.")
 
         # Read file content
-        file_bytes = await file.read()
+        # Never hold more than the size limit (+1 byte, to detect "too large") in memory.
+        file_bytes = await file.read(settings.MAX_RESUME_SIZE_BYTES + 1)
         suffix = validate_resume_upload(
             file.filename, file.content_type, file_bytes, settings.MAX_RESUME_SIZE_BYTES
         )

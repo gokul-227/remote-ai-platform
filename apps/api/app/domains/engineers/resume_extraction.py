@@ -13,6 +13,9 @@ from app.core.logging import get_logger
 
 logger = get_logger("engineers.resume_extraction")
 
+# A resume is a few pages; a small PDF can hold thousands, each costing CPU.
+MAX_PDF_PAGES = 20
+
 
 def extract_resume_text(data: bytes, suffix: str) -> str:
     """Extract plain text from resume file bytes. Returns "" on any failure
@@ -23,7 +26,8 @@ def extract_resume_text(data: bytes, suffix: str) -> str:
     try:
         if suffix == ".pdf":
             reader = PdfReader(io.BytesIO(data))
-            return "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+            pages = reader.pages[:MAX_PDF_PAGES]
+            return "\n".join(page.extract_text() or "" for page in pages).strip()
         if suffix == ".docx":
             document = Document(io.BytesIO(data))
             return "\n".join(paragraph.text for paragraph in document.paragraphs).strip()
