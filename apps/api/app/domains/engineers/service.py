@@ -5,6 +5,7 @@ Service layer for Engineer Profile management.
 import asyncio
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from fastapi import UploadFile
 
@@ -51,6 +52,39 @@ def _resume_object_key(stored_value: str) -> str:
         if idx != -1:
             return stored_value[idx + len(marker) :]
     return stored_value
+
+
+# AI output is untrusted input: a resume can carry instructions and a model
+# can misbehave. Only well-typed, bounded values reach the profile.
+_AI_MAX_HEADLINE, _AI_MAX_BIO, _AI_MAX_SKILL, _AI_MAX_SKILLS = 255, 5000, 60, 50
+
+
+def clean_ai_profile_fields(parsed: dict[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    headline, bio, skills = parsed.get("headline"), parsed.get("bio"), parsed.get("skills")
+    if isinstance(headline, str) and headline.strip():
+        out["headline"] = " ".join(headline.split())[:_AI_MAX_HEADLINE]
+    if isinstance(bio, str) and bio.strip():
+        out["bio"] = bio.strip()[:_AI_MAX_BIO]
+    if isinstance(skills, list):
+        cleaned = _merge_skills([], [s for s in skills if isinstance(s, str)])
+        if cleaned:
+            out["skills"] = cleaned
+    return out
+
+
+def _merge_skills(existing: list[str], new: list[str]) -> list[str]:
+    """Existing skills first, then new ones; trimmed, bounded, de-duplicated
+    case-insensitively."""
+    seen: set[str] = set()
+    merged: list[str] = []
+    for skill in [*existing, *new]:
+        name = " ".join(str(skill).split())
+        if not name or len(name) > _AI_MAX_SKILL or name.lower() in seen:
+            continue
+        seen.add(name.lower())
+        merged.append(name)
+    return merged[: max(_AI_MAX_SKILLS, len(existing))]
 
 
 class EngineerService:
@@ -258,12 +292,13 @@ class EngineerService:
                 # Only empty fields are filled; anything the engineer already
                 # wrote is never overwritten by AI output.
                 profile.parsed_resume_data = parsed_data
-                if parsed_data.get("headline") and not profile.headline:
-                    profile.headline = parsed_data["headline"]
-                if parsed_data.get("bio") and not profile.bio:
-                    profile.bio = parsed_data["bio"]
-                if parsed_data.get("skills"):
-                    profile.skills = list(set((profile.skills or []) + parsed_data["skills"]))
+                fields = clean_ai_profile_fields(parsed_data)
+                if fields.get("headline") and not profile.headline:
+                    profile.headline = fields["headline"]
+                if fields.get("bio") and not profile.bio:
+                    profile.bio = fields["bio"]
+                if fields.get("skills"):
+                    profile.skills = _merge_skills(profile.skills or [], fields["skills"])
                 await self.repo.db.flush()
                 status = "parsed"
                 logger.info("AI-parsed resume for engineer", user_id=str(user_id))

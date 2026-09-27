@@ -5,7 +5,7 @@ Pydantic schemas for Engineer Profile domain.
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -74,7 +74,14 @@ class EngineerProfileBase(BaseModel):
     is_open_to_work: bool = True
 
 
+# Input bounds (the columns' limits); not applied to responses, so stored
+# data never fails to serialise.
+SkillName = Annotated[str, Field(max_length=100)]
+
+
 class EngineerProfileCreate(EngineerProfileBase):
+    bio: str | None = Field(None, max_length=10_000)
+    skills: list[SkillName] = Field(default_factory=list, max_length=100)
     profile_image_url: HttpUrlIn = None
     github_url: HttpUrlIn = None
     linkedin_url: HttpUrlIn = None
@@ -86,8 +93,8 @@ class EngineerProfileCreate(EngineerProfileBase):
 class EngineerProfileUpdate(BaseModel):
     country: str | None = None
     profile_image_url: HttpUrlIn = None
-    headline: str | None = None
-    bio: str | None = None
+    headline: str | None = Field(None, max_length=255)
+    bio: str | None = Field(None, max_length=10_000)
     location: str | None = None
     timezone: str | None = None
     availability: str | None = None
@@ -104,7 +111,7 @@ class EngineerProfileUpdate(BaseModel):
     github_url: HttpUrlIn = None
     linkedin_url: HttpUrlIn = None
     portfolio_url: HttpUrlIn = None
-    skills: list[str] | None = None
+    skills: list[SkillName] | None = Field(None, max_length=100)
     experience: list[ExperienceItem] | None = None
     projects: list[ProjectItemIn] | None = None
     education: list[EducationItem] | None = None
