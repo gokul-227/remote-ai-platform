@@ -93,7 +93,10 @@ test("a professional signs up, builds a profile, saves the job and applies", asy
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("button", { name: "Saved", exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Easy Apply" }).nth(1).click();
+  await page
+    .getByRole("region", { name: "Job details" })
+    .getByRole("button", { name: "Easy Apply", exact: true })
+    .click();
   const dialog = page.getByRole("dialog", { name: /apply to/i });
   for (let i = 0; i < 2; i++) await dialog.getByRole("button", { name: "Next" }).click();
   await dialog.getByLabel("Cover note (optional)").fill("I'd love to draw for you.");
