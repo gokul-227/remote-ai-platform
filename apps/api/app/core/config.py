@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     # cache is ~10 minutes; matching that avoids re-fetching more often than
     # the keys could plausibly rotate).
     SUPABASE_JWKS_CACHE_SECONDS: int = 600
+    # Optional. When set, deleting an account also deletes the Supabase Auth
+    # user (email, OAuth links, sessions) through the Admin API. Server-side
+    # secret: never exposed to the browser.
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
 
     @property
     def SUPABASE_JWKS_URL(self) -> str | None:  # noqa: N802

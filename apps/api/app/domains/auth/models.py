@@ -3,6 +3,7 @@ User entity model for authentication and role management.
 """
 
 import enum
+import hashlib
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
@@ -99,3 +100,22 @@ class User(Base):
     def __repr__(self) -> str:
         return f"<User id={self.id} email={self.email} role={self.role}>"
 
+
+
+class DeletedIdentity(Base):
+    """An identity whose account was deleted by its owner.
+
+    Tokens issued at or before `deleted_at` are refused, so a still-valid
+    token cannot silently re-create the account. Only a hash of the identity
+    subject is kept (no email or name); a deliberate new sign-in afterwards
+    starts a fresh account.
+    """
+
+    __tablename__ = "deleted_identities"
+
+    subject_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+def identity_hash(subject: str) -> str:
+    return hashlib.sha256(subject.encode()).hexdigest()

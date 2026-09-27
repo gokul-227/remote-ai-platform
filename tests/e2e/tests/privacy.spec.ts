@@ -26,7 +26,9 @@ test("a user downloads their data and deletes their account", async ({ page, req
   await dialog.getByRole("button", { name: "Delete my account" }).click();
   await expect(page).toHaveURL(/#login/);
 
-  // The old session no longer resolves to the deleted account's data.
-  const me = await request.get(`${API}/api/v1/engineers/me`, { headers: { Authorization: `Bearer ${token}` } });
-  expect(me.status()).toBe(404);
+  // The old session is refused outright; it must not silently re-create an
+  // empty account (which would answer 200 on /auth/me and 404 on the profile).
+  const headers = { Authorization: `Bearer ${token}` };
+  expect((await request.get(`${API}/api/v1/auth/me`, { headers })).status()).toBe(401);
+  expect((await request.get(`${API}/api/v1/engineers/me`, { headers })).status()).toBe(401);
 });

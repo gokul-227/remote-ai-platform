@@ -927,7 +927,8 @@ export function Settings() {
                       run(async () => {
                         await api.delete("/auth/me", { data: { confirm: "DELETE" } });
                         setDelOpen(false);
-                        await logout();
+                        // End the sign-in on every device, not just this one.
+                        await logout({ everywhere: true });
                         visit("login");
                       }, "Your account was deleted.");
                     }}
