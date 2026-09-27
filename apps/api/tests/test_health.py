@@ -28,17 +28,54 @@ async def test_health_ready(client: AsyncClient):
     assert "redis" in data["services"]
 
 
+async def _member(client: AsyncClient, admin: bool):
+    import uuid
+
+    from auth_support import token_for
+    from conftest import TestingSessionLocal
+    from sqlalchemy import select
+
+    from app.domains.auth.models import User, UserRole
+
+    email = f"h-{uuid.uuid4().hex[:8]}@example.com"
+    await client.post("/api/v1/auth/register", json={"email": email, "password": "p", "full_name": "H", "role": "ENGINEER"})
+    async with TestingSessionLocal() as db:
+        user = await db.scalar(select(User).where(User.email == email))
+        if admin:
+            user.role = UserRole.ADMIN
+            await db.commit()
+    return {"Authorization": f"Bearer {token_for(user)}"}
+
+
 @pytest.mark.asyncio
-async def test_health_dependencies(client: AsyncClient):
-    response = await client.get("/health/dependencies")
+async def test_health_dependencies_is_admin_only(client: AsyncClient):
+    """Each call probes the database, Redis and storage, and names providers:
+    not something anonymous callers may trigger at will."""
+    assert (await client.get("/health/dependencies")).status_code == 401
+    assert (await client.get("/health/dependencies", headers=await _member(client, admin=False))).status_code == 403
+    response = await client.get("/health/dependencies", headers=await _member(client, admin=True))
     assert response.status_code in (200, 503)
     data = response.json()
     assert data["status"] in ("HEALTHY", "DEGRADED", "DOWN")
-    assert "services" in data
-    assert "database" in data["services"]
-    assert "redis" in data["services"]
-    assert "storage" in data["services"]
-    assert "ai_provider" in data["services"]
+    assert {"database", "redis", "storage", "ai_provider"} <= set(data["services"])
+
+
+@pytest.mark.asyncio
+async def test_ai_health_reports_when_ai_last_worked(client: AsyncClient, monkeypatch):
+    """OBS-01: "configured" is not "working"; report the last real outcomes."""
+    from conftest import TestingSessionLocal
+
+    from app.core.config import settings
+    from app.services.ai.models import AIUsageLog
+
+    monkeypatch.setattr(settings, "AI_PROVIDER", "auto")
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "k")
+    async with TestingSessionLocal() as db:
+        db.add_all([AIUsageLog(status="SUCCESS", total_tokens=10), AIUsageLog(status="FAILED", total_tokens=0)])
+        await db.commit()
+    data = (await client.get("/health/dependencies", headers=await _member(client, admin=True))).json()
+    details = data["services"]["ai_provider"]["details"]
+    assert details["last_success_at"] and details["last_failure_at"]
 
 
 @pytest.mark.asyncio

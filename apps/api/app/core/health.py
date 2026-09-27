@@ -19,12 +19,15 @@ from botocore.client import Config as BotoConfig
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel
 from redis.asyncio import Redis
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.logging import get_logger
+from app.domains.auth.dependencies import require_role
+from app.domains.auth.models import User, UserRole
+from app.services.ai.models import AIUsageLog
 
 router = APIRouter(tags=["Health & Operations"])
 
@@ -301,8 +304,13 @@ async def health_readiness(
 async def health_dependencies(
     response: Response,
     db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_role(UserRole.ADMIN)),
 ) -> HealthReadyResponse:
-    """Deep dependency inspection checking DB, Redis, S3 Storage, and AI provider."""
+    """Deep dependency inspection checking DB, Redis, S3 Storage, and AI provider.
+
+    Administrators only: every call probes each backing service and names the
+    configured providers. Load balancers use /health/ready.
+    """
     db_result, redis_result, storage_result, ai_result = await asyncio.gather(
         _check_database(db),
         _check_redis(),
@@ -310,6 +318,14 @@ async def health_dependencies(
         _check_ai_provider(),
         return_exceptions=False,
     )
+    # "Configured" is not "working": add when AI calls last succeeded and failed.
+    last_success = await db.scalar(select(func.max(AIUsageLog.created_at)).where(AIUsageLog.status == "SUCCESS"))
+    last_failure = await db.scalar(select(func.max(AIUsageLog.created_at)).where(AIUsageLog.status == "FAILED"))
+    ai_result.details = {
+        **(ai_result.details or {}),
+        "last_success_at": last_success.isoformat() if last_success else None,
+        "last_failure_at": last_failure.isoformat() if last_failure else None,
+    }
 
     services = {
         "database": db_result,

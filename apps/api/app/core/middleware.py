@@ -2,6 +2,7 @@
 Custom FastAPI Middleware
 """
 
+import re
 import time
 import uuid
 from collections.abc import Callable
@@ -16,6 +17,8 @@ from app.core.metrics import HTTP_REQUESTS
 logger = structlog.get_logger(__name__)
 
 
+_SAFE_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """
     Injects a unique X-Request-ID header into every request and response.
@@ -23,7 +26,9 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        # Ends up in every log line: accept only a short safe token from clients.
+        supplied = request.headers.get("X-Request-ID", "")
+        request_id = supplied if _SAFE_REQUEST_ID.fullmatch(supplied) else str(uuid.uuid4())
 
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(

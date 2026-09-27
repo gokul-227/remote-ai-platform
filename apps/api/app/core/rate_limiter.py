@@ -94,9 +94,9 @@ def _classify(path: str, method: str) -> tuple[str | None, tuple[int, int] | Non
     # Exempt internal/diagnostic routes
     if path in {
         "/health",
+        # Liveness only: no dependency is touched. /health/ready (a database
+        # round trip) and /health/dependencies (admin) count like other requests.
         "/health/live",
-        "/health/ready",
-        "/health/dependencies",
         "/api/v1/health",
         "/metrics",
         "/docs",

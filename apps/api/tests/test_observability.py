@@ -1,3 +1,5 @@
+import pytest
+
 from app.core.metrics import HTTP_REQUESTS
 
 
@@ -20,3 +22,15 @@ def test_public_health_errors_are_generic_in_production(monkeypatch):
 
     monkeypatch.setattr(settings, "APP_ENV", "production")
     assert health._public_error(RuntimeError("postgres://user:secret@db:5432 refused")) == "unavailable"
+
+
+@pytest.mark.asyncio
+async def test_request_ids_from_clients_are_validated(client):
+    """Correlation ids end up in every log line: only short safe tokens are
+    accepted from clients; anything else is replaced by a generated id."""
+    ok = await client.get("/health/live", headers={"X-Request-ID": "abc-123_DEF.9"})
+    assert ok.headers["X-Request-ID"] == "abc-123_DEF.9"
+    for bad in ["x" * 200, "id\ninjected=1", "a b", "<script>"]:
+        resp = await client.get("/health/live", headers={"X-Request-ID": bad})
+        rid = resp.headers["X-Request-ID"]
+        assert rid != bad and len(rid) <= 64 and rid.replace("-", "").isalnum()
