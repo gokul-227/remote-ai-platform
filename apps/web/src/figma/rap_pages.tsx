@@ -28,6 +28,8 @@ export function EngineerDetail() {
   const reviews = useApi<any[]>(p0?.user_id ? `/trust/reviews/${p0.user_id}` : null);
   const trust = useApi<any>(p0?.user_id ? `/trust/scores/${p0.user_id}` : null);
   const conns = useApi<any[]>(user ? "/connections" : null, { limit: 200 });
+  const blocks = useApi<{ user_id: string }[]>(user ? "/blocks" : null);
+  const [blockOpen, setBlockOpen] = useState(false);
   const myJobs = useApi<any[]>(user?.role === "COMPANY" ? "/jobs/company" : null, { limit: 100 });
   const [t, setT] = useState("About");
   const [invOpen, setInvOpen] = useState(false);
@@ -95,6 +97,18 @@ export function EngineerDetail() {
     setInvOpen(false);
   };
   const self = p0.user_id === user?.id;
+  const blocked = (blocks.data ?? []).some((b) => b.user_id === p0.user_id);
+  const setBlock = async (on: boolean) => {
+    try {
+      await (on ? api.post("/blocks", { user_id: p0.user_id }) : api.delete(`/blocks/${p0.user_id}`));
+      blocks.reload();
+      conns.reload();
+      setNotice(on ? `${p.n} is blocked. They can't message you or send requests.` : `${p.n} is unblocked.`);
+    } catch (e) {
+      setNotice(extractErrorMessage(e, "Couldn't update that block."));
+    }
+    setBlockOpen(false);
+  };
   return (
     <Wrap>
       <Card p={false} c="overflow-hidden rounded-xl">
@@ -104,8 +118,15 @@ export function EngineerDetail() {
             <div className="rounded-full border-4 border-white">
               <Av name={p.n} s={112} />
             </div>
-            {!self && (
+            {!self && user && blocked && (
               <div className="flex gap-2">
+                <Btn v="gray" onClick={() => setBlock(false)}>
+                  Unblock
+                </Btn>
+              </div>
+            )}
+            {!self && !blocked && (
+              <div className="flex flex-wrap gap-2">
                 <Btn v={conn ? "gray" : "primary"} icon={conn ? "check" : "plus"} onClick={() => !conn && connect()}>
                   {conn ? (conn.status === "ACCEPTED" ? "Connected" : "Pending") : "Connect"}
                 </Btn>
@@ -117,6 +138,11 @@ export function EngineerDetail() {
                 <Btn v="gray" icon="chat" onClick={message}>
                   Message
                 </Btn>
+                {user && (
+                  <Btn v="gray" onClick={() => setBlockOpen(true)}>
+                    Block
+                  </Btn>
+                )}
               </div>
             )}
           </div>
@@ -258,6 +284,18 @@ export function EngineerDetail() {
         ) : (
           <p className="text-slate-500">Post a job first, then invite professionals to apply.</p>
         )}
+      </Modal>
+      <Modal open={blockOpen} onClose={() => setBlockOpen(false)} title={`Block ${p.n}?`}>
+        <p className="text-sm text-slate-600">
+          They won’t be able to message you, start a conversation or send you connection requests, and any connection
+          between you is removed. They aren’t told. You can unblock them here at any time.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Btn v="gray" onClick={() => setBlockOpen(false)}>
+            Cancel
+          </Btn>
+          <Btn onClick={() => setBlock(true)}>Block</Btn>
+        </div>
       </Modal>
       <Notice text={notice} onDismiss={() => setNotice("")} />
     </Wrap>

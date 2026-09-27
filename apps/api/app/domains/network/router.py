@@ -17,7 +17,7 @@ from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
 from app.domains.engineers.models import EngineerProfile
-from app.domains.network.models import Connection, Conversation, Message
+from app.domains.network.models import Connection, Conversation, Message, UserBlock
 from app.services.notifications import notify_user as send_notification
 
 router = APIRouter(tags=["Network"])
@@ -78,6 +78,74 @@ def _connection_out(c: Connection, users: dict[uuid.UUID, dict[str, Any]]) -> di
     }
 
 
+async def _blocked_between(db: AsyncSession, a: uuid.UUID, b: uuid.UUID) -> bool:
+    return (
+        await db.scalar(
+            select(UserBlock.id).where(
+                or_(
+                    (UserBlock.blocker_id == a) & (UserBlock.blocked_id == b),
+                    (UserBlock.blocker_id == b) & (UserBlock.blocked_id == a),
+                )
+            ).limit(1)
+        )
+        is not None
+    )
+
+
+# Deliberately doesn't say who blocked whom.
+_BLOCKED = HTTPException(status_code=403, detail="You can't contact this member.")
+
+
+class BlockCreate(BaseModel):
+    user_id: uuid.UUID
+
+
+@router.get("/blocks")
+async def list_blocks(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """People the signed-in user has blocked (never who blocked them)."""
+    rows = (await db.scalars(select(UserBlock).where(UserBlock.blocker_id == current_user.id))).all()
+    return [{"user_id": str(b.blocked_id), "created_at": b.created_at} for b in rows]
+
+
+@router.post("/blocks", status_code=status.HTTP_201_CREATED)
+async def block_user(
+    data: BlockCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    if data.user_id == current_user.id or not await db.get(User, data.user_id):
+        raise HTTPException(status_code=400, detail="A valid different member is required")
+    exists = await db.scalar(
+        select(UserBlock.id).where(UserBlock.blocker_id == current_user.id, UserBlock.blocked_id == data.user_id)
+    )
+    if exists is None:
+        db.add(UserBlock(blocker_id=current_user.id, blocked_id=data.user_id))
+    # A block ends any connection or pending request between the two.
+    for connection in (
+        await db.scalars(
+            select(Connection).where(
+                or_(
+                    (Connection.sender_id == current_user.id) & (Connection.receiver_id == data.user_id),
+                    (Connection.sender_id == data.user_id) & (Connection.receiver_id == current_user.id),
+                )
+            )
+        )
+    ).all():
+        await db.delete(connection)
+    await db.flush()
+    return {"user_id": str(data.user_id)}
+
+
+@router.delete("/blocks/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unblock_user(
+    user_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+):
+    block = await db.scalar(
+        select(UserBlock).where(UserBlock.blocker_id == current_user.id, UserBlock.blocked_id == user_id)
+    )
+    if block is None:
+        raise HTTPException(status_code=404, detail="Block not found")
+    await db.delete(block)
+
+
 @router.get("/connections")
 async def list_connections(
     current_user: User = Depends(get_current_user),
@@ -108,6 +176,8 @@ async def send_connection(
 ):
     if data.receiver_id == current_user.id or not await db.get(User, data.receiver_id):
         raise HTTPException(status_code=400, detail="A valid different recipient is required")
+    if await _blocked_between(db, current_user.id, data.receiver_id):
+        raise _BLOCKED
     existing = await db.scalar(
         select(Connection).where(
             or_(
@@ -149,6 +219,9 @@ async def update_connection(
         raise HTTPException(status_code=404, detail="Connection not found")
     if data.status in {"ACCEPTED", "REJECTED"} and current_user.id != connection.receiver_id:
         raise HTTPException(status_code=403, detail="Only the recipient can respond")
+    if data.status == "BLOCKED":
+        other_id = connection.receiver_id if current_user.id == connection.sender_id else connection.sender_id
+        return await block_user(BlockCreate(user_id=other_id), current_user, db)
     connection.status = data.status
     recipient = (
         connection.sender_id
@@ -282,6 +355,8 @@ async def create_conversation(
 ):
     if data.participant_id == current_user.id or not await db.get(User, data.participant_id):
         raise HTTPException(status_code=400, detail="A valid different participant is required")
+    if await _blocked_between(db, current_user.id, data.participant_id):
+        raise _BLOCKED
     first, second = sorted((current_user.id, data.participant_id), key=str)
     existing = await db.scalar(
         select(Conversation).where(
@@ -348,6 +423,13 @@ async def send_message(
     db: AsyncSession = Depends(get_db),
 ):
     conversation = await get_conversation(conversation_id, current_user.id, db)
+    other = (
+        conversation.participant_two_id
+        if current_user.id == conversation.participant_one_id
+        else conversation.participant_one_id
+    )
+    if await _blocked_between(db, current_user.id, other):
+        raise _BLOCKED
     message = Message(
         conversation_id=conversation.id,
         sender_id=current_user.id,

@@ -56,6 +56,7 @@ SOURCES: tuple[Source, ...] = (
     Source("group_memberships", ("user_id",)),
     Source("group_posts", ("author_id",)),
     Source("connections", ("sender_id", "receiver_id")),
+    Source("user_blocks", ("blocker_id",)),
     Source("conversations", ("participant_one_id", "participant_two_id")),
     # Both directions of the user's own conversations.
     Source("messages", ("conversation_id",), scope="conversation"),
@@ -88,6 +89,7 @@ EXCLUDED: dict[tuple[str, str], str] = {
     ("task_assignment_offers", "offered_by_id"): "offers made as an organisation hold the candidate's match data",
     ("recommendations", "engineer_id"): "already exported through user_id",
     ("messages", "sender_id"): "exported through the user's conversations, in both directions",
+    ("user_blocks", "blocked_id"): "who blocked the user is never revealed",
 }
 
 
