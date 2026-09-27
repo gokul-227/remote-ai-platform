@@ -188,6 +188,8 @@ class Settings(BaseSettings):
     # domain is added.
     EMAIL_FROM_ADDRESS: str = "onboarding@resend.dev"
     EMAIL_FROM_NAME: str = "Remote AI Platform"
+    # Where people write for support, privacy requests and moderation appeals.
+    SUPPORT_EMAIL: str = "contact@remoteaiplatform.com"
 
     # ── Feature Flags ─────────────────────────────────────────────────────────
     FEATURE_AI_RESUME_PARSING: bool = True
@@ -273,6 +275,15 @@ class Settings(BaseSettings):
         # rate limiting, caching and the job queue will silently degrade to in-memory
         # fallbacks.  Operators should set REDIS_URL to a real
         # Redis instance (e.g. Upstash free tier) or accept the degraded behaviour.
+        if not self.SUPABASE_SERVICE_ROLE_KEY:
+            import warnings
+
+            # The privacy notice says deletion removes the sign-in account too.
+            warnings.warn(
+                "SUPABASE_SERVICE_ROLE_KEY is not set: deleting an account will not remove "
+                "the user from Supabase Auth, which the privacy notice promises.",
+                stacklevel=2,
+            )
         _redis_localhost_warning: list[str] = []
         if self.redis_url.startswith("redis://localhost"):
             _redis_localhost_warning.append("REDIS_URL")

@@ -6,13 +6,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.domains.admin.models import ModerationReport
 from app.domains.admin.repository import AdminRepository
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
+from app.domains.companies.models import CompanyProfile
 from app.domains.jobs.models import JobPost
 from app.domains.social.models import Post
+from app.services.notifications import notify_user
 
 router = APIRouter(prefix="/moderation", tags=["Moderation"])
 
@@ -93,6 +96,10 @@ async def decide_report(
         raise HTTPException(status_code=404, detail="Moderation report not found")
     if report.status != "OPEN":
         raise HTTPException(status_code=409, detail="Moderation report is already closed")
+    # Who to tell about the decision (never the reporter's identity or the
+    # moderator's internal note), with what happened and how to appeal.
+    owner_id: uuid.UUID | None = None
+    what = ""
     if data.decision == "HIDE_JOB":
         if report.target_type != "JOB":
             raise HTTPException(status_code=422, detail="HIDE_JOB requires a job report")
@@ -100,11 +107,17 @@ async def decide_report(
         if not job_target:
             raise HTTPException(status_code=404, detail="Reported job no longer exists")
         job_target.is_active = False
+        if job_target.company_id:
+            owner_id = await db.scalar(
+                select(CompanyProfile.user_id).where(CompanyProfile.id == job_target.company_id)
+            )
+            what = f"Your job post “{job_target.title}” was hidden"
     elif data.decision == "REMOVE_POST":
         if report.target_type != "POST":
             raise HTTPException(status_code=422, detail="REMOVE_POST requires a post report")
         post_target = await db.get(Post, uuid.UUID(report.target_id))
         if post_target:
+            owner_id, what = post_target.author_id, "Your post was removed"
             await db.delete(post_target)
     elif data.decision == "SUSPEND_USER":
         if report.target_type != "USER":
@@ -125,6 +138,15 @@ async def decide_report(
         report.target_id,
         {"report_id": str(report.id), "status": report.status, "decision": report.decision},
     )
+    if owner_id is not None and owner_id != current_user.id:
+        await notify_user(
+            db,
+            owner_id,
+            "A moderator reviewed your content",
+            f"{what} after a review under our acceptable use rules. If you think this was a mistake, "
+            f"write to {settings.SUPPORT_EMAIL} to appeal.",
+            "moderation",
+        )
     await db.commit()
     await db.refresh(report)
     return report

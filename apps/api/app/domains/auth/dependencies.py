@@ -11,6 +11,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AuthenticationError
 from app.domains.auth import supabase_auth
@@ -44,7 +45,10 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive",
+            detail=(
+                "This account is suspended. If you think this is a mistake, "
+                f"contact {settings.SUPPORT_EMAIL} to appeal."
+            ),
         )
     if _session_revoked(user, identity.issued_at):
         raise HTTPException(

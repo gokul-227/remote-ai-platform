@@ -32,7 +32,7 @@ export const OPERATOR: {
   supervisoryAuthority: null,
 };
 
-export const LAST_UPDATED = "26 September 2026";
+export const LAST_UPDATED = "27 September 2026";
 
 export type Fact = { fact: string | null; label: string };
 export type Block = string | string[] | Fact;
@@ -57,9 +57,9 @@ export const PRIVACY: Section[] = [
         "Account data: your name, email address and account type (professional or organisation). You sign in with a one-time code sent by email, or with Google, Microsoft or GitHub; from those providers we receive your name and email address. We do not store a password for these sign-in methods.",
         "Profile data you enter: headline, bio, skills, experience, education, location, time zone, availability, rates, salary expectations and links. Companies provide organisation details and job posts.",
         "Resumes: the file you upload, the text extracted from it and the profile fields generated from that text.",
-        "Communications and content: messages, connection requests, posts, comments, group activity, reports you file and reviews you write.",
+        "Communications and content: messages, connection requests, the members you block, posts, comments, group activity, reports you file and reviews you write.",
         "Work records: applications, invitations, contract offers and signatures, milestones, project tasks, submissions and time entries.",
-        "Usage data: product events such as an account being created, a search or an application, linked to your account when you are signed in.",
+        "Usage data: product events such as an account being created, a search or an application, linked to your account when you are signed in; and how much of your AI allowance you have used.",
         "Technical data: request logs (including IP address and browser type) and error reports, used for security and troubleshooting.",
       ],
     ],
@@ -71,6 +71,8 @@ export const PRIVACY: Section[] = [
         "If your professional profile is public, anyone can see your name, headline, bio, skills, experience, location, time zone, availability, hourly rate and links. If you hide it, only you, administrators and the companies you apply to can see it.",
         "Your resume file, your extracted resume data, your minimum salary expectation and your AI profile review are never shown to other users.",
         "A company you apply to sees your application, your profile and the match explanation for its job.",
+        "Verification badges that administrators have confirmed, and reviews you receive, are shown wherever your profile can be seen. Rejected or pending verification requests and administrators' notes are visible only to you and administrators.",
+        "Nobody is told that you blocked them, and you cannot see who has blocked you.",
         "Messages are visible only to the people in the conversation. Posts and group content are visible to the audience they were shared with.",
         "Administrators can access account data where needed for support, security and moderation.",
       ],
@@ -98,7 +100,7 @@ export const PRIVACY: Section[] = [
         "Supabase: database, sign-in and file storage",
         "Render: application servers for the API",
         "Cloudflare: website hosting and delivery",
-        "Resend: email delivery (sign-in codes and notifications)",
+        "Resend: email delivery (sign-in codes)",
         "Sentry: error monitoring",
         "Job boards we list jobs from receive nothing about you. If you apply to an external job, you do so on that board's own site.",
       ],
@@ -118,7 +120,8 @@ export const PRIVACY: Section[] = [
   {
     h: "How long we keep it",
     body: [
-      "Account, profile and content data are kept while your account exists. When you ask us to delete your account, we delete or anonymise your data unless we must keep specific records to meet a legal obligation.",
+      "Account, profile and content data are kept while your account exists. When you delete your account in Settings > Privacy, your profile, resume file, applications, messages you sent and other content are deleted straight away, and your sign-in account is removed from our sign-in provider, unless we must keep specific records to meet a legal obligation.",
+      "To stop an old, still-open session from recreating a deleted account, we keep a one-way code derived from your sign-in account's identifier and the time of deletion. It contains no name or email address and cannot be turned back into them. You can sign up again at any time.",
       fact(OPERATOR.logRetention, "Retention period for request logs, error reports and backups"),
     ],
   },

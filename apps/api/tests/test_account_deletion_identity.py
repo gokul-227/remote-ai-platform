@@ -170,3 +170,20 @@ async def test_admin_delete_refuses_a_non_uuid_subject(monkeypatch):
     monkeypatch.setattr(settings, "SUPABASE_URL", "https://proj.supabase.co")
     with pytest.raises(ValueError):
         await supabase_admin.delete_identity("../../admin/users")
+
+
+def test_production_warns_when_supabase_erasure_is_not_configured(monkeypatch):
+    import warnings
+
+    from app.core.config import Settings
+
+    monkeypatch.setenv("APP_ENV", "production")
+    s = Settings(
+        _env_file=None, DATABASE_URL="postgresql+asyncpg://u:p@db.example.com/x", SUPABASE_URL="https://p.supabase.co",
+        MINIO_SECRET_KEY="k", MINIO_ENDPOINT="s3.example.com", MINIO_PUBLIC_ENDPOINT="s3.example.com",
+        CORS_ORIGINS="https://remoteaiplatform.com", REDIS_URL="rediss://r.example.com", SUPABASE_SERVICE_ROLE_KEY="",
+    )
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        s.validate_production_settings()
+    assert any("SUPABASE_SERVICE_ROLE_KEY" in str(w.message) for w in caught)
