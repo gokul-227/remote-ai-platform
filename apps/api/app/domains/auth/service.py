@@ -6,8 +6,6 @@ profile) lives in this app's own `users` table. Tokens are verified in
 `supabase_auth.verify_supabase_token`; this module never issues tokens.
 """
 
-from datetime import UTC
-
 from fastapi import HTTPException, status
 
 from app.core.logging import get_logger
@@ -29,19 +27,17 @@ class AuthService:
         if user:
             return user
 
-        # The owner deleted this account: a token from before that must not
-        # silently re-create it. A new sign-in afterwards starts afresh.
-        tombstone = await self.user_repo.db.get(DeletedIdentity, identity_hash(identity.user_id))
-        if tombstone is not None:
-            deleted_at = tombstone.deleted_at
-            if deleted_at.tzinfo is None:  # SQLite in tests drops the offset
-                deleted_at = deleted_at.replace(tzinfo=UTC)
-            if identity.issued_at is None or identity.issued_at <= int(deleted_at.timestamp()):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="This account was deleted. Sign in again to create a new one.",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+        # This account was deleted. Refuse every token for the subject: one
+        # minted later by refreshing the old session has a later `iat` but is
+        # not a new sign-in, and would otherwise silently re-create the
+        # account (DATA-04). Signing up again yields a new Supabase user and
+        # subject once the old one is erased.
+        if await self.user_repo.db.get(DeletedIdentity, identity_hash(identity.user_id)) is not None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This account was deleted. Sign up again to create a new one.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         if identity.email:
             user = await self.user_repo.get_by_email(identity.email)

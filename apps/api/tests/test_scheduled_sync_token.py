@@ -42,6 +42,6 @@ async def test_wrong_or_missing_token_is_refused(client: AsyncClient, monkeypatc
 async def test_right_token_runs_the_sync_and_nothing_else(client: AsyncClient, monkeypatch, fake_sync):
     monkeypatch.setattr(settings, "JOB_SYNC_TOKEN", "s" * 40)
     resp = await client.post(URL, headers={"X-Job-Sync-Token": "s" * 40})
-    assert resp.status_code == 200 and resp.json() == {"REMOTEOK": 3}
+    assert resp.status_code == 200 and resp.json() == {"REMOTEOK": 3, "identity_erasures_pending": 0}
     # The token is not a user credential: admin endpoints still need a user.
     assert (await client.get("/api/v1/admin/users", headers={"Authorization": f"Bearer {'s' * 40}"})).status_code == 401

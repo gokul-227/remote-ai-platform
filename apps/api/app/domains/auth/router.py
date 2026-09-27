@@ -10,23 +10,19 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit_event
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.logging import get_logger
-from app.core.storage import get_storage
-from app.domains.auth import supabase_admin
 from app.domains.auth.dependencies import get_current_user
+from app.domains.auth.erasure import erase_account
 from app.domains.auth.export import build_export, export_generated_at
-from app.domains.auth.models import DeletedIdentity, User, UserRole, identity_hash
+from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.retention import records_to_keep
 from app.domains.auth.schemas import UserResponse, UserUpdate
-from app.domains.engineers.models import EngineerProfile
-from app.domains.engineers.service import _resume_object_key
 from app.services.ai.metering import current_ai_actor, usage_summary
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -178,26 +174,4 @@ async def delete_my_account(
                 "everything that doesn't have to be kept."
             ),
         )
-    profile = await db.scalar(select(EngineerProfile).where(EngineerProfile.user_id == current_user.id))
-    if profile and profile.resume_url:
-        await get_storage().delete_file(
-            settings.MINIO_BUCKET_RESUMES, _resume_object_key(profile.resume_url)
-        )
-    subject = current_user.auth_subject
-    user_id = str(current_user.id)
-    if subject:
-        await db.merge(DeletedIdentity(subject_hash=identity_hash(subject), deleted_at=datetime.now(UTC)))
-    await db.delete(current_user)
-    await db.commit()
-    logger.info("Account deleted by its owner", user_id=user_id)
-
-    # Erase the Supabase user too (email, OAuth links, sessions) when the
-    # Admin API is configured. Best effort after the app data is gone: the
-    # tombstone already refuses the old tokens if this fails.
-    if subject and supabase_admin.is_configured():
-        try:
-            await supabase_admin.delete_identity(subject)
-        except Exception as exc:  # noqa: BLE001 - never undo an erasure over a provider error
-            logger.warning(
-                "Supabase identity not deleted; remove it manually", user_id=user_id, error=type(exc).__name__
-            )
+    await erase_account(db, current_user)

@@ -211,7 +211,12 @@ async def scheduled_job_sync(
         raise HTTPException(status_code=403, detail="Forbidden")
     stats = await service.sync_all_job_sources(limit_per_source=30, admin_repo=AdminRepository(db))
     await db.commit()
-    return stats
+    # Same six-hourly tick: retry Supabase user erasures that failed at
+    # account deletion (DATA-04). There is no hosted worker to do it.
+    from app.domains.auth.erasure import retry_pending_erasures  # auth -> engineers -> jobs cycle
+
+    erasures = await retry_pending_erasures(db)
+    return {**stats, "identity_erasures_pending": erasures["pending"]}
 
 
 @router.post("/sync", response_model=dict[str, int])

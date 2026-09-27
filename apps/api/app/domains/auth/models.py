@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, String, Text, func
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -105,16 +105,25 @@ class User(Base):
 class DeletedIdentity(Base):
     """An identity whose account was deleted by its owner.
 
-    Tokens issued at or before `deleted_at` are refused, so a still-valid
-    token cannot silently re-create the account. Only a hash of the identity
-    subject is kept (no email or name); a deliberate new sign-in afterwards
-    starts a fresh account.
+    Every token for this subject is refused, whenever it was issued: a
+    refreshed token postdates the deletion but belongs to the old session, and
+    the token's `iat` cannot tell the two apart. Signing up again creates a
+    new Supabase user, i.e. a new subject and a fresh account.
+
+    Only a hash of the subject is kept long term. The raw subject (a random
+    UUID, no email or name) is held in `pending_subject` just until the
+    Supabase user is erased, so a failed erasure can be retried (see
+    app/domains/auth/erasure.py).
     """
 
     __tablename__ = "deleted_identities"
 
     subject_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    pending_subject: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    provider_erased_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    provider_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    last_error: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 def identity_hash(subject: str) -> str:

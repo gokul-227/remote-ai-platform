@@ -33,6 +33,7 @@ from app.domains.admin.schemas import (
 )
 from app.domains.admin.service import AdminService
 from app.domains.auth.dependencies import require_role
+from app.domains.auth.erasure import erase_account, retry_pending_erasures
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.retention import records_to_keep
@@ -207,9 +208,23 @@ async def delete_user(
         )
     # The id identifies the account in the audit trail; no email is kept after deletion.
     await AdminRepository(db).log_activity(current_user.id, "USER_DELETED", "USER", str(user.id), {})
-    await db.delete(user)
-    await db.commit()
+    # Same erasure as self-service deletion: tombstone (the deleted user's
+    # tokens can't re-create the account), resume file and Supabase user.
+    await erase_account(db, user)
     return None
+
+
+@router.post("/erasures/retry", response_model=dict[str, int])
+async def retry_identity_erasures(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """Retry erasing Supabase users whose deletion failed when the account was
+    deleted (Admin only). Returns how many were erased and how many remain."""
+    result = await retry_pending_erasures(db)
+    await AdminRepository(db).log_activity(current_user.id, "IDENTITY_ERASURE_RETRIED", "USER", "-", result)
+    await db.commit()
+    return result
 
 
 @router.get("/jobs")
