@@ -1,44 +1,53 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { AUTH_ROUTES, goRoute, rememberReturnTo } from "./live";
 import { useAuth } from "@/lib/auth";
-import { Feed, Groups, Messenger, Notifications } from "./rap_social";
 import { Jobs, Profile, Network, Company } from "./rap_jobs";
-import { Admin } from "./rap_admin";
-import {
-  Dashboard,
-  Recs,
-  Applications,
-  Saved,
-  Engineers,
-  Companies,
-  Settings,
-  Onboarding,
-  CoDash,
-  PostJob,
-  Candidates,
-  CoJobs,
-} from "./rap_home";
 import { AuthFlow } from "./rap_auth";
-import {
-  EngineerDetail,
-  JobDetail,
-  ContractSign,
-  Workspace,
-  Quality,
-  Security,
-  Search,
-  CoProfile,
-  Terms,
-  Privacy,
-  Impressum,
-  NotFound,
-  GroupDetail,
-} from "./rap_pages";
 import { AppShell } from "./rap_shell";
-import { Projects } from "./rap_projects";
-import { Ride } from "./rap_ride";
-import { Work, Talent, Contracts, Earnings, CoPayments, TaskMarketplace } from "./rap_work";
-import { WorkLedger, HelpCenter } from "./rap_enterprise";
+
+// Screens load when first opened: a visitor on the job list doesn't download
+// the admin console, project boards or workspace. Jobs, sign-in and the shell
+// stay in the first bundle.
+const Feed = lazy(() => import("./rap_social").then((m) => ({ default: m.Feed })));
+const Groups = lazy(() => import("./rap_social").then((m) => ({ default: m.Groups })));
+const Messenger = lazy(() => import("./rap_social").then((m) => ({ default: m.Messenger })));
+const Notifications = lazy(() => import("./rap_social").then((m) => ({ default: m.Notifications })));
+const Admin = lazy(() => import("./rap_admin").then((m) => ({ default: m.Admin })));
+const Dashboard = lazy(() => import("./rap_home").then((m) => ({ default: m.Dashboard })));
+const Recs = lazy(() => import("./rap_home").then((m) => ({ default: m.Recs })));
+const Applications = lazy(() => import("./rap_home").then((m) => ({ default: m.Applications })));
+const Saved = lazy(() => import("./rap_home").then((m) => ({ default: m.Saved })));
+const Engineers = lazy(() => import("./rap_home").then((m) => ({ default: m.Engineers })));
+const Companies = lazy(() => import("./rap_home").then((m) => ({ default: m.Companies })));
+const Settings = lazy(() => import("./rap_home").then((m) => ({ default: m.Settings })));
+const Onboarding = lazy(() => import("./rap_home").then((m) => ({ default: m.Onboarding })));
+const CoDash = lazy(() => import("./rap_home").then((m) => ({ default: m.CoDash })));
+const PostJob = lazy(() => import("./rap_home").then((m) => ({ default: m.PostJob })));
+const Candidates = lazy(() => import("./rap_home").then((m) => ({ default: m.Candidates })));
+const CoJobs = lazy(() => import("./rap_home").then((m) => ({ default: m.CoJobs })));
+const EngineerDetail = lazy(() => import("./rap_pages").then((m) => ({ default: m.EngineerDetail })));
+const JobDetail = lazy(() => import("./rap_pages").then((m) => ({ default: m.JobDetail })));
+const ContractSign = lazy(() => import("./rap_pages").then((m) => ({ default: m.ContractSign })));
+const Workspace = lazy(() => import("./rap_pages").then((m) => ({ default: m.Workspace })));
+const Quality = lazy(() => import("./rap_pages").then((m) => ({ default: m.Quality })));
+const Security = lazy(() => import("./rap_pages").then((m) => ({ default: m.Security })));
+const Search = lazy(() => import("./rap_pages").then((m) => ({ default: m.Search })));
+const CoProfile = lazy(() => import("./rap_pages").then((m) => ({ default: m.CoProfile })));
+const Terms = lazy(() => import("./rap_pages").then((m) => ({ default: m.Terms })));
+const Privacy = lazy(() => import("./rap_pages").then((m) => ({ default: m.Privacy })));
+const Impressum = lazy(() => import("./rap_pages").then((m) => ({ default: m.Impressum })));
+const NotFound = lazy(() => import("./rap_pages").then((m) => ({ default: m.NotFound })));
+const GroupDetail = lazy(() => import("./rap_pages").then((m) => ({ default: m.GroupDetail })));
+const Projects = lazy(() => import("./rap_projects").then((m) => ({ default: m.Projects })));
+const Ride = lazy(() => import("./rap_ride").then((m) => ({ default: m.Ride })));
+const Work = lazy(() => import("./rap_work").then((m) => ({ default: m.Work })));
+const Talent = lazy(() => import("./rap_work").then((m) => ({ default: m.Talent })));
+const Contracts = lazy(() => import("./rap_work").then((m) => ({ default: m.Contracts })));
+const Earnings = lazy(() => import("./rap_work").then((m) => ({ default: m.Earnings })));
+const CoPayments = lazy(() => import("./rap_work").then((m) => ({ default: m.CoPayments })));
+const TaskMarketplace = lazy(() => import("./rap_work").then((m) => ({ default: m.TaskMarketplace })));
+const WorkLedger = lazy(() => import("./rap_enterprise").then((m) => ({ default: m.WorkLedger })));
+const HelpCenter = lazy(() => import("./rap_enterprise").then((m) => ({ default: m.HelpCenter })));
 
 export const REG: Record<string, any> = {
   submissions: () => <TaskMarketplace initial="submissions" />,
@@ -164,7 +173,9 @@ function App() {
   return (
     <AppShell r={r} go={go}>
       {/* Remount when the resource changes so a screen never shows the previous one. */}
-      <Page key={`${r}/${loc.id ?? ""}`} go={go} />
+      <Suspense fallback={<p className="p-8 text-slate-500">Loading…</p>}>
+        <Page key={`${r}/${loc.id ?? ""}`} go={go} />
+      </Suspense>
     </AppShell>
   );
 }

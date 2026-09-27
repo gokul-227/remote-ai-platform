@@ -1,22 +1,21 @@
 // Sentry browser (client-side) initialization. Next.js auto-loads this file
-// on the client for every route; it runs before any React code.
+// on the client for every route.
 //
-// A no-op DSN check guards the whole thing: with NEXT_PUBLIC_SENTRY_DSN
-// unset (the default until the user's Sentry project exists), Sentry.init is
-// never called, so no client is created and no requests ever leave the
-// browser for this.
-import * as Sentry from "@sentry/nextjs";
-
+// Only when NEXT_PUBLIC_SENTRY_DSN is set, and loaded after the page rather
+// than in the first bundle: the SDK is ~140 KB gzipped, the largest piece of
+// JavaScript on the site. (Errors in the first moments of a page load are the
+// trade-off.) Events carry the deploy environment and the commit being run.
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 if (dsn) {
-  Sentry.init({
-    dsn,
-    environment: process.env.NEXT_PUBLIC_APP_ENV || process.env.NODE_ENV,
-    tracesSampleRate: 0.1,
-    // Never attach PII (IP address, cookies) to events.
-    sendDefaultPii: false,
-  });
+  void import("@sentry/nextjs").then((Sentry) =>
+    Sentry.init({
+      dsn,
+      environment: process.env.NEXT_PUBLIC_DEPLOY_ENV || "unknown",
+      release: process.env.NEXT_PUBLIC_BUILD_SHA,
+      tracesSampleRate: 0.1,
+      // Never attach PII (IP address, cookies) to events.
+      sendDefaultPii: false,
+    }),
+  );
 }
-
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
