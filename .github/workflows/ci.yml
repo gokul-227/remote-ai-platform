@@ -106,31 +106,25 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Start stack
-        env:
-          # Production now verifies Supabase-issued tokens exclusively
-          # (AUTH_PROVIDER=supabase) -- test against the same thing so E2E
-          # coverage matches what's actually deployed, not the old local-only
-          # auth path.
-          AUTH_PROVIDER: supabase
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Start mock Supabase Auth
+        # The suite signs in against a local stand-in for Supabase Auth, so CI
+        # never touches a real Supabase project, real email or production
+        # accounts, and needs no secrets (safe for fork PRs too).
+        run: |
+          pip install --quiet "pyjwt[crypto]==2.13.0"
+          ISSUER=http://host.docker.internal:9999/auth/v1 PORT=9999 nohup python3 tests/e2e/mock-supabase/server.py > mock-supabase.log 2>&1 &
+          timeout 30 sh -c 'until curl -sf http://localhost:9999/auth/v1/.well-known/jwks.json; do sleep 1; done'
+
+      - name: Start isolated stack
         run: |
           cp .env.example .env
-          npm run docker:up
-          timeout 120 sh -c 'until curl -sf http://localhost:8000/api/v1/health; do sleep 3; done'
-          timeout 60 sh -c 'until curl -sf http://localhost:3000/; do sleep 3; done'
+          docker compose -p rap-e2e -f infra/docker/docker-compose.yml -f tests/e2e/docker-compose.e2e.yml \
+            up -d --build postgres redis minio minio-init api web
+          timeout 180 sh -c 'until curl -sf http://localhost:18000/health/ready; do sleep 3; done'
+          timeout 120 sh -c 'until curl -sf http://localhost:13000/; do sleep 3; done'
 
       - name: Run E2E suite
         working-directory: tests/e2e
-        env:
-          # registerAs() and the admin-journey non-admin test create/confirm
-          # users directly against Supabase Auth (see helpers.ts) since
-          # production requires email confirmation and there's no inbox in CI.
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npx playwright test
 
       # Keeping this permanently (not just for this investigation): it's what
@@ -149,7 +143,9 @@ jobs:
 
       - name: Stack logs on failure
         if: failure()
-        run: docker compose -f infra/docker/docker-compose.yml logs --tail=200
+        run: |
+          docker compose -p rap-e2e -f infra/docker/docker-compose.yml -f tests/e2e/docker-compose.e2e.yml logs --tail=200
+          cat mock-supabase.log || true
 
   migrations:
     name: Migration validation

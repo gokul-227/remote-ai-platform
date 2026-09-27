@@ -60,7 +60,7 @@ export function Engineers() {
           <label className="mb-1 block text-sm font-semibold">Timezone</label>
           <div className="mb-4 flex flex-wrap gap-2">{regions.map((x) => <button key={x} onClick={() => setTz(x)} className={cx("rounded-full px-3 py-1 text-sm font-semibold", tz === x ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200")}>{x}</button>)}</div>
           {topRate > 0 && <><label className="mb-1 block text-sm font-semibold">Max hourly rate: USD {cap}</label>
-          <input type="range" min={0} max={topRate} value={cap} onChange={(e) => setMaxRate(Number(e.target.value))} className="mb-4 w-full" /></>}
+          <input type="range" aria-label="Maximum hourly rate (USD)" min={0} max={topRate} value={cap} onChange={(e) => setMaxRate(Number(e.target.value))} className="mb-4 w-full" /></>}
           <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={avail} onChange={(e) => setAvail(e.target.checked)} />Available now only</label>
           <div className="mt-4 rounded-lg bg-[#F3F0FF] p-3 text-sm"><p className="mb-1 flex items-center gap-1 font-bold text-[#5B4BDB]"><Ic n="spark" s={14} />AI tip</p><p className="text-slate-700">{user?.role === "COMPANY" ? "Open a job’s Candidates view to see professionals ranked by match against that role." : "Keep your own profile complete so companies find you here."}</p></div>
         </Card>
