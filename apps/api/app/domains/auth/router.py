@@ -23,6 +23,7 @@ from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.export import build_export, export_generated_at
 from app.domains.auth.models import DeletedIdentity, User, UserRole, identity_hash
 from app.domains.auth.repository import UserRepository
+from app.domains.auth.retention import records_to_keep
 from app.domains.auth.schemas import UserResponse, UserUpdate
 from app.domains.engineers.models import EngineerProfile
 from app.domains.engineers.service import _resume_object_key
@@ -166,6 +167,16 @@ async def delete_my_account(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrator accounts must be removed by another administrator.",
+        )
+    kept = await records_to_keep(db, current_user.id)
+    if kept:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Your account has {' and '.join(kept)} that the other party relies on, so it can't be "
+                f"deleted here. Write to {settings.SUPPORT_EMAIL} and we'll close it and remove "
+                "everything that doesn't have to be kept."
+            ),
         )
     profile = await db.scalar(select(EngineerProfile).where(EngineerProfile.user_id == current_user.id))
     if profile and profile.resume_url:

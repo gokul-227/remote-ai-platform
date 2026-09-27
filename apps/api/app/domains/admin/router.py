@@ -35,6 +35,7 @@ from app.domains.admin.service import AdminService
 from app.domains.auth.dependencies import require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.auth.repository import UserRepository
+from app.domains.auth.retention import records_to_keep
 from app.domains.auth.schemas import UserResponse
 from app.domains.jobs.models import JobPost
 from app.services.ai.models import AIUsageLog
@@ -198,9 +199,14 @@ async def delete_user(
     user = await repo.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    await AdminRepository(db).log_activity(
-        current_user.id, "USER_DELETED", "USER", str(user.id), {"email": user.email}
-    )
+    kept = await records_to_keep(db, user.id)
+    if kept:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"This account has {' and '.join(kept)} the other party relies on; suspend it instead.",
+        )
+    # The id identifies the account in the audit trail; no email is kept after deletion.
+    await AdminRepository(db).log_activity(current_user.id, "USER_DELETED", "USER", str(user.id), {})
     await db.delete(user)
     await db.commit()
     return None

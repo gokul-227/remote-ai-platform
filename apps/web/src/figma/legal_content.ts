@@ -121,6 +121,7 @@ export const PRIVACY: Section[] = [
     h: "How long we keep it",
     body: [
       "Account, profile and content data are kept while your account exists. When you delete your account in Settings > Privacy, your profile, resume file, applications, messages you sent and other content are deleted straight away, and your sign-in account is removed from our sign-in provider, unless we must keep specific records to meet a legal obligation.",
+      "If you have signed contracts or payment records with another member, write to us to close your account instead: the other party relies on those records, so we keep them and remove everything else.",
       "To stop an old, still-open session from recreating a deleted account, we keep a one-way code derived from your sign-in account's identifier and the time of deletion. It contains no name or email address and cannot be turned back into them. You can sign up again at any time.",
       fact(OPERATOR.logRetention, "Retention period for request logs, error reports and backups"),
     ],
