@@ -10,6 +10,14 @@ Each call first *reserves* an estimate (a RESERVED usage row, committed in
 its own transaction under a lock, so concurrent calls see each other), then
 *settles* it with the real token count, again in its own transaction: a
 request that fails or rolls back after the call cannot erase what it spent.
+
+Admission semantics (AI-02): a call is admitted only if what is already used
+*plus its reservation* fits the cap, so a user one token below the cap is
+refused rather than overshooting by a whole call. A call whose actual usage
+exceeds the estimate is still recorded in full, so the caps can be exceeded by
+at most (actual - estimate) per call in flight. A reservation that is never
+settled (process crash) keeps counting its estimate. These are token
+allowances, not a guarantee of zero paid usage or a financial cap.
 """
 
 import uuid
@@ -83,13 +91,14 @@ async def reserve_ai_tokens(prompt_key: str | None = None, prompt_version: str |
     async with database.AsyncSessionFactory() as db:
         if db.bind.dialect.name == "postgresql":
             await db.execute(text(f"SELECT pg_advisory_xact_lock({_RESERVE_LOCK_KEY})"))
-        if await tokens_used(db, since=_day_start()) >= settings.AI_GLOBAL_DAILY_TOKENS:
+        estimate = settings.AI_RESERVATION_TOKENS
+        if await tokens_used(db, since=_day_start()) + estimate > settings.AI_GLOBAL_DAILY_TOKENS:
             raise AIQuotaExceeded(
                 "AI features have reached today's platform limit. Please try again tomorrow."
             )
         allowance = await monthly_allowance(actor) if actor else None
         if allowance is not None and (
-            await tokens_used(db, since=_month_start(), user_id=user_id) >= allowance
+            await tokens_used(db, since=_month_start(), user_id=user_id) + estimate > allowance
         ):
             raise AIQuotaExceeded(
                 "You've used this month's AI allowance. It resets on the 1st of next month."
@@ -99,7 +108,7 @@ async def reserve_ai_tokens(prompt_key: str | None = None, prompt_version: str |
             prompt_key=prompt_key,
             prompt_version=prompt_version,
             status="RESERVED",
-            total_tokens=settings.AI_RESERVATION_TOKENS,
+            total_tokens=estimate,
         )
         db.add(row)
         await db.commit()

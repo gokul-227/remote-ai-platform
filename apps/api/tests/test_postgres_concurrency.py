@@ -123,6 +123,7 @@ async def test_concurrent_ai_calls_cannot_all_slip_under_the_allowance(sessions,
 
     monkeypatch.setattr(database, "AsyncSessionFactory", sessions)
     monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 1)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 1)
     monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 10**12)
     (user,), _, _ = await _seed(sessions, 1)
     # Widen the gap between reading usage and reserving, so overlapping

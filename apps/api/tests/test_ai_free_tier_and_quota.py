@@ -108,6 +108,7 @@ async def test_usage_is_attributed_and_monthly_allowance_enforced(client: AsyncC
 
     monkeypatch.setattr(settings, "GROQ_API_KEY", "k")
     monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 150)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 50)
 
     async def ok(**kwargs):
         return _fake_response(tokens=100)
@@ -136,6 +137,7 @@ async def test_platform_daily_cap_applies_to_everyone(client: AsyncClient, auto_
 
     monkeypatch.setattr(settings, "GROQ_API_KEY", "k")
     monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 100)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 50)
 
     async def ok(**kwargs):
         return _fake_response(tokens=100)
@@ -215,6 +217,7 @@ async def test_platform_cap_applies_without_a_signed_in_user(auto_chain, monkeyp
 
     monkeypatch.setattr(settings, "GROQ_API_KEY", "k")
     monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 1)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 1)
     metering._actor.set(None)
     await metering.reserve_ai_tokens()  # someone used today's budget
     with pytest.raises(AIQuotaExceededError):
@@ -227,10 +230,70 @@ async def test_a_call_in_flight_counts_against_the_allowance(auto_chain, monkeyp
 
     from app.services.ai import metering
 
-    monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 1500)
+    monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 3000)
     monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 2000)
     async with TestingSessionLocal() as db:
         metering.set_ai_actor(uuid.uuid4(), db)
         await metering.reserve_ai_tokens()  # first call still running
+        with pytest.raises(metering.AIQuotaExceeded):
+            await metering.reserve_ai_tokens()
+
+
+@pytest.mark.asyncio
+async def test_admission_counts_the_reservation_not_just_past_usage(auto_chain, monkeypatch):
+    """AI-02: one token below the cap used to admit a whole further call."""
+    from conftest import TestingSessionLocal
+
+    from app.services.ai import metering
+
+    monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 10**12)
+    monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 1000)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 400)
+    async with TestingSessionLocal() as db:
+        metering.set_ai_actor(uuid.uuid4(), db)
+        first = await metering.reserve_ai_tokens()
+        await metering.settle_ai_tokens(first, status="SUCCESS", total_tokens=599)
+        # 599 used + 400 reserved = 999 <= 1000: fits exactly under the cap.
+        second = await metering.reserve_ai_tokens()
+        await metering.settle_ai_tokens(second, status="SUCCESS", total_tokens=400)
+        # 999 used: one token below the cap, but the next call needs 400.
+        with pytest.raises(metering.AIQuotaExceeded):
+            await metering.reserve_ai_tokens()
+        assert (await metering.usage_summary(metering.current_ai_actor()))["used_this_month"] == 999
+
+
+@pytest.mark.asyncio
+async def test_usage_above_the_estimate_is_recorded_in_full_and_blocks_the_next_call(auto_chain, monkeypatch):
+    from conftest import TestingSessionLocal
+
+    from app.services.ai import metering
+
+    monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 10**12)
+    monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 1000)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 100)
+    async with TestingSessionLocal() as db:
+        metering.set_ai_actor(uuid.uuid4(), db)
+        rid = await metering.reserve_ai_tokens()
+        await metering.settle_ai_tokens(rid, status="SUCCESS", total_tokens=1200)  # far above the estimate
+        summary = await metering.usage_summary(metering.current_ai_actor())
+        assert summary["used_this_month"] == 1200  # the overshoot is visible, not hidden
+        with pytest.raises(metering.AIQuotaExceeded):
+            await metering.reserve_ai_tokens()
+
+
+@pytest.mark.asyncio
+async def test_an_unsettled_reservation_keeps_counting(auto_chain, monkeypatch):
+    """A process that dies mid-call never settles; its estimate stays counted."""
+    from conftest import TestingSessionLocal
+
+    from app.services.ai import metering
+
+    monkeypatch.setattr(settings, "AI_GLOBAL_DAILY_TOKENS", 10**12)
+    monkeypatch.setattr(settings, "AI_FREE_MONTHLY_TOKENS", 250)
+    monkeypatch.setattr(settings, "AI_RESERVATION_TOKENS", 100)
+    async with TestingSessionLocal() as db:
+        metering.set_ai_actor(uuid.uuid4(), db)
+        await metering.reserve_ai_tokens()  # crashed, never settled
+        await metering.reserve_ai_tokens()  # crashed, never settled
         with pytest.raises(metering.AIQuotaExceeded):
             await metering.reserve_ai_tokens()
