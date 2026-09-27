@@ -1,143 +1,76 @@
 # Remote AI Platform
 
-> AI-powered remote engineering marketplace connecting companies with remote engineers through
-> transparent, explainable AI matching.
+A remote-work marketplace for professionals and organisations: discover remote jobs, build a profile
+(optionally from a resume, with AI help), apply, get matched with explainable scores, message, and run
+contracted work — all on free-tier infrastructure.
 
-## 1. Product overview
+Live: <https://remoteaiplatform.com> · Contact: <contact@remoteaiplatform.com>
 
-Remote AI Platform aggregates remote engineering jobs from public job boards, builds AI-enhanced
-engineer profiles from resumes, and computes explainable engineer↔job match scores. Companies get a
-talent-discovery dashboard and hiring pipeline; engineers get a job marketplace, AI profile enhancement,
-and a project workspace once hired.
-
-## 2. Architecture
+## Architecture
 
 ```mermaid
 flowchart LR
-    Web["Next.js 16 (apps/web)"] -- REST + WS --> API["FastAPI (apps/api)"]
-    API --> PG[(PostgreSQL)]
-    API --> Minio[(MinIO)]
-    API --> Keycloak["Keycloak (OIDC)"]
-    API -- broker --> Redis[(Redis)]
-    Worker["Celery worker + beat"] --> Redis
-    Worker --> PG
-    Worker --> External["RemoteOK / Arbeitnow /\nRemotive / USAJobs / The Muse"]
-    API --> Agents["AI Agents (LiteLLM)"] -.-> LLM["Groq / Ollama / OpenAI / Gemini"]
+    Browser["Browser — Next.js 16 app<br/>(Cloudflare Workers via OpenNext)"] -- REST --> API["FastAPI<br/>(Render)"]
+    Browser -- sign-in (email code / Google / Microsoft / GitHub) --> Auth["Supabase Auth"]
+    API -- verifies tokens (JWKS) --> Auth
+    API --> PG[("PostgreSQL<br/>(Supabase, EU)")]
+    API --> S3[("Object storage<br/>(Supabase Storage, S3 API)")]
+    API --> Redis[("Redis<br/>rate limits, cache, chat fan-out")]
+    API -- LiteLLM --> LLM["Free-tier AI chain<br/>Groq → Gemini → Cerebras → OpenRouter → Mistral"]
+    Cron["GitHub Actions (every 6h)"] -- POST /jobs/sync --> API
+    API --> Boards["RemoteOK · Arbeitnow · Remotive · USAJobs · The Muse"]
 ```
 
-See `CLAUDE.md` for a fuller tour of the domain layout and AI pipeline.
+- **apps/web** — Next.js 16 / React 19. The product UI is a client-rendered, hash-routed app in
+  `src/figma/*` (derived from the Figma design) inside a thin Next.js shell. Resource URLs are shareable
+  (`/#jobdetail/<id>`, `/#engineer/<id>`, …).
+- **apps/api** — FastAPI modular monolith (`app/domains/*`: auth, engineers, companies, jobs, applications,
+  matching, network/messaging, social, groups, projects, contracts, payments, trust, moderation, admin …).
+  Async SQLAlchemy 2 + Alembic.
+- **No background worker.** Resume parsing runs inline with a time budget; job sync is a scheduled workflow.
+- **Payments are switched off** (`MARKETPLACE_PAYMENTS_ENABLED=false`): nothing is charged or held. Freelance
+  work is paid directly between client and professional.
 
-## 3. Features
+## Local development
 
-- **Job marketplace** — aggregates remote engineering roles from 5 public sources (RemoteOK, Remotive,
-  Arbeitnow, USAJobs, The Muse) with dedup-on-sync and search/filtering.
-- **Engineer profiles** — resume upload, AI-extracted skills/experience, AI profile enhancement, public
-  profile pages.
-- **Company profiles & hiring** — company profile, job posting with AI job analysis, candidate ranking,
-  applications pipeline.
-- **AI matching engine** — multi-factor explainable match scores (skills, experience, role, timezone,
-  compensation, remote fit) between engineers and jobs.
-- **Networking & messaging** — connection requests and real-time chat over WebSocket.
-- **Project workspace** — milestones, tasks, comments, and AI-generated project plans/progress/risk
-  reports once an engineer is engaged.
-- **Admin console** — platform stats and job-aggregator sync status (source, last sync, status, jobs
-  imported).
-
-## 4. Technology stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + TanStack Query |
-| Backend | FastAPI + SQLAlchemy 2 (async) + Alembic |
-| Database | PostgreSQL 16 |
-| Cache / Task queue | Redis 7 + Celery 5 |
-| Object storage | MinIO (S3-compatible) |
-| Authentication | Email/password JWT (primary) + Keycloak OIDC (provisioned) |
-| AI | LiteLLM — Groq / Ollama / OpenAI / Gemini, provider-agnostic |
-| Deployment targets | Vercel (frontend), Render/Fly.io (backend), Neon/Supabase (database) |
-
-## 5. Local setup
+Prerequisites: Node 22+, Python 3.11, Docker. Sign-in needs a Supabase project (use the dev project).
 
 ```bash
-git clone <this-repo-url>
-cd remote-ai-platform
-cp .env.example .env
-npm install
+cp .env.example .env            # fill SUPABASE_URL / NEXT_PUBLIC_SUPABASE_* with the dev project
+npm ci
+docker compose -f infra/docker/docker-compose.yml up -d postgres redis minio minio-init
+
+cd apps/api && python3.11 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/alembic upgrade head
+.venv/bin/uvicorn app.main:app --reload          # API on :8000
+
+cd apps/web && npm run dev                        # web on :3000
 ```
 
-Then either run everything via Docker (§6), or run the two apps directly:
-```bash
-cd apps/api && python3.11 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
-uvicorn app.main:app --reload            # terminal 1 — API on :8000
+AI features need at least one free-tier key (`GROQ_API_KEY` recommended); without one they report
+"unavailable" and everything else works.
 
-cd apps/web && npm run dev                # terminal 2 — web on :3000
-```
-See "Commands" in `CLAUDE.md` for the full command reference (migrations, Celery, seeding demo data,
-running without Docker, etc).
-
-## 6. Docker setup
+## Tests
 
 ```bash
-cp .env.example .env
-docker compose -f infra/docker/docker-compose.yml up -d
+cd apps/api && .venv/bin/pytest && .venv/bin/ruff check . && .venv/bin/mypy app
+cd apps/web && npm run lint && npx tsc --noEmit && npm test
 ```
 
-Brings up 9 services: `postgres`, `redis`, `minio` + `minio-init`, `keycloak`, `api`, `web`,
-`celery-worker`, `celery-beat`. All app containers hot-reload from bind-mounted source.
-
-| Service | URL |
-|---|---|
-| Web app | http://localhost:3000 |
-| API docs | http://localhost:8000/docs |
-| Keycloak admin | http://localhost:8080 |
-| MinIO console | http://localhost:9001 |
-
-Seed demo jobs (local/dev only — disabled when `APP_ENV=production`):
-```bash
-curl -X POST http://localhost:8000/api/v1/jobs/seed_demo
-```
-
-## 7. Environment variables
-
-All variables are documented with placeholder values in [`.env.example`](.env.example) — app config,
-Postgres, Redis, MinIO, Keycloak, JWT, AI/LiteLLM, job-aggregator source URLs, and feature flags.
-`NEXT_PUBLIC_API_URL` is the one variable the frontend itself reads (bare API host, no `/api/v1` suffix).
-The default secrets in `.env.example`/`docker-compose.yml` are development-only placeholders — always
-set real high-entropy secrets for any non-local deployment.
-
-## 8. AI configuration
-
-All AI calls go through LiteLLM — no direct provider SDK usage in application code. Configure via
-`AI_PROVIDER`, `AI_MODEL`, `AI_FALLBACK_PROVIDERS`. Dev default is Groq with local Ollama fallback models
-(see `.env.example` for the exact variables).
-
-## 9. Database migrations
+End-to-end journeys run against an isolated stack and a mock Supabase Auth (no real accounts or email):
 
 ```bash
-cd apps/api
-alembic upgrade head                              # apply
-alembic revision --autogenerate -m "description"  # create a new migration
-```
-New domain models must be imported in `apps/api/alembic/env.py` before `--autogenerate` will see them.
-
-## 10. Testing
-
-```bash
-cd apps/api && pytest                 # backend — in-memory SQLite, no external services needed
-cd apps/web && npm run lint && npm run build   # frontend — no test suite configured yet
-```
-Or without a local Python interpreter, via the built dev image:
-```bash
-docker build -f apps/api/Dockerfile --target development -t remote-ai-api:dev apps/api
-docker run --rm -v "$(pwd)/apps/api:/app" -w /app remote-ai-api:dev pytest -q
+python3 tests/e2e/mock-supabase/server.py &        # needs pyjwt[crypto]; ISSUER=http://host.docker.internal:9999/auth/v1
+docker compose -p rap-e2e -f infra/docker/docker-compose.yml -f tests/e2e/docker-compose.e2e.yml \
+  up -d --build postgres redis minio minio-init api web
+cd tests/e2e && npx playwright test                # web :13000, API :18000
 ```
 
-## 11. Deployment
+## Deployment
 
-Deployment target is Vercel/Cloudflare (frontend) + Render/Fly.io (backend) + Neon/Supabase (database).
-Operational deployment details (live URLs, project IDs, rotation procedures) are kept out of this public
-repo; ask the repo owner if you need them.
+`prod` and `dev` branches deploy automatically after CI passes: the frontend to Cloudflare Workers, the
+backend to Render via a deploy hook pinned to the tested commit. Both report the deployed commit at
+`/api/version` (web) and `/health/version` (API), and the workflow waits for both to match. Migrations run
+on API start. Secrets live in Infisical and the providers' dashboards — never in this repository.
 
-## License
-
-MIT © Remote AI Platform
+More detail (architecture, operations, runbooks) is in the private companion repository.

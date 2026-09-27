@@ -4,16 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Remote AI Platform is an AI-powered remote engineering marketplace: it aggregates remote jobs from
-external boards, extracts structured engineer profiles from resumes via LLMs, and computes explainable
-engineer↔job matches. Three personas — engineer, company, admin — are served by one Next.js frontend and
-one FastAPI backend.
+Remote AI Platform is a remote-work marketplace for professionals and organisations: it aggregates
+remote jobs from external boards, builds profiles (optionally AI-assisted from a resume), computes
+explainable matches, and supports applications, invitations, messaging, groups, projects and contracts.
+Personas — professional (role `ENGINEER` internally), organisation (`COMPANY`), admin — share one
+frontend and one API. User-facing copy says "professional", never "engineer".
 
-Monorepo layout: npm workspaces (`apps/*`, `packages/*`) orchestrated by Turborepo.
-- `apps/api` — FastAPI backend (Python 3.11, async SQLAlchemy 2, Celery, LiteLLM)
-- `apps/web` — Next.js 16 / React 19 frontend (Tailwind v4, TanStack Query)
-- `packages/config`, `packages/shared`, `packages/ui` — currently empty placeholders for future shared code
-- `infra/docker/docker-compose.yml` — the single source of truth for local infra
+Monorepo layout: npm workspaces (`apps/*`, `tests/*`) orchestrated by Turborepo.
+- `apps/api` — FastAPI backend (Python 3.11, async SQLAlchemy 2, Alembic, LiteLLM)
+- `apps/web` — Next.js 16 / React 19 frontend; the product UI lives in `apps/web/src/figma`
+- `tests/e2e` — Playwright journeys against an isolated stack + mock Supabase Auth
+- `infra/docker/docker-compose.yml` — local infra (Postgres, Redis, MinIO, API, web)
 
 **apps/web has its own `CLAUDE.md`/`AGENTS.md`** warning that this repo pins recent Next.js/React
 versions with breaking API/convention changes — check `node_modules/next/dist/docs/` before writing
@@ -22,40 +23,35 @@ frontend code rather than relying on memorized conventions.
 ## Commands
 
 ```bash
-# Local infra (Postgres, Redis, MinIO, Keycloak, Celery worker/beat)
-cp .env.example .env
-npm run docker:up      # docker compose -f infra/docker/docker-compose.yml up -d
-
 # Backend (apps/api)
 cd apps/api
-python3.11 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-uvicorn app.main:app --reload        # API on :8000
-alembic upgrade head                  # apply migrations
-pytest                                 # run tests
-ruff check . && mypy app               # lint + type check
-python -m app.scripts.seed_data        # seed demo users/jobs/profiles
+python3.11 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+.venv/bin/uvicorn app.main:app --reload     # API on :8000
+.venv/bin/alembic upgrade head              # apply migrations
+.venv/bin/pytest                            # tests (SQLite, Supabase-style test tokens)
+.venv/bin/ruff check . && .venv/bin/mypy app
 
 # Frontend (apps/web)
 cd apps/web
-npm run dev            # :3000
-npm run build
-npm run lint
+npm run dev / npm run build / npm run lint / npx tsc --noEmit / npm test
 
-# Root (Turborepo, fans out to all workspaces)
-npm run dev / build / lint / type-check / test
+# E2E (see README): mock Supabase + docker-compose.e2e.yml, then
+cd tests/e2e && npx playwright test
 ```
 
 ## Architecture, in one paragraph
 
-`apps/api/app/domains/` holds one subpackage per bounded context, generally layered as
-`models.py` / `schemas.py` / `repository.py` / `service.py` / `router.py`; all routers are registered in
-`apps/api/app/main.py` under prefix `/api/v1`. AI calls go through LiteLLM only (`app/agents/*` →
-`app/services/ai/service.py` → `app/agents/llm_client.py`) — never a provider SDK directly. Celery
-(`app/workers/`) has 4 queues (`default`, `jobs`, `ai`, `matching`) and a beat schedule for job-source
-sync, trending-skills refresh, and stale-match recompute. `apps/web/src/app/` is the Next.js App Router,
-persona-first (`engineer/*`, `company/*`, `admin/dashboard`), styled via a hand-rolled Tailwind v4 system
-in `globals.css` — not a component library.
+`apps/api/app/domains/` holds one subpackage per bounded context (`models.py` / `schemas.py` /
+`router.py`, plus `repository.py` / `service.py` where they exist); all routers mount under `/api/v1` in
+`apps/api/app/main.py`. **Supabase Auth is the only identity provider**: the API verifies Supabase access
+tokens (JWKS) in `app/domains/auth/dependencies.py` and never issues tokens; role lives in the app's own
+`users` table. AI calls go through LiteLLM only (`app/agents/*` → `app/services/ai/service.py` →
+`app/agents/llm_client.py`), using the free-tier chain in `AI_FREE_TIER_CHAIN` with per-user token
+allowances (`app/services/ai/metering.py`). There is no background worker: resume parsing is inline with a
+time budget and job sync is `.github/workflows/scheduled-job-sync.yml`. Money movement is gated off
+(`MARKETPLACE_PAYMENTS_ENABLED`); contract/milestone state rules live in `app/domains/contracts/lifecycle.py`.
+The frontend is a hash-routed client app in `apps/web/src/figma` (routes in `App.tsx`, role-aware shell in
+`rap_shell.tsx`), styled via its own CSS/Tailwind utilities — not a component library.
 
 ## Documentation
 

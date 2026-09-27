@@ -1,36 +1,18 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# apps/web
 
-## Getting Started
+Next.js 16 / React 19 frontend, deployed to Cloudflare Workers with OpenNext.
 
-First, run the development server:
+- `src/figma/` — the product UI: a client-rendered, hash-routed app (`App.tsx` routes, `rap_*.tsx`
+  screens, `rap_kit.tsx` shared components, `live.ts` API helpers such as `useApi` and `goRoute`).
+- `src/lib/` — Supabase sign-in, session storage (`auth.tsx`), the axios API client (`api.ts`), build info.
+- `src/app/` — the Next.js shell: `/` renders the app, `[...slug]` redirects old path URLs to hash routes,
+  `/api/version` and `/health/version` report the deployed build.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run dev          # :3000 (needs NEXT_PUBLIC_API_URL and the dev Supabase NEXT_PUBLIC_SUPABASE_* vars)
+npm run lint && npx tsc --noEmit && npm test
+npm run cf:build     # the exact Cloudflare artifact CI deploys
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repo pins recent Next.js/React versions; read `node_modules/next/dist/docs/` before relying on
+remembered conventions (see `AGENTS.md`).
