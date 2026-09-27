@@ -2,7 +2,21 @@ import { useRef, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, goRoute } from "./live";
-import { Ic, Av, Btn, Card, Tag, Modal, Bar, cx, Field, inputCls, TableScroll, useDialogFocus } from "./rap_kit";
+import {
+  Ic,
+  Av,
+  Btn,
+  Card,
+  Tag,
+  Modal,
+  Bar,
+  cx,
+  Field,
+  inputCls,
+  TableScroll,
+  useDialogFocus,
+  Notice,
+} from "./rap_kit";
 
 type Issue = {
   id: string;
@@ -298,11 +312,7 @@ export function Projects() {
             </Btn>
           </div>
         </Modal>
-        {notice && (
-          <button onClick={() => setNotice("")} className="v2-toast">
-            {notice} · Dismiss
-          </button>
-        )}
+        <Notice text={notice} onDismiss={() => setNotice("")} />
       </div>
     );
 
@@ -927,11 +937,7 @@ export function Projects() {
           </Btn>
         </div>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }

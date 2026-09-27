@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Ic, Av, Btn, Card, Tag, Modal, cx } from "./rap_kit";
+import { Ic, Av, Btn, Card, Tag, Modal, cx, Notice } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, timeAgo, goRoute, safeHref } from "./live";
@@ -357,11 +357,7 @@ export function Feed() {
           Submit report
         </Btn>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
@@ -709,11 +705,7 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
           <button className="rap-button w-full">Create group</button>
         </form>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }

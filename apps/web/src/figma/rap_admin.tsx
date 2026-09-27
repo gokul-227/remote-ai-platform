@@ -5,7 +5,7 @@ import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, timeAgo } from "./live";
-import { Ic, Av, Btn, Card, Tag, Bar, Bars, cx } from "./rap_kit";
+import { Ic, Av, Btn, Card, Tag, Bar, Bars, cx, Notice } from "./rap_kit";
 
 const NAV: [string, string, string, string][] = [
   ["Overview", "chart", "overview", "admin"],
@@ -677,11 +677,7 @@ export function Admin({ initial }: { initial?: string } = {}) {
             audit.loading ? "Loading…" : "No audit events yet.",
           )}
       </div>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }

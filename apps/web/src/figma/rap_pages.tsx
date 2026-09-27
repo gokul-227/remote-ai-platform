@@ -4,7 +4,7 @@ import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
 import { Groups } from "./rap_social";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls, RichText } from "./rap_kit";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
 const nav = (h: string) => {
   goRoute(h);
@@ -259,11 +259,7 @@ export function EngineerDetail() {
           <p className="text-slate-500">Post a job first, then invite professionals to apply.</p>
         )}
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </Wrap>
   );
 }
@@ -505,11 +501,7 @@ export function JobDetail() {
           <Btn onClick={submit}>Submit application</Btn>
         </div>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </Wrap>
   );
 }
@@ -648,11 +640,7 @@ export function ContractSign() {
           </div>
         )}
       </Card>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </Wrap>
   );
 }
@@ -900,11 +888,7 @@ export function Workspace() {
           </Card>
         </div>
       </div>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </Wrap>
   );
 }
@@ -1242,11 +1226,7 @@ export function Security() {
           ))}
         </Card>
       </div>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </Wrap>
   );
 }

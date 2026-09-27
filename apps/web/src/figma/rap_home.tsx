@@ -6,7 +6,7 @@ const openJob = (id: string) => {
   localStorage.setItem("rap-selected-job", id);
   goRoute("jobs");
 };
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, cx, Field, inputCls, TableScroll } from "./rap_kit";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, cx, Field, inputCls, TableScroll, Notice } from "./rap_kit";
 
 const visit = (page: string) => {
   goRoute(page);
@@ -639,11 +639,7 @@ export function Engineers() {
           </p>
         )}
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </Page>
   );
 }

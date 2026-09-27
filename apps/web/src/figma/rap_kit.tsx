@@ -288,6 +288,26 @@ export function RichText({ text, c = "" }: { text: string; c?: string }) {
   );
 }
 
+/**
+ * Outcome message (saved, sent, failed...). The polite live region is always
+ * mounted, so screen readers announce each new message; the message has its
+ * own Dismiss button.
+ */
+export function Notice({ text, onDismiss }: { text: string; onDismiss: () => void }) {
+  return (
+    <div role="status" aria-live="polite" aria-atomic="true">
+      {text && (
+        <div className="v2-toast flex items-center gap-4">
+          <span>{text}</span>
+          <button type="button" onClick={onDismiss} className="font-semibold underline underline-offset-2">
+            Dismiss
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** Horizontally scrollable table area that keyboard users can reach and screen readers can name. */
 export function TableScroll({ label, children }: { label: string; children: ReactNode }) {
   return (

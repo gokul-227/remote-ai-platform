@@ -19,6 +19,7 @@ import {
   TableScroll,
   RichText,
   useDialogFocus,
+  Notice,
 } from "./rap_kit";
 
 const GR = "#0552CC";
@@ -373,11 +374,7 @@ export function Work() {
           </Btn>
         </div>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
@@ -552,11 +549,7 @@ export function Talent() {
           <p className="text-slate-500">Post a job first, then invite professionals to apply.</p>
         )}
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
@@ -943,11 +936,7 @@ export function Contracts() {
           </Btn>
         </div>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
@@ -1118,11 +1107,7 @@ function PaymentsView({ company }: { company: boolean }) {
           <Btn onClick={() => act(`/payments/${release}/release`, "Held funds captured")}>Capture funds</Btn>
         </div>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
@@ -1501,11 +1486,7 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
           </Btn>
         </div>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }

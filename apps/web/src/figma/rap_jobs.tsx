@@ -2,7 +2,24 @@ import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref } from "./live";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, grad, Field, inputCls, RichText } from "./rap_kit";
+import {
+  Ic,
+  Av,
+  Lg,
+  Btn,
+  Card,
+  Tag,
+  Tabs,
+  Modal,
+  Bar,
+  Stars,
+  cx,
+  grad,
+  Field,
+  inputCls,
+  RichText,
+  Notice,
+} from "./rap_kit";
 
 const BL = "#0552CC";
 export function Jobs() {
@@ -464,11 +481,7 @@ export function Jobs() {
           )}
         </div>
       </Modal>
-      {notice && (
-        <div role="status" className="v2-toast" onClick={() => setNotice("")}>
-          {notice}
-        </div>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
@@ -891,11 +904,7 @@ export function Profile() {
           </div>
         </div>
       </Modal>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
@@ -1086,11 +1095,7 @@ export function Network() {
           </Card>
         </aside>
       </div>
-      {notice && (
-        <button onClick={() => setNotice("")} className="v2-toast">
-          {notice} · Dismiss
-        </button>
-      )}
+      <Notice text={notice} onDismiss={() => setNotice("")} />
     </div>
   );
 }
