@@ -39,7 +39,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.job_enricher import JobEnricherAgent
 from app.agents.llm_client import AIProviderError, LLMClient
 from app.agents.resume_parser import ResumeParserAgent
-from app.core.rate_limiter import get_route_tier
+from app.core.rate_limiter import GENERAL_MULTIPLIER, get_route_tier
 from app.domains.auth.models import User, UserRole
 from app.services.ai import AIService
 from app.services.ai.models import AIUsageLog
@@ -338,7 +338,7 @@ def test_job_listing_get_stays_on_the_general_tier_not_the_ai_tier():
     from app.core.config import settings
 
     tier = get_route_tier("/api/v1/jobs", method="GET")
-    assert tier[0] == settings.RATE_LIMIT_MAX_REQUESTS * 10
+    assert tier[0] == settings.RATE_LIMIT_MAX_REQUESTS * GENERAL_MULTIPLIER
 
 
 def test_other_submission_routes_stay_on_the_general_tier():
@@ -349,4 +349,4 @@ def test_other_submission_routes_stay_on_the_general_tier():
     tier = get_route_tier(
         "/api/v1/projects/submissions/00000000-0000-0000-0000-000000000000", method="GET"
     )
-    assert tier[0] == settings.RATE_LIMIT_MAX_REQUESTS * 10
+    assert tier[0] == settings.RATE_LIMIT_MAX_REQUESTS * GENERAL_MULTIPLIER
