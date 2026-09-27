@@ -13,7 +13,7 @@ describe("legal pages", () => {
   it("shows operator facts that have not been supplied as pending instead of inventing them", () => {
     render(<Impressum />);
     const missing = pendingFacts(IMPRESSUM);
-    for (const f of missing) expect(screen.getByText(`Pending: ${f.label}.`)).toBeInTheDocument();
+    for (const f of missing) expect(screen.getByText(`Coming soon: ${f.label}.`)).toBeInTheDocument();
   });
 
   it("does not describe payments as processed or escrowed", () => {

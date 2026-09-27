@@ -305,7 +305,7 @@ function LegalBlock({ b }: { b: Block }) {
   if (typeof b === "string") return <p className="mt-2 text-slate-600">{b}</p>;
   if (Array.isArray(b)) return <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-600">{b.map((x) => <li key={x}>{x}</li>)}</ul>;
   // Operator-only facts are never guessed: until supplied they show as pending.
-  return b.fact ? <p className="mt-2 text-slate-600">{b.fact}</p> : <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">Pending: {b.label}.</p>;
+  return b.fact ? <p className="mt-2 text-slate-600">{b.fact}</p> : <p className="mt-2 rounded-md bg-slate-100 px-3 py-2 text-sm text-slate-700">Coming soon: {b.label}.</p>;
 }
 export function Legal({ kind }: { kind: string }) {
   const [title, sections] = LEGAL[kind] || LEGAL.terms;

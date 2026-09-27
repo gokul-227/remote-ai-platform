@@ -18,14 +18,14 @@ export const OPERATOR: {
 } = {
   legalName: null,
   address: null,
-  // hello@remoteaiplatform.com is the verified *sending* address; it may only
-  // be published here once someone confirms it is monitored.
-  contactEmail: null,
+  contactEmail: "contact@remoteaiplatform.com",
   vatOrRegister: null,
   contentResponsible: null,
-  aiProviders: null,
-  cacheProvider: null,
-  dataLocations: null,
+  aiProviders:
+    "Groq (Groq, Inc., USA) runs the AI models used today. Other free-tier providers (Google Gemini, Cerebras, OpenRouter, Mistral) may be used as fallbacks if Groq is unavailable; this notice will list them before they are switched on.",
+  cacheProvider: "A managed Redis service stores short-lived technical data such as rate-limit counters. It holds no profile content.",
+  dataLocations:
+    "Your account, profile and uploaded files are stored with Supabase in the EU (Ireland). The application servers that process requests run on Render in the United States, and the website is delivered through Cloudflare's global network. These providers offer data processing terms that include the EU standard contractual clauses for transfers outside the EU/EEA.",
   logRetention: null,
   governingLaw: null,
   supervisoryAuthority: null,
