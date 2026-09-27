@@ -6,6 +6,7 @@ const good = {
   NEXT_PUBLIC_API_URL: "https://api.example.com",
   NEXT_PUBLIC_SUPABASE_URL: "https://abc.supabase.co",
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_x",
+  NEXT_PUBLIC_SITE_URL: "https://example.com",
 };
 
 describe("deployEnvProblems", () => {
@@ -20,7 +21,9 @@ describe("deployEnvProblems", () => {
     expect(deployEnvProblems({ ...good, NEXT_PUBLIC_API_URL: "http://api.example.com" })).toHaveLength(1);
     expect(deployEnvProblems({ ...good, NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co" })).toHaveLength(1);
     expect(deployEnvProblems({ ...good, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "" })).toHaveLength(1);
-    expect(deployEnvProblems({ NEXT_PUBLIC_DEPLOY_ENV: "production" })).toHaveLength(3);
+    expect(deployEnvProblems({ NEXT_PUBLIC_DEPLOY_ENV: "production" })).toHaveLength(4);
+    expect(deployEnvProblems({ ...good, NEXT_PUBLIC_SITE_URL: undefined })).toHaveLength(1);
+    expect(deployEnvProblems({ ...good, NEXT_PUBLIC_DEPLOY_ENV: "dev", NEXT_PUBLIC_SITE_URL: undefined })).toEqual([]);
   });
 
   it("does not constrain local, CI or E2E builds", () => {

@@ -1,8 +1,8 @@
-"use client";
+import { notFound } from "next/navigation";
+import LegacyRedirect from "./LegacyRedirect";
 
-import { use, useEffect } from "react";
-
-/** Old path-based URLs → the Figma app's hash routes, so existing links and bookmarks still land on the right screen. */
+/** Old path-based URLs → the app's hash routes, so existing links and bookmarks still land on the right screen.
+ * Anything else is a real 404 (it used to answer 200 with the app shell). /jobs/<id> has its own public page. */
 const ROUTES: Array<[RegExp, string]> = [
   [/^auth\/login$/, "login"],
   [/^auth\/register$/, "register"],
@@ -10,7 +10,6 @@ const ROUTES: Array<[RegExp, string]> = [
   [/^auth\/reset-password$/, "reset"],
   [/^auth\/callback$/, "callback"],
   [/^jobs\/new$/, "postjob"],
-  [/^jobs\/([^/]+)$/, "jobdetail/$1"],
   [/^jobs$/, "jobs"],
   [/^saved$/, "saved"],
   [/^engineer\/dashboard$/, "dash"],
@@ -38,15 +37,10 @@ const ROUTES: Array<[RegExp, string]> = [
   ],
 ];
 
-export default function LegacyRedirect({ params }: { params: Promise<{ slug: string[] }> }) {
-  const { slug } = use(params);
-  useEffect(() => {
-    const path = slug.join("/");
-    const hit = ROUTES.find(([re]) => re.test(path));
-    // "$1" carries a resource id from the old path into the hash route.
-    const route = hit ? (hit[1] ? path.replace(hit[0], hit[1]) : path) : "notfound";
-    // Keep the query (e.g. ?token= on password-reset links) for the Figma screen.
-    window.location.replace(`/${window.location.search}#${route}`);
-  }, [slug]);
-  return null;
+export default async function LegacyPath({ params }: { params: Promise<{ slug: string[] }> }) {
+  const path = (await params).slug.join("/");
+  const hit = ROUTES.find(([re]) => re.test(path));
+  if (!hit) notFound();
+  // "$1" carries a resource id from the old path into the hash route.
+  return <LegacyRedirect route={hit[1] ? path.replace(hit[0], hit[1]) : path} />;
 }

@@ -41,3 +41,19 @@ test("signing in returns you to the page you were on", async ({ browser, request
   await signIn(visitor, email);
   await expect(visitor).toHaveURL(new RegExp(`#jobdetail/${jobs[0].id}$`));
 });
+
+test("jobs have public, crawlable pages and unknown addresses are real 404s", async ({ request, page }) => {
+  const jobs = await (await request.get(`${API}/api/v1/jobs?limit=1`)).json();
+  test.skip(!jobs.length, "needs at least one job in the stack");
+  const res = await request.get(`/jobs/${jobs[0].id}`);
+  expect(res.status()).toBe(200);
+  const html = await res.text();
+  expect(html).toContain(`<link rel="canonical"`);
+  expect(html).toContain(jobs[0].title.replace(/&/g, "&amp;"));
+  expect((await request.get("/jobs/00000000-0000-4000-8000-000000000000")).status()).toBe(404);
+  expect((await request.get("/no-such-page-anywhere")).status()).toBe(404);
+  // From the public page into the app.
+  await page.goto(`/jobs/${jobs[0].id}`);
+  await page.getByRole("link", { name: "View and apply" }).click();
+  await expect(page).toHaveURL(new RegExp(`#jobdetail/${jobs[0].id}$`));
+});

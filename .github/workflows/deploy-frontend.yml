@@ -81,6 +81,7 @@ jobs:
         env:
           NEXT_PUBLIC_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
           NEXT_PUBLIC_DEPLOY_ENV: production
+          NEXT_PUBLIC_SITE_URL: ${{ vars.PROD_FRONTEND_URL }}
           NEXT_PUBLIC_DEPLOYMENT_ID: ${{ github.run_id }}-${{ github.run_attempt }}
           NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_BASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}

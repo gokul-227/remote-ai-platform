@@ -31,6 +31,9 @@ export function deployEnvProblems(env: Env): string[] {
   }
   const key = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!key || /placeholder/i.test(key)) problems.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing");
+  // Canonical URLs and the sitemap need the public address of the production site.
+  if (target === "production" && (!httpsUrl(env.NEXT_PUBLIC_SITE_URL) || isLocal(env.NEXT_PUBLIC_SITE_URL ?? "")))
+    problems.push("NEXT_PUBLIC_SITE_URL must be the site's https URL");
   return problems;
 }
 

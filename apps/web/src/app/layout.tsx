@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_URL } from "@/lib/site";
 import { Inter } from "next/font/google";
 import "@/figma/index.css";
 import { Providers } from "./providers";
@@ -8,6 +9,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], display: "swap" });
 
 export const metadata: Metadata = {
+  ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
   title: "Remote AI Platform",
   description: "Connect with professionals, find remote work, and bring great projects to life together.",
 };
