@@ -112,3 +112,53 @@ def test_unconfigured_supabase_url_returns_503(monkeypatch):
         with pytest.raises(HTTPException) as exc_info:
             supabase_auth.verify_supabase_token(_make_token())
     assert exc_info.value.status_code == 503
+
+
+def _claims() -> dict:
+    now = int(time.time())
+    return {
+        "sub": "11111111-1111-1111-1111-111111111111",
+        "aud": "authenticated",
+        "iss": "https://test-project.supabase.co/auth/v1",
+        "iat": now,
+        "exp": now + 3600,
+    }
+
+
+def test_unsigned_alg_none_token_rejected():
+    """Algorithm pinning: an unsigned token must never verify."""
+    token = jwt.encode(_claims(), key=None, algorithm="none")
+    with pytest.raises(HTTPException) as exc_info:
+        supabase_auth.verify_supabase_token(token)
+    assert exc_info.value.status_code == 401
+
+
+def test_hs256_token_keyed_with_the_public_key_rejected(monkeypatch):
+    """Algorithm confusion: HMAC-signing with the (public) verification key must fail."""
+    from cryptography.hazmat.primitives import serialization
+
+    pem = _PUBLIC_KEY.public_bytes(
+        serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    header = {"alg": "HS256", "typ": "JWT"}
+    import base64
+    import hashlib
+    import hmac
+    import json
+
+    def b64(b: bytes) -> str:
+        return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+    signing_input = f"{b64(json.dumps(header).encode())}.{b64(json.dumps(_claims()).encode())}"
+    sig = hmac.new(pem, signing_input.encode(), hashlib.sha256).digest()
+    token = f"{signing_input}.{b64(sig)}"
+    with pytest.raises(HTTPException) as exc_info:
+        supabase_auth.verify_supabase_token(token)
+    assert exc_info.value.status_code == 401
+
+
+@pytest.mark.parametrize("token", ["", "not-a-jwt", "a.b.c", "Bearer x.y.z"])
+def test_malformed_tokens_rejected(token):
+    with pytest.raises(HTTPException) as exc_info:
+        supabase_auth.verify_supabase_token(token)
+    assert exc_info.value.status_code == 401
