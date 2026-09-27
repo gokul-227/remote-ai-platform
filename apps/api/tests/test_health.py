@@ -49,3 +49,20 @@ async def test_health_legacy_api_v1(client: AsyncClient):
     assert "status" in data
     assert "version" in data
     assert "services" in data
+
+
+def test_git_sha_comes_from_the_deploy_not_a_hardcoded_default(monkeypatch):
+    """OBS-02: GIT_SHA defaulted to a hard-coded old commit, so Sentry releases
+    were tagged with it and non-Render environments reported a fabricated SHA."""
+    from app.core.config import Settings
+
+    monkeypatch.delenv("RENDER_GIT_COMMIT", raising=False)
+    monkeypatch.delenv("GIT_SHA", raising=False)
+    assert Settings(_env_file=None).GIT_SHA == "unknown"
+
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "a" * 40)
+    assert Settings(_env_file=None).GIT_SHA == "a" * 40
+
+    monkeypatch.delenv("RENDER_GIT_COMMIT")
+    monkeypatch.setenv("GIT_SHA", "b" * 40)
+    assert Settings(_env_file=None).GIT_SHA == "b" * 40

@@ -9,7 +9,6 @@ Provides distinct liveness, readiness, and dependency diagnostics endpoints:
 """
 
 import asyncio
-import os
 import time
 from datetime import UTC, datetime
 from typing import Any
@@ -241,7 +240,7 @@ async def health_version() -> HealthVersionResponse:
     return HealthVersionResponse(
         service="remote-ai-platform-api",
         version=settings.APP_VERSION,
-        git_sha=os.environ.get("RENDER_GIT_COMMIT", os.environ.get("GIT_SHA", settings.GIT_SHA)),
+        git_sha=settings.GIT_SHA,
         environment=settings.APP_ENV,
         timestamp=datetime.now(UTC).isoformat(),
     )

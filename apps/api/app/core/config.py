@@ -5,7 +5,7 @@ All configuration is loaded from environment variables or .env file.
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +21,12 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_NAME: str = "Remote AI Platform"
     APP_VERSION: str = "0.1.0"
-    GIT_SHA: str = "93896403d95d07367f71d68606a1b45efe1be131"
+    # Commit being run: Render sets RENDER_GIT_COMMIT on every deploy; other
+    # environments may pass GIT_SHA. Never a hard-coded commit (it would tag
+    # Sentry releases and /health/version with the wrong code).
+    GIT_SHA: str = Field(
+        default="unknown", validation_alias=AliasChoices("RENDER_GIT_COMMIT", "GIT_SHA")
+    )
     APP_URL: str = "http://localhost:3000"
     API_URL: str = "http://localhost:8000"
     DEBUG: bool = False
