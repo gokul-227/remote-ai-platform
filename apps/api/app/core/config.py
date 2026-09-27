@@ -196,6 +196,11 @@ class Settings(BaseSettings):
             return self.CELERY_BROKER_URL
         return self.REDIS_URL
 
+    def redis_key(self, key: str) -> str:
+        """Prefix every Redis key/channel with the environment, so dev and prod
+        never collide even when they share one Redis instance."""
+        return f"{self.APP_ENV}:{key}"
+
     @property
     def is_development(self) -> bool:
         return self.APP_ENV == "development"

@@ -414,7 +414,7 @@ class ConnectionManager:
 
     @staticmethod
     def _channel(conversation_id: uuid.UUID) -> str:
-        return f"{ConnectionManager.CHANNEL_PREFIX}:{conversation_id}"
+        return settings.redis_key(f"{ConnectionManager.CHANNEL_PREFIX}:{conversation_id}")
 
     # ── Connection bookkeeping ───────────────────────────────────────────────
     async def connect(self, conversation_id: uuid.UUID, websocket: WebSocket) -> None:

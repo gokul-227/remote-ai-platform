@@ -115,7 +115,7 @@ async def check_rate_limit(
 
     max_requests, window_seconds = tier
     now = time.time()
-    key = f"ratelimit:{identifier}:{path}"
+    key = settings.redis_key(f"ratelimit:{identifier}:{path}")
 
     # 1. Attempt distributed Redis sliding window
     try:

@@ -32,3 +32,15 @@ def test_redis_url_falls_back_to_the_legacy_broker_variable(monkeypatch):
     assert settings.redis_url == "rediss://hosted.example:6379"
     monkeypatch.setattr(settings, "REDIS_URL", "rediss://primary.example:6379")
     assert settings.redis_url == "rediss://primary.example:6379"
+
+
+def test_redis_keys_are_namespaced_by_environment(monkeypatch):
+    from app.core.cache import RedisCache
+    from app.core.config import settings
+    from app.domains.network.router import ConnectionManager
+
+    monkeypatch.setattr(settings, "APP_ENV", "production")
+    assert RedisCache("jobs")._key("search:x") == "production:jobs:search:x"
+    assert ConnectionManager._channel(__import__("uuid").UUID(int=1)).startswith("production:ws_messages:")
+    monkeypatch.setattr(settings, "APP_ENV", "development")
+    assert settings.redis_key("ratelimit:a") == "development:ratelimit:a"
