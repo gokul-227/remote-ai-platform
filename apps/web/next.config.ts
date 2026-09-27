@@ -1,5 +1,13 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { deployEnvProblems, isIndexable } from "./src/lib/deployEnv";
+
+// A deployed build (production/dev) with a missing or local public env would
+// otherwise ship pointing at localhost or a placeholder Supabase project.
+const envProblems = deployEnvProblems(process.env);
+if (envProblems.length) {
+  throw new Error(`Refusing to build for ${process.env.NEXT_PUBLIC_DEPLOY_ENV}: ${envProblems.join("; ")}`);
+}
 
 // API_URL/SUPABASE_URL vary per environment (prod vs dev) -- baked in at
 // build time via NEXT_PUBLIC_* the same way the rest of the app consumes
@@ -45,6 +53,8 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  // Everything except the production site is kept out of search engines.
+  ...(isIndexable(process.env) ? [] : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]),
 ];
 
 const nextConfig: NextConfig = {
