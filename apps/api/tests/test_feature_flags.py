@@ -58,5 +58,5 @@ async def test_feature_flags_endpoint_returns_current_state(client: AsyncClient)
     assert resp.status_code == 200
     body = resp.json()
     assert "flags" in body
-    assert set(body["flags"]) == {"ai_resume_parsing", "ai_matching", "job_aggregator"}
+    assert set(body["flags"]) == {"ai_resume_parsing", "ai_matching", "job_aggregator", "realtime_websockets"}
     assert body["flags"]["ai_resume_parsing"] is True

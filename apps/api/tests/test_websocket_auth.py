@@ -93,6 +93,10 @@ def _ws_endpoints_use_test_db(monkeypatch):
 
     monkeypatch.setattr(network_router, "AsyncSessionFactory", TestingSessionLocal)
     monkeypatch.setattr(notifications_router, "AsyncSessionFactory", TestingSessionLocal)
+    # These tests cover the auth gate for when realtime is switched on.
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "FEATURE_REALTIME_WEBSOCKETS", True)
 
 
 async def register(client: AsyncClient, email: str, role: str = "ENGINEER") -> tuple[str, str]:
@@ -179,3 +183,19 @@ async def test_network_ws_rejects_non_participant(client: AsyncClient):
 
     assert ws.closed_with == 4401
     assert ws.accepted is False
+
+
+@pytest.mark.asyncio
+async def test_websockets_are_closed_while_realtime_is_off(client: AsyncClient, monkeypatch):
+    """SEC-04: the UI polls; with realtime off the sockets close before any
+    token handling (the token would otherwise ride in the URL)."""
+    import uuid
+
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "FEATURE_REALTIME_WEBSOCKETS", False)
+    token, user_id = await register(client, "ws-off@example.com")
+    for endpoint, target in ((notification_websocket, uuid.UUID(user_id)), (websocket_messages, uuid.uuid4())):
+        ws = FakeWebSocket()
+        await endpoint(ws, target, token=token)
+        assert ws.closed_with == 1008 and not ws.accepted

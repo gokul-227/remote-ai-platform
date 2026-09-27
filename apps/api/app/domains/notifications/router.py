@@ -9,6 +9,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionFactory, get_db
+from app.core.feature_flags import is_feature_enabled
 from app.core.ws_manager import ws_manager
 from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
@@ -112,6 +113,9 @@ async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID, token
     The frontend passes ?token= as a query param. The token's owner must match
     `user_id` — a caller cannot subscribe to another user's notification stream.
     """
+    if not is_feature_enabled("realtime_websockets"):
+        await websocket.close(code=1008)  # policy: realtime is off; clients poll
+        return
     async with AsyncSessionFactory() as db:
         try:
             # Same Supabase token verification as HTTP requests.

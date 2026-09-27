@@ -31,6 +31,7 @@ _FLAG_SETTINGS_ATTR: dict[str, str] = {
     "ai_resume_parsing": "FEATURE_AI_RESUME_PARSING",
     "ai_matching": "FEATURE_AI_MATCHING",
     "job_aggregator": "FEATURE_JOB_AGGREGATOR",
+    "realtime_websockets": "FEATURE_REALTIME_WEBSOCKETS",
 }
 
 

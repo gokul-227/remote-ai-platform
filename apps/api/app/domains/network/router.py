@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import AsyncSessionFactory, get_db
+from app.core.feature_flags import is_feature_enabled
 from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
@@ -501,6 +502,9 @@ MAX_WS_MESSAGE_LENGTH = 10_000  # matches MessageCreate.content's REST-path limi
 async def websocket_messages(
     websocket: WebSocket, conversation_id: uuid.UUID, token: str = Query(...)
 ):
+    if not is_feature_enabled("realtime_websockets"):
+        await websocket.close(code=1008)  # policy: realtime is off; clients poll
+        return
     async with AsyncSessionFactory() as db:
         try:
             # Same Supabase token verification as HTTP requests.

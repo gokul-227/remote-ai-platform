@@ -186,6 +186,10 @@ class Settings(BaseSettings):
     FEATURE_AI_RESUME_PARSING: bool = True
     FEATURE_AI_MATCHING: bool = True
     FEATURE_JOB_AGGREGATOR: bool = True
+    # The web app polls for messages and notifications; the WebSocket
+    # endpoints stay closed until the UI uses them. Their access token rides
+    # in the URL, so enabling this needs short-lived connection tickets.
+    FEATURE_REALTIME_WEBSOCKETS: bool = False
 
     # ── Error monitoring (Sentry) ────────────────────────────────────────────
     # Empty string (default) means Sentry is never initialized -- a complete
