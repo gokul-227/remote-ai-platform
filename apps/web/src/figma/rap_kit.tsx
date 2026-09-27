@@ -237,6 +237,15 @@ export function Tag({ children, t, v }: { children: ReactNode; t?: string; v?: s
     </span>
   );
 }
+/** Horizontally scrollable table area that keyboard users can reach and screen readers can name. */
+export function TableScroll({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={label}>
+      {children}
+    </div>
+  );
+}
+
 export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; set: (x: string) => void; c?: string }) {
   return (
     <div className={cx("flex gap-1 overflow-x-auto border-b border-slate-200", c)}>
@@ -244,6 +253,7 @@ export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; se
         <button
           key={t}
           onClick={() => set(t)}
+          aria-pressed={v === t}
           className={cx(
             "whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold",
             v === t ? "border-[#0552CC] text-[#0552CC]" : "border-transparent text-slate-500 hover:text-slate-800",

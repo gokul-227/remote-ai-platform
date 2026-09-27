@@ -2,7 +2,7 @@ import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, cx, Field, inputCls } from "./rap_kit";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, cx, Field, inputCls, TableScroll } from "./rap_kit";
 
 const GR = "#0552CC";
 export function Work() {
@@ -92,14 +92,14 @@ export function Work() {
           }}
           className="mt-4 flex gap-2"
         >
-          <div className="flex h-11 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4">
+          <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4">
             <Ic n="search" c="text-slate-500" />
             <input
               aria-label="Search for jobs"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search for jobs"
-              className="flex-1 outline-none"
+              className="min-w-0 flex-1 outline-none"
             />
           </div>
           <button className="rounded-full px-6 font-semibold text-white" style={{ background: GR }}>
@@ -107,7 +107,7 @@ export function Work() {
           </button>
         </form>
         <div className="mt-5 grid gap-8 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]">
-          <div>
+          <div className="min-w-0">
             <Tabs
               items={["Best Matches", "Most Recent", "Saved Jobs " + WORK.filter((w) => saved.has(w.id)).length]}
               v={tab}
@@ -403,14 +403,14 @@ export function Talent() {
           }}
           className="mt-4 flex gap-2"
         >
-          <div className="flex h-11 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4">
+          <div className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-slate-300 px-4">
             <Ic n="search" c="text-slate-500" />
             <input
               aria-label="Search talent"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Skill, role or name"
-              className="flex-1 outline-none"
+              className="min-w-0 flex-1 outline-none"
             />
           </div>
           <button className="rounded-full px-6 font-semibold text-white" style={{ background: GR }}>
@@ -450,17 +450,15 @@ export function Talent() {
               <div key={p.id} className="flex gap-4 border-t border-slate-200 p-5 hover:bg-slate-50">
                 <Av name={p.full_name || "Professional"} s={72} />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        sessionStorage.setItem("rap-person-id", p.id);
-                        goRoute("engineer");
-                      }}
-                      className="text-lg font-semibold hover:underline"
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Navigation is a link: it opens in a new tab and says where it goes. */}
+                    <a
+                      href={`#engineer/${encodeURIComponent(p.id)}`}
+                      className="inline-flex min-h-6 items-center text-lg font-semibold hover:underline"
                       style={{ color: GR }}
                     >
                       {p.full_name || "Professional"}
-                    </button>
+                    </a>
                     {p.is_verified && <Tag v="blue">Verified</Tag>}
                   </div>
                   <p className="font-semibold">{p.headline || p.primary_role}</p>
@@ -1025,7 +1023,7 @@ function PaymentsView({ company }: { company: boolean }) {
         </div>
         <Card c="mt-4 rounded-lg" p={false}>
           <p className="p-4 font-semibold">Transaction history</p>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Transactions">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                 <tr>
@@ -1163,13 +1161,14 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
               : "Accept task offers from active projects, submit your work for review and build your reputation."}
           </p>
         </div>
-        <div className="mb-4 flex gap-1 border-b border-slate-200">
+        <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200">
           {TABS.map(([k, l]) => (
             <button
               key={k}
               onClick={() => setTab(k)}
+              aria-pressed={tab === k}
               className={cx(
-                "border-b-2 px-4 py-2 text-sm font-semibold",
+                "whitespace-nowrap border-b-2 px-4 py-2 text-sm font-semibold",
                 tab === k
                   ? "border-[#0552CC] text-[#0552CC]"
                   : "border-transparent text-slate-500 hover:text-slate-800",
@@ -1236,52 +1235,54 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
 
         {tab === "tasks" && (
           <Card c="rounded-lg" p={false}>
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-                <tr>
-                  {["Task", "Project", "Status", ""].map((h) => (
-                    <th key={h} className="px-4 py-2">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((t: any) => (
-                  <tr key={t.task.id} className="border-t border-slate-100">
-                    <td className="px-4 py-3 font-semibold">{t.task.title}</td>
-                    <td className="px-4 py-3">{t.project_title}</td>
-                    <td className="px-4 py-3">
-                      <Tag t={t.task.status === "COMPLETED" ? "green" : "amber"}>
-                        {t.task.status.replace(/_/g, " ").toLowerCase()}
-                      </Tag>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {t.task.status !== "COMPLETED" && t.latest_submission?.status !== "SUBMITTED" && (
-                        <Btn
-                          v="primary"
-                          sm
-                          onClick={() => {
-                            setSubmit(t);
-                            setSummary("");
-                            setLinks("");
-                          }}
-                        >
-                          Submit work
-                        </Btn>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {!tasksQ.loading && !tasks.length && (
+            <TableScroll label="My tasks">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                      No assigned tasks yet.
-                    </td>
+                    {["Task", "Project", "Status", ""].map((h) => (
+                      <th key={h} className="px-4 py-2">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {tasks.map((t: any) => (
+                    <tr key={t.task.id} className="border-t border-slate-100">
+                      <td className="px-4 py-3 font-semibold">{t.task.title}</td>
+                      <td className="px-4 py-3">{t.project_title}</td>
+                      <td className="px-4 py-3">
+                        <Tag t={t.task.status === "COMPLETED" ? "green" : "amber"}>
+                          {t.task.status.replace(/_/g, " ").toLowerCase()}
+                        </Tag>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {t.task.status !== "COMPLETED" && t.latest_submission?.status !== "SUBMITTED" && (
+                          <Btn
+                            v="primary"
+                            sm
+                            onClick={() => {
+                              setSubmit(t);
+                              setSummary("");
+                              setLinks("");
+                            }}
+                          >
+                            Submit work
+                          </Btn>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {!tasksQ.loading && !tasks.length && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
+                        No assigned tasks yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </TableScroll>
           </Card>
         )}
 
@@ -1374,53 +1375,55 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
 
         {tab === "sent" && (
           <Card c="rounded-lg" p={false}>
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-                <tr>
-                  {["Task", "Project", "Match", "Status", ""].map((h) => (
-                    <th key={h} className="px-4 py-2">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(sentQ.data ?? []).map((o: any) => (
-                  <tr key={o.offer.id} className="border-t border-slate-100">
-                    <td className="px-4 py-3 font-semibold">{o.task.title}</td>
-                    <td className="px-4 py-3">{o.project_title}</td>
-                    <td className="px-4 py-3">{Math.round(o.offer.match_score)}%</td>
-                    <td className="px-4 py-3">
-                      <Tag
-                        t={o.offer.status === "ACCEPTED" ? "green" : o.offer.status === "DECLINED" ? "red" : "amber"}
-                      >
-                        {o.offer.status.toLowerCase()}
-                      </Tag>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {o.offer.status === "OFFERED" && (
-                        <Btn
-                          v="gray"
-                          sm
-                          onClick={() =>
-                            act(() => api.patch(`/projects/task-offers/${o.offer.id}/cancel`), "Offer cancelled")
-                          }
-                        >
-                          Cancel
-                        </Btn>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {!sentQ.loading && !(sentQ.data ?? []).length && (
+            <TableScroll label="Offers sent">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                      No task offers sent yet. Offer tasks from a project board.
-                    </td>
+                    {["Task", "Project", "Match", "Status", ""].map((h) => (
+                      <th key={h} className="px-4 py-2">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(sentQ.data ?? []).map((o: any) => (
+                    <tr key={o.offer.id} className="border-t border-slate-100">
+                      <td className="px-4 py-3 font-semibold">{o.task.title}</td>
+                      <td className="px-4 py-3">{o.project_title}</td>
+                      <td className="px-4 py-3">{Math.round(o.offer.match_score)}%</td>
+                      <td className="px-4 py-3">
+                        <Tag
+                          t={o.offer.status === "ACCEPTED" ? "green" : o.offer.status === "DECLINED" ? "red" : "amber"}
+                        >
+                          {o.offer.status.toLowerCase()}
+                        </Tag>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {o.offer.status === "OFFERED" && (
+                          <Btn
+                            v="gray"
+                            sm
+                            onClick={() =>
+                              act(() => api.patch(`/projects/task-offers/${o.offer.id}/cancel`), "Offer cancelled")
+                            }
+                          >
+                            Cancel
+                          </Btn>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {!sentQ.loading && !(sentQ.data ?? []).length && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                        No task offers sent yet. Offer tasks from a project board.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </TableScroll>
           </Card>
         )}
       </div>

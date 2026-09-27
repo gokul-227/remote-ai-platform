@@ -6,7 +6,7 @@ const openJob = (id: string) => {
   localStorage.setItem("rap-selected-job", id);
   goRoute("jobs");
 };
-import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, cx, Field, inputCls } from "./rap_kit";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, cx, Field, inputCls, TableScroll } from "./rap_kit";
 
 const visit = (page: string) => {
   goRoute(page);
@@ -523,7 +523,7 @@ export function Engineers() {
           <Card c="mb-3 rounded-xl" p="p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-semibold">{q1.loading ? "Loading…" : `${list.length} professionals`}</p>
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="text-slate-500">Sort by</span>
                 {[
                   ["match", "Profile strength"],
@@ -1779,7 +1779,12 @@ export function Candidates() {
       )}
       {appsQ.loading && <p className="mt-3 text-sm text-slate-500">Loading candidates…</p>}
       <div className={cx("mt-4 grid gap-4", cur ? "grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]" : "")}>
-        <div className="grid auto-cols-[240px] grid-flow-col gap-3 overflow-x-auto pb-2">
+        <div
+          className="grid auto-cols-[240px] grid-flow-col gap-3 overflow-x-auto pb-2"
+          tabIndex={0}
+          role="region"
+          aria-label="Candidate pipeline"
+        >
           {STAGES.map((sg, si) => {
             const col = shown.filter((c) => c.st === si);
             return (
@@ -1998,54 +2003,56 @@ export function CoJobs() {
         </p>
       )}
       <Card p={false} c="rounded-xl">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-            <tr>
-              {["Job", "Status", "Applicants", "Shortlisted", ""].map((h) => (
-                <th key={h} className="px-4 py-3">
-                  {h}
-                </th>
+        <TableScroll label="Job postings">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+              <tr>
+                {["Job", "Status", "Applicants", "Shortlisted", ""].map((h) => (
+                  <th key={h} className="px-4 py-3">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r: any) => (
+                <tr key={r.id} className="border-t border-slate-100">
+                  <td className="px-4 py-3 font-semibold">{r.title}</td>
+                  <td className="px-4 py-3">
+                    <Tag t={r.is_active ? "green" : "amber"}>{r.is_active ? "Active" : "Paused"}</Tag>
+                  </td>
+                  <td className="px-4 py-3">{count(r.id)}</td>
+                  <td className="px-4 py-3">{count(r.id, ["SHORTLISTED", "ACCEPTED"])}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Btn v="gray" sm onClick={() => openJob(r.id)}>
+                      View
+                    </Btn>{" "}
+                    <Btn v="outline" sm onClick={() => toggle(r)}>
+                      {r.is_active ? "Pause" : "Reactivate"}
+                    </Btn>
+                  </td>
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r: any) => (
-              <tr key={r.id} className="border-t border-slate-100">
-                <td className="px-4 py-3 font-semibold">{r.title}</td>
-                <td className="px-4 py-3">
-                  <Tag t={r.is_active ? "green" : "amber"}>{r.is_active ? "Active" : "Paused"}</Tag>
-                </td>
-                <td className="px-4 py-3">{count(r.id)}</td>
-                <td className="px-4 py-3">{count(r.id, ["SHORTLISTED", "ACCEPTED"])}</td>
-                <td className="px-4 py-3 text-right">
-                  <Btn v="gray" sm onClick={() => openJob(r.id)}>
-                    View
-                  </Btn>{" "}
-                  <Btn v="outline" sm onClick={() => toggle(r)}>
-                    {r.is_active ? "Pause" : "Reactivate"}
-                  </Btn>
-                </td>
-              </tr>
-            ))}
-            {!jobs.loading && !rows.length && (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
-                  No job postings yet.{" "}
-                  <button className="font-semibold text-[#0552CC]" onClick={() => visit("postjob")}>
-                    Post your first job
-                  </button>
-                </td>
-              </tr>
-            )}
-            {jobs.loading && (
-              <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
-                  Loading…
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              {!jobs.loading && !rows.length && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
+                    No job postings yet.{" "}
+                    <button className="font-semibold text-[#0552CC]" onClick={() => visit("postjob")}>
+                      Post your first job
+                    </button>
+                  </td>
+                </tr>
+              )}
+              {jobs.loading && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
+                    Loading…
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </TableScroll>
       </Card>
     </Page>
   );

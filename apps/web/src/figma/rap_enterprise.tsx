@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { Ic, Btn, Modal } from "./rap_kit";
+import { Ic, Btn, Modal, TableScroll } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, goRoute } from "./live";
@@ -125,38 +125,40 @@ export function WorkLedger() {
         ]}
       />
       <div className="v2-table-wrap">
-        <table className="v2-table">
-          <thead>
-            <tr>
-              {["Date", "Task", "Notes", "Hours"].map((x) => (
-                <th key={x}>{x}</th>
+        <TableScroll label="Work log">
+          <table className="v2-table">
+            <thead>
+              <tr>
+                {["Date", "Task", "Notes", "Hours"].map((x) => (
+                  <th key={x}>{x}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(rows ?? []).map((r: any) => (
+                <tr key={r.id} className={r.status === "VOID" ? "opacity-50 line-through" : ""}>
+                  <td>{new Date(r.created_at).toLocaleDateString()}</td>
+                  <td>{title(r.task_id)}</td>
+                  <td>
+                    {r.description}
+                    {r.status === "VOID" && r.void_reason ? ` (voided: ${r.void_reason})` : ""}
+                  </td>
+                  <td>{(r.duration_minutes / 60).toFixed(1)}</td>
+                </tr>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {(rows ?? []).map((r: any) => (
-              <tr key={r.id} className={r.status === "VOID" ? "opacity-50 line-through" : ""}>
-                <td>{new Date(r.created_at).toLocaleDateString()}</td>
-                <td>{title(r.task_id)}</td>
-                <td>
-                  {r.description}
-                  {r.status === "VOID" && r.void_reason ? ` (voided: ${r.void_reason})` : ""}
-                </td>
-                <td>{(r.duration_minutes / 60).toFixed(1)}</td>
-              </tr>
-            ))}
-            {rows && !rows.length && (
-              <tr>
-                <td colSpan={4}>No time logged yet.</td>
-              </tr>
-            )}
-            {!rows && (
-              <tr>
-                <td colSpan={4}>Loading…</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              {rows && !rows.length && (
+                <tr>
+                  <td colSpan={4}>No time logged yet.</td>
+                </tr>
+              )}
+              {!rows && (
+                <tr>
+                  <td colSpan={4}>Loading…</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </TableScroll>
       </div>
       <Modal open={open} onClose={() => setOpen(false)} title="Log work">
         <form onSubmit={submit}>
@@ -255,9 +257,9 @@ export function HelpCenter() {
       </div>
       <div className="v2-help-list">
         {results.map(([title, body]) => (
-          <details key={title}>
-            <summary>{title}</summary>
-            <p>{body}</p>
+          <details key={title} className="border-b border-slate-200">
+            <summary className="cursor-pointer py-3 font-semibold">{title}</summary>
+            <p className="pb-3 text-slate-600">{body}</p>
           </details>
         ))}
         {!results.length && <Empty />}

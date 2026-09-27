@@ -2,7 +2,7 @@ import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, goRoute } from "./live";
-import { Ic, Av, Btn, Card, Tag, Modal, Bar, cx, Field, inputCls } from "./rap_kit";
+import { Ic, Av, Btn, Card, Tag, Modal, Bar, cx, Field, inputCls, TableScroll } from "./rap_kit";
 
 type Issue = {
   id: string;
@@ -621,47 +621,49 @@ export function Projects() {
 
         {page === "issues" && d && (
           <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
-            <table className="w-full text-sm">
-              <thead className="bg-[#F7F8F9] text-left text-xs uppercase text-slate-500">
-                <tr>
-                  {["Type", "Key", "Summary", "Status", "Assignee", "Priority", "Estimate"].map((h) => (
-                    <th key={h} className="px-3 py-2">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((i) => (
-                  <tr
-                    key={i.id}
-                    onClick={() => setOpenId(i.id)}
-                    className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
-                  >
-                    <td className="px-3 py-2">
-                      <TI t={i.type} />
-                    </td>
-                    <td className="px-3 py-2 text-[#0552CC]">{i.k}</td>
-                    <td className="px-3 py-2">{i.t}</td>
-                    <td className="px-3 py-2">
-                      <Tag t="gray">{COLS.find((c) => c[0] === i.st)![1]}</Tag>
-                    </td>
-                    <td className="px-3 py-2">{i.as}</td>
-                    <td className="px-3 py-2">
-                      <PI p={i.pri} />
-                    </td>
-                    <td className="px-3 py-2">{i.sp ? `${i.sp}h` : "—"}</td>
-                  </tr>
-                ))}
-                {!shown.length && (
+            <TableScroll label="Tasks">
+              <table className="w-full text-sm">
+                <thead className="bg-[#F7F8F9] text-left text-xs uppercase text-slate-500">
                   <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-slate-500">
-                      No tasks.
-                    </td>
+                    {["Type", "Key", "Summary", "Status", "Assignee", "Priority", "Estimate"].map((h) => (
+                      <th key={h} className="px-3 py-2">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {shown.map((i) => (
+                    <tr
+                      key={i.id}
+                      onClick={() => setOpenId(i.id)}
+                      className="cursor-pointer border-t border-slate-100 hover:bg-slate-50"
+                    >
+                      <td className="px-3 py-2">
+                        <TI t={i.type} />
+                      </td>
+                      <td className="px-3 py-2 text-[#0552CC]">{i.k}</td>
+                      <td className="px-3 py-2">{i.t}</td>
+                      <td className="px-3 py-2">
+                        <Tag t="gray">{COLS.find((c) => c[0] === i.st)![1]}</Tag>
+                      </td>
+                      <td className="px-3 py-2">{i.as}</td>
+                      <td className="px-3 py-2">
+                        <PI p={i.pri} />
+                      </td>
+                      <td className="px-3 py-2">{i.sp ? `${i.sp}h` : "—"}</td>
+                    </tr>
+                  ))}
+                  {!shown.length && (
+                    <tr>
+                      <td colSpan={7} className="px-3 py-6 text-center text-slate-500">
+                        No tasks.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </TableScroll>
           </div>
         )}
 

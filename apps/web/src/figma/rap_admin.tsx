@@ -78,7 +78,7 @@ export function Admin({ initial }: { initial?: string } = {}) {
 
   const table = (head: string[], rows: any[], empty: string) => (
     <Card c="rounded-lg" p={false}>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`${head.join(", ")} table`}>
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
