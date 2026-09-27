@@ -23,6 +23,7 @@ from app.domains.companies.models import CompanyProfile
 from app.domains.marketplace.models import ProjectTask
 from app.domains.payments.models import StripeWebhookEvent
 from app.domains.payments.schemas import (
+    CurrencyBalance,
     DirectEscrowCreate,
     PaymentPartySummary,
     PaymentTransactionResponse,
@@ -100,20 +101,33 @@ async def get_wallet_balance(
     )
     payee_txs = payee_result.scalars().all()
 
-    escrow_held = sum(p.amount for p in payer_txs if p.status == "ESCROWED") + sum(
-        p.amount for p in payee_txs if p.status == "ESCROWED"
-    )
-    total_spent = sum(p.amount for p in payer_txs if p.status in {"RELEASED", "ESCROWED"})
-    total_earned = sum(p.amount for p in payee_txs if p.status == "RELEASED")
-    total_released = sum(p.amount for p in payer_txs if p.status == "RELEASED")
+    currencies = sorted({p.currency for p in (*payer_txs, *payee_txs)})
+    by_currency = [
+        CurrencyBalance(
+            currency=cur,
+            escrow_held=round(
+                sum(p.amount for p in (*payer_txs, *payee_txs) if p.currency == cur and p.status == "ESCROWED"), 2
+            ),
+            total_earned=round(sum(p.amount for p in payee_txs if p.currency == cur and p.status == "RELEASED"), 2),
+            total_spent=round(
+                sum(p.amount for p in payer_txs if p.currency == cur and p.status in {"RELEASED", "ESCROWED"}), 2
+            ),
+            total_released=round(sum(p.amount for p in payer_txs if p.currency == cur and p.status == "RELEASED"), 2),
+        )
+        for cur in currencies
+    ]
+    # A single total only makes sense within one currency.
+    single = by_currency[0] if len(by_currency) == 1 else None
+    empty = not by_currency
 
     return WalletBalanceResponse(
         user_id=current_user.id,
-        escrow_held=round(escrow_held, 2),
-        total_earned=round(total_earned, 2),
-        total_spent=round(total_spent, 2),
-        total_released=round(total_released, 2),
-        currency="USD",
+        by_currency=by_currency,
+        escrow_held=0.0 if empty else (single.escrow_held if single else None),
+        total_earned=0.0 if empty else (single.total_earned if single else None),
+        total_spent=0.0 if empty else (single.total_spent if single else None),
+        total_released=0.0 if empty else (single.total_released if single else None),
+        currency="USD" if empty else (single.currency if single else None),
         payments_enabled=settings.MARKETPLACE_PAYMENTS_ENABLED,
     )
 

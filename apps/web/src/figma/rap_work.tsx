@@ -947,7 +947,10 @@ function PaymentsView({ company }: { company: boolean }) {
   const [release, setRelease] = useState<string>("");
   const [notice, setNotice] = useState("");
   const tx = tq.data ?? [];
-  const cur = w.data?.currency || "USD";
+  // Amounts in different currencies are never added together (PAY-02).
+  const balances: { currency: string; [k: string]: number | string }[] = w.data?.by_currency ?? [];
+  const mixed = balances.length > 1;
+  const cur = w.data?.currency || balances[0]?.currency || "USD";
   // Money movement is gated server-side until the payout side exists; never offer or describe a release otherwise.
   const live = w.data?.payments_enabled === true;
   const byMonth = Array.from({ length: 9 }, (_, i) => {
@@ -960,6 +963,7 @@ function PaymentsView({ company }: { company: boolean }) {
       .filter(
         (t: any) =>
           t.status === "RELEASED" &&
+          (t.currency || "USD") === cur &&
           (company ? t.payer_id : t.payee_id) === user?.id &&
           new Date(t.released_at || t.created_at).getMonth() === d.getMonth() &&
           new Date(t.released_at || t.created_at).getFullYear() === d.getFullYear(),
@@ -979,15 +983,15 @@ function PaymentsView({ company }: { company: boolean }) {
   };
   const stats = company
     ? [
-        ["Held in escrow", w.data?.escrow_held, "lock"],
-        ["Released to professionals", w.data?.total_released, "check"],
-        ["Total spent", w.data?.total_spent, "wallet"],
+        ["Held in escrow", "escrow_held", "lock"],
+        ["Released to professionals", "total_released", "check"],
+        ["Total spent", "total_spent", "wallet"],
         ["Transactions", null, "history"],
       ]
     : [
-        ["Earned (released)", w.data?.total_earned, "wallet"],
-        ["In escrow for you", w.data?.escrow_held, "lock"],
-        ["Released", w.data?.total_released, "check"],
+        ["Earned (released)", "total_earned", "wallet"],
+        ["In escrow for you", "escrow_held", "lock"],
+        ["Released", "total_released", "check"],
         ["Transactions", null, "history"],
       ];
   return (
@@ -1003,13 +1007,22 @@ function PaymentsView({ company }: { company: boolean }) {
                 <span className="text-sm">{s[0]}</span>
                 <Ic n={s[2]} s={18} />
               </div>
-              <p className="mt-2 text-2xl font-semibold">{s[1] == null ? tx.length : money(s[1], cur)}</p>
+              <p className="mt-2 text-2xl font-semibold">
+                {s[1] == null
+                  ? tx.length
+                  : mixed
+                    ? balances.map((b) => money(Number(b[s[1]]), b.currency)).join(" · ")
+                    : money(Number(w.data?.[s[1]] ?? 0), cur)}
+              </p>
             </Card>
           ))}
         </div>
         <div className="mt-4 grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px]">
           <Card c="rounded-lg">
-            <p className="font-semibold">{company ? "Released by month" : "Earnings by month"}</p>
+            <p className="font-semibold">
+              {company ? "Released by month" : "Earnings by month"}
+              {mixed ? ` (${cur} only)` : ""}
+            </p>
             <div className="mt-4">
               <Bars d={monthly} c="#0552CC" h={180} />
             </div>

@@ -6,13 +6,24 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
-class WalletBalanceResponse(BaseModel):
-    user_id: uuid.UUID
+class CurrencyBalance(BaseModel):
+    currency: str
     escrow_held: float
     total_earned: float
     total_spent: float
     total_released: float
-    currency: str = "USD"
+
+
+class WalletBalanceResponse(BaseModel):
+    user_id: uuid.UUID
+    # Per currency: amounts in different currencies are never added together.
+    by_currency: list[CurrencyBalance] = []
+    # Filled only when every transaction shares one currency (or there are none).
+    escrow_held: float | None
+    total_earned: float | None
+    total_spent: float | None
+    total_released: float | None
+    currency: str | None = "USD"
     # False while money movement is gated (see MARKETPLACE_PAYMENTS_ENABLED);
     # clients must not describe any figure here as money that moved.
     payments_enabled: bool = False
