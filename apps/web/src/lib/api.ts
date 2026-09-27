@@ -55,7 +55,13 @@ api.interceptors.response.use(
     // anonymous visitor's 401 must never bounce them to sign-in. Sign-out
     // calls must not try to revive the session they are ending.
     const hadSession = Boolean(config?.headers?.Authorization);
-    if (error.response?.status === 401 && config && hadSession && !config._retry && !config.url?.includes("/auth/logout")) {
+    if (
+      error.response?.status === 401 &&
+      config &&
+      hadSession &&
+      !config._retry &&
+      !config.url?.includes("/auth/logout")
+    ) {
       config._retry = true;
       try {
         const { data, error: refreshError } = await supabase.auth.refreshSession();

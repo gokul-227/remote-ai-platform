@@ -29,10 +29,18 @@ export default function OAuthCallback() {
         setError("Signed in, but we couldn't load your account. Please try again.");
       }
     };
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => { if (event === "SIGNED_IN") void finish(); });
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN") void finish();
+    });
     void finish();
-    const timeout = setTimeout(() => { if (!done) setError("Sign-in was cancelled or didn't complete. Choose another method or try again."); }, 10000);
-    return () => { done = true; clearTimeout(timeout); listener.subscription.unsubscribe(); };
+    const timeout = setTimeout(() => {
+      if (!done) setError("Sign-in was cancelled or didn't complete. Choose another method or try again.");
+    }, 10000);
+    return () => {
+      done = true;
+      clearTimeout(timeout);
+      listener.subscription.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -41,11 +49,20 @@ export default function OAuthCallback() {
       {error ? (
         <div className="max-w-sm rounded-xl border border-slate-200 bg-white p-7">
           <h1 className="text-xl font-bold">Sign-in didn&apos;t finish</h1>
-          <p role="alert" className="mt-3 text-slate-500">{error}</p>
-          <Link href="/#login" className="mt-6 flex min-h-11 items-center justify-center rounded-lg bg-[#0866FF] font-semibold text-white">Back to sign in</Link>
+          <p role="alert" className="mt-3 text-slate-500">
+            {error}
+          </p>
+          <Link
+            href="/#login"
+            className="mt-6 flex min-h-11 items-center justify-center rounded-lg bg-[#0866FF] font-semibold text-white"
+          >
+            Back to sign in
+          </Link>
         </div>
       ) : (
-        <p aria-live="polite" className="text-slate-500">Finishing sign-in…</p>
+        <p aria-live="polite" className="text-slate-500">
+          Finishing sign-in…
+        </p>
       )}
     </div>
   );

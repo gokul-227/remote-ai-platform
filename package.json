@@ -28,9 +28,10 @@
   },
   "prettier": {
     "semi": true,
-    "singleQuote": true,
+    "singleQuote": false,
     "tabWidth": 2,
-    "trailingComma": "es5"
+    "trailingComma": "all",
+    "printWidth": 120
   },
   "allowScripts": {
     "esbuild@0.25.4": true,

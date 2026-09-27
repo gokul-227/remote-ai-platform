@@ -3,7 +3,8 @@ export const cx = (...a: any[]) => a.filter(Boolean).join(" ");
 
 const P: Record<string, string> = {
   home: "M3 11l9-8 9 8|M5 10v10h5v-6h4v6h5V10",
-  users: "M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2|M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8|M21 21v-2a4 4 0 0 0-3-3.9|M16 3.1a4 4 0 0 1 0 7.8",
+  users:
+    "M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2|M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8|M21 21v-2a4 4 0 0 0-3-3.9|M16 3.1a4 4 0 0 1 0 7.8",
   user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2|M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8",
   briefcase: "M3 8h18v12H3z|M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2|M3 14h18",
   board: "M4 4h16v16H4z|M9 4v16|M15 4v16",
@@ -26,7 +27,8 @@ const P: Record<string, string> = {
   image: "M3 4h18v16H3z|M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3|M21 16l-5-5-8 8",
   calendar: "M4 5h16v16H4z|M4 10h16|M8 3v4|M16 3v4",
   bookmark: "M6 3h12v18l-6-4-6 4z",
-  settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6|M4 12h2|M18 12h2|M12 4v2|M12 18v2|M6.3 6.3l1.4 1.4|M16.3 16.3l1.4 1.4|M6.3 17.7l1.4-1.4|M16.3 7.7l1.4-1.4",
+  settings:
+    "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6|M4 12h2|M18 12h2|M12 4v2|M12 18v2|M6.3 6.3l1.4 1.4|M16.3 16.3l1.4 1.4|M6.3 17.7l1.4-1.4|M16.3 7.7l1.4-1.4",
   dollar: "M12 2v20|M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6",
   shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   chart: "M4 20V10|M10 20V4|M16 20v-7|M22 20H2",
@@ -79,34 +81,107 @@ const P: Record<string, string> = {
 export function Ic({ n, s = 20, c = "" }: { n: string; s?: number; c?: string }) {
   const d = (P[n] || P.dot).split("|");
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={cx("shrink-0", c)}>
-      {d.map((x, i) => <path key={i} d={x} />)}
+    <svg
+      width={s}
+      height={s}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cx("shrink-0", c)}
+    >
+      {d.map((x, i) => (
+        <path key={i} d={x} />
+      ))}
     </svg>
   );
 }
 
-const GR = ["from-blue-500 to-indigo-600", "from-emerald-500 to-teal-600", "from-rose-500 to-orange-500", "from-violet-500 to-fuchsia-600", "from-amber-500 to-orange-600", "from-cyan-500 to-blue-600", "from-slate-600 to-slate-800", "from-pink-500 to-rose-600"];
+const GR = [
+  "from-blue-500 to-indigo-600",
+  "from-emerald-500 to-teal-600",
+  "from-rose-500 to-orange-500",
+  "from-violet-500 to-fuchsia-600",
+  "from-amber-500 to-orange-600",
+  "from-cyan-500 to-blue-600",
+  "from-slate-600 to-slate-800",
+  "from-pink-500 to-rose-600",
+];
 export const grad = (s: string) => GR[[...s].reduce((a, c) => a + c.charCodeAt(0), 0) % GR.length];
 export function Av({ name, s = 40, dot, ring }: { name: string; s?: number; dot?: boolean; ring?: boolean }) {
-  const ini = name.split(" ").map((p) => p[0]).slice(0, 2).join("");
+  const ini = name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("");
   return (
     <div className="relative shrink-0" style={{ width: s, height: s }}>
-      <div className={cx("flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br font-bold text-white", grad(name), ring && "ring-2 ring-[#0552CC] ring-offset-2")} style={{ fontSize: s * 0.36 }}>{ini}</div>
+      <div
+        className={cx(
+          "flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br font-bold text-white",
+          grad(name),
+          ring && "ring-2 ring-[#0552CC] ring-offset-2",
+        )}
+        style={{ fontSize: s * 0.36 }}
+      >
+        {ini}
+      </div>
       {dot && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />}
     </div>
   );
 }
 export function Lg({ name, s = 48, r = 8 }: { name: string; s?: number; r?: number }) {
-  return <div className={cx("flex shrink-0 items-center justify-center bg-gradient-to-br font-black text-white", grad(name))} style={{ width: s, height: s, borderRadius: r, fontSize: s * 0.36 }}>{name.slice(0, 2).toUpperCase()}</div>;
-}
-export function Brand({ s = 32 }: { s?: number }) {
   return (
-    <div className="flex items-center justify-center rounded-lg bg-[#0552CC] text-white" style={{ width: s, height: s }}>
-      <svg width={s * 0.62} height={s * 0.62} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18" /><path d="M17 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="currentColor" stroke="none" /></svg>
+    <div
+      className={cx("flex shrink-0 items-center justify-center bg-gradient-to-br font-black text-white", grad(name))}
+      style={{ width: s, height: s, borderRadius: r, fontSize: s * 0.36 }}
+    >
+      {name.slice(0, 2).toUpperCase()}
     </div>
   );
 }
-export function Btn({ children, v = "primary", sm, onClick, icon, full, c = "" }: { children?: ReactNode; v?: string; sm?: boolean; onClick?: () => void; icon?: string; full?: boolean; c?: string }) {
+export function Brand({ s = 32 }: { s?: number }) {
+  return (
+    <div
+      className="flex items-center justify-center rounded-lg bg-[#0552CC] text-white"
+      style={{ width: s, height: s }}
+    >
+      <svg
+        width={s * 0.62}
+        height={s * 0.62}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3a14 14 0 0 1 0 18" />
+        <path d="M17 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="currentColor" stroke="none" />
+      </svg>
+    </div>
+  );
+}
+export function Btn({
+  children,
+  v = "primary",
+  sm,
+  onClick,
+  icon,
+  full,
+  c = "",
+}: {
+  children?: ReactNode;
+  v?: string;
+  sm?: boolean;
+  onClick?: () => void;
+  icon?: string;
+  full?: boolean;
+  c?: string;
+}) {
   const base = "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors";
   const vs: Record<string, string> = {
     primary: "bg-[#0552CC] text-white hover:bg-[#0443A8]",
@@ -119,75 +194,198 @@ export function Btn({ children, v = "primary", sm, onClick, icon, full, c = "" }
     danger: "bg-red-600 text-white hover:bg-red-700",
     line: "border border-slate-300 text-slate-700 hover:bg-slate-50",
   };
-  return <button onClick={onClick} className={cx(base, vs[v], sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]", full && "w-full", c)}>{icon && <Ic n={icon} s={sm ? 14 : 16} />}{children}</button>;
+  return (
+    <button
+      onClick={onClick}
+      className={cx(base, vs[v], sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]", full && "w-full", c)}
+    >
+      {icon && <Ic n={icon} s={sm ? 14 : 16} />}
+      {children}
+    </button>
+  );
 }
 /** `p`: true = default padding, false = none, or a padding class such as "p-5". */
 export function Card({ children, c = "", p = true }: { children: ReactNode; c?: string; p?: boolean | string }) {
-  return <div className={cx("rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,.06)]", typeof p === "string" ? p : p && "p-4", c)}>{children}</div>;
+  return (
+    <div
+      className={cx(
+        "rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(16,24,40,.06)]",
+        typeof p === "string" ? p : p && "p-4",
+        c,
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 /** Colour via `t` (or the `v` alias some screens use). */
 export function Tag({ children, t, v }: { children: ReactNode; t?: string; v?: string }) {
   const tone = t ?? v ?? "gray";
-  const m: Record<string, string> = { gray: "bg-slate-100 text-slate-700", blue: "bg-[#E8F0FC] text-[#0552CC]", primary: "bg-[#E8F0FC] text-[#0552CC]", green: "bg-emerald-50 text-emerald-700", amber: "bg-amber-50 text-amber-700", red: "bg-red-50 text-red-700", indigo: "bg-[#F1EFFF] text-[#5B4BDB]", dark: "bg-slate-900 text-white" };
-  return <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold", m[tone] ?? m.gray)}>{children}</span>;
+  const m: Record<string, string> = {
+    gray: "bg-slate-100 text-slate-700",
+    blue: "bg-[#E8F0FC] text-[#0552CC]",
+    primary: "bg-[#E8F0FC] text-[#0552CC]",
+    green: "bg-emerald-50 text-emerald-700",
+    amber: "bg-amber-50 text-amber-700",
+    red: "bg-red-50 text-red-700",
+    indigo: "bg-[#F1EFFF] text-[#5B4BDB]",
+    dark: "bg-slate-900 text-white",
+  };
+  return (
+    <span className={cx("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold", m[tone] ?? m.gray)}>
+      {children}
+    </span>
+  );
 }
 export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; set: (x: string) => void; c?: string }) {
   return (
     <div className={cx("flex gap-1 overflow-x-auto border-b border-slate-200", c)}>
-      {items.map((t) => <button key={t} onClick={() => set(t)} className={cx("whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold", v === t ? "border-[#0552CC] text-[#0552CC]" : "border-transparent text-slate-500 hover:text-slate-800")}>{t}</button>)}
+      {items.map((t) => (
+        <button
+          key={t}
+          onClick={() => set(t)}
+          className={cx(
+            "whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold",
+            v === t ? "border-[#0552CC] text-[#0552CC]" : "border-transparent text-slate-500 hover:text-slate-800",
+          )}
+        >
+          {t}
+        </button>
+      ))}
     </div>
   );
 }
-export function Modal({ open, onClose, title, children, w = "max-w-lg" }: { open: boolean; onClose: () => void; title: string; children: ReactNode; w?: string }) {
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  w = "max-w-lg",
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  w?: string;
+}) {
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
-  useEffect(() => { close.current = onClose; });
+  useEffect(() => {
+    close.current = onClose;
+  });
   useEffect(() => {
     if (!open) return;
     // Move focus into the dialog, keep Tab inside it, close on Escape, and
     // return focus to whatever opened it.
     const opener = document.activeElement as HTMLElement | null;
-    const focusables = () => Array.from(box.current?.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])') ?? []);
+    const focusables = () =>
+      Array.from(
+        box.current?.querySelectorAll<HTMLElement>(
+          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      );
     (focusables()[1] ?? focusables()[0] ?? box.current)?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.preventDefault(); close.current(); return; }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close.current();
+        return;
+      }
       if (e.key !== "Tab") return;
-      const items = focusables(); if (!items.length) return;
-      const first = items[0], last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      const items = focusables();
+      if (!items.length) return;
+      const first = items[0],
+        last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
-    return () => { document.removeEventListener("keydown", onKey); opener?.focus?.(); };
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      opener?.focus?.();
+    };
   }, [open]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
-      <div ref={box} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className={cx("max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none", w)} onClick={(e) => e.stopPropagation()}>
-        <div className="mb-4 flex items-center justify-between"><h3 id={titleId} className="text-xl font-bold">{title}</h3><button type="button" aria-label="Close" onClick={onClose} className="rounded-full p-1.5 hover:bg-slate-100"><Ic n="x" /></button></div>
+      <div
+        ref={box}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className={cx("max-h-[90vh] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl outline-none", w)}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 id={titleId} className="text-xl font-bold">
+            {title}
+          </h3>
+          <button type="button" aria-label="Close" onClick={onClose} className="rounded-full p-1.5 hover:bg-slate-100">
+            <Ic n="x" />
+          </button>
+        </div>
         {children}
       </div>
     </div>
   );
 }
 export function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="block text-sm font-semibold text-slate-700">{label}<div className="mt-1 font-normal">{children}</div></label>;
+  return (
+    <label className="block text-sm font-semibold text-slate-700">
+      {label}
+      <div className="mt-1 font-normal">{children}</div>
+    </label>
+  );
 }
-export const inputCls = "h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-[#0552CC] focus:ring-2 focus:ring-[#0552CC]/20";
+export const inputCls =
+  "h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-[#0552CC] focus:ring-2 focus:ring-[#0552CC]/20";
 export function Bar({ v, c = "bg-[#0552CC]" }: { v: number; c?: string }) {
-  return <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={cx("h-full rounded-full", c)} style={{ width: v + "%" }} /></div>;
+  return (
+    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+      <div className={cx("h-full rounded-full", c)} style={{ width: v + "%" }} />
+    </div>
+  );
 }
 export function Spark({ d, c = "#0552CC", h = 36, w = 120 }: { d: number[]; c?: string; h?: number; w?: number }) {
-  const mx = Math.max(...d), mn = Math.min(...d);
-  const pts = d.map((y, i) => (i / (d.length - 1)) * w + "," + (h - ((y - mn) / (mx - mn || 1)) * (h - 4) - 2)).join(" ");
-  return <svg width={w} height={h}><polyline points={pts} fill="none" stroke={c} strokeWidth="2" strokeLinejoin="round" /></svg>;
+  const mx = Math.max(...d),
+    mn = Math.min(...d);
+  const pts = d
+    .map((y, i) => (i / (d.length - 1)) * w + "," + (h - ((y - mn) / (mx - mn || 1)) * (h - 4) - 2))
+    .join(" ");
+  return (
+    <svg width={w} height={h}>
+      <polyline points={pts} fill="none" stroke={c} strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
 }
 export function Bars({ d, c = "#0552CC", h = 120 }: { d: number[]; c?: string; h?: number }) {
   const mx = Math.max(...d);
-  return <div className="flex items-end gap-1.5" style={{ height: h }}>{d.map((y, i) => <div key={i} className="flex-1 rounded-t" style={{ height: (y / mx) * 100 + "%", background: c, opacity: 0.35 + (i / d.length) * 0.65 }} />)}</div>;
+  return (
+    <div className="flex items-end gap-1.5" style={{ height: h }}>
+      {d.map((y, i) => (
+        <div
+          key={i}
+          className="flex-1 rounded-t"
+          style={{ height: (y / mx) * 100 + "%", background: c, opacity: 0.35 + (i / d.length) * 0.65 }}
+        />
+      ))}
+    </div>
+  );
 }
 export function Stars({ v }: { v: number }) {
-  return <span className="inline-flex items-center gap-0.5 text-amber-500">{[1, 2, 3, 4, 5].map((i) => <Ic key={i} n="star" s={13} c={i <= Math.round(v) ? "fill-current" : "opacity-30"} />)}<span className="ml-1 text-xs font-semibold text-slate-600">{v.toFixed(1)}</span></span>;
+  return (
+    <span className="inline-flex items-center gap-0.5 text-amber-500">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Ic key={i} n="star" s={13} c={i <= Math.round(v) ? "fill-current" : "opacity-30"} />
+      ))}
+      <span className="ml-1 text-xs font-semibold text-slate-600">{v.toFixed(1)}</span>
+    </span>
+  );
 }
-

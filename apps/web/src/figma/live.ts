@@ -10,16 +10,44 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 
 export interface ApiJob {
-  id: string; title: string; description?: string | null; company_id?: string | null; company_name?: string | null; company_logo?: string | null;
-  location?: string | null; is_remote?: boolean; job_type?: string | null; experience_level?: string | null;
-  salary_min?: number | null; salary_max?: number | null; salary_period?: string | null; budget_min?: number | null; budget_max?: number | null; currency?: string | null;
-  skills?: string[]; source?: string | null; external_url?: string | null; posted_at?: string; match_score?: number;
+  id: string;
+  title: string;
+  description?: string | null;
+  company_id?: string | null;
+  company_name?: string | null;
+  company_logo?: string | null;
+  location?: string | null;
+  is_remote?: boolean;
+  job_type?: string | null;
+  experience_level?: string | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  salary_period?: string | null;
+  budget_min?: number | null;
+  budget_max?: number | null;
+  currency?: string | null;
+  skills?: string[];
+  source?: string | null;
+  external_url?: string | null;
+  posted_at?: string;
+  match_score?: number;
 }
 
 /** The Figma JOBS row shape (rap_kit.tsx), plus the original API record. */
 export interface FigmaJob {
-  id: string; t: string; co: string; loc: string; type: string; pay: string; post: string; ap?: number; m?: number;
-  easy: boolean; lvl: string; tags: string[]; raw: ApiJob;
+  id: string;
+  t: string;
+  co: string;
+  loc: string;
+  type: string;
+  pay: string;
+  post: string;
+  ap?: number;
+  m?: number;
+  easy: boolean;
+  lvl: string;
+  tags: string[];
+  raw: ApiJob;
 }
 
 const title = (s?: string | null) => (s || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -28,8 +56,19 @@ const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/
 export function timeAgo(iso?: string | null): string {
   if (!iso) return "";
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
-  const steps: Array<[number, string]> = [[31557600, "year"], [2629800, "month"], [604800, "week"], [86400, "day"], [3600, "hour"], [60, "minute"]];
-  for (const [sec, name] of steps) if (s >= sec) { const n = Math.floor(s / sec); return `${n} ${name}${n > 1 ? "s" : ""} ago`; }
+  const steps: Array<[number, string]> = [
+    [31557600, "year"],
+    [2629800, "month"],
+    [604800, "week"],
+    [86400, "day"],
+    [3600, "hour"],
+    [60, "minute"],
+  ];
+  for (const [sec, name] of steps)
+    if (s >= sec) {
+      const n = Math.floor(s / sec);
+      return `${n} ${name}${n > 1 ? "s" : ""} ago`;
+    }
   return "just now";
 }
 
@@ -38,12 +77,13 @@ const PERIOD: Record<string, string> = { year: "/yr", month: "/mo", hour: "/hr",
 /** Pay as the source states it. The period is shown only when the source gives one; never guessed from the amount. */
 export function formatPay(j: ApiJob): string {
   const salary = j.salary_min != null || j.salary_max != null;
-  const lo = salary ? j.salary_min : j.budget_min, hi = salary ? j.salary_max : j.budget_max;
+  const lo = salary ? j.salary_min : j.budget_min,
+    hi = salary ? j.salary_max : j.budget_max;
   if (lo == null && hi == null) return "";
   const sym = !j.currency || j.currency === "USD" ? "$" : `${j.currency} `;
   const f = (n: number) => `${sym}${n >= 10000 ? Math.round(n / 1000) + "K" : n.toLocaleString()}`;
   const amount = lo != null && hi != null && lo !== hi ? `${f(lo)} - ${f(hi)}` : f((lo ?? hi) as number);
-  const suffix = salary ? PERIOD[j.salary_period ?? ""] ?? "" : " budget";
+  const suffix = salary ? (PERIOD[j.salary_period ?? ""] ?? "") : " budget";
   return amount + suffix;
 }
 
@@ -51,9 +91,18 @@ export const isDirectJob = (j: ApiJob) => !j.external_url && (!j.source || j.sou
 
 export function toFigmaJob(j: ApiJob): FigmaJob {
   return {
-    id: j.id, t: j.title, co: j.company_name || "Company", loc: j.location || (j.is_remote ? "Remote" : "On-site"), type: j.job_type && j.job_type !== "unspecified" ? sentence(j.job_type) : "",
-    pay: formatPay(j), post: timeAgo(j.posted_at), m: typeof j.match_score === "number" ? Math.round(j.match_score) : undefined,
-    easy: isDirectJob(j), lvl: title(j.experience_level), tags: j.skills ?? [], raw: j,
+    id: j.id,
+    t: j.title,
+    co: j.company_name || "Company",
+    loc: j.location || (j.is_remote ? "Remote" : "On-site"),
+    type: j.job_type && j.job_type !== "unspecified" ? sentence(j.job_type) : "",
+    pay: formatPay(j),
+    post: timeAgo(j.posted_at),
+    m: typeof j.match_score === "number" ? Math.round(j.match_score) : undefined,
+    easy: isDirectJob(j),
+    lvl: title(j.experience_level),
+    tags: j.skills ?? [],
+    raw: j,
   };
 }
 
@@ -73,7 +122,13 @@ export function useApi<T>(path: string | null, params?: Record<string, unknown>)
   // keeps its data on screen while refreshing.
   const resKey = path ? `${user?.id ?? "anon"}|${path}${JSON.stringify(params ?? {})}` : null;
   const reqKey = resKey ? `${resKey}#${tick}` : null;
-  const [state, setState] = useState<{ req?: string | null; res?: string | null; data?: T; total?: number; error?: unknown }>({});
+  const [state, setState] = useState<{
+    req?: string | null;
+    res?: string | null;
+    data?: T;
+    total?: number;
+    error?: unknown;
+  }>({});
   useEffect(() => {
     if (!path) return;
     let live = true;
@@ -85,7 +140,13 @@ export function useApi<T>(path: string | null, params?: Record<string, unknown>)
         const header = r.headers?.["x-total-count"];
         setState({ req: reqKey, res: resKey, data: r.data, total: header != null ? Number(header) : undefined });
       })
-      .catch((e) => live && setState((s) => (s.res === resKey ? { ...s, req: reqKey, error: e } : { req: reqKey, res: resKey, error: e })));
+      .catch(
+        (e) =>
+          live &&
+          setState((s) =>
+            s.res === resKey ? { ...s, req: reqKey, error: e } : { req: reqKey, res: resKey, error: e },
+          ),
+      );
     return () => {
       live = false;
     };

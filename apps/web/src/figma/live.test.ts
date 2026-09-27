@@ -5,8 +5,12 @@ const job = (over: Partial<ApiJob>): ApiJob => ({ id: "1", title: "Role", ...ove
 
 describe("formatPay", () => {
   it("uses the period the source states", () => {
-    expect(formatPay(job({ salary_min: 70000, salary_max: 80000, salary_period: "year", currency: "USD" }))).toBe("$70K - $80K/yr");
-    expect(formatPay(job({ salary_min: 45, salary_max: 45, salary_period: "hour", currency: "EUR" }))).toBe("EUR 45/hr");
+    expect(formatPay(job({ salary_min: 70000, salary_max: 80000, salary_period: "year", currency: "USD" }))).toBe(
+      "$70K - $80K/yr",
+    );
+    expect(formatPay(job({ salary_min: 45, salary_max: 45, salary_period: "hour", currency: "EUR" }))).toBe(
+      "EUR 45/hr",
+    );
   });
   it("does not guess hourly from a small amount", () => {
     expect(formatPay(job({ salary_min: 500, salary_max: 900 }))).toBe("$500 - $900");

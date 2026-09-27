@@ -23,7 +23,8 @@ export const OPERATOR: {
   contentResponsible: null,
   aiProviders:
     "Groq (Groq, Inc., USA) runs the AI models used today. Other free-tier providers (Google Gemini, Cerebras, OpenRouter, Mistral) may be used as fallbacks if Groq is unavailable; this notice will list them before they are switched on.",
-  cacheProvider: "A managed Redis service stores short-lived technical data such as rate-limit counters. It holds no profile content.",
+  cacheProvider:
+    "A managed Redis service stores short-lived technical data such as rate-limit counters. It holds no profile content.",
   dataLocations:
     "Your account, profile and uploaded files are stored with Supabase in the EU (Ireland). The application servers that process requests run on Render in the United States, and the website is delivered through Cloudflare's global network. These providers offer data processing terms that include the EU standard contractual clauses for transfers outside the EU/EEA.",
   logRetention: null,
@@ -107,7 +108,12 @@ export const PRIVACY: Section[] = [
   },
   {
     h: "Where data is stored",
-    body: [fact(OPERATOR.dataLocations, "Countries or regions where data is stored and processed, and the safeguards used for transfers outside the EU/EEA")],
+    body: [
+      fact(
+        OPERATOR.dataLocations,
+        "Countries or regions where data is stored and processed, and the safeguards used for transfers outside the EU/EEA",
+      ),
+    ],
   },
   {
     h: "How long we keep it",
@@ -182,11 +188,15 @@ export const TERMS: Section[] = [
   },
   {
     h: "Ending your account",
-    body: ["You can stop using the service at any time and ask us to delete your account. We may suspend or close accounts that break these terms."],
+    body: [
+      "You can stop using the service at any time and ask us to delete your account. We may suspend or close accounts that break these terms.",
+    ],
   },
   {
     h: "Liability and governing law",
-    body: [fact(OPERATOR.governingLaw, "Liability terms, governing law and place of jurisdiction (requires legal review)")],
+    body: [
+      fact(OPERATOR.governingLaw, "Liability terms, governing law and place of jurisdiction (requires legal review)"),
+    ],
   },
 ];
 
@@ -199,8 +209,14 @@ export const IMPRESSUM: Section[] = [
     ],
   },
   { h: "Contact", body: [fact(OPERATOR.contactEmail, "Contact email address")] },
-  { h: "VAT ID / commercial register", body: [fact(OPERATOR.vatOrRegister, "VAT ID or register entry, or a statement that none applies")] },
-  { h: "Responsible for content", body: [fact(OPERATOR.contentResponsible, "Person responsible for editorial content")] },
+  {
+    h: "VAT ID / commercial register",
+    body: [fact(OPERATOR.vatOrRegister, "VAT ID or register entry, or a statement that none applies")],
+  },
+  {
+    h: "Responsible for content",
+    body: [fact(OPERATOR.contentResponsible, "Person responsible for editorial content")],
+  },
   {
     h: "Links and user content",
     body: [
@@ -212,4 +228,8 @@ export const IMPRESSUM: Section[] = [
 export const isFact = (b: Block): b is Fact => typeof b === "object" && !Array.isArray(b);
 
 /** Operator facts still missing on a page; non-empty means the page is not launch-ready. */
-export const pendingFacts = (sections: Section[]) => sections.flatMap((s) => s.body).filter(isFact).filter((b) => b.fact == null);
+export const pendingFacts = (sections: Section[]) =>
+  sections
+    .flatMap((s) => s.body)
+    .filter(isFact)
+    .filter((b) => b.fact == null);

@@ -50,7 +50,10 @@ interface PendingRegistration {
  * this app's own self-service endpoints, then clears it so it never
  * re-applies on a later, unrelated login.
  */
-export async function applyPendingRegistration(session: Session, currentUser: { email: string; full_name?: string; role: string }) {
+export async function applyPendingRegistration(
+  session: Session,
+  currentUser: { email: string; full_name?: string; role: string },
+) {
   if (typeof window === "undefined") return currentUser;
   const raw = localStorage.getItem("pending_registration");
   if (!raw) return currentUser;

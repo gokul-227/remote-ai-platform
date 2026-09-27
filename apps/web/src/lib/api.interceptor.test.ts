@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const refreshSession = vi.fn();
 const signOut = vi.fn();
-vi.mock("@/lib/supabase", () => ({ supabase: { auth: { refreshSession: () => refreshSession(), signOut: () => signOut() } } }));
+vi.mock("@/lib/supabase", () => ({
+  supabase: { auth: { refreshSession: () => refreshSession(), signOut: () => signOut() } },
+}));
 
 import api from "./api";
 
@@ -14,7 +16,9 @@ describe("401 handling", () => {
     signOut.mockReset().mockResolvedValue({});
     api.defaults.adapter = async (config) => Promise.reject({ config, response: { status: 401, data: {} } });
   });
-  afterEach(() => { api.defaults.adapter = undefined; });
+  afterEach(() => {
+    api.defaults.adapter = undefined;
+  });
 
   it("never sends an anonymous visitor to sign-in", async () => {
     await expect(api.get("/auth/me")).rejects.toBeTruthy();

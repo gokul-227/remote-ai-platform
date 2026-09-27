@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import App from "./App";
 
 describe("Figma Make app", () => {
-  afterEach(() => { window.location.hash = ""; });
+  afterEach(() => {
+    window.location.hash = "";
+  });
 
   it("renders the app shell on the default route", () => {
     render(<App />);

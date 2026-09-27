@@ -50,7 +50,9 @@ describe("useApi (Phase 03: no stale private content)", () => {
 
   it("returns nothing when there is no path", async () => {
     get.mockImplementation(() => ok({ x: 1 }));
-    const { result, rerender } = renderHook(({ p }) => useApi<{ x: number }>(p), { initialProps: { p: "/a" as string | null } });
+    const { result, rerender } = renderHook(({ p }) => useApi<{ x: number }>(p), {
+      initialProps: { p: "/a" as string | null },
+    });
     await waitFor(() => expect(result.current.data?.x).toBe(1));
     rerender({ p: null });
     expect(result.current.data).toBeUndefined();
