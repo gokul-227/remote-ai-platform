@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient
 
@@ -13,11 +15,23 @@ async def test_application_status_lifecycle(client: AsyncClient):
     assert registered.status_code == 200
     headers = {"Authorization": f"Bearer {registered.json()['access_token']}"}
 
+    # Applications are only accepted for postings an organisation owns here.
+    org = await client.post("/api/v1/auth/register", json={
+        "email": "lifecycle-org@example.com",
+        "password": "secure-pass",
+        "full_name": "Lifecycle Org",
+        "role": "COMPANY",
+    })
+    org_headers = {"Authorization": f"Bearer {org.json()['access_token']}"}
+    company = await client.post("/api/v1/companies/me", headers=org_headers, json={"name": "Test Company"})
+    assert company.status_code == 201
+
     from conftest import TestingSessionLocal
     from app.domains.jobs.models import JobPost
 
     async with TestingSessionLocal() as db:
         job = JobPost(
+            company_id=uuid.UUID(company.json()["id"]),
             title="Python Engineer",
             slug="python-engineer-application-test",
             description="Build APIs",

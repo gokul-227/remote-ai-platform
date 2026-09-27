@@ -76,7 +76,7 @@ export function JobDetail() {
   const m = mq.data;
   const fit = m ? [["Skills", m.skill_score], ["Experience", m.experience_score], ["Timezone", m.timezone_score], ["Rate", m.compensation_score], ["Availability", m.availability_score]] : [];
   const toggleSave = async () => { await (saved ? api.delete(`/saved-jobs/${j.id}`) : api.post(`/saved-jobs/${j.id}`)); savedQ.reload(); };
-  const startApply = () => { if (!user) { nav("login"); return; } if (!fj.easy && j.external_url) { window.open(j.external_url, "_blank", "noopener"); return; } setApply(true); };
+  const startApply = () => { if (!user) { nav("login"); return; } if (!fj.easy) { if (j.external_url) window.open(j.external_url, "_blank", "noopener"); else setNotice("This listing was imported from another job board and has no application link. Apply on the original board."); return; } setApply(true); };
   const submit = async () => { try { await api.post(`/applications/jobs/${j.id}`, { cover_note: cover.trim() || undefined }); setNotice("Application sent to " + fj.co); appsQ.reload(); } catch (e) { setNotice(extractErrorMessage(e, "We couldn't submit your application.")); } setApply(false); };
   return (
     <Wrap w="max-w-none">

@@ -33,7 +33,7 @@ export function Jobs() {
   const matchQ = useApi<{ overall_score: number; skill_score: number; experience_score: number; timezone_score: number; compensation_score: number; matching_skills: string[]; missing_skills: string[] }>(engineer && sel ? `/matching/jobs/${sel.id}` : null);
   const steps = ["Contact info", "Resume", "Questions", "Review"];
   const toggleSave = async (id: string) => { if (!engineer) return; await (saved.has(id) ? api.delete(`/saved-jobs/${id}`) : api.post(`/saved-jobs/${id}`)); savedQ.reload(); };
-  const startApply = () => { if (!sel) return; if (!user) { goRoute("login"); return; } if (!sel.easy && sel.raw.external_url) { window.open(sel.raw.external_url, "_blank", "noopener"); return; } setApply(true); setStep(0); setNote(""); };
+  const startApply = () => { if (!sel) return; if (!user) { goRoute("login"); return; } if (!sel.easy) { if (sel.raw.external_url) window.open(sel.raw.external_url, "_blank", "noopener"); else setNotice("This listing was imported from another job board and has no application link. Apply on the original board."); return; } setApply(true); setStep(0); setNote(""); };
   const submit = async () => { if (!sel) return; try { await api.post(`/applications/jobs/${sel.id}`, { cover_note: note.trim() || undefined }); setNotice("Application sent to " + sel.co); appsQ.reload(); } catch (e) { setNotice(extractErrorMessage(e, "We couldn't submit your application.")); } setApply(false); };
   const m = matchQ.data;
   return (

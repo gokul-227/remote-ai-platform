@@ -81,8 +81,19 @@ async def apply_to_job(
     current_user: User = Depends(require_role(UserRole.ENGINEER)),
     db: AsyncSession = Depends(get_db),
 ):
-    if not await db.get(JobPost, job_id):
+    job = await db.get(JobPost, job_id)
+    if not job or job.is_deleted:
         raise HTTPException(status_code=404, detail="Job not found")
+    # Only a posting an organisation owns here has someone to review the
+    # application. Imported listings are applied to on the source site;
+    # accepting one here would tell the applicant it was sent to no one.
+    if job.company_id is None:
+        raise HTTPException(
+            status_code=409,
+            detail="This listing is imported from another job board. Apply on the source site.",
+        )
+    if not job.is_active:
+        raise HTTPException(status_code=409, detail="This job is no longer accepting applications")
     existing = await db.scalar(
         select(JobApplication).where(
             JobApplication.user_id == current_user.id, JobApplication.job_id == job_id
