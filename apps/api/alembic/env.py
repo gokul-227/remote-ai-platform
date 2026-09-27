@@ -6,7 +6,7 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
@@ -62,14 +62,34 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+# Every instance runs `alembic upgrade head` at startup (start-production.sh).
+# Two booting at once would run the same DDL concurrently and one would crash;
+# this session-level advisory lock makes later migrators wait, then find
+# nothing left to do.
+MIGRATION_LOCK_KEY = 7_241_093_551
+
+
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(
-        connection=connection,
-        target_metadata=target_metadata,
-        compare_type=True,
-    )
-    with context.begin_transaction():
-        context.run_migrations()
+    is_postgres = connection.dialect.name == "postgresql"
+    if is_postgres:
+        connection.execute(text(f"SELECT pg_advisory_lock({MIGRATION_LOCK_KEY})"))
+        # A DDL statement waiting on a busy table would queue live queries
+        # behind it; fail the deploy fast instead of stalling production.
+        connection.execute(text("SET lock_timeout = '15s'"))
+        connection.commit()  # the lock and setting are per session; start clean
+    try:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+    finally:
+        if is_postgres:
+            connection.rollback()  # leave any failed transaction before unlocking
+            connection.execute(text(f"SELECT pg_advisory_unlock({MIGRATION_LOCK_KEY})"))
+            connection.commit()
 
 
 async def run_async_migrations() -> None:

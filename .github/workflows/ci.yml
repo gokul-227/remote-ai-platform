@@ -187,11 +187,17 @@ jobs:
           pip install hatchling
           pip install -e ".[dev]"
 
-      - name: Run migrations against a fresh database
+      - name: Run migrations against a fresh database (two migrators at once)
+        # Every instance migrates at startup; two booting together must both
+        # succeed (alembic/env.py serialises them with an advisory lock).
         env:
           DATABASE_URL: postgresql+asyncpg://remote_ai_platform:ci_test_password@localhost:5432/remote_ai_platform
           JWT_SECRET_KEY: ci-test-secret-key-at-least-32-characters-long # gitleaks:allow -- CI-only fixture, not a real secret
-        run: alembic upgrade head
+        run: |
+          alembic upgrade head & first=$!
+          alembic upgrade head & second=$!
+          wait $first && wait $second
+          alembic current | grep -q "(head)"
 
       - name: Concurrency tests on PostgreSQL
         # The unit suite runs on SQLite, which cannot prove row locking or
