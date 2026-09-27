@@ -6,22 +6,21 @@ Supabase Auth; this router only exposes the signed-in user's own record,
 their role choice, and session revocation.
 """
 
-import enum
-import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit_event
 from app.core.config import settings
-from app.core.database import Base, get_db
+from app.core.database import get_db
 from app.core.logging import get_logger
 from app.core.storage import get_storage
 from app.domains.auth import supabase_admin
 from app.domains.auth.dependencies import get_current_user
+from app.domains.auth.export import build_export, export_generated_at
 from app.domains.auth.models import DeletedIdentity, User, UserRole, identity_hash
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import UserResponse, UserUpdate
@@ -123,18 +122,6 @@ async def update_me(
     return UserResponse.model_validate(updated_user)
 
 
-# Columns that are secrets or capabilities rather than personal data.
-_EXPORT_SKIP_COLUMNS = {"resume_url", "auth_subject", "idempotency_key", "provider_reference"}
-
-
-def _jsonable(value: object) -> object:
-    if isinstance(value, uuid.UUID | datetime):
-        return str(value)
-    if isinstance(value, enum.Enum):
-        return value.value
-    return value
-
-
 @router.get("/me/export")
 async def export_my_data(
     current_user: User = Depends(get_current_user),
@@ -142,31 +129,14 @@ async def export_my_data(
 ) -> JSONResponse:
     """Everything stored about the signed-in user (GDPR access and portability).
 
-    Walks every table with a foreign key to users.id and returns the rows
-    that reference this user, so newly added tables are included
-    automatically.
+    What is included, and why some columns and tables are not, is defined in
+    app/domains/auth/export.py.
     """
     data: dict[str, object] = {
-        "exported_at": datetime.now(UTC).isoformat(),
+        "exported_at": export_generated_at(),
         "account": UserResponse.model_validate(current_user).model_dump(mode="json"),
+        **await build_export(db, current_user),
     }
-    for table in Base.metadata.sorted_tables:
-        if table.name == "users":
-            continue
-        columns = [
-            c for c in table.columns
-            if any(fk.column.table.name == "users" for fk in c.foreign_keys)
-        ]
-        if not columns:
-            continue
-        rows = (
-            await db.execute(select(table).where(or_(*[c == current_user.id for c in columns])))
-        ).mappings().all()
-        if rows:
-            data[table.name] = [
-                {k: _jsonable(v) for k, v in row.items() if k not in _EXPORT_SKIP_COLUMNS}
-                for row in rows
-            ]
     await record_audit_event(
         db=db, action="DATA_EXPORTED", resource_type="USER", resource_id=str(current_user.id),
         actor_id=current_user.id, actor_role=current_user.role.value, payload={},
