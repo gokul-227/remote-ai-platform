@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 export interface ApiJob {
   id: string; title: string; description?: string | null; company_id?: string | null; company_name?: string | null; company_logo?: string | null;
@@ -63,11 +64,16 @@ export function goRoute(route: string) {
 
 /** Minimal fetch hook (the Figma app has no query library). */
 export function useApi<T>(path: string | null, params?: Record<string, unknown>) {
+  const { user } = useAuth();
   const [tick, setTick] = useState(0);
-  // Each request is identified by path + params + reload tick; `loading` is
-  // derived from whether the last settled result belongs to the current one.
-  const reqKey = path ? `${path}${JSON.stringify(params ?? {})}#${tick}` : null;
-  const [state, setState] = useState<{ for?: string | null; data?: T; total?: number; error?: unknown }>({});
+  // A resource is who is asking + what; data is only ever shown for the
+  // current resource, so switching resource or account never shows the
+  // previous one's (possibly private) content, even if the new request fails.
+  // A request is the resource + reload tick; reloading the same resource
+  // keeps its data on screen while refreshing.
+  const resKey = path ? `${user?.id ?? "anon"}|${path}${JSON.stringify(params ?? {})}` : null;
+  const reqKey = resKey ? `${resKey}#${tick}` : null;
+  const [state, setState] = useState<{ req?: string | null; res?: string | null; data?: T; total?: number; error?: unknown }>({});
   useEffect(() => {
     if (!path) return;
     let live = true;
@@ -77,16 +83,23 @@ export function useApi<T>(path: string | null, params?: Record<string, unknown>)
         if (!live) return;
         // Paginated endpoints report the full match count in X-Total-Count.
         const header = r.headers?.["x-total-count"];
-        setState({ for: reqKey, data: r.data, total: header != null ? Number(header) : undefined });
+        setState({ req: reqKey, res: resKey, data: r.data, total: header != null ? Number(header) : undefined });
       })
-      .catch((e) => live && setState((s) => ({ for: reqKey, data: s.data, total: s.total, error: e })));
+      .catch((e) => live && setState((s) => (s.res === resKey ? { ...s, req: reqKey, error: e } : { req: reqKey, res: resKey, error: e })));
     return () => {
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reqKey]);
   const reload = useCallback(() => setTick((t) => t + 1), []);
-  return { data: state.data, total: state.total, error: state.for === reqKey ? state.error : undefined, loading: !!path && state.for !== reqKey, reload };
+  const current = !!resKey && state.res === resKey;
+  return {
+    data: current ? state.data : undefined,
+    total: current ? state.total : undefined,
+    error: state.req === reqKey ? state.error : undefined,
+    loading: !!path && state.req !== reqKey,
+    reload,
+  };
 }
 
 export const statusOf = (e: unknown) => (e as { response?: { status?: number } } | undefined)?.response?.status;
