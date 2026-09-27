@@ -2,12 +2,14 @@
 API Router for Job Post domain.
 """
 
+import hmac
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.domains.admin.repository import AdminRepository
 from app.domains.auth.dependencies import get_optional_user, require_role
@@ -191,6 +193,25 @@ async def create_job(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return JobPostResponse.model_validate(job)
+
+
+@router.post("/sync/scheduled", response_model=dict[str, int], include_in_schema=False)
+async def scheduled_job_sync(
+    x_job_sync_token: str | None = Header(default=None),
+    service: JobService = Depends(get_job_service),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """The six-hourly sync (scheduled-job-sync.yml). Authorised by
+    JOB_SYNC_TOKEN, which allows this and nothing else, so the workflow no
+    longer needs an administrator's password."""
+    expected = settings.JOB_SYNC_TOKEN
+    if not expected:
+        raise HTTPException(status_code=404, detail="Not found")
+    if not x_job_sync_token or not hmac.compare_digest(x_job_sync_token.encode(), expected.encode()):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    stats = await service.sync_all_job_sources(limit_per_source=30, admin_repo=AdminRepository(db))
+    await db.commit()
+    return stats
 
 
 @router.post("/sync", response_model=dict[str, int])

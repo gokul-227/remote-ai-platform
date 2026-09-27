@@ -165,6 +165,9 @@ class Settings(BaseSettings):
 
     JOB_SYNC_SCHEDULE: str = "0 */6 * * *"  # Every 6 hours
     JOB_SYNC_MAX_PER_SOURCE: int = 500
+    # Secret for the scheduled sync (POST /jobs/sync/scheduled). Grants that one
+    # action only; empty disables the endpoint. At least 32 characters.
+    JOB_SYNC_TOKEN: str = ""
     # Freshness policy: imported jobs that no sync has seen among their
     # source's recent listings (each sync reads each source's newest ~30) for
     # this long are taken off the public list; they may still be open.
@@ -286,6 +289,8 @@ class Settings(BaseSettings):
         # rate limiting, caching and the job queue will silently degrade to in-memory
         # fallbacks.  Operators should set REDIS_URL to a real
         # Redis instance (e.g. Upstash free tier) or accept the degraded behaviour.
+        if self.JOB_SYNC_TOKEN and len(self.JOB_SYNC_TOKEN) < 32:
+            errors.append("JOB_SYNC_TOKEN must be at least 32 characters")
         if not self.SUPABASE_SERVICE_ROLE_KEY:
             import warnings
 

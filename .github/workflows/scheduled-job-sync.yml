@@ -41,6 +41,17 @@ jobs:
             exit 0
           fi
 
+          # Preferred: JOB_SYNC_TOKEN, which can trigger this sync and nothing
+          # else. Fallback (until it is configured): the service account's
+          # administrator login -- remove PROD_ADMIN_* once the token works.
+          SYNC_TOKEN="${{ secrets.JOB_SYNC_TOKEN }}"
+          if [ -n "$SYNC_TOKEN" ]; then
+            curl -sf --max-time 900 -X POST "$API_URL/jobs/sync/scheduled" \
+              -H "X-Job-Sync-Token: $SYNC_TOKEN" \
+              -w "\nHTTP %{http_code}\n"
+            exit 0
+          fi
+
           TOKEN=$(curl -sf --max-time 30 -X POST "${{ secrets.SUPABASE_URL }}/auth/v1/token?grant_type=password" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json" \
