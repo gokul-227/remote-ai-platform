@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Ic, Av, Btn, Card, Tag, Modal, cx } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, timeAgo, goRoute } from "./live";
+import { useApi, timeAgo, goRoute, safeHref } from "./live";
 const go = (r: string) => {
   goRoute(r);
 };
@@ -221,7 +221,7 @@ export function Feed() {
             <p className="px-5 pb-5 whitespace-pre-line leading-7">{p.content}</p>
             {p.link_url && (
               <a
-                href={p.link_url}
+                href={safeHref(p.link_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mx-5 mb-4 block rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-blue-600"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPay, toFigmaJob, type ApiJob } from "./live";
+import { formatPay, safeHref, toFigmaJob, type ApiJob } from "./live";
 
 const job = (over: Partial<ApiJob>): ApiJob => ({ id: "1", title: "Role", ...over });
 
@@ -28,5 +28,27 @@ describe("toFigmaJob", () => {
     expect(toFigmaJob(job({ job_type: "unspecified" })).type).toBe("");
     expect(toFigmaJob(job({})).type).toBe("");
     expect(toFigmaJob(job({ job_type: "part-time" })).type).toBe("Part-time");
+  });
+});
+
+describe("safeHref", () => {
+  it("keeps http(s) links", () => {
+    expect(safeHref("https://example.com/a?b=1")).toBe("https://example.com/a?b=1");
+    expect(safeHref(" http://example.com ")).toBe("http://example.com/");
+  });
+  it("drops script, data and other schemes, and junk", () => {
+    for (const bad of [
+      "javascript:alert(1)",
+      " JavaScript:alert(1)",
+      "data:text/html,x",
+      "vbscript:x",
+      "ftp://x.org",
+      "not a url",
+      "",
+      null,
+      undefined,
+    ]) {
+      expect(safeHref(bad)).toBeUndefined();
+    }
   });
 });

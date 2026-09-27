@@ -106,6 +106,21 @@ export function toFigmaJob(j: ApiJob): FigmaJob {
   };
 }
 
+/**
+ * A link from user or third-party data, only if it is http(s); otherwise
+ * undefined, so javascript:/data: URLs never reach an href, src or window.open.
+ * (The API rejects them on input; this covers anything stored earlier.)
+ */
+export function safeHref(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    const u = new URL(url.trim());
+    return u.protocol === "https:" || u.protocol === "http:" ? u.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Navigate the hash router. Kept in one place so components never write window state directly. */
 export function goRoute(route: string) {
   window.location.hash = route;

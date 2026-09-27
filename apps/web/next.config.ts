@@ -25,12 +25,11 @@ const sentryOrigin = (() => {
   }
 })();
 
-// unsafe-inline on script-src is a known, deliberate relaxation: the app
-// router's theme-init script (src/lib/theme.ts, inlined via
-// dangerouslySetInnerHTML in layout.tsx to avoid a flash of the wrong theme)
-// needs it, and Next.js's own inline hydration data does too. A nonce-based
-// CSP would remove this but needs per-request middleware -- worth doing if
-// this app later renders more user-supplied content, not yet in place.
+// unsafe-inline on script-src is a known, deliberate relaxation: Next.js's
+// own inline hydration scripts need it. The app itself renders no inline
+// scripts or HTML strings (no dangerouslySetInnerHTML), and user-supplied
+// links pass through safeHref. A nonce-based CSP would remove this but needs
+// per-request middleware -- worth doing if the app ever renders rich user HTML.
 const csp = [
   "default-src 'self'",
   `connect-src 'self' ${apiUrl} ${supabaseUrl} ${sentryOrigin}`.trim(),

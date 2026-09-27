@@ -1,7 +1,7 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, goRoute } from "./live";
+import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Bars, cx, Field, inputCls } from "./rap_kit";
 
 const GR = "#0552CC";
@@ -60,7 +60,8 @@ export function Work() {
       return;
     }
     if (!sel.easy && sel.raw.external_url) {
-      window.open(sel.raw.external_url, "_blank", "noopener");
+      const link = safeHref(sel.raw.external_url);
+      if (link) window.open(link, "_blank", "noopener");
       return;
     }
     setBid(prof.data?.hourly_rate || 0);

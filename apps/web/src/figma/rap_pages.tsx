@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, goRoute } from "./live";
+import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
 import { Groups } from "./rap_social";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls } from "./rap_kit";
 
@@ -177,7 +177,7 @@ export function EngineerDetail() {
                   <p className="font-semibold">
                     {x.url ? (
                       <a
-                        href={x.url}
+                        href={safeHref(x.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-[#0552CC] hover:underline"
@@ -326,7 +326,8 @@ export function JobDetail() {
       return;
     }
     if (!fj.easy) {
-      if (j.external_url) window.open(j.external_url, "_blank", "noopener");
+      const link = safeHref(j.external_url);
+      if (link) window.open(link, "_blank", "noopener");
       else
         setNotice(
           "This listing was imported from another job board and has no application link. Apply on the original board.",
@@ -1425,7 +1426,7 @@ export function CoProfile() {
         <Card c="rounded-xl">
           <div className="mb-4 flex flex-wrap items-center gap-4">
             {f.logo_url ? (
-              <img src={f.logo_url} alt="" className="h-[72px] w-[72px] rounded-[14px] object-contain" />
+              <img src={safeHref(f.logo_url)} alt="" className="h-[72px] w-[72px] rounded-[14px] object-contain" />
             ) : (
               <Lg name={f.name || "Company"} s={72} r={14} />
             )}

@@ -3,10 +3,13 @@ Pydantic schemas for Engineer Profile domain.
 """
 
 import uuid
+from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.core.schemas import HttpUrlIn
 
 
 class ExperienceItem(BaseModel):
@@ -25,6 +28,13 @@ class ProjectItem(BaseModel):
     url: str | None = None
     github_url: str | None = None
     technologies: list[str] = []
+
+
+class ProjectItemIn(ProjectItem):
+    """ProjectItem as submitted by the user: links must be http(s)."""
+
+    url: HttpUrlIn = None
+    github_url: HttpUrlIn = None
 
 
 class EducationItem(BaseModel):
@@ -58,19 +68,24 @@ class EngineerProfileBase(BaseModel):
     portfolio_url: str | None = None
     skills: list[str] = []
     experience: list[ExperienceItem] = []
-    projects: list[ProjectItem] = []
+    projects: Sequence[ProjectItem] = []
     education: list[EducationItem] = []
     is_public: bool = True
     is_open_to_work: bool = True
 
 
 class EngineerProfileCreate(EngineerProfileBase):
+    profile_image_url: HttpUrlIn = None
+    github_url: HttpUrlIn = None
+    linkedin_url: HttpUrlIn = None
+    portfolio_url: HttpUrlIn = None
+    projects: list[ProjectItemIn] = []
     pass
 
 
 class EngineerProfileUpdate(BaseModel):
     country: str | None = None
-    profile_image_url: str | None = None
+    profile_image_url: HttpUrlIn = None
     headline: str | None = None
     bio: str | None = None
     location: str | None = None
@@ -86,12 +101,12 @@ class EngineerProfileUpdate(BaseModel):
     hourly_rate: float | None = Field(None, ge=0)
     desired_salary_min: float | None = Field(None, ge=0)
     languages: list[str] | None = None
-    github_url: str | None = None
-    linkedin_url: str | None = None
-    portfolio_url: str | None = None
+    github_url: HttpUrlIn = None
+    linkedin_url: HttpUrlIn = None
+    portfolio_url: HttpUrlIn = None
     skills: list[str] | None = None
     experience: list[ExperienceItem] | None = None
-    projects: list[ProjectItem] | None = None
+    projects: list[ProjectItemIn] | None = None
     education: list[EducationItem] | None = None
     is_public: bool | None = None
     is_open_to_work: bool | None = None

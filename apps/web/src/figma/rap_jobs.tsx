@@ -1,7 +1,7 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute } from "./live";
+import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, grad, Field, inputCls } from "./rap_kit";
 
 const BL = "#0552CC";
@@ -67,7 +67,8 @@ export function Jobs() {
       return;
     }
     if (!sel.easy) {
-      if (sel.raw.external_url) window.open(sel.raw.external_url, "_blank", "noopener");
+      const link = safeHref(sel.raw.external_url);
+      if (link) window.open(link, "_blank", "noopener");
       else
         setNotice(
           "This listing was imported from another job board and has no application link. Apply on the original board.",
@@ -657,7 +658,7 @@ export function Profile() {
                   />
                 </label>
                 {p.resume_url && (
-                  <a href={p.resume_url} target="_blank" rel="noopener noreferrer">
+                  <a href={safeHref(p.resume_url)} target="_blank" rel="noopener noreferrer">
                     <Btn v="line">View resume</Btn>
                   </a>
                 )}
@@ -1208,7 +1209,7 @@ export function Company() {
               </p>
               <div className="my-3 flex gap-2">
                 {c.website && (
-                  <a href={c.website} target="_blank" rel="noopener noreferrer">
+                  <a href={safeHref(c.website)} target="_blank" rel="noopener noreferrer">
                     <Btn v="outline" icon="external">
                       Visit website
                     </Btn>

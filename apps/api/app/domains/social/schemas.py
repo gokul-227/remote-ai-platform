@@ -5,11 +5,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.core.schemas import HttpUrlIn
+
 
 class PostCreate(BaseModel):
     content: str = Field(min_length=1, max_length=3000)
-    image_url: str | None = Field(default=None, max_length=2048)
-    link_url: str | None = Field(default=None, max_length=2048)
+    image_url: HttpUrlIn = None
+    link_url: HttpUrlIn = None
     link_preview_title: str | None = Field(default=None, max_length=255)
     visibility: str = Field(default="PUBLIC", pattern="^(PUBLIC|CONNECTIONS|PRIVATE)$")
 

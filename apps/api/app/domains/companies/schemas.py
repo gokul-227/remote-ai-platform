@@ -7,6 +7,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.schemas import HttpUrlIn
+
 
 class CompanyProfileBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -22,13 +24,14 @@ class CompanyProfileBase(BaseModel):
 
 
 class CompanyProfileCreate(CompanyProfileBase):
-    pass
+    website: HttpUrlIn = None
+    logo_url: HttpUrlIn = None
 
 
 class CompanyProfileUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=255)
-    website: str | None = None
-    logo_url: str | None = None
+    website: HttpUrlIn = None
+    logo_url: HttpUrlIn = None
     description: str | None = None
     industry: str | None = None
     company_size: str | None = None
