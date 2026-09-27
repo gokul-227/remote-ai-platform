@@ -842,8 +842,7 @@ export function Messenger() {
                   <button
                     className="mt-3 text-blue-600"
                     onClick={() => {
-                      sessionStorage.setItem("rap-person-id", cur.other_participant.engineer_profile_id);
-                      go("engineer");
+                      go(`engineer/${encodeURIComponent(String(cur.other_participant.engineer_profile_id))}`);
                     }}
                   >
                     View profile →

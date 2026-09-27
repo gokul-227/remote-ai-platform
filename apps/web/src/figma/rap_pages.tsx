@@ -438,8 +438,7 @@ export function JobDetail() {
                   v="outline"
                   c="mt-4"
                   onClick={() => {
-                    sessionStorage.setItem("rap-company-id", co.data.id);
-                    nav("company");
+                    nav(`company/${encodeURIComponent(String(co.data.id))}`);
                   }}
                 >
                   View company page
@@ -1266,8 +1265,7 @@ export function Search() {
               <button
                 className="flex w-full items-center gap-3 text-left"
                 onClick={() => {
-                  localStorage.setItem("rap-selected-job", j.id);
-                  nav("jobdetail");
+                  nav(`jobdetail/${encodeURIComponent(String(j.id))}`);
                 }}
               >
                 <Lg name={j.company_name || j.title} s={44} r={8} />
@@ -1287,8 +1285,7 @@ export function Search() {
               <button
                 className="flex w-full items-center gap-3 text-left"
                 onClick={() => {
-                  sessionStorage.setItem("rap-person-id", p.id);
-                  nav("engineer");
+                  nav(`engineer/${encodeURIComponent(String(p.id))}`);
                 }}
               >
                 <Av name={p.full_name || "Professional"} s={44} />
@@ -1306,8 +1303,7 @@ export function Search() {
               <button
                 className="flex w-full items-center gap-3 text-left"
                 onClick={() => {
-                  sessionStorage.setItem("rap-company-id", c.id);
-                  nav("company");
+                  nav(`company/${encodeURIComponent(String(c.id))}`);
                 }}
               >
                 <Lg name={c.name} s={44} r={8} />

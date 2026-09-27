@@ -445,8 +445,7 @@ export function Engineers() {
     setInviting(null);
   };
   const open = (id: string) => {
-    sessionStorage.setItem("rap-person-id", id);
-    goRoute("engineer");
+    goRoute(`engineer/${encodeURIComponent(String(id))}`);
   };
   return (
     <Page
@@ -666,8 +665,7 @@ export function Companies() {
     (c: any) => (!hiring || c.hiring) && (c.n + c.ind + c.tag).toLowerCase().includes(q.toLowerCase()),
   );
   const open = (id: string) => {
-    sessionStorage.setItem("rap-company-id", id);
-    goRoute("company");
+    goRoute(`company/${encodeURIComponent(String(id))}`);
   };
   return (
     <Page title="Companies" sub="Discover teams hiring remote professionals" w="max-w-none">

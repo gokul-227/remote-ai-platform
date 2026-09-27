@@ -328,8 +328,7 @@ export function Work() {
                       className="mt-2 text-sm font-semibold"
                       style={{ color: GR }}
                       onClick={() => {
-                        sessionStorage.setItem("rap-company-id", sel.raw.company_id);
-                        goRoute("company");
+                        goRoute(`company/${encodeURIComponent(String(sel.raw.company_id))}`);
                       }}
                     >
                       View company
@@ -768,8 +767,7 @@ export function Contracts() {
                         <Btn
                           sm
                           onClick={() => {
-                            sessionStorage.setItem("rap-contract-id", cur.id);
-                            goRoute("contractsign");
+                            goRoute(`contractsign/${encodeURIComponent(String(cur.id))}`);
                           }}
                         >
                           Review and sign

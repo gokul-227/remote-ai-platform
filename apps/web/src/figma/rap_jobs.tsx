@@ -589,8 +589,7 @@ export function Profile() {
   const known = new Set((conns.data ?? []).flatMap((c: any) => [c.sender_id, c.receiver_id]));
   const suggest = (people.data ?? []).filter((e: any) => e.user_id !== user?.id && !known.has(e.user_id)).slice(0, 5);
   const openPerson = (id: string) => {
-    sessionStorage.setItem("rap-person-id", id);
-    goRoute("engineer");
+    goRoute(`engineer/${encodeURIComponent(String(id))}`);
   };
   return (
     <div className="bg-[#F0F2F5] py-5">
@@ -959,8 +958,7 @@ export function Network() {
   };
   const open = (id?: string | null) => {
     if (!id) return;
-    sessionStorage.setItem("rap-person-id", id);
-    goRoute("engineer");
+    goRoute(`engineer/${encodeURIComponent(String(id))}`);
   };
   return (
     <div className="bg-[#F0F2F5] py-5">
