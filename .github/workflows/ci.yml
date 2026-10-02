@@ -76,8 +76,7 @@ jobs:
       # npm ci must run from the repo root — this is an npm workspaces
       # monorepo, the lockfile lives at the root, not in apps/web. Running
       # it from apps/web fails with "npm ci can only install with an
-      # existing package-lock.json" (confirmed live against Vercel's build,
-      # same underlying cause — see docs/ACTUAL_SYSTEM_AUDIT.md).
+      # existing package-lock.json".
       - name: Install dependencies
         # The npm bundled with actions/setup-node hard-fails `npm ci` on an
         # unsupported-platform *optional* dependency (e.g. an esbuild

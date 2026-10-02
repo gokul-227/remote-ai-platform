@@ -83,3 +83,22 @@ export async function applyPendingRegistration(
   }
   return fetchBackendUser(session);
 }
+
+const OAUTH_PROVIDERS = ["google", "azure", "github"] as const;
+export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
+
+/** The OAuth providers this Supabase project has switched on, from its public
+ * settings endpoint, so the sign-in page never offers a button that cannot
+ * work (dev enables fewer providers than prod). null when unknown: callers
+ * then offer every provider, as before. */
+export async function enabledOAuthProviders(): Promise<OAuthProvider[] | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_PUBLISHABLE_KEY } });
+    if (!res.ok) return null;
+    const external = ((await res.json()) as { external?: Record<string, boolean> }).external;
+    if (!external) return null;
+    return OAUTH_PROVIDERS.filter((p) => external[p] === true);
+  } catch {
+    return null;
+  }
+}
