@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/gokul-227/remote-ai-platform/security/advisories/new
+    about: Please report security issues privately, never as a public issue.
+  - name: Account or support question
+    url: mailto:contact@remoteaiplatform.com
+    about: For help with your account, privacy requests or moderation appeals.

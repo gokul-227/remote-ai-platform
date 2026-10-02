@@ -1,0 +1,45 @@
+name: Release
+
+# After a successful production deploy, tag the exact deployed commit and
+# publish a GitHub Release with notes generated from the merged pull requests.
+# Tags are date-based (vYYYY.MM.DD, then .2, .3 ... for later releases that day)
+# because prod is promoted continuously from dev, not on a version schedule.
+
+on:
+  workflow_run:
+    workflows: ["Deploy frontend (Cloudflare)"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Tag and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # Already released (e.g. a re-run of the deploy)?
+          if gh api "repos/$REPO/tags?per_page=100" --jq ".[] | select(.commit.sha==\"$SHA\") | .name" | grep -q .; then
+            echo "Commit $SHA is already tagged."; exit 0
+          fi
+          base="v$(date -u +%Y.%m.%d)"
+          tag="$base"; n=1
+          while gh api "repos/$REPO/git/ref/tags/$tag" >/dev/null 2>&1; do n=$((n+1)); tag="$base.$n"; done
+          gh release create "$tag" --repo "$REPO" --target "$SHA" --title "$tag" --generate-notes --latest \
+            --notes-start-tag "$(gh release list --repo "$REPO" --limit 1 --json tagName --jq '.[0].tagName // empty')" \
+            || gh release create "$tag" --repo "$REPO" --target "$SHA" --title "$tag" --generate-notes --latest
+          echo "Released $tag at $SHA" >> "$GITHUB_STEP_SUMMARY"

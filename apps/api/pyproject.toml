@@ -7,6 +7,7 @@ where = ["."]
 include = ["app*"]
 
 [project]
+license = { text = "Proprietary" }
 name = "remote-ai-platform-api"
 version = "0.1.1"
 description = "Remote AI Platform — FastAPI Backend"
