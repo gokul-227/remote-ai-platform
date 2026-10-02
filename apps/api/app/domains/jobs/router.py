@@ -250,7 +250,11 @@ async def scheduled_job_sync(
     from app.domains.auth.erasure import retry_pending_erasures  # auth -> engineers -> jobs cycle
 
     erasures = await retry_pending_erasures(db)
-    return {**stats, "identity_erasures_pending": erasures["pending"]}
+    # Backstop for the in-process email dispatcher (MAIL-01).
+    from app.services.email.outbox import dispatch_due
+
+    emails = await dispatch_due(db, limit=100)
+    return {**stats, "identity_erasures_pending": erasures["pending"], "emails_sent": emails["sent"]}
 
 
 @router.post("/sync", response_model=dict[str, int])

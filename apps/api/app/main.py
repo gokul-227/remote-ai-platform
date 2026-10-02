@@ -2,6 +2,7 @@
 Remote AI Platform — FastAPI Application Factory
 """
 
+import asyncio
 import re
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -17,7 +18,7 @@ from sentry_sdk.integrations.starlette import StarletteIntegration
 from sentry_sdk.types import Event, Hint
 
 from app.core.config import settings
-from app.core.database import engine
+from app.core.database import AsyncSessionFactory, engine
 from app.core.exceptions import register_exception_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
@@ -202,9 +203,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         logger.error("Database connection failed", error=str(e))
         raise
 
+    # Durable email delivery (MAIL-01): only when a provider is configured.
+    from app.services.email.outbox import email_enabled, run_dispatcher
+
+    dispatcher = asyncio.create_task(run_dispatcher(AsyncSessionFactory)) if email_enabled() else None
+
     yield
 
     # Shutdown
+    if dispatcher is not None:
+        dispatcher.cancel()
     await engine.dispose()
     logger.info("Remote AI Platform shutdown complete")
 

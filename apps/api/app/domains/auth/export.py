@@ -43,6 +43,12 @@ SOURCES: tuple[Source, ...] = (
     Source("user_trust_scores", ("user_id",)),
     Source("user_verifications", ("user_id",), drop=frozenset({"reviewed_by_id"})),
     Source("notifications", ("user_id",)),
+    # Emails sent to the user (MAIL-01); delivery internals are not personal data.
+    Source(
+        "email_outbox",
+        ("user_id",),
+        drop=frozenset({"event_key", "locked_until", "provider_message_id", "next_attempt_at"}),
+    ),
     Source("saved_jobs", ("user_id",)),
     Source("job_applications", ("user_id",)),
     Source("recommendations", ("user_id",)),

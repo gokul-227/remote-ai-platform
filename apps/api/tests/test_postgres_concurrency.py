@@ -164,3 +164,47 @@ async def test_every_public_table_has_row_level_security(sessions):
             )
         ).all()
     assert missing == [], f"enable row level security on: {missing}"
+
+
+@pytest.mark.asyncio
+async def test_concurrent_email_dispatchers_send_each_email_once(sessions, monkeypatch):
+    """MAIL-01: SKIP LOCKED leases mean two dispatchers never send the same row,
+    and concurrent enqueues of one event make one row."""
+    from unittest.mock import AsyncMock
+
+    from app.core.config import settings
+    from app.domains.notifications.models import EmailOutbox
+    from app.services.email import outbox
+    from app.services.email.service import EmailResult
+
+    monkeypatch.setattr(settings, "EMAIL_PROVIDER", "resend")
+    sent: list[str] = []
+
+    async def send(to, subject, html, idempotency_key=None):
+        sent.append(idempotency_key)
+        await asyncio.sleep(0.05)
+        return EmailResult(sent=True, provider_message_id="m")
+
+    monkeypatch.setattr(outbox, "get_email_provider", lambda: AsyncMock(send_email=send))
+    users, _, _ = await _seed(sessions, 1)
+    prefix = uuid.uuid4().hex[:8]
+
+    async def enqueue(key):
+        async with sessions() as db:
+            await outbox.enqueue_email(db, users[0].id, key, "x", "S", "h")
+            await db.commit()
+
+    await asyncio.gather(*(enqueue(f"{prefix}-{i % 10}") for i in range(30)))
+
+    async def dispatch():
+        async with sessions() as db:
+            return await outbox.dispatch_due(db, limit=10)
+
+    await asyncio.gather(dispatch(), dispatch(), dispatch())
+    mine = [k for k in sent if k.startswith(prefix)]
+    assert sorted(mine) == sorted(f"{prefix}-{i}" for i in range(10))
+    async with sessions() as db:
+        statuses = (await db.execute(
+            select(EmailOutbox.status).where(EmailOutbox.event_key.like(f"{prefix}-%"))
+        )).scalars().all()
+    assert statuses == ["SENT"] * 10

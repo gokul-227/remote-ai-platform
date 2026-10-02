@@ -239,12 +239,17 @@ async def invite_engineer(
     else:
         application = JobApplication(user_id=target_user_id, job_id=job_id, status="INVITED")
         db.add(application)
+    await db.flush()
     await notify(
         db,
         target_user_id,
         "You're invited to apply",
         f"{job.company_name or 'A company'} invited you to apply for {job.title}.",
         "application_invite",
+        # Each invitation is its own email; re-invites of the same application
+        # are separate events (MAIL-01).
+        email_event_key=f"application-invite:{application.id}:{uuid.uuid4()}",
+        email_link="#applications",
     )
     await db.flush()
     return application
@@ -317,8 +322,15 @@ async def update_application_status(
         db,
         application.user_id,
         "Application updated",
-        f"Your application is now {next_status.lower()}.",
+        f"Your application{f' for {job.title}' if job else ''} is now {next_status.lower()}.",
         "application_update",
+        # Email only for a real change, not a repeated PATCH (MAIL-01).
+        email_event_key=(
+            f"application-status:{application.id}:{next_status}:{uuid.uuid4()}"
+            if next_status != current_status
+            else None
+        ),
+        email_link="#applications",
     )
     await db.flush()
     return application

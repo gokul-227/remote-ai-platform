@@ -39,8 +39,16 @@ class MessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=10000)
 
 
-async def notify(db: AsyncSession, user_id: uuid.UUID, title: str, body: str, kind: str) -> None:
-    await send_notification(db, user_id, title, body, kind)
+async def notify(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    title: str,
+    body: str,
+    kind: str,
+    email_event_key: str | None = None,
+    email_link: str | None = None,
+) -> None:
+    await send_notification(db, user_id, title, body, kind, email_event_key=email_event_key, email_link=email_link)
 
 
 async def user_summaries(db: AsyncSession, ids: set[uuid.UUID]) -> dict[uuid.UUID, dict[str, Any]]:

@@ -202,6 +202,8 @@ class Settings(BaseSettings):
     # domain is added.
     EMAIL_FROM_ADDRESS: str = "onboarding@resend.dev"
     EMAIL_FROM_NAME: str = "Remote AI Platform"
+    # Public web address for links in emails (e.g. https://remoteaiplatform.com).
+    FRONTEND_URL: str = ""
     # Where people write for support, privacy requests and moderation appeals.
     SUPPORT_EMAIL: str = "contact@remoteaiplatform.com"
 

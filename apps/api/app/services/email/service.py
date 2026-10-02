@@ -29,10 +29,16 @@ RESEND_API_URL = "https://api.resend.com/emails"
 class EmailResult:
     sent: bool
     provider_message_id: str | None = None
+    # Redacted failure category ("HTTP 429", "ConnectTimeout"); never a body.
+    error: str | None = None
+    # False for failures a retry cannot fix (bad address, rejected content).
+    retryable: bool = True
 
 
 class EmailProvider(Protocol):
-    async def send_email(self, to: str, subject: str, html: str) -> EmailResult: ...
+    async def send_email(
+        self, to: str, subject: str, html: str, idempotency_key: str | None = None
+    ) -> EmailResult: ...
 
 
 class NoopEmailProvider:
@@ -40,9 +46,11 @@ class NoopEmailProvider:
     but never contacts a real email network -- matches this app's actual
     behavior prior to any email provider existing at all."""
 
-    async def send_email(self, to: str, subject: str, html: str) -> EmailResult:
+    async def send_email(
+        self, to: str, subject: str, html: str, idempotency_key: str | None = None
+    ) -> EmailResult:
         logger.info("Email suppressed (EMAIL_PROVIDER=none)", recipient_domain=_recipient_domain(to))
-        return EmailResult(sent=False)
+        return EmailResult(sent=False, error="email disabled", retryable=False)
 
 
 class ResendEmailProvider:
@@ -50,18 +58,29 @@ class ResendEmailProvider:
         if not settings.RESEND_API_KEY:
             raise RuntimeError("RESEND_API_KEY must be set to use EMAIL_PROVIDER=resend")
 
-    async def send_email(self, to: str, subject: str, html: str) -> EmailResult:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
-                RESEND_API_URL,
-                headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
-                json={
-                    "from": f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS}>",
-                    "to": [to],
-                    "subject": subject,
-                    "html": html,
-                },
-            )
+    async def send_email(
+        self, to: str, subject: str, html: str, idempotency_key: str | None = None
+    ) -> EmailResult:
+        headers = {"Authorization": f"Bearer {settings.RESEND_API_KEY}"}
+        if idempotency_key:
+            # Resend drops a repeat of the same key, so a retry after an
+            # unacknowledged success does not deliver twice (MAIL-01).
+            headers["Idempotency-Key"] = idempotency_key[:256]
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    RESEND_API_URL,
+                    headers=headers,
+                    json={
+                        "from": f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS}>",
+                        "to": [to],
+                        "subject": subject,
+                        "html": html,
+                    },
+                )
+        except httpx.HTTPError as e:
+            logger.error("Resend email send failed", recipient_domain=_recipient_domain(to), error=type(e).__name__)
+            return EmailResult(sent=False, error=type(e).__name__)
         if response.status_code >= 400:
             # Status only: the provider's error body can echo the address and content.
             logger.error(
@@ -69,7 +88,9 @@ class ResendEmailProvider:
                 recipient_domain=_recipient_domain(to),
                 status_code=response.status_code,
             )
-            return EmailResult(sent=False)
+            # 422/400: the message itself is unacceptable; 429/5xx: try later.
+            retryable = response.status_code == 429 or response.status_code >= 500
+            return EmailResult(sent=False, error=f"HTTP {response.status_code}", retryable=retryable)
         return EmailResult(sent=True, provider_message_id=response.json().get("id"))
 
 
