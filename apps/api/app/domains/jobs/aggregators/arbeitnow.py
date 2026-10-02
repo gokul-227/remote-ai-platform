@@ -5,11 +5,12 @@ Arbeitnow API Aggregator Adapter.
 import httpx
 
 from app.core.config import settings
-from app.core.logging import get_logger
-from app.domains.jobs.aggregators.base import BaseAggregator
+from app.domains.jobs.aggregators.base import (
+    BaseAggregator,
+    SourceFetchError,
+    require_list,
+)
 from app.domains.jobs.schemas import JobPostCreate
-
-logger = get_logger("aggregator.arbeitnow")
 
 
 class ArbeitnowAggregator(BaseAggregator):
@@ -21,11 +22,10 @@ class ArbeitnowAggregator(BaseAggregator):
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.get(settings.ARBEITNOW_API_URL)
                 if response.status_code != 200:
-                    logger.warning(f"Arbeitnow API returned status {response.status_code}")
-                    return jobs
+                    raise SourceFetchError(f"HTTP {response.status_code}")
 
                 payload = response.json()
-                raw_jobs = payload.get("data", [])
+                raw_jobs = require_list(payload, "data")
 
                 for item in raw_jobs[:limit]:
                     if not isinstance(item, dict) or not item.get("title"):
@@ -54,6 +54,8 @@ class ArbeitnowAggregator(BaseAggregator):
                     )
                     jobs.append(job)
 
+        except SourceFetchError:
+            raise
         except Exception as e:
-            logger.error(f"Error fetching jobs from Arbeitnow: {e}")
+            raise SourceFetchError(type(e).__name__) from e
         return jobs

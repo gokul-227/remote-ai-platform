@@ -39,11 +39,12 @@ jobs:
               sys.exit(1)
           PY
 
-      - name: Every job source still syncs, and no erasure is stuck (OBS-03)
-        # The newest posting stays fresh while any one source works; check each
-        # source that synced in the last 14 days. A source with no success in
-        # 24 h (four six-hourly runs) or an account erasure pending for over a
-        # day fails the run.
+      - name: Every job source still syncs, and no erasure is stuck (OBS-01, OBS-03)
+        # The newest posting stays fresh while any one source works, so check
+        # every configured source. Fails when a source has never succeeded, has
+        # no success in 24 h (four six-hourly runs), or an account erasure has
+        # been pending over a day. A disabled source or a success that fetched
+        # nothing is a warning: it may be legitimate, but a person should look.
         run: |
           curl -sf --max-time 60 "${{ vars.PROD_API_BASE_URL }}/health/ingestion" > ingestion.json
           python3 - ingestion.json <<'PY'
@@ -52,9 +53,19 @@ jobs:
           bad = []
           for name, s in sorted(d["sources"].items()):
               h = s["hours_since_success"]
-              print(f"{name}: last success {h} h ago, {s['failures_since_success']} failures since, fetched {s['last_success_fetched']}")
-              if h is not None and h > 24:
+              status = s.get("last_status")
+              print(f"{name}: last run {status}, last success {h} h ago, "
+                    f"{s['failures_since_success']} failures since, fetched {s['last_success_fetched']}")
+              if not s.get("configured", True):
+                  continue  # a retired source's old logs
+              if status == "DISABLED":
+                  print(f"::warning::{name} is not configured (last run DISABLED)")
+              elif h is None:
+                  bad.append(f"{name} has never synced successfully")
+              elif h > 24:
                   bad.append(f"{name} has not synced for {h} h")
+              elif s["last_success_fetched"] == 0:
+                  print(f"::warning::{name} last success fetched 0 jobs; check the feed")
           if d["identity_erasures_overdue"]:
               bad.append(f"{d['identity_erasures_overdue']} account erasure(s) pending over 24 h: "
                          "POST /api/v1/admin/erasures/retry and check SUPABASE_SERVICE_ROLE_KEY")

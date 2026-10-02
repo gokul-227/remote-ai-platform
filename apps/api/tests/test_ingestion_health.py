@@ -51,3 +51,33 @@ async def test_never_successful_source_and_overdue_erasures(client: AsyncClient)
     assert body["identity_erasures_overdue"] == 1
     # Never exposes subjects or hashes.
     assert "1111" not in str(body) and "bbbb" not in str(body)
+
+
+@pytest.mark.asyncio
+async def test_every_configured_source_is_listed_even_without_logs(client: AsyncClient):
+    """OBS-01: a configured source that never ran is reported, not absent."""
+    from app.domains.jobs.service import AGGREGATORS
+
+    body = (await client.get("/health/ingestion")).json()
+    for cls in AGGREGATORS:
+        entry = body["sources"][cls.source_name]
+        assert entry["configured"] is True
+        assert "last_success_at" in entry and "last_status" in entry
+
+
+@pytest.mark.asyncio
+async def test_success_older_than_window_is_still_reported(client: AsyncClient):
+    """OBS-01: 15 days of silence must show a 360 h old success, not a null that
+    the canary used to skip."""
+    await _log("ARBEITNOW", "SUCCESS", 24 * 15, fetched=3)
+    await _log("ARBEITNOW", "FAILED", 2)
+    entry = (await client.get("/health/ingestion")).json()["sources"]["ARBEITNOW"]
+    assert entry["hours_since_success"] > 24 * 14
+    assert entry["last_status"] == "FAILED" and entry["failures_since_success"] == 1
+
+
+@pytest.mark.asyncio
+async def test_disabled_runs_are_not_failures(client: AsyncClient):
+    await _log("OBS_DISABLED", "DISABLED", 1, fetched=0)
+    entry = (await client.get("/health/ingestion")).json()["sources"]["OBS_DISABLED"]
+    assert entry["last_status"] == "DISABLED" and entry["failures_since_success"] == 0

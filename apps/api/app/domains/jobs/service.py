@@ -14,6 +14,7 @@ from app.core.logging import get_logger
 from app.domains.admin.repository import AdminRepository
 from app.domains.jobs import list_cache
 from app.domains.jobs.aggregators.arbeitnow import ArbeitnowAggregator
+from app.domains.jobs.aggregators.base import SourceDisabledError, SourceFetchError
 from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.remotive import RemotiveAggregator
 from app.domains.jobs.aggregators.themuse import TheMuseAggregator
@@ -25,17 +26,21 @@ from app.domains.marketplace.models import AIReport
 
 logger = get_logger("jobs.service")
 
+# The configured job sources. Ingestion health reports every one of these, so a
+# source that never succeeds or stops logging cannot disappear from view (OBS-01).
+AGGREGATORS = (
+    RemoteOKAggregator,
+    ArbeitnowAggregator,
+    RemotiveAggregator,
+    TheMuseAggregator,
+    USAJobsAggregator,
+)
+
 
 class JobService:
     def __init__(self, repo: JobRepository):
         self.repo = repo
-        self.aggregators = [
-            RemoteOKAggregator(),
-            ArbeitnowAggregator(),
-            RemotiveAggregator(),
-            TheMuseAggregator(),
-            USAJobsAggregator(),
-        ]
+        self.aggregators = [cls() for cls in AGGREGATORS]
 
     async def get_by_id(self, job_id: uuid.UUID) -> JobPost:
         job = await self.repo.get_by_id(job_id)
@@ -160,38 +165,48 @@ class JobService:
                     _, created = await self.repo.upsert_external_job(job_data)
                     inserted += int(created)
                     updated += int(not created)
-                # Only after a successful fetch: an outage must not expire a whole source.
-                expired = await self.repo.expire_unseen_jobs(aggregator.source_name)
+                # Only after a successful, non-empty fetch: an outage or a feed that
+                # suddenly answers with nothing must not expire a whole source (ING-01).
+                expired = (
+                    await self.repo.expire_unseen_jobs(aggregator.source_name) if fetched_jobs else 0
+                )
                 await self.repo.db.commit()
                 stats[aggregator.source_name] = inserted + updated
                 if expired:
                     logger.info(f"Expired {expired} {aggregator.source_name} jobs no longer listed")
+                if not fetched_jobs:
+                    logger.warning(f"{aggregator.source_name} answered with no jobs; expiry skipped")
                 logger.info(
                     f"Aggregated {aggregator.source_name}: {inserted} new, {updated} updated"
                 )
-                if admin_repo:
-                    await admin_repo.log_sync(
-                        source=aggregator.source_name,
-                        jobs_fetched=len(fetched_jobs),
-                        jobs_inserted=inserted,
-                        jobs_updated=updated,
-                        status="SUCCESS",
-                        duration_ms=int((time.monotonic() - started) * 1000),
-                    )
-            except Exception as e:
-                logger.error(f"Error aggregating jobs from {aggregator.source_name}: {e}")
+                status, error = "SUCCESS", None
+            except SourceDisabledError as e:
+                logger.info(f"{aggregator.source_name} not configured, skipped: {e}")
                 stats[aggregator.source_name] = 0
-                if admin_repo:
-                    await admin_repo.log_sync(
-                        source=aggregator.source_name,
-                        jobs_fetched=0,
-                        jobs_inserted=0,
-                        jobs_updated=0,
-                        status="FAILED",
-                        error_message=str(e),
-                        duration_ms=int((time.monotonic() - started) * 1000),
-                    )
+                inserted = updated = 0
+                fetched_jobs = []
+                status, error = "DISABLED", str(e)
+            except Exception as e:
+                await self.repo.db.rollback()
+                # SourceFetchError messages are already a redacted category; for
+                # anything else keep only the class name (no bodies, no DSNs).
+                error = str(e) if isinstance(e, SourceFetchError) else type(e).__name__
+                logger.error(f"Error aggregating jobs from {aggregator.source_name}: {error}")
+                stats[aggregator.source_name] = 0
+                inserted = updated = 0
+                fetched_jobs = []
+                status = "FAILED"
+            if admin_repo:
+                await admin_repo.log_sync(
+                    source=aggregator.source_name,
+                    jobs_fetched=len(fetched_jobs),
+                    jobs_inserted=inserted,
+                    jobs_updated=updated,
+                    status=status,
+                    error_message=error,
+                    duration_ms=int((time.monotonic() - started) * 1000),
+                )
+                # Per source, so a later source's rollback cannot drop this record.
+                await admin_repo.db.commit()
 
-        if admin_repo:
-            await admin_repo.db.commit()
         return stats

@@ -5,11 +5,12 @@ RemoteOK API Aggregator Adapter.
 import httpx
 
 from app.core.config import settings
-from app.core.logging import get_logger
-from app.domains.jobs.aggregators.base import BaseAggregator
+from app.domains.jobs.aggregators.base import (
+    BaseAggregator,
+    SourceFetchError,
+    require_list,
+)
 from app.domains.jobs.schemas import JobPostCreate
-
-logger = get_logger("aggregator.remoteok")
 
 
 class RemoteOKAggregator(BaseAggregator):
@@ -22,12 +23,11 @@ class RemoteOKAggregator(BaseAggregator):
                 headers = {"User-Agent": "RemoteAIPlatform/0.1 (contact@remoteaiplatform.com)"}
                 response = await client.get(settings.REMOTEOK_API_URL, headers=headers)
                 if response.status_code != 200:
-                    logger.warning(f"RemoteOK API returned status {response.status_code}")
-                    return jobs
+                    raise SourceFetchError(f"HTTP {response.status_code}")
 
                 data = response.json()
                 # RemoteOK returns list where index 0 is legal metadata
-                raw_jobs = data[1:] if isinstance(data, list) and len(data) > 1 else []
+                raw_jobs = require_list(data)[1:]
 
                 for item in raw_jobs[:limit]:
                     if not isinstance(item, dict) or not item.get("position"):
@@ -69,6 +69,8 @@ class RemoteOKAggregator(BaseAggregator):
                     )
                     jobs.append(job)
 
+        except SourceFetchError:
+            raise
         except Exception as e:
-            logger.error(f"Error fetching jobs from RemoteOK: {e}")
+            raise SourceFetchError(type(e).__name__) from e
         return jobs

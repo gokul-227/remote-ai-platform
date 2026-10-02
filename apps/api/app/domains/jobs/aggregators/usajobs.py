@@ -5,11 +5,13 @@ USAJobs API Aggregator Adapter.
 import httpx
 
 from app.core.config import settings
-from app.core.logging import get_logger
-from app.domains.jobs.aggregators.base import BaseAggregator
+from app.domains.jobs.aggregators.base import (
+    BaseAggregator,
+    SourceDisabledError,
+    SourceFetchError,
+    require_list,
+)
 from app.domains.jobs.schemas import JobPostCreate
-
-logger = get_logger("aggregator.usajobs")
 
 
 class USAJobsAggregator(BaseAggregator):
@@ -18,8 +20,7 @@ class USAJobsAggregator(BaseAggregator):
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         jobs: list[JobPostCreate] = []
         if not settings.USAJOBS_AUTH_KEY:
-            logger.info("USAJOBS_AUTH_KEY not configured, skipping USAJobs aggregation")
-            return jobs
+            raise SourceDisabledError("USAJOBS_AUTH_KEY not configured")
 
         try:
             headers = {
@@ -30,11 +31,11 @@ class USAJobsAggregator(BaseAggregator):
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.get(url, headers=headers)
                 if response.status_code != 200:
-                    logger.warning(f"USAJobs API returned status {response.status_code}")
-                    return jobs
+                    raise SourceFetchError(f"HTTP {response.status_code}")
 
                 payload = response.json()
-                raw_items = payload.get("SearchResult", {}).get("SearchResultItems", [])
+                search_result = payload.get("SearchResult") if isinstance(payload, dict) else None
+                raw_items = require_list(search_result, "SearchResultItems")
 
                 for wrapper in raw_items[:limit]:
                     item = wrapper.get("MatchedObjectDescriptor", {})
@@ -65,6 +66,8 @@ class USAJobsAggregator(BaseAggregator):
                     )
                     jobs.append(job)
 
+        except SourceFetchError:
+            raise
         except Exception as e:
-            logger.error(f"Error fetching jobs from USAJobs: {e}")
+            raise SourceFetchError(type(e).__name__) from e
         return jobs

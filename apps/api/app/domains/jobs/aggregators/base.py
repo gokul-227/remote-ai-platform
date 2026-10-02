@@ -71,12 +71,37 @@ def _tidy_lines(text: str) -> str:
     return "\n".join(out).strip()
 
 
+class SourceFetchError(Exception):
+    """The source could not be read (transport error, non-200, malformed payload).
+    Distinct from a valid empty feed: a failed fetch must never expire jobs.
+    The message is a redacted category (status code or exception class), never
+    a response body."""
+
+
+class SourceDisabledError(Exception):
+    """The source is intentionally not configured (e.g. missing API key)."""
+
+
+def require_list(payload: object, key: str | None = None) -> list:
+    """The feed's job list, or SourceFetchError when the payload has an unexpected
+    shape. A missing key is a malformed feed, not zero jobs."""
+    if key is not None:
+        if not isinstance(payload, dict) or key not in payload:
+            raise SourceFetchError(f"payload missing '{key}'")
+        payload = payload[key]
+    if not isinstance(payload, list):
+        raise SourceFetchError("payload is not a list")
+    return payload
+
+
 class BaseAggregator(ABC):
     source_name: str = "UNKNOWN"
 
     @abstractmethod
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
-        """Fetch and normalize jobs into JobPostCreate objects."""
+        """Fetch and normalize jobs into JobPostCreate objects. Raises
+        SourceFetchError when the source cannot be read and SourceDisabledError when
+        it is not configured; an empty list means the source answered with no jobs."""
         pass
 
     @staticmethod

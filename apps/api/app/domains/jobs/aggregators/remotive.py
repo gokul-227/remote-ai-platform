@@ -5,11 +5,12 @@ Remotive API Aggregator Adapter.
 import httpx
 
 from app.core.config import settings
-from app.core.logging import get_logger
-from app.domains.jobs.aggregators.base import BaseAggregator
+from app.domains.jobs.aggregators.base import (
+    BaseAggregator,
+    SourceFetchError,
+    require_list,
+)
 from app.domains.jobs.schemas import JobPostCreate
-
-logger = get_logger("aggregator.remotive")
 
 
 class RemotiveAggregator(BaseAggregator):
@@ -22,11 +23,10 @@ class RemotiveAggregator(BaseAggregator):
                 url = settings.REMOTIVE_API_URL
                 response = await client.get(url)
                 if response.status_code != 200:
-                    logger.warning(f"Remotive API returned status {response.status_code}")
-                    return jobs
+                    raise SourceFetchError(f"HTTP {response.status_code}")
 
                 payload = response.json()
-                raw_jobs = payload.get("jobs", [])
+                raw_jobs = require_list(payload, "jobs")
 
                 for item in raw_jobs[:limit]:
                     if not isinstance(item, dict) or not item.get("title"):
@@ -58,6 +58,8 @@ class RemotiveAggregator(BaseAggregator):
                     )
                     jobs.append(job)
 
+        except SourceFetchError:
+            raise
         except Exception as e:
-            logger.error(f"Error fetching jobs from Remotive: {e}")
+            raise SourceFetchError(type(e).__name__) from e
         return jobs
