@@ -38,9 +38,27 @@ export async function fetchBackendUser(session: Session) {
 }
 
 interface PendingRegistration {
-  email: string;
+  // null: an OAuth sign-up, whose address is unknown until the provider
+  // returns; applied only to an account created moments ago on this device.
+  email: string | null;
   fullName: string;
   role: "ENGINEER" | "COMPANY";
+  createdAt?: number;
+}
+
+const OAUTH_SIGNUP_WINDOW_MS = 15 * 60 * 1000;
+
+/** Remember an OAuth sign-up's role/name choice for the account the provider
+ * is about to create (the email-code path stores it in rap_auth's send()). */
+export function rememberOAuthSignUp(role: "ENGINEER" | "COMPANY", fullName: string) {
+  try {
+    localStorage.setItem(
+      "pending_registration",
+      JSON.stringify({ email: null, fullName, role, createdAt: Date.now() } satisfies PendingRegistration),
+    );
+  } catch {
+    // Storage blocked: the account is created with defaults and can switch role later.
+  }
 }
 
 /**
@@ -52,7 +70,7 @@ interface PendingRegistration {
  */
 export async function applyPendingRegistration(
   session: Session,
-  currentUser: { email: string; full_name?: string; role: string },
+  currentUser: { email: string; full_name?: string; role: string; created_at?: string },
 ) {
   if (typeof window === "undefined") return currentUser;
   const raw = localStorage.getItem("pending_registration");
@@ -64,7 +82,17 @@ export async function applyPendingRegistration(
     localStorage.removeItem("pending_registration");
     return currentUser;
   }
-  if (pending.email !== currentUser.email) return currentUser;
+  if (pending.email === null) {
+    // OAuth sign-up: only a brand-new account, signed in soon after the choice,
+    // so an existing user can never be switched by a stale entry.
+    const fresh = Date.now() - (pending.createdAt ?? 0) < OAUTH_SIGNUP_WINDOW_MS;
+    const created = currentUser.created_at ? Date.parse(currentUser.created_at) : NaN;
+    const isNewAccount = Number.isFinite(created) && Date.now() - created < OAUTH_SIGNUP_WINDOW_MS;
+    if (!fresh || !isNewAccount) {
+      localStorage.removeItem("pending_registration");
+      return currentUser;
+    }
+  } else if (pending.email !== currentUser.email) return currentUser;
 
   localStorage.removeItem("pending_registration");
   const headers = { Authorization: `Bearer ${session.access_token}` };
