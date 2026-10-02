@@ -50,6 +50,7 @@ async def test_job_search_applies_skills_salary_and_portable_keyword_filter(clie
                     is_remote=True,
                     salary_min=120000,
                     salary_max=150000,
+                    salary_period="year",
                     skills=["Python", "FastAPI"],
                 ),
                 JobPost(
@@ -61,6 +62,7 @@ async def test_job_search_applies_skills_salary_and_portable_keyword_filter(clie
                     is_remote=True,
                     salary_min=90000,
                     salary_max=110000,
+                    salary_period="year",
                     skills=["React", "TypeScript"],
                 ),
             ]
@@ -69,7 +71,8 @@ async def test_job_search_applies_skills_salary_and_portable_keyword_filter(clie
 
     response = await client.get(
         "/api/v1/jobs",
-        params=[("skills", "Python"), ("max_salary", "160000"), ("query", "FastAPI")],
+        params=[("skills", "Python"), ("max_salary", "160000"), ("salary_currency", "USD"),
+                ("salary_period", "year"), ("query", "FastAPI")],
     )
 
     assert response.status_code == 200

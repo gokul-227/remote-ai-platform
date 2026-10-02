@@ -158,6 +158,8 @@ class JobRepository:
         experience_level: str | None = None,
         min_salary: float | None = None,
         max_salary: float | None = None,
+        salary_currency: str | None = None,
+        salary_period: str | None = None,
         source: str | None = None,
         company_id: uuid.UUID | None = None,
     ) -> Select:
@@ -176,6 +178,16 @@ class JobRepository:
 
         if experience_level:
             stmt = stmt.where(func.lower(JobPost.experience_level) == experience_level.lower())
+
+        # Salary bounds compare like with like (SEARCH-01): only jobs whose salary
+        # is stated in the requested currency and period. A job with no stated
+        # period or another currency is never treated as matching, and nothing
+        # is converted or assumed to be USD per year.
+        if min_salary is not None or max_salary is not None:
+            stmt = stmt.where(
+                func.upper(JobPost.currency) == (salary_currency or "").upper(),
+                func.lower(JobPost.salary_period) == (salary_period or "").lower(),
+            )
 
         if min_salary is not None:
             stmt = stmt.where(
@@ -235,6 +247,8 @@ class JobRepository:
         experience_level: str | None = None,
         min_salary: float | None = None,
         max_salary: float | None = None,
+        salary_currency: str | None = None,
+        salary_period: str | None = None,
         source: str | None = None,
         company_id: uuid.UUID | None = None,
         skip: int = 0,
@@ -244,6 +258,7 @@ class JobRepository:
             select(JobPost),
             query=query, skills=skills, is_remote=is_remote, job_type=job_type,
             experience_level=experience_level, min_salary=min_salary, max_salary=max_salary,
+            salary_currency=salary_currency, salary_period=salary_period,
             source=source, company_id=company_id,
         )
         # id breaks ties so consecutive pages never overlap or skip rows.

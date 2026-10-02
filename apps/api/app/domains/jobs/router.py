@@ -43,6 +43,12 @@ async def list_jobs(
     experience_level: str | None = Query(None, description="junior, mid, senior, lead"),
     min_salary: float | None = Query(None, ge=0),
     max_salary: float | None = Query(None, ge=0),
+    salary_currency: str | None = Query(
+        None, pattern="^[A-Za-z]{3}$", description="ISO currency of min/max_salary (required with them)"
+    ),
+    salary_period: str | None = Query(
+        None, pattern="^(hour|day|week|month|year)$", description="Period of min/max_salary (required with them)"
+    ),
     skills: list[str] | None = Query(None, description="Match any of these skills"),
     source: str | None = Query(None, description="Filter by source (REMOTEOK, ARBEITNOW, etc.)"),
     company_id: uuid.UUID | None = Query(None, description="Filter by company profile UUID"),
@@ -54,6 +60,15 @@ async def list_jobs(
 
     The total number of matches is returned in the X-Total-Count header.
     """
+    if (min_salary is not None or max_salary is not None) and not (salary_currency and salary_period):
+        # Amounts without units cannot be compared across hourly/yearly or
+        # USD/EUR postings; refuse rather than guess (SEARCH-01).
+        raise HTTPException(
+            status_code=422,
+            detail="min_salary/max_salary need salary_currency (e.g. USD) and salary_period (hour|day|week|month|year)",
+        )
+    if min_salary is not None and max_salary is not None and min_salary > max_salary:
+        raise HTTPException(status_code=422, detail="min_salary is greater than max_salary")
     search_params = JobSearchQuery(
         query=query,
         is_remote=is_remote,
@@ -61,6 +76,8 @@ async def list_jobs(
         experience_level=experience_level,
         min_salary=min_salary,
         max_salary=max_salary,
+        salary_currency=salary_currency.upper() if salary_currency else None,
+        salary_period=salary_period,
         skills=[skill.strip() for skill in skills or [] if skill.strip()] or None,
         source=source,
         company_id=company_id,

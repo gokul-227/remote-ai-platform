@@ -94,10 +94,16 @@ class JobSearchQuery(BaseModel):
     experience_level: str | None = None
     min_salary: float | None = None
     max_salary: float | None = None
+    salary_currency: str | None = None
+    salary_period: str | None = None
     source: str | None = None
     company_id: uuid.UUID | None = None
     skip: int = 0
     limit: int = 20
+
+    def filters(self) -> dict[str, Any]:
+        """The filter fields, as the repository's search/count take them."""
+        return self.model_dump(exclude={"skip", "limit"})
 
 
 class JobSitemapEntry(BaseModel):

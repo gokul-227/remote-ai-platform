@@ -98,19 +98,7 @@ class JobService:
         return job
 
     async def search_jobs(self, query: JobSearchQuery) -> Sequence[JobPost]:
-        return await self.repo.search(
-            query=query.query,
-            skills=query.skills,
-            is_remote=query.is_remote,
-            job_type=query.job_type,
-            experience_level=query.experience_level,
-            min_salary=query.min_salary,
-            max_salary=query.max_salary,
-            source=query.source,
-            company_id=query.company_id,
-            skip=query.skip,
-            limit=query.limit,
-        )
+        return await self.repo.search(**query.filters(), skip=query.skip, limit=query.limit)
 
     async def search_jobs_cached(self, query: JobSearchQuery) -> tuple[list[dict], int]:
         """One page of matching jobs plus the total number of matches."""
@@ -119,17 +107,7 @@ class JobService:
         if cached is not None:
             return cached
         jobs = await self.search_jobs(query)
-        total = await self.repo.count(
-            query=query.query,
-            skills=query.skills,
-            is_remote=query.is_remote,
-            job_type=query.job_type,
-            experience_level=query.experience_level,
-            min_salary=query.min_salary,
-            max_salary=query.max_salary,
-            source=query.source,
-            company_id=query.company_id,
-        )
+        total = await self.repo.count(**query.filters())
         serialized = [JobPostResponse.model_validate(job).model_dump(mode="json") for job in jobs]
         list_cache.put(key, (serialized, total))
         return serialized, total
