@@ -472,8 +472,10 @@ def _storage_ping():
 
     client = get_s3_client()
     bucket = settings.MINIO_BUCKET_RESUMES
-    key = "_health/ping.txt"
-    client.put_object(Bucket=bucket, Key=key, Body=b"ok")
+    # The resumes bucket accepts only PDF/DOCX (DATA-01), so the probe is a
+    # PDF-typed object.
+    key = "_health/ping.pdf"
+    client.put_object(Bucket=bucket, Key=key, Body=b"%PDF-1.4 health check", ContentType="application/pdf")
     client.get_object(Bucket=bucket, Key=key)
 
 
