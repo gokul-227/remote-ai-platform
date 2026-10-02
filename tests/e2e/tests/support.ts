@@ -26,8 +26,12 @@ export async function signUp(page: Page, opts: { as: "professional" | "organisat
 }
 
 /** Sign in through the real sign-in UI. */
-export async function signIn(page: Page, email: string) {
-  await page.goto("/#login");
+export async function signIn(page: Page, email: string, opts: { navigate?: boolean } = {}) {
+  // navigate: false when the page is already on the sign-in screen (e.g. after
+  // clicking "Sign in"): re-navigating to the identical /#login URL reloads the
+  // page in Firefox mid-flow and the code step never appears (TEST-02).
+  if (opts.navigate ?? true) await page.goto("/#login");
+  await expect(page.getByLabel("Email address")).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: /email me a sign-in code/i }).click();
   await page.locator("#code").fill(OTP);
