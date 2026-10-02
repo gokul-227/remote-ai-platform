@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy import select
 
 from app.main import app
-from app.core.database import Base, get_db
+from app.core.database import Base, get_db, session_dependency
 from app.domains.auth.models import User, UserRole
 
 from sqlalchemy.ext.compiler import compiles
@@ -51,14 +51,8 @@ async def init_db():
         await conn.run_sync(Base.metadata.drop_all)
 
 
-async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with TestingSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
+# Same commit-before-response behaviour as production, on the test database.
+override_get_db = session_dependency(TestingSessionLocal)
 
 
 app.dependency_overrides[get_db] = override_get_db
