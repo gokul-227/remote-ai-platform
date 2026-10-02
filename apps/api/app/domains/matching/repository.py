@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.domains.engineers.models import EngineerProfile
+from app.domains.jobs.models import JobPost
 from app.domains.matching.models import JobMatch
 
 
@@ -90,17 +91,27 @@ class MatchingRepository:
         stmt = (
             select(JobMatch)
             .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer))
+            .join(JobPost, JobPost.id == JobMatch.job_id)
+            # A job hidden by moderation, closed, expired or removed after it was
+            # scored must stop being recommended (MATCH-01).
             .where(
                 JobMatch.engineer_id == engineer_id,
                 JobMatch.overall_score >= min_score,
                 JobMatch.status != "dismissed",
+                JobPost.is_active.is_(True),
+                JobPost.is_deleted.is_(False),
+                JobPost.expired_at.is_(None),
             )
-            .order_by(JobMatch.overall_score.desc())
+            .order_by(JobMatch.overall_score.desc(), JobMatch.job_id)
             .offset(skip)
             .limit(limit)
         )
         result = await self.db.execute(stmt)
         return result.scalars().all()
+
+    async def engineer_ids_with_match(self, job_id: uuid.UUID) -> set[uuid.UUID]:
+        rows = await self.db.execute(select(JobMatch.engineer_id).where(JobMatch.job_id == job_id))
+        return {r[0] for r in rows}
 
     async def list_top_candidates_for_job(
         self, job_id: uuid.UUID, min_score: float = 60.0, skip: int = 0, limit: int = 20
@@ -115,8 +126,9 @@ class MatchingRepository:
                 JobMatch.job_id == job_id,
                 JobMatch.overall_score >= min_score,
                 EngineerProfile.is_public.is_(True),
+                EngineerProfile.is_open_to_work.is_(True),
             )
-            .order_by(JobMatch.overall_score.desc())
+            .order_by(JobMatch.overall_score.desc(), JobMatch.engineer_id)
             .offset(skip)
             .limit(limit)
         )

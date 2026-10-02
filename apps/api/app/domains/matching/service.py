@@ -2,6 +2,7 @@
 AI Matching Engine Service — Computes multi-factor score breakdown and explainable AI recommendations.
 """
 
+import heapq
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -21,8 +22,13 @@ from app.services.ai import AIResponse
 logger = get_logger("matching.service")
 
 
-# Upper bound on profiles scored per candidate search (in memory, no AI).
-CANDIDATE_POOL_LIMIT = 1000
+# Candidate search scores every public, open-to-work profile in pages of this
+# size (in memory, no AI), keeping only the best in a bounded heap. The ceiling
+# protects the worker; reaching it is logged rather than silently truncating.
+CANDIDATE_PAGE_SIZE = 500
+CANDIDATE_POOL_CEILING = 20000
+# Jobs a professional's recommendations are scored against when refreshed.
+RECOMMENDATION_JOB_POOL = 100
 
 
 class MatchingService:
@@ -184,8 +190,8 @@ class MatchingService:
         )
 
         if len(existing) < 5:
-            # Trigger fresh computation against top active jobs
-            jobs = await self.job_repo.search(skip=0, limit=30)
+            # Score against the newest public jobs (previously only 30).
+            jobs = await self.job_repo.search(is_remote=None, skip=0, limit=RECOMMENDATION_JOB_POOL)
             for job in jobs:
                 await self.calculate_match(engineer, job)
             await self.db.commit()
@@ -229,19 +235,38 @@ class MatchingService:
         if not job:
             raise NotFoundError("Job post not found")
 
-        # Score every public, open-to-work profile in memory (cheap and
-        # deterministic), then persist only the best ones needed for this
-        # page. Previously only the first 30 profiles were ever considered.
-        engineers = await self.engineer_repo.search(
-            is_open_to_work=True, skip=0, limit=CANDIDATE_POOL_LIMIT
-        )
-        scored = sorted(
-            (self.score(engineer, job) for engineer in engineers),
-            key=lambda m: m["overall_score"],
-            reverse=True,
-        )
-        for match in scored[: max(skip + limit, 50)]:
+        # Score every public, open-to-work profile (MATCH-01: previously the
+        # first 1,000 by update time), keeping the best `keep` in a heap.
+        keep = max(skip + limit, 50)
+        already = await self.match_repo.engineer_ids_with_match(job_id)
+        best: list[tuple[float, str, dict[str, Any]]] = []
+        refresh: list[dict[str, Any]] = []
+        seen = 0
+        while seen < CANDIDATE_POOL_CEILING:
+            page = await self.engineer_repo.search(
+                is_open_to_work=True, skip=seen, limit=CANDIDATE_PAGE_SIZE
+            )
+            for engineer in page:
+                match = self.score(engineer, job)
+                if engineer.id in already:
+                    refresh.append(match)  # keep stored scores current, not stale
+                # Ties break on id so the same inputs always give the same list.
+                item = (match["overall_score"], str(engineer.id), match)
+                if len(best) < keep:
+                    heapq.heappush(best, item)
+                elif item[:2] > best[0][:2]:
+                    heapq.heapreplace(best, item)
+            seen += len(page)
+            if len(page) < CANDIDATE_PAGE_SIZE:
+                break
+        else:
+            logger.warning(f"Candidate pool reached {CANDIDATE_POOL_CEILING} profiles; the rest were not scored")
+        persisted = {m["engineer_id"] for _, _, m in best}
+        for _, _, match in best:
             await self.match_repo.upsert_match(**match)
+        for match in refresh:
+            if match["engineer_id"] not in persisted:
+                await self.match_repo.upsert_match(**match)
         await self.db.commit()
 
         return await self.match_repo.list_top_candidates_for_job(job_id, skip=skip, limit=limit)

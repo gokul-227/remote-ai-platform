@@ -132,6 +132,7 @@ class EngineerRepository:
                 )
             )
 
-        stmt = stmt.offset(skip).limit(limit).order_by(EngineerProfile.updated_at.desc())
+        # id breaks ties so consecutive pages never overlap or skip profiles.
+        stmt = stmt.order_by(EngineerProfile.updated_at.desc(), EngineerProfile.id.desc()).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
