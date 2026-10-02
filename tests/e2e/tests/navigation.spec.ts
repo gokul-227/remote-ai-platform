@@ -38,7 +38,7 @@ test("signing in returns you to the page you were on", async ({ browser, request
   const visitor = await (await browser.newContext({ baseURL })).newPage();
   await visitor.goto(`/#jobdetail/${jobs[0].id}`);
   await visitor.locator(".rap-auth-link", { hasText: "Sign in" }).click();
-  await signIn(visitor, email);
+  await signIn(visitor, email, { navigate: false });
   await expect(visitor).toHaveURL(new RegExp(`#jobdetail/${jobs[0].id}$`));
 });
 

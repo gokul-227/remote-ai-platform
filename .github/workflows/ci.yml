@@ -60,6 +60,15 @@ jobs:
           docker compose -f infra/docker/docker-compose.yml build test
           docker compose -f infra/docker/docker-compose.yml run --rm test
 
+      - name: Repo-level tests (backup safety, cache guard)
+        # These read ops/ and infra/, which are outside the test image's build
+        # context, so they skipped inside Docker and never ran in CI. Run them
+        # here against the full checkout, and fail if any of them skip.
+        run: |
+          set -o pipefail
+          pytest -q -p no:cacheprovider -rs tests/test_backup_tools.py tests/test_job_list_cache.py | tee repo-tests.log
+          if grep -q "SKIPPED" repo-tests.log; then echo "::error::repo-level tests skipped"; exit 1; fi
+
   frontend:
     name: Frontend (lint, typecheck, build)
     runs-on: ubuntu-latest
