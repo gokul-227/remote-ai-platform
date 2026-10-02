@@ -128,3 +128,21 @@ async def test_upload_resume_does_not_log_the_resume_url(monkeypatch):
         logged_values = " ".join(str(v) for v in kwargs.values())
         assert resume_url not in logged_values
         assert "url" not in kwargs
+
+
+@pytest.mark.asyncio
+async def test_stored_resume_type_comes_from_the_verified_signature(monkeypatch):
+    """DATA-01: the client's Content-Type (here a generic octet-stream) is not
+    what the object is stored and later served as."""
+    monkeypatch.setattr("app.domains.engineers.service.extract_resume_text", lambda data, suffix: "")
+    stored: dict = {}
+
+    class _Recording(_FakeStorage):
+        async def upload_file(self, bucket_name, object_name, data, content_type):
+            stored["content_type"] = content_type
+            return await super().upload_file(bucket_name, object_name, data, content_type)
+
+    service = EngineerService(_FakeRepo(SimpleNamespace(resume_url=None)))
+    service.storage = _Recording()
+    await service.upload_resume(uuid.uuid4(), _FakeUploadFile("cv.pdf", "application/octet-stream", b"%PDF-1.7 x"))
+    assert stored["content_type"] == "application/pdf"

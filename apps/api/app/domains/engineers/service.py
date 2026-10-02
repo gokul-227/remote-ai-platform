@@ -241,7 +241,13 @@ class EngineerService:
             file.filename, file.content_type, file_bytes, settings.MAX_RESUME_SIZE_BYTES
         )
         filename = build_private_resume_object_name(user_id, suffix)
-        content_type = file.content_type or "application/pdf"
+        # From the verified file signature, never the client's header: the
+        # stored type is what a download is served as (DATA-01).
+        content_type = (
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            if suffix == ".docx"
+            else "application/pdf"
+        )
 
         # Upload to MinIO. The bucket is private -- callers must never get a
         # permanent, unauthenticated link to someone's resume, so only the
