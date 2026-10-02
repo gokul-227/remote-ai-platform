@@ -1,9 +1,21 @@
 import { useState, useEffect } from "react";
 import { Ic, Brand, cx, inputCls } from "./rap_kit";
-import { supabase, fetchBackendUser, applyPendingRegistration } from "@/lib/supabase";
+import {
+  supabase,
+  fetchBackendUser,
+  applyPendingRegistration,
+  enabledOAuthProviders,
+  type OAuthProvider,
+} from "@/lib/supabase";
 import { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { takeReturnTo } from "./live";
+
+const OAUTH_LABELS: [OAuthProvider, string][] = [
+  ["google", "Google"],
+  ["azure", "Microsoft"],
+  ["github", "GitHub"],
+];
 
 // Figma Make "AuthFlow" — markup unchanged; the simulated steps are replaced
 // with the real Supabase email-code / OAuth sign-in and the backend's
@@ -18,6 +30,15 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
   const [step, setStep] = useState("email");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  // Only the providers this environment has enabled; null = unknown, show all.
+  const [providers, setProviders] = useState<OAuthProvider[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    enabledOAuthProviders().then((p) => live && setProviders(p));
+    return () => {
+      live = false;
+    };
+  }, []);
   const [seconds, setSeconds] = useState(0);
   const [busy, setBusy] = useState(false);
   // Step/error/code reset per route via the key App puts on <AuthFlow>.
@@ -112,13 +133,13 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
       setError(extractErrorMessage(e, "Couldn't resend the code. Please try again."));
     }
   };
-  const oauth = async (p: string) => {
+  const oauth = async (provider: OAuthProvider) => {
     setError("");
-    const provider = p === "Microsoft" ? "azure" : p === "GitHub" ? "github" : "google";
-    await supabase.auth.signInWithOAuth({
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
+    if (oauthError) setError("That sign-in option isn't available right now. Use an email code instead.");
   };
 
   const button =
@@ -308,15 +329,17 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                       <span className="h-px flex-1 bg-slate-200" />
                     </div>
                     <div className="grid grid-cols-3 gap-2">
-                      {["Google", "Microsoft", "GitHub"].map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => oauth(p)}
-                          className="rounded-lg border border-slate-300 py-3 text-sm font-semibold hover:bg-slate-50"
-                        >
-                          {p}
-                        </button>
-                      ))}
+                      {OAUTH_LABELS.filter(([id]) => providers === null || providers.includes(id)).map(
+                        ([id, label]) => (
+                          <button
+                            key={id}
+                            onClick={() => oauth(id)}
+                            className="rounded-lg border border-slate-300 py-3 text-sm font-semibold hover:bg-slate-50"
+                          >
+                            {label}
+                          </button>
+                        ),
+                      )}
                     </div>
                     <div className="mt-6 border-t border-slate-200 pt-5 text-center">
                       <button onClick={() => go(join ? "login" : "register")} className="font-semibold text-[#0866FF]">
