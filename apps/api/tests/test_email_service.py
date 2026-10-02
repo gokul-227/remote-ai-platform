@@ -110,3 +110,31 @@ async def test_notify_user_with_email_html_sends_email(monkeypatch):
     fake_provider.send_email.assert_awaited_once_with(
         to="with-email-notif@example.com", subject="Application update", html="<p>hi</p>"
     )
+
+
+@pytest.mark.asyncio
+async def test_email_logs_never_contain_the_address_or_provider_body(monkeypatch):
+    """PRIV-01: failure and no-op logs name only the recipient's domain."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.services.email import service as email_service
+
+    logged: list[tuple] = []
+    fake_logger = MagicMock()
+    fake_logger.info.side_effect = lambda *a, **k: logged.append((a, k))
+    fake_logger.error.side_effect = lambda *a, **k: logged.append((a, k))
+    monkeypatch.setattr(email_service, "logger", fake_logger)
+
+    await email_service.NoopEmailProvider().send_email("pat@example.com", "Subject", "<p>x</p>")
+
+    monkeypatch.setattr(email_service.settings, "RESEND_API_KEY", "re_test")
+    resp = MagicMock(status_code=422, text='{"message":"invalid to: pat@example.com"}')
+    client = AsyncMock()
+    client.__aenter__.return_value.post = AsyncMock(return_value=resp)
+    monkeypatch.setattr(email_service.httpx, "AsyncClient", lambda **kw: client)
+    result = await email_service.ResendEmailProvider().send_email("pat@example.com", "S", "<p>x</p>")
+
+    assert result.sent is False
+    assert logged
+    assert "pat@example.com" not in repr(logged)
+    assert all(k.get("recipient_domain") == "example.com" for _, k in logged)

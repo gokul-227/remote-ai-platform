@@ -2,6 +2,7 @@
 Remote AI Platform — FastAPI Application Factory
 """
 
+import re
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -46,6 +47,9 @@ from app.domains.trust.router import router as trust_router
 
 logger = structlog.get_logger(__name__)
 
+_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+_QUERY_SECRET = re.compile(r"((?:token|code|key|secret|signature|sig)[^=&]*=)[^&]*", re.IGNORECASE)
+
 
 def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
     """Best-effort scrub of common sensitive fields before an event is sent.
@@ -73,6 +77,7 @@ def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
         "secret",
         "api_key",
         "apikey",
+        "email",
     )
 
     def _is_sensitive_key(key: str) -> bool:
@@ -87,6 +92,8 @@ def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
             }
         if isinstance(value, list):
             return [_scrub(v) for v in value]
+        if isinstance(value, str):
+            return _EMAIL.sub("[email]", value)
         return value
 
     request = event.get("request")
@@ -102,6 +109,19 @@ def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
         # of the event in the current SDK.
         if "cookies" in request and isinstance(request["cookies"], dict):
             request["cookies"] = dict.fromkeys(request["cookies"], "[Filtered]")
+        # Callback/OTP codes and signed-URL parameters travel in query strings.
+        query_string = request.get("query_string")
+        if isinstance(query_string, str):
+            request["query_string"] = _QUERY_SECRET.sub(r"\1[Filtered]", query_string)
+
+    # Exception and log messages often interpolate the address an operation
+    # was about (PRIV-01); keep the message, drop the address.
+    for exc in (event.get("exception") or {}).get("values") or []:
+        if isinstance(exc, dict) and isinstance(exc.get("value"), str):
+            exc["value"] = _EMAIL.sub("[email]", exc["value"])
+    logentry = event.get("logentry")
+    if isinstance(logentry, dict) and isinstance(logentry.get("message"), str):
+        logentry["message"] = _EMAIL.sub("[email]", logentry["message"])
 
     return event
 

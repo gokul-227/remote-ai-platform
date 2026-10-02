@@ -55,8 +55,8 @@ def test_before_send_scrubs_real_schema_field_name_variants(field_name):
     }
     scrubbed = _sentry_before_send(event, {})
     assert scrubbed["request"]["data"][field_name] == "[Filtered]"
-    # Non-sensitive fields are left alone.
-    assert scrubbed["request"]["data"]["email"] == "user@example.com"
+    # Email addresses are personal data and are redacted too (PRIV-01).
+    assert scrubbed["request"]["data"]["email"] == "[Filtered]"
 
 
 def test_before_send_scrubs_nested_and_cookie_header_data():
@@ -118,3 +118,21 @@ def test_init_sentry_is_a_noop_without_dsn(monkeypatch):
     init_sentry()
 
     assert called is False
+
+
+def test_before_send_redacts_emails_in_values_messages_and_query_secrets():
+    """PRIV-01: addresses inside free text and exception messages, and secret
+    query parameters, never reach Sentry; ordinary values are kept."""
+    event = {
+        "request": {
+            "data": {"note": "contact jane.doe@example.org please", "title": "Engineer"},
+            "query_string": "code=abc123&page=2&access_token=xyz",
+        },
+        "exception": {"values": [{"type": "ValueError", "value": "no user bob@example.com"}]},
+        "logentry": {"message": "send to a@b.io failed"},
+    }
+    out = _sentry_before_send(event, {})
+    assert out["request"]["data"] == {"note": "contact [email] please", "title": "Engineer"}
+    assert out["request"]["query_string"] == "code=[Filtered]&page=2&access_token=[Filtered]"
+    assert out["exception"]["values"][0]["value"] == "no user [email]"
+    assert out["logentry"]["message"] == "send to [email] failed"

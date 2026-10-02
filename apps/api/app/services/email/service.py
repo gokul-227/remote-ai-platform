@@ -16,6 +16,12 @@ from app.core.logging import get_logger
 
 logger = get_logger("services.email")
 
+
+def _recipient_domain(to: str) -> str:
+    """Logs name only the recipient's domain: enough to spot a provider or DNS
+    problem, without writing personal addresses into logs (PRIV-01)."""
+    return to.rsplit("@", 1)[-1].lower() if "@" in to else "invalid"
+
 RESEND_API_URL = "https://api.resend.com/emails"
 
 
@@ -35,7 +41,7 @@ class NoopEmailProvider:
     behavior prior to any email provider existing at all."""
 
     async def send_email(self, to: str, subject: str, html: str) -> EmailResult:
-        logger.info("Email suppressed (EMAIL_PROVIDER=none)", to=to, subject=subject)
+        logger.info("Email suppressed (EMAIL_PROVIDER=none)", recipient_domain=_recipient_domain(to))
         return EmailResult(sent=False)
 
 
@@ -57,11 +63,11 @@ class ResendEmailProvider:
                 },
             )
         if response.status_code >= 400:
+            # Status only: the provider's error body can echo the address and content.
             logger.error(
                 "Resend email send failed",
-                to=to,
+                recipient_domain=_recipient_domain(to),
                 status_code=response.status_code,
-                body=response.text[:500],
             )
             return EmailResult(sent=False)
         return EmailResult(sent=True, provider_message_id=response.json().get("id"))
