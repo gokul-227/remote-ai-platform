@@ -9,6 +9,7 @@ keeps local dev (MinIO) and the $0 production deploy (Supabase Storage)
 on the same code path. See docs/DEPLOYMENT_ZERO_COST.md.
 """
 
+import asyncio
 from functools import lru_cache
 
 import boto3
@@ -37,7 +38,15 @@ def get_s3_client():
         endpoint_url=_endpoint_url(),
         aws_access_key_id=settings.MINIO_ACCESS_KEY,
         aws_secret_access_key=settings.MINIO_SECRET_KEY,
-        config=BotoConfig(signature_version="s3v4", s3={"addressing_style": "path"}),
+        # Bounded: boto3's defaults (60 s connect/read plus retries) would hold a
+        # request worker thread for minutes when storage is down (PERF-01).
+        config=BotoConfig(
+            signature_version="s3v4",
+            s3={"addressing_style": "path"},
+            connect_timeout=10,
+            read_timeout=30,
+            retries={"total_max_attempts": 3, "mode": "standard"},
+        ),
     )
 
 
@@ -79,6 +88,9 @@ def generate_presigned_url(
 
 
 class StorageService:
+    """Async facade over the synchronous boto3 client: every network call runs
+    in a worker thread so a slow upload never blocks the event loop (PERF-01)."""
+
     def __init__(self):
         self.client = get_s3_client()
 
@@ -86,8 +98,9 @@ class StorageService:
         self, bucket_name: str, object_name: str, data: bytes, content_type: str = "application/pdf"
     ) -> str:
         try:
-            ensure_bucket_exists(bucket_name)
-            self.client.put_object(
+            await asyncio.to_thread(ensure_bucket_exists, bucket_name)
+            await asyncio.to_thread(
+                self.client.put_object,
                 Bucket=bucket_name,
                 Key=object_name,
                 Body=data,
@@ -103,7 +116,7 @@ class StorageService:
     async def delete_file(self, bucket_name: str, object_name: str) -> bool:
         """Delete one object. Returns False (and logs) instead of raising."""
         try:
-            self.client.delete_object(Bucket=bucket_name, Key=object_name)
+            await asyncio.to_thread(self.client.delete_object, Bucket=bucket_name, Key=object_name)
             return True
         except Exception as e:
             logger.error("Storage delete failed", bucket=bucket_name, error=str(e))
