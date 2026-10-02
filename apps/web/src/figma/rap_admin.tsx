@@ -4,6 +4,7 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { downloadCsv } from "@/lib/csv";
 import { useApi, timeAgo } from "./live";
 import { Ic, Av, Btn, Card, Tag, Bar, Bars, cx, Notice } from "./rap_kit";
 
@@ -106,18 +107,7 @@ export function Admin({ initial }: { initial?: string } = {}) {
   const exportCsv = (name: string, rows: any[]) => {
     if (!rows.length) return;
     const keys = Object.keys(rows[0]);
-    const csv = [
-      keys.join(","),
-      ...rows.map((r) =>
-        keys
-          .map((k) => `"${String(typeof r[k] === "object" ? JSON.stringify(r[k]) : (r[k] ?? "")).replace(/"/g, '""')}"`)
-          .join(","),
-      ),
-    ].join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = `${name}.csv`;
-    a.click();
+    downloadCsv(name, [keys, ...rows.map((r) => keys.map((k) => r[k]))]);
   };
   const current: Record<string, any[] | undefined> = {
     Users: users.data,

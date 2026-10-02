@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useApi, toFigmaJob, goRoute } from "./live";
 import { useAuth } from "@/lib/auth";
+import { downloadCsv } from "@/lib/csv";
 const openJob = (id: string) => {
   localStorage.setItem("rap-selected-job", id);
   goRoute("jobs");
@@ -1662,20 +1663,11 @@ export function Candidates() {
     } catch {}
     visit("messenger");
   };
-  const exportCsv = () => {
-    const rows = [
+  const exportCsv = () =>
+    downloadCsv("candidates", [
       ["Name", "Role", "Job", "Status", "Match", "Skills", "Location"],
       ...shown.map((c: any) => [c.n, c.r, c.job, c.status, c.sc ?? "", c.sk.join("; "), c.loc]),
-    ];
-    const blob = new Blob(
-      [rows.map((r) => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")],
-      { type: "text/csv" },
-    );
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "candidates.csv";
-    a.click();
-  };
+    ]);
   const [sel, setSel] = useState<any>(null);
   const [saved, setSaved] = useState<number[]>([]);
   const toggleSaved = (id: number) => setSaved((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
