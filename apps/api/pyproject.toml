@@ -46,7 +46,7 @@ dependencies = [
     "boto3==1.35.75",
 
     # AI (litellm pulls in openai + aiohttp transitively)
-    "litellm==1.84.0",
+    "litellm==1.88.6",
 
     # Resume text extraction (PDF/DOCX -> plain text, ahead of AI parsing)
     "pypdf==6.19.0",

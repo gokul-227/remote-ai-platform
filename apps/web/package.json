@@ -10,7 +10,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "build-docker": "docker compose -f ../../infra/docker/docker-compose.yml up -d --build web",
-    "cf:build": "opennextjs-cloudflare build",
+    "cf:build": "opennextjs-cloudflare build && opennextjs-cloudflare populateCache remote",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
