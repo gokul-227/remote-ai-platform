@@ -76,7 +76,7 @@ jobs:
           NEXT_PUBLIC_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
           NEXT_PUBLIC_DEPLOY_ENV: dev
           NEXT_PUBLIC_DEPLOYMENT_ID: ${{ github.run_id }}-${{ github.run_attempt }}
-          NEXT_PUBLIC_API_URL: https://remote-ai-platform-api-dev.onrender.com
+          NEXT_PUBLIC_API_URL: ${{ vars.DEV_API_BASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_DEV }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_DEV }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
@@ -163,7 +163,7 @@ jobs:
           expected_sha="${{ github.event.workflow_run.head_sha }}"
           echo "Waiting for backend to report git_sha ${expected_sha}..."
           for i in $(seq 1 40); do
-            live_sha=$(curl -sf --max-time 15 https://remote-ai-platform-api-dev.onrender.com/health/version | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || echo "")
+            live_sha=$(curl -sf --max-time 15 ${{ vars.DEV_API_BASE_URL }}/health/version | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || echo "")
             if [ "$live_sha" = "$expected_sha" ]; then
               echo "Backend live at commit ${live_sha} after ${i} attempts."
               exit 0
@@ -175,9 +175,9 @@ jobs:
 
       - name: Smoke test the live API
         run: |
-          ready=$(curl -s --max-time 30 -o /dev/null -w "%{http_code}" "https://remote-ai-platform-api-dev.onrender.com/health/ready")
+          ready=$(curl -s --max-time 30 -o /dev/null -w "%{http_code}" "${{ vars.DEV_API_BASE_URL }}/health/ready")
           [ "$ready" = "200" ] || { echo "/health/ready answered $ready"; exit 1; }
-          total=$(curl -sf --max-time 30 -D - -o /dev/null "https://remote-ai-platform-api-dev.onrender.com/api/v1/jobs?limit=1" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-total-count"{print $2}')
+          total=$(curl -sf --max-time 30 -D - -o /dev/null "${{ vars.DEV_API_BASE_URL }}/api/v1/jobs?limit=1" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-total-count"{print $2}')
           # Dev has no scheduled job sync, so an empty list is fine; the endpoint must work.
           [ -n "$total" ] || { echo "public job list did not answer with X-Total-Count"; exit 1; }
           echo "API ready; $total public jobs"

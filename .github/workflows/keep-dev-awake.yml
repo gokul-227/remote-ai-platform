@@ -19,7 +19,7 @@ jobs:
         run: |
           # Free Render services sleep; the first request may take a minute.
           for i in 1 2 3; do
-            code=$(curl -s --max-time 90 -o /dev/null -w "%{http_code}" https://remote-ai-platform-api-dev.onrender.com/health/ready)
+            code=$(curl -s --max-time 90 -o /dev/null -w "%{http_code}" ${{ vars.DEV_API_BASE_URL }}/health/ready)
             [ "$code" = "200" ] && { echo "dev ready"; exit 0; }
             sleep 30
           done
