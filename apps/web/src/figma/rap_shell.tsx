@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { Ic, Av, Brand, cx, useDialogFocus } from "./rap_kit";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
@@ -62,14 +62,23 @@ const sections: Record<string, string[][]> = {
     ["flags", "Feature availability", "settings"],
   ],
 };
-export function AppShell({ r, go, children }: any) {
+type ShellPerson = { id: string; full_name?: string };
+type ShellConnection = { sender_id: string; sender?: ShellPerson; receiver?: ShellPerson };
+type ShellRecommendation = {
+  job?: { id: string; title: string; company_name?: string | null; location?: string | null };
+};
+
+export function AppShell({ r, go, children }: { r: string; go: (route: string) => void; children: ReactNode }) {
   const { user, logout, updateUser } = useAuth();
   const unreadN = useApi<{ count: number }>(user ? "/notifications/unread-count" : null);
   const unreadM = useApi<{ count: number }>(user ? "/conversations/unread-count" : null);
-  const conns = useApi<any[]>(user && r === "feed" ? "/connections" : null, { status: "ACCEPTED" });
-  const top = useApi<any[]>(user?.role === "ENGINEER" && r === "feed" ? "/matching/recommendations" : null, {
-    limit: 1,
-  });
+  const conns = useApi<ShellConnection[]>(user && r === "feed" ? "/connections" : null, { status: "ACCEPTED" });
+  const top = useApi<ShellRecommendation[]>(
+    user?.role === "ENGINEER" && r === "feed" ? "/matching/recommendations" : null,
+    {
+      limit: 1,
+    },
+  );
   useEffect(() => {
     unreadN.reload();
     unreadM.reload();
@@ -86,8 +95,8 @@ export function AppShell({ r, go, children }: any) {
     notifications: unreadN.data?.count || 0,
   };
   const contacts = (conns.data ?? [])
-    .map((c: any) => (c.sender_id === user?.id ? c.receiver : c.sender))
-    .filter(Boolean);
+    .map((c) => (c.sender_id === user?.id ? c.receiver : c.sender))
+    .filter((p): p is ShellPerson => Boolean(p));
   const opp = top.data?.[0]?.job;
   const me = user?.full_name || "Guest";
   const signOut = async () => {
@@ -353,7 +362,7 @@ export function AppShell({ r, go, children }: any) {
             </button>
           </div>
           {contacts.length ? (
-            contacts.map((p: any) => (
+            contacts.map((p) => (
               <button
                 className="rap-contact"
                 key={p.id}
@@ -362,7 +371,7 @@ export function AppShell({ r, go, children }: any) {
                   go("messenger");
                 }}
               >
-                <Av name={p.full_name} s={37} />
+                <Av name={p.full_name ?? ""} s={37} />
                 <span>{p.full_name}</span>
               </button>
             ))
@@ -447,7 +456,7 @@ export function AppShell({ r, go, children }: any) {
                           }
                           try {
                             await api.patch("/auth/role", null, { params: { role: r } });
-                            updateUser({ role: r as any });
+                            updateUser({ role: r as "ENGINEER" | "COMPANY" });
                             setMenu("");
                             go(home);
                           } catch {}

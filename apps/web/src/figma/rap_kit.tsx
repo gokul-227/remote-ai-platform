@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 export { RichText } from "./richtext";
-export const cx = (...a: any[]) => a.filter(Boolean).join(" ");
+export const cx = (...a: unknown[]) => a.filter(Boolean).join(" ");
 
 const P: Record<string, string> = {
   home: "M3 11l9-8 9 8|M5 10v10h5v-6h4v6h5V10",
