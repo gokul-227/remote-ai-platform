@@ -5,6 +5,7 @@ import {
   fetchBackendUser,
   applyPendingRegistration,
   enabledOAuthProviders,
+  rememberOAuthSignUp,
   type OAuthProvider,
 } from "@/lib/supabase";
 import { extractErrorMessage } from "@/lib/api";
@@ -135,6 +136,8 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
   };
   const oauth = async (provider: OAuthProvider) => {
     setError("");
+    // Keep the "Find work"/"Hire talent" choice for the account the provider creates.
+    if (join) rememberOAuthSignUp(role === "company" ? "COMPANY" : "ENGINEER", name.trim());
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -255,8 +258,58 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                     ? "Find your community and your next opportunity."
                     : recovery
                       ? "Enter the email you signed up with. We'll email you a one-time sign-in code, so you don't need a password. If you signed up with Google, Microsoft or GitHub, use that button on the sign-in page."
-                      : "Sign in with an email code. No password needed."}
+                      : "Continue with one of the accounts below, or sign in with an email code. No password needed."}
                 </p>
+                {join && (
+                  <div className="mt-5">
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        ["engineer", "Find work", "briefcase"],
+                        ["company", "Hire talent", "building"],
+                      ].map(([value, label, icon]) => (
+                        <button
+                          type="button"
+                          aria-pressed={role === value}
+                          key={value}
+                          onClick={() => setRole(value)}
+                          className={cx(
+                            "rounded-lg border-2 p-3 text-left",
+                            role === value ? "border-[#0866FF] bg-blue-50" : "border-slate-200",
+                          )}
+                        >
+                          <Ic n={icon} />
+                          <b className="mt-2 block">{label}</b>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!recovery && (
+                  <>
+                    {/* Provider sign-in first: it needs no email delivery, which
+                        the free email plan caps at 100 messages a day. */}
+                    <div className="mt-5">
+                      <div className="grid grid-cols-3 gap-2">
+                        {OAUTH_LABELS.filter(([id]) => providers === null || providers.includes(id)).map(
+                          ([id, label]) => (
+                            <button
+                              key={id}
+                              onClick={() => oauth(id)}
+                              className="rounded-lg border border-slate-300 py-3 text-sm font-semibold hover:bg-slate-50"
+                            >
+                              {label}
+                            </button>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-5 flex items-center gap-3 text-xs text-slate-400">
+                      <span className="h-px flex-1 bg-slate-200" />
+                      or use an email code
+                      <span className="h-px flex-1 bg-slate-200" />
+                    </div>
+                  </>
+                )}
                 <form
                   className="mt-5 space-y-4"
                   onSubmit={(e) => {
@@ -266,26 +319,6 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                 >
                   {join && (
                     <>
-                      <div className="grid grid-cols-2 gap-3">
-                        {[
-                          ["engineer", "Find work", "briefcase"],
-                          ["company", "Hire talent", "building"],
-                        ].map(([value, label, icon]) => (
-                          <button
-                            type="button"
-                            aria-pressed={role === value}
-                            key={value}
-                            onClick={() => setRole(value)}
-                            className={cx(
-                              "rounded-lg border-2 p-3 text-left",
-                              role === value ? "border-[#0866FF] bg-blue-50" : "border-slate-200",
-                            )}
-                          >
-                            <Ic n={icon} />
-                            <b className="mt-2 block">{label}</b>
-                          </button>
-                        ))}
-                      </div>
                       <label className="block">
                         Full name
                         <input
@@ -323,24 +356,6 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                 </form>
                 {!recovery && (
                   <>
-                    <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
-                      <span className="h-px flex-1 bg-slate-200" />
-                      or continue with
-                      <span className="h-px flex-1 bg-slate-200" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {OAUTH_LABELS.filter(([id]) => providers === null || providers.includes(id)).map(
-                        ([id, label]) => (
-                          <button
-                            key={id}
-                            onClick={() => oauth(id)}
-                            className="rounded-lg border border-slate-300 py-3 text-sm font-semibold hover:bg-slate-50"
-                          >
-                            {label}
-                          </button>
-                        ),
-                      )}
-                    </div>
                     <div className="mt-6 border-t border-slate-200 pt-5 text-center">
                       <button onClick={() => go(join ? "login" : "register")} className="font-semibold text-[#0866FF]">
                         {join ? "Already a member? Sign in" : "New here? Create an account"}
