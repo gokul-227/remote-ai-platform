@@ -2,8 +2,10 @@ import type { MetadataRoute } from "next";
 import { isIndexable } from "@/lib/deployEnv";
 import { SITE_URL, fetchRecentJobs, fetchSitemapEntries } from "@/lib/site";
 
-// Rebuilt at most hourly: public job pages for crawlers (production only).
-export const revalidate = 3600;
+// Built per request: the Worker's incremental cache is read-only static
+// assets (PERF-02), so an hourly ISR sitemap would freeze at build time.
+// Crawlers fetch it rarely; the API's sitemap-entries endpoint is cheap.
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!SITE_URL || !isIndexable({ NEXT_PUBLIC_DEPLOY_ENV: process.env.NEXT_PUBLIC_DEPLOY_ENV })) return [];
