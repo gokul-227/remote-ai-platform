@@ -39,5 +39,29 @@ jobs:
               sys.exit(1)
           PY
 
+      - name: Every job source still syncs, and no erasure is stuck (OBS-03)
+        # The newest posting stays fresh while any one source works; check each
+        # source that synced in the last 14 days. A source with no success in
+        # 24 h (four six-hourly runs) or an account erasure pending for over a
+        # day fails the run.
+        run: |
+          curl -sf --max-time 60 "${{ vars.PROD_API_BASE_URL }}/health/ingestion" > ingestion.json
+          python3 - ingestion.json <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1]))
+          bad = []
+          for name, s in sorted(d["sources"].items()):
+              h = s["hours_since_success"]
+              print(f"{name}: last success {h} h ago, {s['failures_since_success']} failures since, fetched {s['last_success_fetched']}")
+              if h is not None and h > 24:
+                  bad.append(f"{name} has not synced for {h} h")
+          if d["identity_erasures_overdue"]:
+              bad.append(f"{d['identity_erasures_overdue']} account erasure(s) pending over 24 h: "
+                         "POST /api/v1/admin/erasures/retry and check SUPABASE_SERVICE_ROLE_KEY")
+          for b in bad:
+              print(f"::error::{b}")
+          sys.exit(1 if bad else 0)
+          PY
+
       - name: Website serves
         run: curl -sf --max-time 30 -o /dev/null "${{ vars.PROD_FRONTEND_URL }}/"

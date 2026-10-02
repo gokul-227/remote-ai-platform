@@ -371,3 +371,48 @@ async def health_check_legacy(
             for k, v in ready_resp.services.items()
         },
     }
+
+
+@router.get("/health/ingestion", summary="Job ingestion freshness per source (OBS-03)")
+async def ingestion_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    """Per job source: when it last synced successfully, failures since, and how
+    many jobs that run fetched. The newest posting's age alone hides a dead
+    source while the others keep working. Public: source names and counts are
+    already public; nothing about any person is returned (erasures are a count)."""
+    from datetime import timedelta
+
+    from app.domains.admin.models import ApiSyncLog
+    from app.domains.auth.models import DeletedIdentity
+
+    now = datetime.now(UTC)
+    since = now - timedelta(days=14)
+    rows = (
+        await db.execute(
+            select(ApiSyncLog.source, ApiSyncLog.status, ApiSyncLog.jobs_fetched, ApiSyncLog.created_at)
+            .where(ApiSyncLog.created_at >= since)
+            .order_by(ApiSyncLog.created_at.desc())
+        )
+    ).all()
+    sources: dict[str, dict[str, Any]] = {}
+    for source, status_, fetched, created_at in rows:
+        if created_at.tzinfo is None:  # SQLite in tests drops the offset
+            created_at = created_at.replace(tzinfo=UTC)
+        entry = sources.setdefault(
+            source,
+            {"last_success_at": None, "last_success_fetched": None, "failures_since_success": 0,
+             "last_attempt_at": created_at.isoformat(), "hours_since_success": None},
+        )
+        if entry["last_success_at"] is not None:
+            continue  # newest first: everything older than the last success is history
+        if status_ == "SUCCESS":
+            entry["last_success_at"] = created_at.isoformat()
+            entry["last_success_fetched"] = fetched
+            entry["hours_since_success"] = round((now - created_at).total_seconds() / 3600, 1)
+        else:
+            entry["failures_since_success"] += 1
+    overdue = await db.scalar(
+        select(func.count())
+        .select_from(DeletedIdentity)
+        .where(DeletedIdentity.pending_subject.is_not(None), DeletedIdentity.deleted_at < now - timedelta(hours=24))
+    )
+    return {"checked_at": now.isoformat(), "sources": sources, "identity_erasures_overdue": int(overdue or 0)}
