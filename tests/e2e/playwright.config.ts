@@ -22,5 +22,13 @@ export default defineConfig({
       name: "chromium",
       use: { browserName: "chromium" },
     },
+    // Cross-engine proof for Safari and Firefox users (TEST-01): the
+    // self-contained public, sign-in and navigation specs. The stateful
+    // journey suite stays on Chromium.
+    ...(["webkit", "firefox"] as const).map((browserName) => ({
+      name: browserName,
+      use: { browserName },
+      testMatch: ["figma-smoke.spec.ts", "navigation.spec.ts"],
+    })),
   ],
 });

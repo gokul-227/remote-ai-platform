@@ -128,7 +128,7 @@ jobs:
         run: npm install -g npm@12.1.0 && npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit firefox
 
       - name: Start mock Supabase Auth
         # The suite signs in against a local stand-in for Supabase Auth, so CI
