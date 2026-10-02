@@ -139,10 +139,16 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Trigger Render deploy
-        # ref= deploys exactly the CI-tested commit rather than whatever the
-        # branch tip is when Render gets to it (documented deploy-hook option).
+        # The prod API (Frankfurt, api.remoteaiplatform.com since 2026-10-03)
+        # auto-deploys the prod branch once its GitHub checks pass (Render
+        # autoDeployTrigger = checksPass), so no hook is needed. If
+        # RENDER_DEPLOY_HOOK_PROD is set, ref= deploys exactly the CI-tested commit.
         run: |
           hook="${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
+          if [ -z "$hook" ]; then
+            echo "No deploy hook: Render auto-deploys this commit after checks pass."
+            exit 0
+          fi
           case "$hook" in *\?*) sep="&" ;; *) sep="?" ;; esac
           curl -sf --max-time 60 -X POST "${hook}${sep}ref=${{ github.event.workflow_run.head_sha }}"
 
