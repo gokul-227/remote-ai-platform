@@ -156,3 +156,49 @@ async def test_row_without_identity_is_linked_on_first_sign_in(client: AsyncClie
     resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {_make_token(sub, email)}"})
     assert resp.status_code == 200
     assert resp.json()["email"] == email
+
+
+def _token_with(**overrides) -> str:
+    now = int(time.time())
+    claims = {
+        "sub": str(uuid.uuid4()),
+        "email": "claims@example.com",
+        "aud": "authenticated",
+        "iss": "https://test-project.supabase.co/auth/v1",
+        "iat": now,
+        "exp": now + 3600,
+    }
+    for key, value in overrides.items():
+        if value is None:
+            claims.pop(key, None)
+        else:
+            claims[key] = value
+    return jwt.encode(claims, _PRIVATE_KEY, algorithm="ES256")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"exp": None},  # would never expire
+        {"iat": None},
+        {"sub": None},
+        {"aud": None},
+        {"iss": None},
+        {"aud": "anon"},
+        {"iss": "https://other-project.supabase.co/auth/v1"},
+        {"exp": int(time.time()) - 10},
+    ],
+    ids=["no-exp", "no-iat", "no-sub", "no-aud", "no-iss", "wrong-aud", "wrong-iss", "expired"],
+)
+async def test_tokens_missing_or_mismatching_required_claims_are_rejected(client: AsyncClient, overrides):
+    """SEC-04A: required claims are enforced, not only validated when present."""
+    resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {_token_with(**overrides)}"})
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_unsigned_alg_none_token_is_rejected(client: AsyncClient):
+    token = jwt.encode({"sub": str(uuid.uuid4()), "aud": "authenticated"}, key=None, algorithm="none")
+    resp = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+    assert resp.status_code == 401

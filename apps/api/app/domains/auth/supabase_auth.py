@@ -97,7 +97,12 @@ def verify_supabase_token(token: str) -> SupabaseIdentity:
             issuer=(
                 f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1" if settings.SUPABASE_URL else None
             ),
-            options={"verify_iss": bool(settings.SUPABASE_URL)},
+            # PyJWT validates exp/iat/aud only when present; a token without
+            # an expiry would never expire, so these claims are mandatory.
+            options={
+                "verify_iss": bool(settings.SUPABASE_URL),
+                "require": ["exp", "iat", "sub", "aud"] + (["iss"] if settings.SUPABASE_URL else []),
+            },
         )
     except jwt.PyJWTError as exc:
         raise HTTPException(
