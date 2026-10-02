@@ -34,4 +34,14 @@ describe("resource deep links", () => {
     expect(readRoute()).toEqual({ route: "jobs", id: null });
     expect(window.location.hash).toBe("#Jobs");
   });
+
+  it("survives a malformed percent-escape instead of crashing (UX-01)", () => {
+    window.history.replaceState(null, "", "/#jobdetail/%E0%A4");
+    expect(readRoute()).toEqual({ route: "jobdetail", id: "%E0%A4" });
+  });
+
+  it("still decodes well-formed escapes", () => {
+    window.history.replaceState(null, "", "/#engineer/a%20b");
+    expect(readRoute().id).toBe("a b");
+  });
 });

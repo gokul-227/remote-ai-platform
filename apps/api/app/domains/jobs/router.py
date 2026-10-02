@@ -22,6 +22,7 @@ from app.domains.jobs.schemas import (
     JobPostResponse,
     JobPostUpdate,
     JobSearchQuery,
+    JobSitemapEntry,
 )
 from app.domains.jobs.service import JobService
 
@@ -69,6 +70,22 @@ async def list_jobs(
     raw_jobs, total = await service.search_jobs_cached(search_params)
     response.headers["X-Total-Count"] = str(total)
     return [JobPostResponse.model_validate(j) for j in raw_jobs]
+
+
+@router.get("/sitemap-entries", response_model=list[JobSitemapEntry])
+async def list_sitemap_entries(
+    response: Response,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(1000, ge=1, le=5000),
+    db: AsyncSession = Depends(get_db),
+) -> list[JobSitemapEntry]:
+    """Every publicly listed job's id and dates, for the sitemap (SEO-01). The
+    job list caps pages at 100 full postings; this returns small rows so the
+    sitemap covers the whole public inventory cheaply. Public: the same jobs
+    the anonymous list shows."""
+    rows = await JobRepository(db).sitemap_entries(skip=skip, limit=limit)
+    response.headers["Cache-Control"] = "public, max-age=900"
+    return [JobSitemapEntry(id=i, posted_at=p, updated_at=u) for i, p, u in rows]
 
 
 @router.get("/company", response_model=list[JobPostResponse])

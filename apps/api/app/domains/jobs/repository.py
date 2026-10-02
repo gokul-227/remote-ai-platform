@@ -141,6 +141,13 @@ class JobRepository:
         )
         return int(result.rowcount or 0)
 
+    async def sitemap_entries(self, skip: int, limit: int) -> list[tuple[uuid.UUID, datetime, datetime]]:
+        """id/posted/updated of every publicly listed job (any location), oldest
+        first so pages stay stable while new jobs arrive."""
+        stmt = self._filtered(select(JobPost.id, JobPost.posted_at, JobPost.updated_at))
+        stmt = stmt.order_by(JobPost.posted_at.asc(), JobPost.id.asc()).offset(skip).limit(limit)
+        return [(r[0], r[1], r[2]) for r in (await self.db.execute(stmt)).all()]
+
     def _filtered(
         self,
         stmt: Select,
@@ -154,7 +161,9 @@ class JobRepository:
         source: str | None = None,
         company_id: uuid.UUID | None = None,
     ) -> Select:
-        stmt = stmt.where(JobPost.is_active.is_(True), JobPost.expired_at.is_(None))
+        stmt = stmt.where(
+            JobPost.is_active.is_(True), JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None)
+        )
 
         if company_id is not None:
             stmt = stmt.where(JobPost.company_id == company_id)

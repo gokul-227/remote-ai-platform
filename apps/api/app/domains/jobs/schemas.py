@@ -98,3 +98,11 @@ class JobSearchQuery(BaseModel):
     company_id: uuid.UUID | None = None
     skip: int = 0
     limit: int = 20
+
+
+class JobSitemapEntry(BaseModel):
+    """Just enough for a sitemap URL: no title or description (SEO-01)."""
+
+    id: uuid.UUID
+    posted_at: datetime
+    updated_at: datetime

@@ -29,6 +29,31 @@ export async function fetchPublicJob(id: string): Promise<PublicJob | null> {
   return res.json();
 }
 
+export type SitemapEntry = { id: string; posted_at: string; updated_at: string };
+
+/** Every publicly listed job's id and dates (SEO-01), paged from the API's
+ * lightweight sitemap endpoint and bounded at one sitemap's 50,000 URLs. A
+ * failed page ends the walk with what was read so far; null means the endpoint
+ * is unavailable (an older API) and the caller should fall back. */
+export async function fetchSitemapEntries(max = 50000, page = 5000): Promise<SitemapEntry[] | null> {
+  const out: SitemapEntry[] = [];
+  while (out.length < max) {
+    let res: Response;
+    try {
+      res = await fetch(`${API_URL}/api/v1/jobs/sitemap-entries?skip=${out.length}&limit=${page}`, {
+        next: { revalidate: 3600 },
+      });
+    } catch {
+      break;
+    }
+    if (!res.ok) return out.length ? out : null;
+    const batch: SitemapEntry[] = await res.json();
+    out.push(...batch);
+    if (batch.length < page) break;
+  }
+  return out.slice(0, max);
+}
+
 /** The newest public jobs, for the sitemap. */
 export async function fetchRecentJobs(limit = 100): Promise<PublicJob[]> {
   const res = await fetch(`${API_URL}/api/v1/jobs?limit=${limit}`, { next: { revalidate: 3600 } });

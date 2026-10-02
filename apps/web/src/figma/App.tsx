@@ -122,11 +122,22 @@ export const ID_ROUTES: Record<string, { key: string; store: "local" | "session"
 };
 const storeOf = (s: "local" | "session") => (s === "local" ? localStorage : sessionStorage);
 
+// A malformed percent-escape ("#job/%E0%A4") makes decodeURIComponent throw,
+// which would crash the whole app while reading its initial route. Keep the
+// raw text instead so the link still reaches its page (UX-01).
+const safeDecode = (s: string) => {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+};
+
 export function readRoute(): { route: string; id: string | null } {
   const raw = (window.location.hash || "#feed").slice(1) || "feed";
   const [head, ...rest] = raw.split("/");
   const route = head.toLowerCase() || "feed";
-  let id = rest.length ? decodeURIComponent(rest.join("/")) : null;
+  let id = rest.length ? safeDecode(rest.join("/")) : null;
   const spec = ID_ROUTES[route];
   if (spec) {
     try {
