@@ -79,7 +79,6 @@ apps/api/uploads/
 apps/api/tmp/
 scripts/demo_jobs.json
 scripts/seed_demo_jobs.py
-apps/web/.vercel/
 
 # Playwright E2E
 tests/e2e/test-results/
@@ -91,5 +90,3 @@ screenshot-pages/mobile/
 screenshot-pages/manifest.json
 screenshot-pages/README.md
 
-# Vercel CLI project link (repo-root, for monorepo deploys)
-.vercel
