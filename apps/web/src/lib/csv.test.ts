@@ -3,7 +3,7 @@ import { csvCell, toCsv } from "./csv";
 
 describe("csv (SEC-04A formula injection)", () => {
   it("neutralises formula-leading cells", () => {
-    for (const v of ["=HYPERLINK(\"http://x\")", "+cmd", "-2+3", "@SUM(A1)", "\tx", "\rx"]) {
+    for (const v of ['=HYPERLINK("http://x")', "+cmd", "-2+3", "@SUM(A1)", "\tx", "\rx"]) {
       expect(csvCell(v).startsWith(`"'`)).toBe(true);
     }
   });
@@ -18,6 +18,11 @@ describe("csv (SEC-04A formula injection)", () => {
     expect(csvCell('say "hi"')).toBe('"say ""hi"""');
     expect(csvCell(null)).toBe('""');
     expect(csvCell({ a: 1 })).toBe('"{""a"":1}"');
-    expect(toCsv([["a", "b"], [1, "=x"]])).toBe('"a","b"\n"1","\'=x"');
+    expect(
+      toCsv([
+        ["a", "b"],
+        [1, "=x"],
+      ]),
+    ).toBe('"a","b"\n"1","\'=x"');
   });
 });

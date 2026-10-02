@@ -61,7 +61,13 @@ describe("401 handling", () => {
       throw new DOMException("denied", "SecurityError");
     });
     try {
-      api.defaults.adapter = async (config) => ({ config, data: config.headers?.Authorization ?? "anon", status: 200, statusText: "OK", headers: {} });
+      api.defaults.adapter = async (config) => ({
+        config,
+        data: config.headers?.Authorization ?? "anon",
+        status: 200,
+        statusText: "OK",
+        headers: {},
+      });
       const res = await api.get("/jobs");
       expect(res.data).toBe("anon");
     } finally {

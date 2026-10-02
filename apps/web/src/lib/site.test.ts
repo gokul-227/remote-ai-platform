@@ -17,18 +17,27 @@ describe("fetchSitemapEntries (SEO-01)", () => {
   });
 
   it("is bounded by max", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => json([0, 1, 2].map(entry))));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json([0, 1, 2].map(entry))),
+    );
     expect(await fetchSitemapEntries(5, 3)).toHaveLength(5);
   });
 
   it("returns null when the endpoint is missing so the caller can fall back", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => json({ detail: "x" }, 422)));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json({ detail: "x" }, 422)),
+    );
     expect(await fetchSitemapEntries()).toBeNull();
   });
 
   it("keeps what it read when a later page fails", async () => {
     const responses = [json([0, 1].map(entry)), json({}, 503)];
-    vi.stubGlobal("fetch", vi.fn(async () => responses.shift()));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => responses.shift()),
+    );
     expect(await fetchSitemapEntries(50000, 2)).toHaveLength(2);
   });
 });
