@@ -32,11 +32,39 @@ export const api = axios.create({
   },
 });
 
+// Storage can be blocked (privacy settings, some embedded browsers); then the
+// app works signed-out instead of failing every request (AUTH-02).
+const readToken = (): string | null => {
+  try {
+    return localStorage.getItem("remote_ai_platform_token");
+  } catch {
+    return null;
+  }
+};
+
+// One refresh at a time: concurrent 401s share the same attempt, so a burst
+// of expired requests cannot race (one failing and signing the user out while
+// another succeeds). Cleared when it settles (AUTH-02).
+let refreshing: Promise<string> | null = null;
+function refreshAccessToken(): Promise<string> {
+  refreshing ??= (async () => {
+    const { data, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !data.session) throw refreshError || new Error("No session");
+    const { access_token, refresh_token } = data.session;
+    localStorage.setItem("remote_ai_platform_token", access_token);
+    localStorage.setItem("remote_ai_platform_refresh_token", refresh_token);
+    return access_token;
+  })().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
+
 // Interceptor to attach JWT token and a unique request trace ID
 api.interceptors.request.use((config) => {
   config.headers["X-Request-ID"] = generateRequestId();
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("remote_ai_platform_token");
+    const token = readToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -64,19 +92,24 @@ api.interceptors.response.use(
     ) {
       config._retry = true;
       try {
-        const { data, error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError || !data.session) throw refreshError || new Error("No session");
-        const { access_token, refresh_token } = data.session;
-        localStorage.setItem("remote_ai_platform_token", access_token);
-        localStorage.setItem("remote_ai_platform_refresh_token", refresh_token);
+        const access_token = await refreshAccessToken();
         if (config.headers) config.headers.Authorization = `Bearer ${access_token}`;
         return api(config);
       } catch {
         // Refresh failed — session fully revoked, clear all credentials and redirect to login
+        // Another request may have refreshed meanwhile: only sign out if no
+        // newer token than the one this request carried exists.
+        const current = readToken();
+        if (current && `Bearer ${current}` !== config.headers?.Authorization) {
+          if (config.headers) config.headers.Authorization = `Bearer ${current}`;
+          return api(config);
+        }
         await supabase.auth.signOut();
-        localStorage.removeItem("remote_ai_platform_token");
-        localStorage.removeItem("remote_ai_platform_refresh_token");
-        localStorage.removeItem("remote_ai_platform_user");
+        try {
+          localStorage.removeItem("remote_ai_platform_token");
+          localStorage.removeItem("remote_ai_platform_refresh_token");
+          localStorage.removeItem("remote_ai_platform_user");
+        } catch {}
         if (typeof window !== "undefined") {
           window.location.hash = "login";
         }
