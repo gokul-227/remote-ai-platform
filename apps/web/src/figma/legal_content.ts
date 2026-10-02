@@ -100,7 +100,7 @@ export const PRIVACY: Section[] = [
         "Supabase: database, sign-in and file storage",
         "Render: application servers for the API",
         "Cloudflare: website hosting and delivery",
-        "Resend: email delivery (sign-in codes)",
+        "Resend: email delivery (sign-in codes, and notices when an organisation invites you or changes the status of your application)",
         "Sentry: error monitoring",
         "Job boards we list jobs from receive nothing about you. If you apply to an external job, you do so on that board's own site.",
       ],
