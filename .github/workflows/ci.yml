@@ -128,7 +128,15 @@ jobs:
         run: npm install -g npm@12.1.0 && npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit firefox
+        # Normally under a minute. A stalled download once held this step for
+        # 20+ minutes; give each attempt 5 minutes and retry once.
+        timeout-minutes: 12
+        run: |
+          for attempt in 1 2; do
+            timeout 300 npx playwright install --with-deps chromium webkit firefox && exit 0
+            echo "::warning::browser install attempt $attempt failed or stalled"
+          done
+          exit 1
 
       - name: Start mock Supabase Auth
         # The suite signs in against a local stand-in for Supabase Auth, so CI
