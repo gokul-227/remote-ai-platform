@@ -26,7 +26,7 @@ permissions:
 # One deploy per environment at a time, in order. Never cancel a deploy
 # midway; a queued older run is skipped by the `current` gate below.
 concurrency:
-  group: deploy-production
+  group: deploy-production-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: false
 
 jobs:
@@ -145,18 +145,30 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Trigger Render deploy
-        # The prod API (Frankfurt, api.remoteaiplatform.com since 2026-10-03)
-        # auto-deploys the prod branch once its GitHub checks pass (Render
-        # autoDeployTrigger = checksPass), so no hook is needed. If
-        # RENDER_DEPLOY_HOOK_PROD is set, ref= deploys exactly the CI-tested commit.
+        # Deploys exactly the CI-tested commit through the Render API (the
+        # API-created Frankfurt services receive no GitHub push events, so
+        # Render's own auto-deploy is off). RENDER_API_KEY is only available
+        # to this push-triggered, same-repository workflow_run job.
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE_ID: ${{ vars.RENDER_SERVICE_ID_PROD }}
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          hook="${{ secrets.RENDER_DEPLOY_HOOK_PROD }}"
-          if [ -z "$hook" ]; then
-            echo "No deploy hook: Render auto-deploys this commit after checks pass."
-            exit 0
+          set -euo pipefail
+          if [ -n "${RENDER_API_KEY:-}" ] && [ -n "${SERVICE_ID:-}" ]; then
+            code=$(curl -s -o deploy.json -w "%{http_code}" --max-time 60 -X POST \
+              "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
+              -H "Authorization: Bearer $RENDER_API_KEY" -H "Content-Type: application/json" \
+              -d "{\"commitId\":\"$SHA\"}")
+            python3 -c "import json; d=json.load(open('deploy.json')); print('Render deploy', d.get('id'), d.get('status'))" || true
+            [ "$code" = "201" ] || { echo "::error::Render API answered $code"; exit 1; }
+          elif [ -n "${HOOK:-}" ]; then
+            case "$HOOK" in *\?*) sep="&" ;; *) sep="?" ;; esac
+            curl -sf --max-time 60 -X POST "${HOOK}${sep}ref=$SHA"
+          else
+            echo "::error::No RENDER_API_KEY + RENDER_SERVICE_ID_PROD or RENDER_DEPLOY_HOOK_PROD configured"; exit 1
           fi
-          case "$hook" in *\?*) sep="&" ;; *) sep="?" ;; esac
-          curl -sf --max-time 60 -X POST "${hook}${sep}ref=${{ github.event.workflow_run.head_sha }}"
 
       - name: Wait for the new commit to actually be live
         # A plain "is /health up" check would pass instantly against the OLD
