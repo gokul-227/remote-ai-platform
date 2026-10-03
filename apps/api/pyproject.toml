@@ -60,7 +60,7 @@ dependencies = [
     "structlog==24.4.0",
 
     # Payments
-    "stripe==11.4.1",
+    "stripe==15.6.1",
 
     # Error monitoring (no-op until SENTRY_DSN is configured -- see app/main.py)
     "sentry-sdk[fastapi]==2.68.1",
