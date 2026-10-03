@@ -89,7 +89,7 @@ async def reserve_ai_tokens(prompt_key: str | None = None, prompt_version: str |
     actor = current_ai_actor()
     user_id = actor.user_id if actor else None
     async with database.AsyncSessionFactory() as db:
-        if db.bind.dialect.name == "postgresql":
+        if db.bind is not None and db.bind.dialect.name == "postgresql":
             await db.execute(text(f"SELECT pg_advisory_xact_lock({_RESERVE_LOCK_KEY})"))
         estimate = settings.AI_RESERVATION_TOKENS
         if await tokens_used(db, since=_day_start()) + estimate > settings.AI_GLOBAL_DAILY_TOKENS:
