@@ -4,7 +4,7 @@ Analytics Domain Repository.
 
 import uuid
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,4 +40,5 @@ class AnalyticsRepository:
             .order_by(day_col.desc(), AnalyticsEvent.event_name.asc())
         )
         result = await self.db.execute(stmt)
-        return [(event_name, day, count) for day, event_name, count in result.all()]
+        rows = cast(list[tuple[date, str, int]], result.all())
+        return [(event_name, day, count) for day, event_name, count in rows]
