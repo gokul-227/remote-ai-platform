@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit AI code review. Reviews every pull request into dev and prod; it
+# advises and never blocks (the required checks are CI, E2E, migrations,
+# gitleaks and CodeQL). Rules below mirror CLAUDE.md and the go-live runbook.
+language: en-US
+tone_instructions: "Be direct and concrete. Prioritise security, privacy, data integrity and user-visible correctness over style."
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  commit_status: true
+  fail_commit_status: false
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  changed_files_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    base_branches: ["dev", "prod"]
+  path_filters:
+    - "!**/package-lock.json"
+    - "!**/*.woff2"
+    - "!apps/web/src/app/fonts/**"
+    - "!**/__pycache__/**"
+  path_instructions:
+    - path: "apps/api/app/**/*.py"
+      instructions: |
+        FastAPI modular monolith. Check: every list/detail/mutation enforces authentication and object ownership on
+        the server (no client-supplied role, user or company ids trusted); Supabase is the only token issuer; pagination
+        and request sizes are bounded; external calls have timeouts; blocking I/O does not run on the event loop;
+        logs and errors never contain tokens, emails, resume content, presigned URLs or DSNs; money movement stays
+        behind MARKETPLACE_PAYMENTS_ENABLED; user-linked tables are classified in auth/export.py.
+    - path: "apps/api/alembic/versions/**"
+      instructions: |
+        Migrations must be additive (expand -> backfill -> switch -> contract), never edit an applied migration, keep
+        revision ids <= 32 characters, enable row level security on new public tables, include a downgrade, and avoid
+        long locks on large tables. Flag anything destructive.
+    - path: "apps/api/tests/**"
+      instructions: "Tests must assert server state and negative cases (unauthorised, invalid, retries); never weaken assertions to pass."
+    - path: "apps/web/src/**"
+      instructions: |
+        Next.js 16 / React 19 hash-routed app. Check: no secrets or service keys in client code; user links pass through
+        safeHref (http/https only); CSV/HTML from users is neutralised/escaped; copy says "professional", never
+        "engineer", and makes no unverified claims (escrow, guarantees, fabricated numbers); keyboard and screen-reader
+        accessibility (labels, focus, live regions); no stale private data across account switches.
+    - path: ".github/workflows/**"
+      instructions: |
+        Third-party actions pinned to full commit SHAs; least-privilege permissions; workflow_run deploys guarded by
+        event == push and same-repository; secrets never echoed; set -o pipefail where output is piped.
+    - path: "ops/backup/**"
+      instructions: "Backup/restore must never drop or overwrite data, must verify target identity and emptiness, and must reject unsafe object paths."
+    - path: "**/*.md"
+      instructions: "Documentation must match current behaviour; never include secrets, internal hostnames beyond public URLs, or personal data."
+  tools:
+    ruff:
+      enabled: true
+    eslint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    osvScanner:
+      enabled: true
+    semgrep:
+      enabled: true
+    actionlint:
+      enabled: true
+    zizmor:
+      enabled: true
+    hadolint:
+      enabled: true
+    checkov:
+      enabled: true
+    shellcheck:
+      enabled: true
+    yamllint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    presidio:
+      enabled: true
+    github-checks:
+      enabled: true
+chat:
+  auto_reply: true
+knowledge_base:
+  opt_out: false
