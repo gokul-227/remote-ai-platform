@@ -1,12 +1,18 @@
 import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/site";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "@/figma/index.css";
 import { Providers } from "./providers";
 
-// Inter is self-hosted via next/font (the Figma export loads it from Google
-// Fonts, which the site's CSP blocks) — same typeface, same weights.
-const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], display: "swap" });
+// Inter, self-hosted from the repository (variable font, Latin subset, SIL OFL
+// 1.1 -- see fonts/Inter-LICENSE.txt). next/font/google downloaded it from
+// Google at every build, and a flaky Google Fonts response failed CI builds;
+// the site's CSP also blocks Google Fonts at runtime. Same typeface and weights.
+const inter = localFont({
+  src: "./fonts/InterVariable-latin.woff2",
+  weight: "400 800",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
