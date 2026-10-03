@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 
 # This is an npm workspaces monorepo -- the lockfile lives at the repo root,
 # not in apps/web, and `npm ci` needs every workspace's package.json present
