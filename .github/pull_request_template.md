@@ -14,3 +14,4 @@
 <!-- What could break, who is affected, and how to undo it. -->
 
 - [ ] No secrets, personal data or production data in the diff
+- [ ] CodeRabbit comments addressed or answered
