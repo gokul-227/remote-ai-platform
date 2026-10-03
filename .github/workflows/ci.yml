@@ -116,6 +116,29 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
+      - name: Cloudflare Workers runtime smoke
+        # E2E runs the site on Node.js; production runs on Workers. Build the
+        # real Worker bundle and serve it with workerd (no Cloudflare account
+        # needed) so a runtime-only failure -- like @sentry/nextjs 10.76 failing
+        # to load the instrumentation hook on 2026-10-03 -- fails here.
+        working-directory: apps/web
+        env:
+          WRANGLER_SEND_METRICS: "false"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -o pipefail
+          npm run cf:build
+          npx wrangler dev --local --port 8787 > wrangler-dev.log 2>&1 &
+          for i in $(seq 1 60); do curl -s -o /dev/null http://localhost:8787/ && break; sleep 2; done
+          fail=0
+          for path in / /auth/callback /api/version /robots.txt; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8787$path")
+            echo "$path -> $code"
+            [ "$code" = "200" ] || fail=1
+          done
+          if [ "$fail" = 1 ]; then echo "::error::Worker bundle fails at runtime"; tail -50 wrangler-dev.log; exit 1; fi
+
   e2e:
     name: E2E (Playwright, real user journeys)
     runs-on: ubuntu-latest
