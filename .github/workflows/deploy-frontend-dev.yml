@@ -135,7 +135,7 @@ jobs:
     # same pipeline as the frontend deploy, instead of an invisible
     # dependency on a webhook we can't inspect or debug.
     needs: current
-    timeout-minutes: 25
+    timeout-minutes: 30
     if: needs.current.outputs.is_tip == 'true'
     environment:
       name: dev
@@ -174,7 +174,7 @@ jobs:
         run: |
           expected_sha="${{ github.event.workflow_run.head_sha }}"
           echo "Waiting for backend to report git_sha ${expected_sha}..."
-          for i in $(seq 1 40); do
+          for i in $(seq 1 80); do
             live_sha=$(curl -sf --max-time 15 ${{ vars.DEV_API_BASE_URL }}/health/version | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || echo "")
             if [ "$live_sha" = "$expected_sha" ]; then
               echo "Backend live at commit ${live_sha} after ${i} attempts."
@@ -182,7 +182,7 @@ jobs:
             fi
             sleep 15
           done
-          echo "Backend never reported git_sha ${expected_sha} within 10 minutes (last saw: ${live_sha:-no response})"
+          echo "Backend never reported git_sha ${expected_sha} within 20 minutes (last saw: ${live_sha:-no response})"
           exit 1
 
       - name: Smoke test the live API
