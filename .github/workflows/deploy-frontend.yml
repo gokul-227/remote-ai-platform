@@ -59,6 +59,9 @@ jobs:
     needs: current
     timeout-minutes: 20
     if: needs.current.outputs.is_tip == 'true'
+    environment:
+      name: production
+      url: https://remoteaiplatform.com
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -132,6 +135,9 @@ jobs:
     needs: current
     timeout-minutes: 25
     if: needs.current.outputs.is_tip == 'true'
+    environment:
+      name: production
+      url: ${{ vars.PROD_API_BASE_URL }}/health/version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
