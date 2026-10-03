@@ -139,7 +139,7 @@ class JobRepository:
             )
             .values(expired_at=datetime.now(UTC))
         )
-        return int(result.rowcount or 0)
+        return int(getattr(result, "rowcount", 0) or 0)  # CursorResult for UPDATE
 
     async def sitemap_entries(self, skip: int, limit: int) -> list[tuple[uuid.UUID, datetime, datetime]]:
         """id/posted/updated of every publicly listed job (any location), oldest
