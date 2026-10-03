@@ -13,6 +13,11 @@ updates:
       # Major versions are deliberate migrations, done in their own PR.
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # 10.74+ fails to load its Next.js instrumentation hook on Cloudflare
+      # Workers (every page 500s); pinned at 10.73.0 until a release is
+      # verified on Workers (incident 2026-10-03).
+      - dependency-name: "@sentry/nextjs"
+        versions: [">10.73.0"]
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
