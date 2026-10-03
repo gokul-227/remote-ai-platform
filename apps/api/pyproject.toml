@@ -57,7 +57,7 @@ dependencies = [
 
     # Monitoring & Logging
     "prometheus-fastapi-instrumentator==8.1.0",
-    "structlog==24.4.0",
+    "structlog==26.1.0",
 
     # Payments
     "stripe==11.4.1",
