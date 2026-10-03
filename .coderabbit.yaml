@@ -20,6 +20,9 @@ reviews:
     drafts: false
     auto_incremental_review: true
     base_branches: ["dev", "prod"]
+    # Dependency bumps are covered by CI and Dependabot's own notes; keep the
+    # plan's hourly review allowance for human-written changes.
+    ignore_usernames: ["dependabot[bot]"]
   path_filters:
     - "!**/package-lock.json"
     - "!**/*.woff2"

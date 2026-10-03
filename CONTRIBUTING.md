@@ -36,8 +36,9 @@ cd apps/web && npm run lint && npx tsc --noEmit && npm test && npx prettier --ch
   `.coderabbit.yaml` (security, privacy, migration and CI rules for this codebase, plus linters such as
   ruff, eslint, gitleaks, semgrep, actionlint and zizmor). It is advisory: address or answer each comment,
   but merging is gated only by the required checks. Ask it questions in the PR with `@coderabbitai`.
-- Optional local review before pushing (CLI from coderabbit.ai; the key lives in Infisical as
-  `CODERABBIT_API_KEY`, never in the repo):
+- Optional local review before pushing: install the CodeRabbit CLI from coderabbit.ai and sign in once
+  with `coderabbit auth login` (or provide the key, which lives in Infisical as `CODERABBIT_API_KEY` and
+  never in the repo). Draft pull requests are not reviewed automatically; comment `@coderabbitai review`.
 
   ```bash
   infisical run --env prod -- coderabbit review --base dev
