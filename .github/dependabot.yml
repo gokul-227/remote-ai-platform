@@ -1,4 +1,4 @@
-# Weekly, grouped dependency updates into dev (they pass the same required
+# Weekly, grouped minor/patch dependency updates into dev (they pass the same required
 # checks as any change before reaching prod). Security updates are separate
 # and immediate (repository setting).
 version: 2
@@ -9,6 +9,10 @@ updates:
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
     labels: [dependencies]
+    ignore:
+      # Major versions are deliberate migrations, done in their own PR.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
@@ -18,6 +22,10 @@ updates:
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
     labels: [dependencies]
+    ignore:
+      # Major versions are deliberate migrations, done in their own PR.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     groups:
       pip-minor-and-patch:
         update-types: [minor, patch]
@@ -34,3 +42,7 @@ updates:
     target-branch: dev
     schedule: { interval: monthly }
     labels: [dependencies]
+    ignore:
+      # Major versions are deliberate migrations, done in their own PR.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
