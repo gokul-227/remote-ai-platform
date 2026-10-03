@@ -50,7 +50,10 @@ async def test_never_successful_source_and_overdue_erasures(client: AsyncClient)
     assert body["sources"]["OBS_NEVER"]["last_success_at"] is None
     assert body["identity_erasures_overdue"] == 1
     # Never exposes subjects or hashes.
-    assert "1111" not in str(body) and "bbbb" not in str(body)
+    # Match the full values: a short fragment like "1111" can occur in a timestamp.
+    text = str(body)
+    assert "11111111-1111-1111-1111-111111111111" not in text
+    assert "b" * 64 not in text
 
 
 @pytest.mark.asyncio
