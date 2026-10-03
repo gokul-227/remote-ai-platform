@@ -1,5 +1,10 @@
 # Remote AI Platform
 
+[![CI](https://github.com/gokul-227/remote-ai-platform/actions/workflows/ci.yml/badge.svg?branch=prod)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/gokul-227/remote-ai-platform/actions/workflows/codeql.yml/badge.svg?branch=prod)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/codeql.yml)
+[![Production canary](https://github.com/gokul-227/remote-ai-platform/actions/workflows/production-canary.yml/badge.svg)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/production-canary.yml)
+![License: proprietary](https://img.shields.io/badge/license-proprietary-red)
+
 A remote-work marketplace for professionals and organisations: discover remote jobs, build a profile
 (optionally from a resume, with AI help), apply, get matched with explainable scores, message, and run
 contracted work — all on free-tier infrastructure.
@@ -79,3 +84,8 @@ backend to Render via a deploy hook pinned to the tested commit. Both report the
 on API start. Secrets live in Infisical and the providers' dashboards — never in this repository.
 
 More detail (architecture, operations, runbooks) is in the private companion repository.
+
+## License
+
+Proprietary. Copyright (c) 2026 Gokul. All rights reserved. The code is publicly visible but may not be used,
+copied or deployed without written permission; see [LICENSE](LICENSE). Security reports: [SECURITY.md](SECURITY.md).

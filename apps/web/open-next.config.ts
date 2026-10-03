@@ -1,11 +1,11 @@
-// Cloudflare Workers deployment config (via @opennextjs/cloudflare).
-//
-// No incrementalCache override for now -- this app is mostly dynamic/
-// authenticated content, not ISR-heavy, and R2 (the recommended cache
-// backend) requires a one-time manual "enable R2" step in the Cloudflare
-// dashboard that hasn't been done yet. Add r2-incremental-cache back here
-// (and the matching r2_buckets binding in wrangler.jsonc) once R2 is
-// enabled, if ISR caching turns out to matter in practice.
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
+import staticAssetsIncrementalCache from "@opennextjs/cloudflare/overrides/incremental-cache/static-assets-incremental-cache";
 
-export default defineCloudflareConfig({});
+// Prerendered pages ("/" -- the hash-routed app shell every visit loads --
+// /auth/callback, robots.txt, 404) are served from Workers static assets
+// instead of being re-rendered on each request, which cost ~15 ms of CPU per
+// warm request against the free plan's 10 ms budget (PERF-02). This cache is
+// read-only: nothing here revalidates (the sitemap is dynamic instead).
+export default defineCloudflareConfig({
+  incrementalCache: staticAssetsIncrementalCache,
+});

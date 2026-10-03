@@ -1,22 +1,13 @@
 name: Scheduled job source sync (production)
 
-# Replaces Celery beat's job-source sync cron for the $0 deployment, which
-# intentionally has no hosted Redis/worker (see infra/deploy/render.yaml and
-# docs/DEPLOYMENT_ZERO_COST.md). Logs in as a dedicated Supabase Auth service
-# account (ci-service@remote-ai-platform.internal, promoted to ADMIN in the
-# app's own users table) and hits the same POST /jobs/sync endpoint Celery
-# beat calls locally every 6h.
+# The six-hourly job-source sync for the $0 deployment (no hosted worker).
+# Authorised by JOB_SYNC_TOKEN, which can trigger this sync (plus its
+# maintenance: erasure retries, email outbox drain) and nothing else. The old
+# administrator-password fallback and its service account were retired on
+# 2026-10-03.
 #
-# The production API now only verifies Supabase-issued tokens (AUTH_PROVIDER
-# =supabase) -- this workflow authenticates against Supabase's own token
-# endpoint, not this app's old (now dormant) /auth/login.
-#
-# Requires repository secrets (Settings → Secrets → Actions):
-#   PROD_ADMIN_EMAIL, PROD_ADMIN_PASSWORD  -- the service account's credentials
-#   SUPABASE_URL, SUPABASE_ANON_KEY        -- to call Supabase's token endpoint
-# and one repository variable (Settings → Secrets → Actions → Variables):
-#   PROD_API_URL   the production API's base URL + /api/v1 (see the internal
-#                  deployment-topology doc for the actual live value)
+# Requires: repository secret JOB_SYNC_TOKEN and repository variable
+# PROD_API_URL (the production API base URL + /api/v1).
 
 on:
   schedule:
@@ -32,32 +23,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Log in and trigger job sync
+      - name: Trigger job sync
         run: |
           set -euo pipefail
           API_URL="${{ vars.PROD_API_URL }}"
-          if [ -z "$API_URL" ]; then
-            echo "PROD_API_URL repository variable is not set — skipping (deployment not configured yet)."
-            exit 0
-          fi
-
-          # Preferred: JOB_SYNC_TOKEN, which can trigger this sync and nothing
-          # else. Fallback (until it is configured): the service account's
-          # administrator login -- remove PROD_ADMIN_* once the token works.
           SYNC_TOKEN="${{ secrets.JOB_SYNC_TOKEN }}"
-          if [ -n "$SYNC_TOKEN" ]; then
-            curl -sf --max-time 900 -X POST "$API_URL/jobs/sync/scheduled" \
-              -H "X-Job-Sync-Token: $SYNC_TOKEN" \
-              -w "\nHTTP %{http_code}\n"
-            exit 0
+          if [ -z "$API_URL" ] || [ -z "$SYNC_TOKEN" ]; then
+            echo "::error::PROD_API_URL or JOB_SYNC_TOKEN is not configured"
+            exit 1
           fi
-
-          TOKEN=$(curl -sf --max-time 30 -X POST "${{ secrets.SUPABASE_URL }}/auth/v1/token?grant_type=password" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"${{ secrets.PROD_ADMIN_EMAIL }}\",\"password\":\"${{ secrets.PROD_ADMIN_PASSWORD }}\"}" \
-            | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
-
-          curl -sf --max-time 900 -X POST "$API_URL/jobs/sync" \
-            -H "Authorization: Bearer $TOKEN" \
+          curl -sf --max-time 900 -X POST "$API_URL/jobs/sync/scheduled" \
+            -H "X-Job-Sync-Token: $SYNC_TOKEN" \
             -w "\nHTTP %{http_code}\n"
