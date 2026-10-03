@@ -1,20 +1,20 @@
 name: Enforce branch flow
 
-# This repo's promotion path is feature-branch -> dev -> prod, no exceptions --
-# prod only ever receives code that already went through dev. A PR opened
-# directly from a feature branch into prod is rejected here regardless of who
-# opened it; the fix is to retarget it at dev instead.
+# Releases go dev -> prod only, and only once dev is actually running the exact
+# commit being released, healthy. On 2026-10-03 a release reached prod while
+# the same change had already broken dev (every page 500); this gate turns
+# such a release red instead.
+
 on:
   pull_request:
     branches: [prod]
 
-# Only inspects github.head_ref -- never checks out the repo or calls the
-# GitHub API, so it doesn't need any GITHUB_TOKEN permission at all.
 permissions: {}
 
 jobs:
   check-source-branch:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Verify this PR's source is dev
         run: |
@@ -23,3 +23,27 @@ jobs:
             exit 1
           fi
           echo "OK: prod is receiving from dev."
+
+      - name: Dev runs this commit and is healthy
+        # Waits for the dev deploy of the release head (it starts after dev CI).
+        env:
+          SHA: ${{ github.event.pull_request.head.sha }}
+          WEB: https://dev.remoteaiplatform.com
+          API: ${{ vars.DEV_API_BASE_URL }}
+        run: |
+          set -u
+          for i in $(seq 1 100); do
+            web_sha=$(curl -s --max-time 15 -A "Mozilla/5.0 release-gate" "$WEB/api/version" | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || true)
+            api_sha=$(curl -s --max-time 15 "$API/health/version" | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || true)
+            if [ "$web_sha" = "$SHA" ] && [ "$api_sha" = "$SHA" ]; then break; fi
+            sleep 15
+          done
+          echo "dev web: ${web_sha:-none}  dev api: ${api_sha:-none}  release: $SHA"
+          [ "$web_sha" = "$SHA" ] || { echo "::error::dev web is not running $SHA (deploy failed or still running)"; exit 1; }
+          [ "$api_sha" = "$SHA" ] || { echo "::error::dev API is not running $SHA"; exit 1; }
+          for path in / /auth/callback /api/version; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 -A "Mozilla/5.0 release-gate" "$WEB$path")
+            echo "dev $path -> $code"; [ "$code" = "200" ] || { echo "::error::dev $path returned $code"; exit 1; }
+          done
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$API/health/ready")
+          echo "dev api /health/ready -> $code"; [ "$code" = "200" ] || { echo "::error::dev API not ready"; exit 1; }
