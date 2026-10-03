@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from app.domains.engineers.models import EngineerProfile
 
 
-class UserRole(str, enum.Enum):
+class UserRole(enum.StrEnum):
     ENGINEER = "ENGINEER"
     COMPANY = "COMPANY"
     ADMIN = "ADMIN"
