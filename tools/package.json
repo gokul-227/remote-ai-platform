@@ -1,0 +1,15 @@
+{
+  "name": "docs-sync-tools",
+  "private": true,
+  "license": "UNLICENSED",
+  "description": "Pinned official Postman tooling for make api-sync (not an npm workspace).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "openapi-to-postmanv2": "6.3.3",
+    "postman-cli": "1.69.0",
+    "yaml": "2.8.1"
+  }
+}

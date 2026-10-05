@@ -1,0 +1,78 @@
+$kind: http-request
+id: d2e470d3-20b3-5ac3-b06e-08f8d6c4b141
+description: |-
+  List public company directory.
+
+  `GET /api/v1/companies/public`
+
+  **Authorization:** none (public).
+
+  **Query parameters (optional ones are disabled until you enable them)**
+
+  | Name | Type | Required | Default | Description |
+  | --- | --- | --- | --- | --- |
+  | `skip` | integer | no | `0` |  |
+  | `limit` | integer | no | `20` |  |
+  | `is_verified` | boolean \\| null | no |  |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | CompanyProfileResponse[] |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+url: "{{base_url}}/api/v1/companies/public"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: skip
+    value: "0"
+    disabled: true
+  - key: limit
+    value: "20"
+    disabled: true
+  - key: is_verified
+    value: "true"
+    disabled: true
+body:
+  type: text
+  content: ""
+scripts:
+  - type: beforeRequest
+    code: // Generated from OpenAPI (GET /api/v1/companies/public) -- edit the API or postman/overrides/, not this script.
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/companies/public) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"type":"array","items":{"$ref":"#/definitions/CompanyProfileResponse"},"definitions":{"CompanyProfileResponse":{"properties":{"name":{"type":"string","maxLength":255,"minLength":1},"website":{"anyOf":[{"type":"string"},{"type":"null"}]},"logo_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"description":{"anyOf":[{"type":"string"},{"type":"null"}]},"industry":{"anyOf":[{"type":"string","maxLength":255},{"type":"null"}]},"company_size":{"anyOf":[{"type":"string","maxLength":50},{"type":"null"}]},"location":{"anyOf":[{"type":"string","maxLength":255},{"type":"null"}]},"country":{"anyOf":[{"type":"string"},{"type":"null"}]},"hiring_status":{"anyOf":[{"type":"string"},{"type":"null"}]},"tech_stack":{"items":{"type":"string"},"type":"array"},"id":{"type":"string"},"user_id":{"type":"string"},"is_verified":{"type":"boolean"},"created_at":{"type":"string"},"updated_at":{"type":"string"}},"type":"object","required":["name","id","user_id","is_verified","created_at","updated_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/List Public Companies.resources/examples
+order: 3000

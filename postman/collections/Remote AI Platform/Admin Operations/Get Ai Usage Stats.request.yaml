@@ -1,0 +1,71 @@
+$kind: http-request
+id: 4d72d7b5-6e18-5a32-8671-e93abc5bdc1d
+description: |-
+  Get aggregated AI LLM usage metrics, token counts, model distribution, and cost estimates (Admin only).
+
+  Reads `app.services.ai.models.AIUsageLog` -- the row `AIService._record_usage` writes for
+  every completion attempt made through `LLMClient` -- rather than `ActivityLog`. The
+  ActivityLog-based version of this endpoint queried `details["prompt_tokens"]` on
+  "AI_%"-prefixed activity rows, but nothing ever wrote that field onto those rows, so it
+  always reported ~0 tokens/cost, and its `model_breakdown`/`feature_breakdown` were
+  hardcoded literals (`{"qwen2.5": total_calls}`, `{"resume_parser": ..., "project_planner": 2}`)
+  unrelated to any actual call -- a dashboard number that looked real but wasn't.
+
+  `GET /api/v1/admin/ai-usage`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | AIUsageStatsResponse |
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+url: "{{base_url}}/api/v1/admin/ai-usage"
+method: GET
+headers:
+  Accept: application/json
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: // Generated from OpenAPI (GET /api/v1/admin/ai-usage) -- edit the API or postman/overrides/, not this script.
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/admin/ai-usage) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/AIUsageStatsResponse","definitions":{"AIUsageStatsResponse":{"properties":{"total_calls":{"type":"integer"},"total_prompt_tokens":{"type":"integer"},"total_completion_tokens":{"type":"integer"},"total_tokens":{"type":"integer"},"estimated_cost_usd":{"type":"number"},"model_breakdown":{"additionalProperties":{"type":"integer"},"type":"object"},"feature_breakdown":{"additionalProperties":{"type":"integer"},"type":"object"}},"type":"object","required":["total_calls","total_prompt_tokens","total_completion_tokens","total_tokens","estimated_cost_usd","model_breakdown","feature_breakdown"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Get Ai Usage Stats.resources/examples
+order: 11000

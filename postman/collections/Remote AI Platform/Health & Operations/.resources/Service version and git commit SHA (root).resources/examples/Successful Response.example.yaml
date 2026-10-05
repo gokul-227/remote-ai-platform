@@ -1,0 +1,26 @@
+$kind: http-example
+id: f60cf9f0-b871-503c-8e25-ead05a1c35ab
+request:
+  url: "{{base_url}}/health/version"
+  method: GET
+  headers:
+    Accept: application/json
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "version": "string",
+        "git_sha": "string",
+        "environment": "string",
+        "timestamp": "string",
+        "service": "remote-ai-platform-api"
+      }
+order: 1000

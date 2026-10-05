@@ -1,0 +1,60 @@
+$kind: http-example
+id: e8f12a05-93ca-5300-a84a-00d028b66583
+request:
+  url: "{{base_url}}/api/v1/payments/escrow"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: idempotency_key
+      value: string
+      disabled: true
+  body:
+    type: json
+    content: |-
+      {
+        "project_id": "5821698d-d339-4cf9-6265-1cbc11ac164c",
+        "payee_id": "5bfddd1c-f054-7d40-aa81-166bb18a0d06",
+        "amount": 3838.3201803080738,
+        "task_id": "18a241ba-62d3-be8b-a78d-5864ba1e46e4",
+        "currency": "USD"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

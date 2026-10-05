@@ -1,0 +1,106 @@
+$kind: http-request
+id: 55323cf6-c958-57c8-a41a-3179f88453f2
+description: |-
+  `PATCH /api/v1/projects/tasks/{task_id}`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{task_id}}` | string (uuid) | set it in your environment |  |
+
+  **Request body (application/json, TaskUpdate)**
+
+  | Field | Type | Required | Description |
+  | --- | --- | --- | --- |
+  | `status` | string \\| null | no |  |
+  | `assigned_user_id` | string (uuid) \\| null | no |  |
+  | `priority` | string \\| null | no |  |
+  | `deadline` | string (date-time) \\| null | no |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | any |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{task_id}}` — not produced by any request; set it in your environment
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/projects/tasks/:task_id"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Accept: application/json
+pathVariables:
+  - key: task_id
+    value: "{{task_id}}"
+    description: "(Required) "
+body:
+  type: json
+  content: |-
+    {
+      "status": "string",
+      "assigned_user_id": "9fb9e32a-f46e-e274-893b-8e0c95e2d25e",
+      "priority": "string",
+      "deadline": "1991-12-08T08:06:14.155Z"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (PATCH /api/v1/projects/tasks/{task_id}) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+      if (!pm.variables.get("task_id")) {
+        console.log("Skipped: {{task_id}} is not set.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (PATCH /api/v1/projects/tasks/{task_id}) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Update Task.resources/examples
+order: 39000

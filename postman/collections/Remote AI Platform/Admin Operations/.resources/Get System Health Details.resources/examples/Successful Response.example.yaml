@@ -1,0 +1,41 @@
+$kind: http-example
+id: b053569e-7d3f-5607-bc91-ac6cfc883667
+request:
+  url: "{{base_url}}/api/v1/admin/health/details"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "overall_status": "string",
+        "services": [
+          {
+            "service": "string",
+            "status": "string",
+            "latency_ms": 9921.88541451469,
+            "details": "string"
+          },
+          {
+            "service": "string",
+            "status": "string",
+            "latency_ms": 3360.644041094929,
+            "details": "string"
+          }
+        ],
+        "timestamp": "1997-12-14T09:07:53.123Z"
+      }
+order: 1000

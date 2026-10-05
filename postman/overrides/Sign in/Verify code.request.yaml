@@ -1,0 +1,28 @@
+$kind: http-request
+description: Exchanges `otp_code` for a session and stores `access_token` and `refresh_token` in the environment.
+url: '{{supabase_url}}/auth/v1/verify'
+method: POST
+headers:
+  apikey: '{{supabase_publishable_key}}'
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "type": "email",
+      "email": "{{email}}",
+      "token": "{{otp_code}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Signed in", () => {
+        pm.response.to.have.status(200);
+        const session = pm.response.json();
+        pm.expect(session.access_token).to.be.a("string");
+        // Current (local) values only; never commit tokens to the environment files.
+        pm.environment.set("access_token", session.access_token);
+        pm.environment.set("refresh_token", session.refresh_token);
+      });
+    language: text/javascript
+order: 2000

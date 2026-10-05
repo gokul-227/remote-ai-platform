@@ -1,0 +1,58 @@
+$kind: http-example
+id: abc48c2c-c8d7-50b4-9b2f-2b257ba68d15
+request:
+  url: "{{base_url}}/api/v1/projects/:project_id/reviews"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: project_id
+      value: 76e3fc79-a326-0b17-8d51-bb165405198f
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "reviewee_id": "03eeb62b-546e-b600-f775-f9b9e87856bd",
+        "rating": 2,
+        "comment": "string"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

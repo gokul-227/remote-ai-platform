@@ -1,0 +1,111 @@
+$kind: http-request
+id: 7ba4fdeb-a344-528c-b372-b0db1f1a020c
+description: |-
+  `POST /api/v1/contracts/{contract_id}/milestones`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{contract_id}}` | string (uuid) | "Contracts › Create contract" |  |
+
+  **Request body (application/json, ContractMilestoneCreate)**
+
+  | Field | Type | Required | Description |
+  | --- | --- | --- | --- |
+  | `title` | string | yes |  |
+  | `amount` | number | yes |  |
+  | `due_date` | string (date-time) \\| null | no |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 201 | Successful Response | ContractMilestoneResponse |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{contract_id}}` — "Contracts › Create contract"
+
+  **Sets for later requests**
+
+  - `{{milestone_id}}`
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 201
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/contracts/:contract_id/milestones"
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+pathVariables:
+  - key: contract_id
+    value: "{{contract_id}}"
+    description: "(Required) "
+body:
+  type: json
+  content: |-
+    {
+      "title": "string",
+      "amount": 1337.0088135108817,
+      "due_date": "1994-12-18T15:18:23.578Z"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/contracts/{contract_id}/milestones) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+      if (!pm.variables.get("contract_id")) {
+        console.log("Skipped: {{contract_id}} is not set -- run \"Contracts › Create contract\" first.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/contracts/{contract_id}/milestones) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (201)", () => {
+          pm.expect([201]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/ContractMilestoneResponse","definitions":{"ContractMilestoneResponse":{"properties":{"id":{"type":"string"},"contract_id":{"type":"string"},"title":{"type":"string"},"amount":{"type":"number"},"status":{"type":"string"},"due_date":{"anyOf":[{"type":"string"},{"type":"null"}]},"created_at":{"type":"string"}},"type":"object","required":["id","contract_id","title","amount","status","created_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+        const body = pm.response.json();
+        const milestone_id = body.id;
+        if (milestone_id) pm.environment.set("milestone_id", String(milestone_id));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Add milestone.resources/examples
+order: 4000

@@ -1,0 +1,102 @@
+$kind: http-request
+id: b96926ea-c5e8-5d1d-ac53-b7a01ccbd2d5
+description: |-
+  `PATCH /api/v1/social/posts/{post_id}`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{post_id}}` | string (uuid) | "Social Feed › Create a post" or "groups › Create Group Post" or "groups › List Group Posts" |  |
+
+  **Request body (application/json, PostUpdate)**
+
+  | Field | Type | Required | Description |
+  | --- | --- | --- | --- |
+  | `content` | string \\| null | no |  |
+  | `visibility` | string \\| null | no |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | PostResponse |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{post_id}}` — "Social Feed › Create a post" or "groups › Create Group Post" or "groups › List Group Posts"
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/social/posts/:post_id"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Accept: application/json
+pathVariables:
+  - key: post_id
+    value: "{{post_id}}"
+    description: "(Required) "
+body:
+  type: json
+  content: |-
+    {
+      "content": "string",
+      "visibility": "PUBLIC"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (PATCH /api/v1/social/posts/{post_id}) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+      if (!pm.variables.get("post_id")) {
+        console.log("Skipped: {{post_id}} is not set -- run \"Social Feed › Create a post\" or \"groups › Create Group Post\" or \"groups › List Group Posts\" first.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (PATCH /api/v1/social/posts/{post_id}) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/PostResponse","definitions":{"AuthorSummary":{"properties":{"id":{"type":"string"},"full_name":{"type":"string"},"avatar_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"role":{"type":"string"}},"type":"object","required":["id","full_name","role"]},"PostResponse":{"properties":{"id":{"type":"string"},"author_id":{"type":"string"},"author":{"anyOf":[{"$ref":"#/definitions/AuthorSummary"},{"type":"null"}]},"content":{"type":"string"},"image_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"link_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"link_preview_title":{"anyOf":[{"type":"string"},{"type":"null"}]},"visibility":{"type":"string"},"like_count":{"type":"integer"},"comment_count":{"type":"integer"},"liked_by_me":{"type":"boolean"},"created_at":{"type":"string"},"updated_at":{"type":"string"}},"type":"object","required":["id","author_id","content","visibility","like_count","comment_count","created_at","updated_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Update own post.resources/examples
+order: 8000

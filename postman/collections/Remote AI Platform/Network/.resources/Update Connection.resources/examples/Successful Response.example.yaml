@@ -1,0 +1,32 @@
+$kind: http-example
+id: 53f07657-477c-58b5-8634-55d1516e9306
+request:
+  url: "{{base_url}}/api/v1/connections/:connection_id"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: connection_id
+      value: d92e81fb-2dee-df64-f87b-c3e0fab05d0b
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "status": "BLOCKED"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

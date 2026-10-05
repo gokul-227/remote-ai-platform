@@ -1,0 +1,39 @@
+$kind: http-example
+id: 45388c6e-f004-5303-ad78-ca412a70376d
+request:
+  url: "{{base_url}}/api/v1/companies/:company_id"
+  method: GET
+  headers:
+    Accept: application/json
+  pathVariables:
+    - key: company_id
+      value: 8be38624-ef0d-7b62-08b2-d33062bc1d71
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "name": "string",
+        "id": "85eeff8f-adaf-a963-06e6-cacd22af1111",
+        "user_id": "f4e61240-a166-07e5-810c-68161a9aa04f",
+        "is_verified": false,
+        "created_at": "1967-12-26T07:57:40.344Z",
+        "updated_at": "2023-11-08T12:26:41.349Z",
+        "website": "string",
+        "logo_url": "string",
+        "description": "string",
+        "industry": "string",
+        "company_size": "string",
+        "location": "string",
+        "country": "string",
+        "hiring_status": "string"
+      }
+order: 1000

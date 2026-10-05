@@ -1,0 +1,24 @@
+$kind: http-example
+id: 2303fee1-4b4b-59a4-b223-a862e9da7c45
+request:
+  url: "{{base_url}}/health/ingestion"
+  method: GET
+  headers:
+    Accept: application/json
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": 3860,
+        "key_1": "string",
+        "key_2": 367.9568716324866
+      }
+order: 1000

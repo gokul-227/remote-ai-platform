@@ -1,0 +1,40 @@
+$kind: http-example
+id: 207846ef-3777-5cc5-aaa6-1feadd17c541
+request:
+  url: "{{base_url}}/api/v1/projects"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "title": "string",
+        "description": "string",
+        "technologies": [
+          "string",
+          "string"
+        ],
+        "timeline": "string",
+        "budget": 5988.472828175873,
+        "company_id": "c2ffdefd-240b-26bd-a47f-323a5b989c73",
+        "member_ids": [
+          "7b9dea6b-9822-2de1-ef29-9b48f5aa3624",
+          "0140af03-6beb-e490-079d-8a57e44ebcf5"
+        ]
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

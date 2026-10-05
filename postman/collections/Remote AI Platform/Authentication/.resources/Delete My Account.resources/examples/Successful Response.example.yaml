@@ -1,0 +1,24 @@
+$kind: http-example
+id: c480289d-61cb-5185-9558-4934252314c8
+request:
+  url: "{{base_url}}/api/v1/auth/me"
+  method: DELETE
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "confirm": "string"
+      }
+response:
+  statusCode: 204
+  statusText: No Content
+  body:
+    type: text
+    content: ""
+order: 1000

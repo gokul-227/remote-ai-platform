@@ -1,0 +1,37 @@
+$kind: http-example
+id: 3a04eb8d-69b7-591c-b1f6-ffaedc6d41b6
+request:
+  url: "{{base_url}}/api/v1/admin/stats"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "total_users": 3725,
+        "total_engineers": 5519,
+        "total_companies": 9544,
+        "total_jobs": 6627,
+        "total_active_jobs": 9611,
+        "total_matches": 8051,
+        "job_sources_breakdown": {
+          "key_0": 4369,
+          "key_1": 2225,
+          "key_2": 7398
+        },
+        "system_health": "HEALTHY"
+      }
+order: 1000

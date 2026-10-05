@@ -1,0 +1,93 @@
+$kind: http-request
+id: b7e2a30f-f2dd-5eb0-bd12-7edbc64c1d4f
+description: |-
+  `POST /api/v1/projects/milestones`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Request body (application/json, MilestoneCreate)**
+
+  | Field | Type | Required | Description |
+  | --- | --- | --- | --- |
+  | `project_id` | string (uuid) | yes |  |
+  | `title` | string | yes |  |
+  | `description` | string \\| null | no |  |
+  | `position` | integer | no |  |
+  | `amount` | number \\| null | no |  |
+  | `due_date` | string (date-time) \\| null | no |  |
+  | `contract_milestone_id` | string (uuid) \\| null | no |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 201 | Successful Response | any |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 201
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+url: "{{base_url}}/api/v1/projects/milestones"
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+body:
+  type: json
+  content: |-
+    {
+      "project_id": "2531c64e-875d-bd7e-e348-52c50938253d",
+      "title": "strin",
+      "description": "string",
+      "position": 0,
+      "amount": 4622.788061387837,
+      "due_date": "1990-10-06T04:41:08.313Z",
+      "contract_milestone_id": "89b8d713-761c-aecb-b3a2-516d6ef9f235"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/projects/milestones) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/projects/milestones) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (201)", () => {
+          pm.expect([201]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Create Milestone.resources/examples
+order: 2000

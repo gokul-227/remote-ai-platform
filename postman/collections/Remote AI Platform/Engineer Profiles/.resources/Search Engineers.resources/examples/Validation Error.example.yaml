@@ -1,0 +1,70 @@
+$kind: http-example
+id: 8d8bfe82-4f00-57e5-a0b7-41cd01bc0030
+request:
+  url: "{{base_url}}/api/v1/engineers/search"
+  method: GET
+  headers:
+    Accept: application/json
+  queryParams:
+    - key: query
+      value: string
+      disabled: true
+      description: Keywords search
+    - key: skills
+      value: string
+      disabled: true
+      description: Match any listed skill
+    - key: min_years_exp
+      value: "1454"
+      disabled: true
+    - key: primary_role
+      value: string
+      disabled: true
+    - key: location
+      value: string
+      disabled: true
+    - key: is_open_to_work
+      value: "true"
+      disabled: true
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "20"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

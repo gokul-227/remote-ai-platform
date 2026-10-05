@@ -1,0 +1,4 @@
+$kind: collection
+id: dba7bb6d-8330-585f-9d19-eb965d4a0753
+description: Requests for **Payments & Financial Ledger**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 19000
