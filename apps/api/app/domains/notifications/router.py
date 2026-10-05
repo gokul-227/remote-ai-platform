@@ -176,3 +176,11 @@ async def notify_user(
     await ws_manager.send_to_user(user_id, payload)
 
     return notification
+
+
+@router.get("/preferences", summary="Get my notification preferences")
+async def get_notification_preferences(
+    current_user: User = Depends(get_current_user),
+) -> dict[str, bool]:
+    """Which notifications the current user receives (test for docs auto-sync)."""
+    return {"email": True, "in_app": True}
