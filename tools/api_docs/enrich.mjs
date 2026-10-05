@@ -223,7 +223,11 @@ export function testScript(spec, info) {
 
 // ── Documentation ───────────────────────────────────────────────────────────
 
-const cell = (text) => String(text ?? "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ");
+const cell = (text) =>
+  String(text ?? "")
+    .replace(/\\/g, "\\\\") // backslashes first, so the pipe escape below stays intact
+    .replace(/\|/g, "\\|")
+    .replace(/\s*\n\s*/g, " ");
 
 function schemaType(spec, schema) {
   const s = resolve(spec, schema);

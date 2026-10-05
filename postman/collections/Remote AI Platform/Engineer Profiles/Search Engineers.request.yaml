@@ -11,11 +11,11 @@ description: |-
 
   | Name | Type | Required | Default | Description |
   | --- | --- | --- | --- | --- |
-  | `query` | string \\| null | no |  | Keywords search |
-  | `skills` | string[] \\| null | no |  | Match any listed skill |
-  | `min_years_exp` | integer \\| null | no |  |  |
-  | `primary_role` | string \\| null | no |  |  |
-  | `location` | string \\| null | no |  |  |
+  | `query` | string \\\| null | no |  | Keywords search |
+  | `skills` | string[] \\\| null | no |  | Match any listed skill |
+  | `min_years_exp` | integer \\\| null | no |  |  |
+  | `primary_role` | string \\\| null | no |  |  |
+  | `location` | string \\\| null | no |  |  |
   | `is_open_to_work` | boolean | no | `true` |  |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `20` |  |

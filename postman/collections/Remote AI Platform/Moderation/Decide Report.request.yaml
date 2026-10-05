@@ -17,7 +17,7 @@ description: |-
   | --- | --- | --- | --- |
   | `status` | string | yes |  |
   | `decision` | string | yes |  |
-  | `note` | string \\| null | no |  |
+  | `note` | string \\\| null | no |  |
 
   **Responses**
 

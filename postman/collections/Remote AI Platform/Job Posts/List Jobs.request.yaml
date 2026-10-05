@@ -13,17 +13,17 @@ description: |-
 
   | Name | Type | Required | Default | Description |
   | --- | --- | --- | --- | --- |
-  | `query` | string \\| null | no |  | Keywords search in title or description |
+  | `query` | string \\\| null | no |  | Keywords search in title or description |
   | `is_remote` | boolean | no | `true` | Filter for remote jobs |
-  | `job_type` | string \\| null | no |  | full-time, contract, part-time |
-  | `experience_level` | string \\| null | no |  | junior, mid, senior, lead |
-  | `min_salary` | number \\| null | no |  |  |
-  | `max_salary` | number \\| null | no |  |  |
-  | `salary_currency` | string \\| null | no |  | ISO currency of min/max_salary (required with them) |
-  | `salary_period` | string \\| null | no |  | Period of min/max_salary (required with them) |
-  | `skills` | string[] \\| null | no |  | Match any of these skills |
-  | `source` | string \\| null | no |  | Filter by source (REMOTEOK, ARBEITNOW, etc.) |
-  | `company_id` | string (uuid) \\| null | no |  | Filter by company profile UUID |
+  | `job_type` | string \\\| null | no |  | full-time, contract, part-time |
+  | `experience_level` | string \\\| null | no |  | junior, mid, senior, lead |
+  | `min_salary` | number \\\| null | no |  |  |
+  | `max_salary` | number \\\| null | no |  |  |
+  | `salary_currency` | string \\\| null | no |  | ISO currency of min/max_salary (required with them) |
+  | `salary_period` | string \\\| null | no |  | Period of min/max_salary (required with them) |
+  | `skills` | string[] \\\| null | no |  | Match any of these skills |
+  | `source` | string \\\| null | no |  | Filter by source (REMOTEOK, ARBEITNOW, etc.) |
+  | `company_id` | string (uuid) \\\| null | no |  | Filter by company profile UUID |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `20` |  |
 

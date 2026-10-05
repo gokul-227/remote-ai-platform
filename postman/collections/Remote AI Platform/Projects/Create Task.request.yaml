@@ -11,13 +11,13 @@ description: |-
   | --- | --- | --- | --- |
   | `project_id` | string (uuid) | yes |  |
   | `title` | string | yes |  |
-  | `description` | string \\| null | no |  |
-  | `milestone` | string \\| null | no |  |
+  | `description` | string \\\| null | no |  |
+  | `milestone` | string \\\| null | no |  |
   | `required_skills` | string[] | no |  |
-  | `assigned_user_id` | string (uuid) \\| null | no |  |
+  | `assigned_user_id` | string (uuid) \\\| null | no |  |
   | `priority` | string | no |  |
-  | `deadline` | string (date-time) \\| null | no |  |
-  | `estimated_hours` | number \\| null | no |  |
+  | `deadline` | string (date-time) \\\| null | no |  |
+  | `estimated_hours` | number \\\| null | no |  |
 
   **Responses**
 

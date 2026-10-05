@@ -17,13 +17,13 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `name` | string \\| null | no |  |
-  | `description` | string \\| null | no |  |
-  | `category` | string \\| null | no |  |
-  | `tags` | string[] \\| null | no |  |
-  | `is_private` | boolean \\| null | no |  |
-  | `avatar_url` | string \\| null | no |  |
-  | `banner_url` | string \\| null | no |  |
+  | `name` | string \\\| null | no |  |
+  | `description` | string \\\| null | no |  |
+  | `category` | string \\\| null | no |  |
+  | `tags` | string[] \\\| null | no |  |
+  | `is_private` | boolean \\\| null | no |  |
+  | `avatar_url` | string \\\| null | no |  |
+  | `banner_url` | string \\\| null | no |  |
 
   **Responses**
 

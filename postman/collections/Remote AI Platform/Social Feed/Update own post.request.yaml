@@ -15,8 +15,8 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `content` | string \\| null | no |  |
-  | `visibility` | string \\| null | no |  |
+  | `content` | string \\\| null | no |  |
+  | `visibility` | string \\\| null | no |  |
 
   **Responses**
 

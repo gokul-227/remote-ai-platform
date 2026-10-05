@@ -13,7 +13,7 @@ description: |-
   | --- | --- | --- | --- | --- |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `20` |  |
-  | `is_verified` | boolean \\| null | no |  |  |
+  | `is_verified` | boolean \\\| null | no |  |  |
 
   **Responses**
 

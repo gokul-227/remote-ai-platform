@@ -17,7 +17,7 @@ description: |-
   | `task_title` | string | yes |  |
   | `task_description` | string | yes |  |
   | `submission_content` | string | yes |  |
-  | `requirements` | string[] \\| null | no |  |
+  | `requirements` | string[] \\\| null | no |  |
 
   **Responses**
 

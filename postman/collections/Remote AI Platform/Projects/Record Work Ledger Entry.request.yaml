@@ -17,7 +17,7 @@ description: |-
   | --- | --- | --- | --- |
   | `duration_minutes` | integer | yes |  |
   | `description` | string | yes |  |
-  | `submission_id` | string (uuid) \\| null | no |  |
+  | `submission_id` | string (uuid) \\\| null | no |  |
 
   **Responses**
 

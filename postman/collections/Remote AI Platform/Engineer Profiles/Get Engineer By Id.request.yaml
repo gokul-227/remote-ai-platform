@@ -23,7 +23,7 @@ description: |-
 
   | Status | Meaning | Body |
   | --- | --- | --- |
-  | 200 | Successful Response | EngineerProfileResponse \\| EngineerPublicProfileResponse |
+  | 200 | Successful Response | EngineerProfileResponse \\\| EngineerPublicProfileResponse |
   | 422 | Validation Error | HTTPValidationError |
 
   **Depends on**

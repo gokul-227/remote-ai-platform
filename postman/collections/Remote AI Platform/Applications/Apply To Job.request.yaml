@@ -15,7 +15,7 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `cover_note` | string \\| null | no |  |
+  | `cover_note` | string \\\| null | no |  |
 
   **Responses**
 

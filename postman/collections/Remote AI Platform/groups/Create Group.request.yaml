@@ -12,7 +12,7 @@ description: |-
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `name` | string | yes |  |
-  | `description` | string \\| null | no |  |
+  | `description` | string \\\| null | no |  |
   | `category` | string | no |  |
   | `tags` | string[] | no |  |
   | `is_private` | boolean | no |  |

@@ -15,13 +15,13 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `title` | string \\| null | no |  |
-  | `scope_description` | string \\| null | no |  |
-  | `rate_type` | string \\| null | no |  |
-  | `rate_amount` | number \\| null | no |  |
-  | `terms` | string \\| null | no |  |
-  | `start_date` | string (date-time) \\| null | no |  |
-  | `end_date` | string (date-time) \\| null | no |  |
+  | `title` | string \\\| null | no |  |
+  | `scope_description` | string \\\| null | no |  |
+  | `rate_type` | string \\\| null | no |  |
+  | `rate_amount` | number \\\| null | no |  |
+  | `terms` | string \\\| null | no |  |
+  | `start_date` | string (date-time) \\\| null | no |  |
+  | `end_date` | string (date-time) \\\| null | no |  |
 
   **Responses**
 

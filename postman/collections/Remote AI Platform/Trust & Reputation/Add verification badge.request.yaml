@@ -18,7 +18,7 @@ description: |-
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `verification_type` | string | yes |  |
-  | `verifier_notes` | string \\| null | no |  |
+  | `verifier_notes` | string \\\| null | no |  |
 
   **Responses**
 

@@ -25,7 +25,7 @@ description: |-
 
   | Status | Meaning | Body |
   | --- | --- | --- |
-  | 200 | Successful Response | VerificationResponse[] \\| VerificationPublicResponse[] |
+  | 200 | Successful Response | VerificationResponse[] \\\| VerificationPublicResponse[] |
   | 422 | Validation Error | HTTPValidationError |
 
   **Depends on**

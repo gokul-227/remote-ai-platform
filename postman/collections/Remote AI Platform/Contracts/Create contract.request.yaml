@@ -11,16 +11,16 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `project_id` | string (uuid) \\| null | no |  |
+  | `project_id` | string (uuid) \\\| null | no |  |
   | `worker_id` | string (uuid) | yes |  |
   | `title` | string | yes |  |
   | `scope_description` | string | yes |  |
   | `rate_type` | string | no |  |
   | `rate_amount` | number | yes |  |
   | `currency` | string | no |  |
-  | `terms` | string \\| null | no |  |
-  | `start_date` | string (date-time) \\| null | no |  |
-  | `end_date` | string (date-time) \\| null | no |  |
+  | `terms` | string \\\| null | no |  |
+  | `start_date` | string (date-time) \\\| null | no |  |
+  | `end_date` | string (date-time) \\\| null | no |  |
   | `milestones` | ContractMilestoneCreate[] | no |  |
 
   **Responses**

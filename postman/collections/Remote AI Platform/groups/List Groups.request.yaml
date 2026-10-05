@@ -11,8 +11,8 @@ description: |-
 
   | Name | Type | Required | Default | Description |
   | --- | --- | --- | --- | --- |
-  | `category` | string \\| null | no |  |  |
-  | `search` | string \\| null | no |  |  |
+  | `category` | string \\\| null | no |  |  |
+  | `search` | string \\\| null | no |  |  |
   | `page` | integer | no | `1` |  |
   | `page_size` | integer | no | `20` |  |
 

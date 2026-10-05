@@ -11,16 +11,16 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `name` | string \\| null | no |  |
-  | `website` | string \\| null | no |  |
-  | `logo_url` | string \\| null | no |  |
-  | `description` | string \\| null | no |  |
-  | `industry` | string \\| null | no |  |
-  | `company_size` | string \\| null | no |  |
-  | `location` | string \\| null | no |  |
-  | `country` | string \\| null | no |  |
-  | `hiring_status` | string \\| null | no |  |
-  | `tech_stack` | string[] \\| null | no |  |
+  | `name` | string \\\| null | no |  |
+  | `website` | string \\\| null | no |  |
+  | `logo_url` | string \\\| null | no |  |
+  | `description` | string \\\| null | no |  |
+  | `industry` | string \\\| null | no |  |
+  | `company_size` | string \\\| null | no |  |
+  | `location` | string \\\| null | no |  |
+  | `country` | string \\\| null | no |  |
+  | `hiring_status` | string \\\| null | no |  |
+  | `tech_stack` | string[] \\\| null | no |  |
 
   **Responses**
 

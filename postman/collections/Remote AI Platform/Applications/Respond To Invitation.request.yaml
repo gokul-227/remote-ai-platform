@@ -18,7 +18,7 @@ description: |-
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `accept` | boolean | yes |  |
-  | `note` | string \\| null | no |  |
+  | `note` | string \\\| null | no |  |
 
   **Responses**
 

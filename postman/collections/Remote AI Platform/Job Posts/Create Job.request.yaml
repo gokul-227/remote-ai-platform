@@ -13,25 +13,25 @@ description: |-
   | --- | --- | --- | --- |
   | `title` | string | yes |  |
   | `description` | string | yes |  |
-  | `company_name` | string \\| null | no |  |
-  | `company_logo` | string \\| null | no |  |
-  | `location` | string \\| null | no |  |
+  | `company_name` | string \\\| null | no |  |
+  | `company_logo` | string \\\| null | no |  |
+  | `location` | string \\\| null | no |  |
   | `is_remote` | boolean | no |  |
   | `job_type` | string | no |  |
-  | `experience_level` | string \\| null | no |  |
-  | `budget_min` | number \\| null | no |  |
-  | `budget_max` | number \\| null | no |  |
-  | `timeline` | string \\| null | no |  |
-  | `remote_preference` | string \\| null | no |  |
-  | `salary_min` | number \\| null | no |  |
-  | `salary_max` | number \\| null | no |  |
-  | `salary_period` | string \\| null | no |  |
+  | `experience_level` | string \\\| null | no |  |
+  | `budget_min` | number \\\| null | no |  |
+  | `budget_max` | number \\\| null | no |  |
+  | `timeline` | string \\\| null | no |  |
+  | `remote_preference` | string \\\| null | no |  |
+  | `salary_min` | number \\\| null | no |  |
+  | `salary_max` | number \\\| null | no |  |
+  | `salary_period` | string \\\| null | no |  |
   | `currency` | string | no |  |
   | `skills` | string[] | no |  |
-  | `external_url` | string \\| null | no |  |
-  | `ai_analysis` | object \\| null | no |  |
-  | `company_id` | string (uuid) \\| null | no |  |
-  | `external_id` | string \\| null | no |  |
+  | `external_url` | string \\\| null | no |  |
+  | `ai_analysis` | object \\\| null | no |  |
+  | `company_id` | string (uuid) \\\| null | no |  |
+  | `external_id` | string \\\| null | no |  |
   | `source` | string | no |  |
 
   **Responses**

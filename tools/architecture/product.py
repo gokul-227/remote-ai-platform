@@ -312,6 +312,10 @@ def render_product(model: dict[str, Any]) -> str:
         ("Sentry SDK", "errors, PII scrubbed", "sentry"),
         ("Alembic", "migrate on start", "concepts/database"),
     ]
+    # Anything else running beside the API on its host (e.g. a background worker).
+    for c in members("render"):
+        if c["id"] != "api":
+            concerns.append((c["name"], c.get("technology", ""), c.get("icon") or "concepts/server"))
     api_h = 44 + (row + 1) * (chip_h + 10) + 16 + 22 + 56 + 16 + 22 + 40 + 14
     platform_h = 52 + web_h + 64 + api_h + 20
     web_y, api_y = TOP + 52, TOP + 52 + web_h + 64

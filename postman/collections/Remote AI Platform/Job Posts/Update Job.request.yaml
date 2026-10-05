@@ -17,25 +17,25 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `title` | string \\| null | no |  |
-  | `description` | string \\| null | no |  |
-  | `company_name` | string \\| null | no |  |
-  | `company_logo` | string \\| null | no |  |
-  | `location` | string \\| null | no |  |
-  | `is_remote` | boolean \\| null | no |  |
-  | `job_type` | string \\| null | no |  |
-  | `experience_level` | string \\| null | no |  |
-  | `budget_min` | number \\| null | no |  |
-  | `budget_max` | number \\| null | no |  |
-  | `timeline` | string \\| null | no |  |
-  | `remote_preference` | string \\| null | no |  |
-  | `salary_min` | number \\| null | no |  |
-  | `salary_max` | number \\| null | no |  |
-  | `salary_period` | string \\| null | no |  |
-  | `currency` | string \\| null | no |  |
-  | `skills` | string[] \\| null | no |  |
-  | `external_url` | string \\| null | no |  |
-  | `is_active` | boolean \\| null | no |  |
+  | `title` | string \\\| null | no |  |
+  | `description` | string \\\| null | no |  |
+  | `company_name` | string \\\| null | no |  |
+  | `company_logo` | string \\\| null | no |  |
+  | `location` | string \\\| null | no |  |
+  | `is_remote` | boolean \\\| null | no |  |
+  | `job_type` | string \\\| null | no |  |
+  | `experience_level` | string \\\| null | no |  |
+  | `budget_min` | number \\\| null | no |  |
+  | `budget_max` | number \\\| null | no |  |
+  | `timeline` | string \\\| null | no |  |
+  | `remote_preference` | string \\\| null | no |  |
+  | `salary_min` | number \\\| null | no |  |
+  | `salary_max` | number \\\| null | no |  |
+  | `salary_period` | string \\\| null | no |  |
+  | `currency` | string \\\| null | no |  |
+  | `skills` | string[] \\\| null | no |  |
+  | `external_url` | string \\\| null | no |  |
+  | `is_active` | boolean \\\| null | no |  |
 
   **Responses**
 

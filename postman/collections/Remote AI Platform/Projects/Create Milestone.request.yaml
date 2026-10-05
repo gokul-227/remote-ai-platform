@@ -11,11 +11,11 @@ description: |-
   | --- | --- | --- | --- |
   | `project_id` | string (uuid) | yes |  |
   | `title` | string | yes |  |
-  | `description` | string \\| null | no |  |
+  | `description` | string \\\| null | no |  |
   | `position` | integer | no |  |
-  | `amount` | number \\| null | no |  |
-  | `due_date` | string (date-time) \\| null | no |  |
-  | `contract_milestone_id` | string (uuid) \\| null | no |  |
+  | `amount` | number \\\| null | no |  |
+  | `due_date` | string (date-time) \\\| null | no |  |
+  | `contract_milestone_id` | string (uuid) \\\| null | no |  |
 
   **Responses**
 

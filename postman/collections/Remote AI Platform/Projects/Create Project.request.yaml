@@ -12,9 +12,9 @@ description: |-
   | `title` | string | yes |  |
   | `description` | string | yes |  |
   | `technologies` | string[] | no |  |
-  | `timeline` | string \\| null | no |  |
-  | `budget` | number \\| null | no |  |
-  | `company_id` | string (uuid) \\| null | no |  |
+  | `timeline` | string \\\| null | no |  |
+  | `budget` | number \\\| null | no |  |
+  | `company_id` | string (uuid) \\\| null | no |  |
   | `member_ids` | string (uuid)[] | no |  |
 
   **Responses**

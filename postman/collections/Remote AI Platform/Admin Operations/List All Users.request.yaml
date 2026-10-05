@@ -13,7 +13,7 @@ description: |-
   | --- | --- | --- | --- | --- |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `50` |  |
-  | `role` | UserRole \\| null | no |  |  |
+  | `role` | UserRole \\\| null | no |  |  |
 
   **Responses**
 

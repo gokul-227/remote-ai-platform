@@ -12,7 +12,7 @@ description: |-
 
   | Name | Type | Required | Default | Description |
   | --- | --- | --- | --- | --- |
-  | `job_id` | string (uuid) \\| null | no |  | Only applications for this job |
+  | `job_id` | string (uuid) \\\| null | no |  | Only applications for this job |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `20` |  |
 

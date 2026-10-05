@@ -12,9 +12,9 @@ description: |-
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `content` | string | yes |  |
-  | `image_url` | string \\| null | no |  |
-  | `link_url` | string \\| null | no |  |
-  | `link_preview_title` | string \\| null | no |  |
+  | `image_url` | string \\\| null | no |  |
+  | `link_url` | string \\\| null | no |  |
+  | `link_preview_title` | string \\\| null | no |  |
   | `visibility` | string | no |  |
 
   **Responses**

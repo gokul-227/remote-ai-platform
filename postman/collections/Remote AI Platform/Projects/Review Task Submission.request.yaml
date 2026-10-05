@@ -16,7 +16,7 @@ description: |-
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `status` | string | yes |  |
-  | `review_note` | string \\| null | no |  |
+  | `review_note` | string \\\| null | no |  |
 
   **Responses**
 

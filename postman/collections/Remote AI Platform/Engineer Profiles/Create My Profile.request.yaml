@@ -11,26 +11,26 @@ description: |-
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
-  | `country` | string \\| null | no |  |
-  | `profile_image_url` | string \\| null | no |  |
-  | `headline` | string \\| null | no |  |
-  | `bio` | string \\| null | no |  |
-  | `location` | string \\| null | no |  |
-  | `timezone` | string \\| null | no |  |
-  | `availability` | string \\| null | no |  |
-  | `remote_preference` | string \\| null | no |  |
+  | `country` | string \\\| null | no |  |
+  | `profile_image_url` | string \\\| null | no |  |
+  | `headline` | string \\\| null | no |  |
+  | `bio` | string \\\| null | no |  |
+  | `location` | string \\\| null | no |  |
+  | `timezone` | string \\\| null | no |  |
+  | `availability` | string \\\| null | no |  |
+  | `remote_preference` | string \\\| null | no |  |
   | `years_of_experience` | integer | no |  |
-  | `primary_role` | string \\| null | no |  |
+  | `primary_role` | string \\\| null | no |  |
   | `certifications` | object[] | no |  |
   | `previous_companies` | string[] | no |  |
-  | `employment_type` | string \\| null | no |  |
-  | `available_hours` | integer \\| null | no |  |
-  | `hourly_rate` | number \\| null | no |  |
-  | `desired_salary_min` | number \\| null | no |  |
+  | `employment_type` | string \\\| null | no |  |
+  | `available_hours` | integer \\\| null | no |  |
+  | `hourly_rate` | number \\\| null | no |  |
+  | `desired_salary_min` | number \\\| null | no |  |
   | `languages` | string[] | no |  |
-  | `github_url` | string \\| null | no |  |
-  | `linkedin_url` | string \\| null | no |  |
-  | `portfolio_url` | string \\| null | no |  |
+  | `github_url` | string \\\| null | no |  |
+  | `linkedin_url` | string \\\| null | no |  |
+  | `portfolio_url` | string \\\| null | no |  |
   | `skills` | string[] | no |  |
   | `experience` | ExperienceItem[] | no |  |
   | `projects` | ProjectItemIn[] | no |  |

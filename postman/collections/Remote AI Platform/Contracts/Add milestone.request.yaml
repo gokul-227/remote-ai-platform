@@ -17,7 +17,7 @@ description: |-
   | --- | --- | --- | --- |
   | `title` | string | yes |  |
   | `amount` | number | yes |  |
-  | `due_date` | string (date-time) \\| null | no |  |
+  | `due_date` | string (date-time) \\\| null | no |  |
 
   **Responses**
 

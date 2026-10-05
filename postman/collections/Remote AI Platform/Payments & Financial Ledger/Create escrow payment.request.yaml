@@ -11,14 +11,14 @@ description: |-
 
   | Name | Type | Required | Default | Description |
   | --- | --- | --- | --- | --- |
-  | `idempotency_key` | string \\| null | no |  |  |
+  | `idempotency_key` | string \\\| null | no |  |  |
 
   **Request body (application/json, DirectEscrowCreate)**
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `project_id` | string (uuid) | yes |  |
-  | `task_id` | string (uuid) \\| null | no |  |
+  | `task_id` | string (uuid) \\\| null | no |  |
   | `payee_id` | string (uuid) | yes |  |
   | `amount` | number | yes |  |
   | `currency` | string | no |  |

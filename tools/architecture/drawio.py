@@ -195,9 +195,16 @@ def _route_all(model: dict[str, Any], nodes: dict[str, Node], groups: dict[str, 
     for i, connection in enumerate(model["connections"]):
         source, target = nodes[connection["from"]], nodes[connection["to"]]
         rows = list(ROWS)
-        if rows.index(target.row) > rows.index(source.row):
+        cards_below = any(n.group == source.group and n.id != source.id and n.id != n.group and n.box[1] > source.box[1] for n in nodes.values())
+        if source.group == target.group and source.id != target.id:
+            # Stacked in one group (e.g. API and worker on Render): a short drop.
+            down = target.box[1] > source.box[1]
+            routes.append(Route(i, source, target, "bottom" if down else "top", "top" if down else "bottom", "stack", []))
+        elif rows.index(target.row) > rows.index(source.row):
+            # Leave from the group's bottom edge when other cards sit below the source.
+            origin = nodes[source.group] if cards_below else source
             entry = "top" if target.first_in_group else "left"
-            routes.append(Route(i, source, target, "bottom", entry, "down", []))
+            routes.append(Route(i, origin, target, "bottom", entry, "down", []))
         elif target.row == source.row and target.column == source.column + 1:
             routes.append(Route(i, source, target, "right", "left", "right", []))
         else:  # same row, other columns in between: over the top
@@ -233,6 +240,8 @@ def _route_all(model: dict[str, Any], nodes: dict[str, Node], groups: dict[str, 
                 route.entry_at = (round((sx - tx) / tw, 4), 0.0)
             else:
                 route.entry_at = (round(1 / 3, 4) if sx < tx else round(2 / 3, 4), 0.0)
+        if route.kind == "stack" and tx + 8 <= sx <= tx + tw - 8:
+            route.entry_at = (round((sx - tx) / tw, 4), route.entry_at[1])
         if route.kind == "right" and ty + 8 <= sy <= ty + th - 8:
             route.entry_at = (0.0, round((sy - ty) / th, 4))
 

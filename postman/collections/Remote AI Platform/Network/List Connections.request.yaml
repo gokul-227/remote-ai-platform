@@ -11,7 +11,7 @@ description: |-
   | --- | --- | --- | --- | --- |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `50` |  |
-  | `status` | string \\| null | no |  |  |
+  | `status` | string \\\| null | no |  |  |
 
   **Responses**
 

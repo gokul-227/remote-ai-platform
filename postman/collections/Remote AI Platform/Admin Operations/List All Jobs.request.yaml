@@ -11,8 +11,8 @@ description: |-
 
   | Name | Type | Required | Default | Description |
   | --- | --- | --- | --- | --- |
-  | `q` | string \\| null | no |  | Title or company contains |
-  | `active` | boolean \\| null | no |  |  |
+  | `q` | string \\\| null | no |  | Title or company contains |
+  | `active` | boolean \\\| null | no |  |  |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `50` |  |
 

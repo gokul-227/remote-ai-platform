@@ -2,7 +2,11 @@
 // analysis as the collection so they never disagree with it.
 
 const code = (text) => `\`${text}\``;
-const cell = (text) => String(text ?? "").replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ");
+const cell = (text) =>
+  String(text ?? "")
+    .replace(/\\/g, "\\\\") // backslashes first, so the pipe escape below stays intact
+    .replace(/\|/g, "\\|")
+    .replace(/\s*\n\s*/g, " ");
 
 function readme({ spec, title, mockPort, entries, analysis }) {
   const secured = entries.filter((e) => e.info.secured).length;
