@@ -490,6 +490,11 @@ infrastructure:
     icon: fastapi
     group: render
     status: active
+  - id: worker
+    name: Background worker
+    technology: Task queue
+    group: render
+    status: active
   - id: auth
     name: Supabase Auth
     technology: JWT (JWKS) · email code + OAuth

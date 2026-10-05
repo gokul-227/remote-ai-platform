@@ -14,7 +14,7 @@
           <mxGeometry as="geometry" x="268" y="574" width="258" height="112" />
         </mxCell>
         <mxCell id="group-render" value="&lt;b&gt;Render&lt;/b&gt;" style="shape=label;rounded=1;arcSize=6;absoluteArcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#1F1F1F;strokeWidth=1.5;dashed=0;align=left;verticalAlign=top;spacingLeft=40;spacingTop=4;fontColor=#1F2937;fontSize=12;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwMDAwMCIgZD0iTTE4LjI2My4wMDdjLTMuMTIxLS4xNDctNS43NDQgMi4xMDktNi4xOTIgNS4wODItLjAxOC4xMzgtLjA0NS4yNzItLjA2Ny40MDUtLjY5NiAzLjcwMy0zLjkzNiA2LjUwNy03LjgyNyA2LjUwNy0xLjM4OCAwLTIuNjkxLS4zNTYtMy44MjUtLjk3OWEuMjAyNC4yMDI0IDAgMCAwLS4zMDIuMTc4VjI0SDEydi04Ljk5OWMwLTEuNjU2IDEuMzM4LTMgMi45ODctM2gyLjk4OGMzLjM4MiAwIDYuMTAzLTIuODE3IDUuOTctNi4yNDQtLjEyLTMuMDg0LTIuNjEtNS42MDMtNS42ODItNS43NSIvPjwvc3ZnPgo=;imageWidth=22;imageHeight=22;imageAlign=left;imageVerticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="636" y="574" width="258" height="112" />
+          <mxGeometry as="geometry" x="636" y="539" width="258" height="182" />
         </mxCell>
         <mxCell id="group-supabase" value="&lt;b&gt;Supabase (EU)&lt;/b&gt;" style="shape=label;rounded=1;arcSize=6;absoluteArcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#3ECF8E;strokeWidth=1.5;dashed=0;align=left;verticalAlign=top;spacingLeft=40;spacingTop=4;fontColor=#1F2937;fontSize=12;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzNGQ0Y4RSIgZD0iTTExLjkgMS4wMzZjLS4wMTUtLjk4Ni0xLjI2LTEuNDEtMS44NzQtLjYzN0wuNzY0IDEyLjA1Qy0uMzMgMTMuNDI3LjY1IDE1LjQ1NSAyLjQwOSAxNS40NTVoOS41NzlsLjExMyA3LjUxYy4wMTQuOTg1IDEuMjU5IDEuNDA4IDEuODczLjYzNmw5LjI2Mi0xMS42NTNjMS4wOTMtMS4zNzUuMTEzLTMuNDAzLTEuNjQ1LTMuNDAzaC05LjY0MnoiLz48L3N2Zz4K;imageWidth=22;imageHeight=22;imageAlign=left;imageVerticalAlign=top;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="1104" y="436" width="258" height="252" />
@@ -45,6 +45,9 @@
         </mxCell>
         <mxCell id="api" value="&lt;b&gt;Backend API&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot; color=&quot;#5F6B7A&quot;&gt;FastAPI 0.142 · Docker&lt;/font&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=46;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzAwOTY4OCIgZD0iTTEyIC4wMzg3QzUuMzcyOS4wMzg0LjAwMDMgNS4zOTMxIDAgMTEuOTk4OGMtLjAwMSA2LjYwNjYgNS4zNzIgMTEuOTYyOCAxMiAxMS45NjI1IDYuNjI4LjAwMDMgMTIuMDAxLTUuMzU1OSAxMi0xMS45NjI1LS4wMDAzLTYuNjA1Ny01LjM3MjktMTEuOTYwNC0xMi0xMS45Nm0tLjgyOSA1LjQxNTNoNy41NWwtNy41ODA1IDUuMzI4NGg1LjE4MjhMNS4yNzkgMTguNTQzNnEyLjk0NjYtNi41NDQ0IDUuODkyLTEzLjA4OTYiLz48L3N2Zz4K;imageWidth=28;imageHeight=28;imageAlign=left;imageVerticalAlign=middle;" vertex="1" parent="group-render">
           <mxGeometry as="geometry" x="14" y="40" width="230" height="58" />
+        </mxCell>
+        <mxCell id="worker" value="&lt;b&gt;Background worker&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot; color=&quot;#5F6B7A&quot;&gt;Task queue&lt;/font&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-render">
+          <mxGeometry as="geometry" x="14" y="110" width="230" height="58" />
         </mxCell>
         <mxCell id="auth" value="&lt;b&gt;Supabase Auth&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot; color=&quot;#5F6B7A&quot;&gt;JWT (JWKS) · email code + OAuth&lt;/font&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=46;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iIzNGQ0Y4RSIgZD0iTTExLjkgMS4wMzZjLS4wMTUtLjk4Ni0xLjI2LTEuNDEtMS44NzQtLjYzN0wuNzY0IDEyLjA1Qy0uMzMgMTMuNDI3LjY1IDE1LjQ1NSAyLjQwOSAxNS40NTVoOS41NzlsLjExMyA3LjUxYy4wMTQuOTg1IDEuMjU5IDEuNDA4IDEuODczLjYzNmw5LjI2Mi0xMS42NTNjMS4wOTMtMS4zNzUuMTEzLTMuNDAzLTEuNjQ1LTMuNDAzaC05LjY0MnoiLz48L3N2Zz4K;imageWidth=28;imageHeight=28;imageAlign=left;imageVerticalAlign=middle;" vertex="1" parent="group-supabase">
           <mxGeometry as="geometry" x="14" y="40" width="230" height="58" />
@@ -124,56 +127,74 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="edge-02-web-api" value="REST /api/v1 · Bearer JWT" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="api">
-          <mxGeometry as="geometry" x="0.0" relative="1" />
+          <mxGeometry as="geometry" x="0.422" relative="1">
+            <Array as="points">
+              <mxPoint x="550" y="643" />
+              <mxPoint x="550" y="608" />
+            </Array>
+          </mxGeometry>
         </mxCell>
         <mxCell id="edge-03-api-auth" value="JWKS verify · Admin API" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.2;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="auth">
-          <mxGeometry as="geometry" x="0.4429" relative="1">
+          <mxGeometry as="geometry" x="0.3827" relative="1">
             <Array as="points">
-              <mxPoint x="918" y="626" />
+              <mxPoint x="918" y="591" />
               <mxPoint x="918" y="505" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="edge-04-api-postgres" value="SQL (asyncpg)" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.4;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="postgres">
-          <mxGeometry as="geometry" x="0.38" relative="1">
+          <mxGeometry as="geometry" x="0.2981" relative="1">
             <Array as="points">
-              <mxPoint x="932" y="637" />
+              <mxPoint x="932" y="602" />
               <mxPoint x="932" y="575" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-05-api-storage" value="S3 API" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.6;exitPerimeter=0;entryX=0.0;entryY=0.569;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="storage">
-          <mxGeometry as="geometry" x="0.0" relative="1" />
-        </mxCell>
-        <mxCell id="edge-06-api-redis" value="RESP" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.8;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="redis">
-          <mxGeometry as="geometry" x="0.5209" relative="1">
+        <mxCell id="edge-05-api-storage" value="S3 API" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.6;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="storage">
+          <mxGeometry as="geometry" x="0.3606" relative="1">
             <Array as="points">
-              <mxPoint x="946" y="660" />
-              <mxPoint x="946" y="781" />
+              <mxPoint x="946" y="614" />
+              <mxPoint x="946" y="645" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-07-api-ai-providers" value="LiteLLM" style="edgeStyle=none;rounded=1;html=1;exitX=0.16666666666666666;exitY=1.0;exitPerimeter=0;entryX=0.6667;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="group-ai-providers">
-          <mxGeometry as="geometry" x="0.0686" relative="1">
+        <mxCell id="edge-06-api-redis" value="RESP" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.8;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="redis">
+          <mxGeometry as="geometry" x="0.599" relative="1">
+            <Array as="points">
+              <mxPoint x="960" y="625" />
+              <mxPoint x="960" y="781" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-07-api-worker" value="Enqueue" style="edgeStyle=none;rounded=1;html=1;exitX=0.3333333333333333;exitY=0.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="worker">
+          <mxGeometry as="geometry" x="0.4638" relative="1">
+            <Array as="points">
+              <mxPoint x="727" y="412" />
+              <mxPoint x="765" y="412" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-08-api-ai-providers" value="LiteLLM" style="edgeStyle=none;rounded=1;html=1;exitX=0.16666666666666666;exitY=1.0;exitPerimeter=0;entryX=0.6667;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="group-ai-providers">
+          <mxGeometry as="geometry" x="0.1239" relative="1">
             <Array as="points">
               <mxPoint x="688" y="844" />
               <mxPoint x="440" y="844" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-08-api-job-boards" value="HTTPS pull" style="edgeStyle=none;rounded=1;html=1;exitX=0.3333333333333333;exitY=1.0;exitPerimeter=0;entryX=0.3527;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="group-job-boards">
+        <mxCell id="edge-09-api-job-boards" value="HTTPS pull" style="edgeStyle=none;rounded=1;html=1;exitX=0.3333333333333333;exitY=1.0;exitPerimeter=0;entryX=0.3527;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="group-job-boards">
           <mxGeometry as="geometry" x="0.0" relative="1" />
         </mxCell>
-        <mxCell id="edge-09-api-resend" value="Email API" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="resend">
-          <mxGeometry as="geometry" x="0.1007" relative="1">
+        <mxCell id="edge-10-api-resend" value="Email API" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="resend">
+          <mxGeometry as="geometry" x="0.1378" relative="1">
             <Array as="points">
               <mxPoint x="765" y="886" />
               <mxPoint x="1233" y="886" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-10-api-stripe" value="Payments API" style="edgeStyle=none;rounded=1;html=1;exitX=0.6666666666666666;exitY=1.0;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="stripe">
-          <mxGeometry as="geometry" x="0.5137" relative="1">
+        <mxCell id="edge-11-api-stripe" value="Payments API" style="edgeStyle=none;rounded=1;html=1;exitX=0.6666666666666666;exitY=1.0;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="stripe">
+          <mxGeometry as="geometry" x="0.5341" relative="1">
             <Array as="points">
               <mxPoint x="803" y="872" />
               <mxPoint x="1066" y="872" />
@@ -181,8 +202,8 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-11-api-sentry" value="Errors" style="edgeStyle=none;rounded=1;html=1;exitX=0.8333333333333334;exitY=1.0;exitPerimeter=0;entryX=0.0;entryY=0.3333333333333333;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="sentry">
-          <mxGeometry as="geometry" x="-0.1223" relative="1">
+        <mxCell id="edge-12-api-sentry" value="Errors" style="edgeStyle=none;rounded=1;html=1;exitX=0.8333333333333334;exitY=1.0;exitPerimeter=0;entryX=0.0;entryY=0.3333333333333333;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="api" target="sentry">
+          <mxGeometry as="geometry" x="-0.0685" relative="1">
             <Array as="points">
               <mxPoint x="842" y="858" />
               <mxPoint x="1080" y="858" />
@@ -190,7 +211,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-12-web-sentry" value="Errors" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.0;entryY=0.6666666666666666;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="sentry">
+        <mxCell id="edge-13-web-sentry" value="Errors" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.0;entryY=0.6666666666666666;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="web" target="sentry">
           <mxGeometry as="geometry" x="-0.0147" relative="1">
             <Array as="points">
               <mxPoint x="397" y="914" />
@@ -199,7 +220,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-13-gha-deploy-web" value="wrangler deploy" style="edgeStyle=none;rounded=1;html=1;exitX=0.3333333333333333;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-deploy" target="web">
+        <mxCell id="edge-14-gha-deploy-web" value="wrangler deploy" style="edgeStyle=none;rounded=1;html=1;exitX=0.3333333333333333;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-deploy" target="web">
           <mxGeometry as="geometry" x="-0.8561" relative="1">
             <Array as="points">
               <mxPoint x="547" y="266" />
@@ -207,35 +228,35 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-14-gha-deploy-api" value="Render API deploy" style="edgeStyle=none;rounded=1;html=1;exitX=0.6666666666666666;exitY=1.0;exitPerimeter=0;entryX=0.2;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-deploy" target="api">
-          <mxGeometry as="geometry" x="-0.446" relative="1">
+        <mxCell id="edge-15-gha-deploy-api" value="Render API deploy" style="edgeStyle=none;rounded=1;html=1;exitX=0.6666666666666666;exitY=1.0;exitPerimeter=0;entryX=0.16666666666666666;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-deploy" target="api">
+          <mxGeometry as="geometry" x="-0.3929" relative="1">
             <Array as="points">
               <mxPoint x="611" y="362" />
-              <mxPoint x="696" y="362" />
+              <mxPoint x="688" y="362" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-15-gha-job-sync-api" value="POST /jobs/sync/scheduled" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.4;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-job-sync" target="api">
-          <mxGeometry as="geometry" x="-0.7124" relative="1">
+        <mxCell id="edge-16-gha-job-sync-api" value="POST /jobs/sync/scheduled" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.5;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-job-sync" target="api">
+          <mxGeometry as="geometry" x="-0.6693" relative="1">
             <Array as="points">
               <mxPoint x="781" y="290" />
-              <mxPoint x="742" y="290" />
+              <mxPoint x="765" y="290" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-16-gha-monitor-api" value="/health probes" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.6;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-monitor" target="api">
-          <mxGeometry as="geometry" x="-0.7072" relative="1">
+        <mxCell id="edge-17-gha-monitor-api" value="/health probes" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.6666666666666666;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="gha-monitor" target="api">
+          <mxGeometry as="geometry" x="-0.6806" relative="1">
             <Array as="points">
               <mxPoint x="983" y="314" />
-              <mxPoint x="788" y="314" />
+              <mxPoint x="803" y="314" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-17-infisical-api" value="Secret sync" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.8;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="infisical" target="api">
-          <mxGeometry as="geometry" x="-0.7278" relative="1">
+        <mxCell id="edge-18-infisical-api" value="Secret sync" style="edgeStyle=none;rounded=1;html=1;exitX=0.5;exitY=1.0;exitPerimeter=0;entryX=0.8333333333333334;entryY=0.0;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#2088FF;strokeWidth=1.25;dashed=1;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="infisical" target="api">
+          <mxGeometry as="geometry" x="-0.7128" relative="1">
             <Array as="points">
               <mxPoint x="1251" y="338" />
-              <mxPoint x="834" y="338" />
+              <mxPoint x="842" y="338" />
             </Array>
           </mxGeometry>
         </mxCell>
