@@ -1,0 +1,26 @@
+$kind: http-example
+id: ea859c1d-6de4-50d7-85bb-cab42c88d0d5
+request:
+  url: "{{base_url}}/api/v1/notifications/preferences"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": true
+      }
+order: 1000

@@ -3680,6 +3680,25 @@ paths:
           description: Successful Response
       security:
       - HTTPBearer: []
+  /api/v1/notifications/preferences:
+    get:
+      tags:
+      - Notifications
+      summary: Get my notification preferences
+      description: Which notifications the current user receives (test for docs auto-sync).
+      operationId: get_notification_preferences_api_v1_notifications_preferences_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+                title: Response Get Notification Preferences Api V1 Notifications Preferences Get
+      security:
+      - HTTPBearer: []
   /api/v1/blocks:
     get:
       tags:

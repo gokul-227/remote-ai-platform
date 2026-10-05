@@ -1,7 +1,9 @@
 $kind: http-request
-id: 0d7f5ac7-9a58-5942-a5d5-c89fee4a78d9
+id: 5ea9217c-aa7c-521c-a965-1d489038acce
 description: |-
-  `PATCH /api/v1/notifications/read-all`
+  Which notifications the current user receives (test for docs auto-sync).
+
+  `GET /api/v1/notifications/preferences`
 
   **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
 
@@ -9,20 +11,19 @@ description: |-
 
   | Status | Meaning | Body |
   | --- | --- | --- |
-  | 204 | Successful Response |  |
+  | 200 | Successful Response | object |
 
   **Tests**
 
   - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
   - Responds within `max_response_ms`
-  - On success: status is 204
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
   - On failure: the error body says why (`error` or `detail`)
-
-  **Skipped when**
-
-  - the environment is read-only (`allow_writes` is not `true`)
-url: "{{base_url}}/api/v1/notifications/read-all"
-method: PATCH
+url: "{{base_url}}/api/v1/notifications/preferences"
+method: GET
+headers:
+  Accept: application/json
 body:
   type: text
   content: ""
@@ -32,16 +33,11 @@ auth:
     token: "{{access_token}}"
 scripts:
   - type: beforeRequest
-    code: |-
-      // Generated from OpenAPI (PATCH /api/v1/notifications/read-all) -- edit the API or postman/overrides/, not this script.
-      if (pm.environment.get("allow_writes") !== "true") {
-        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
-        pm.execution.skipRequest();
-      }
+    code: // Generated from OpenAPI (GET /api/v1/notifications/preferences) -- edit the API or postman/overrides/, not this script.
     language: text/javascript
   - type: afterResponse
     code: |-
-      // Generated from OpenAPI (PATCH /api/v1/notifications/read-all) -- edit the API or postman/overrides/, not this script.
+      // Generated from OpenAPI (GET /api/v1/notifications/preferences) -- edit the API or postman/overrides/, not this script.
       const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
       // A 503 that explains itself is deliberate (AI not configured, payments switched off).
       const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
@@ -50,9 +46,12 @@ scripts:
       });
       pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
       if (pm.response.code >= 200 && pm.response.code < 300) {
-        pm.test("Status is the documented success code (204)", () => {
-          pm.expect([204]).to.include(pm.response.code);
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
         });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"additionalProperties":{"type":"boolean"},"type":"object"};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
       } else {
         pm.test("Error response explains the failure (error or detail)", () => {
           const body = pm.response.json();
@@ -60,5 +59,5 @@ scripts:
         });
       }
     language: text/javascript
-examples: ./.resources/Mark All Read.resources/examples
-order: 5000
+examples: ./.resources/Get my notification preferences.resources/examples
+order: 3000

@@ -241,6 +241,7 @@ Every request in the collection, in run order.
 | --- | --- | --- | --- | --- |
 | List notifications for current user | `GET /api/v1/notifications` | Bearer |  |  |
 | Count unread notifications | `GET /api/v1/notifications/unread-count` | Bearer |  |  |
+| Get my notification preferences | `GET /api/v1/notifications/preferences` | Bearer |  |  |
 | Mark Read | `PATCH /api/v1/notifications/{notification_id}/read` | Bearer | `{{notification_id}}` |  |
 | Mark All Read | `PATCH /api/v1/notifications/read-all` | Bearer |  |  |
 
