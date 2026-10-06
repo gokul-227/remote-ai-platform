@@ -109,6 +109,14 @@ components:
     - search
     - social
     - trust
+- id: worker
+  name: Background worker
+  type: worker
+  technology: Task queue
+  group: render
+  status: active
+  evidence:
+  - infra/deploy/render.yaml ~ /type:\s*(worker|cron)/
 - id: auth
   name: Supabase Auth
   type: identity
@@ -262,15 +270,6 @@ components:
   status: active
   evidence:
   - 'apps/api/app/core/config.py: AI_FREE_TIER_CHAIN openrouter/*'
-- id: ai-mistral
-  name: Mistral AI
-  type: external
-  technology: LLM API
-  group: ai-providers
-  icon: mistralai
-  status: active
-  evidence:
-  - 'apps/api/app/core/config.py: AI_FREE_TIER_CHAIN mistral/*'
 - id: board-arbeitnow
   name: Arbeitnow
   type: external
@@ -333,6 +332,9 @@ connections:
 - from: api
   to: redis
   label: RESP
+- from: api
+  to: worker
+  label: Enqueue
 - from: api
   to: ai-providers
   label: LiteLLM

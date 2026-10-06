@@ -422,7 +422,7 @@ platform:
   status: active
 - id: ai-providers
   name: AI providers
-  technology: Groq · Google Gemini · Cerebras · OpenRouter · Mistral AI
+  technology: Groq · Google Gemini · Cerebras · OpenRouter
   icon: null
   status: active
 - id: job-boards
@@ -488,6 +488,11 @@ infrastructure:
     name: Backend API
     technology: FastAPI 0.142 · Docker
     icon: fastapi
+    group: render
+    status: active
+  - id: worker
+    name: Background worker
+    technology: Task queue
     group: render
     status: active
   - id: auth
@@ -581,12 +586,6 @@ infrastructure:
     name: OpenRouter
     technology: LLM API
     icon: openrouter
-    group: ai-providers
-    status: active
-  - id: ai-mistral
-    name: Mistral AI
-    technology: LLM API
-    icon: mistralai
     group: ai-providers
     status: active
   - id: board-arbeitnow
