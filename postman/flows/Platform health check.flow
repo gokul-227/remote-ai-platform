@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "name": "Platform health check",
+  "description": "Is the API up, ready and ingesting jobs? Safe on every environment.",
+  "flow": {
+    "description": "Is the API up, ready and ingesting jobs? Safe on every environment.",
+    "nodes": {
+      "E1gSHdHB": {
+        "type": "ev/endpoint@3",
+        "pos": {
+          "x": 0,
+          "y": 0
+        },
+        "config": {
+          "inputs": [
+            {
+              "id": "dFmTCBQ7",
+              "type": "value/reference@2",
+              "kind": "reference",
+              "value": "",
+              "key": "Start",
+              "__noIn": true
+            }
+          ],
+          "data": "",
+          "language": "json",
+          "allowAnyType": false,
+          "inputs__expanded": true
+        },
+        "ui": {
+          "data": {
+            "triggerType": "ev/endpoint@3"
+          },
+          "namedInputsExpanded": true
+        }
+      },
+      "rdbNwaIH": {
+        "type": "task/http-request@1",
+        "pos": {
+          "x": 360,
+          "y": 0
+        },
+        "config": {
+          "element": {
+            "name": "Process liveness check (root)",
+            "method": "GET",
+            "path": "postman/collections/Remote AI Platform/Health & Operations/Process liveness check (root).request.yaml"
+          },
+          "environment": "postman/environments/local.environment.yaml",
+          "parseBody": "auto",
+          "requestVariables": [],
+          "scriptsModifyEnvVars": true,
+          "trackGlobalEnvironment": true,
+          "requestVariables__expanded": true
+        },
+        "ui": {
+          "data": {},
+          "namedInputsExpanded": true
+        }
+      },
+      "VXYXjzZq": {
+        "type": "task/http-request@1",
+        "pos": {
+          "x": 720,
+          "y": 0
+        },
+        "config": {
+          "element": {
+            "name": "Service readiness check (root)",
+            "method": "GET",
+            "path": "postman/collections/Remote AI Platform/Health & Operations/Service readiness check (root).request.yaml"
+          },
+          "environment": "postman/environments/local.environment.yaml",
+          "parseBody": "auto",
+          "requestVariables": [],
+          "scriptsModifyEnvVars": true,
+          "trackGlobalEnvironment": true,
+          "requestVariables__expanded": true
+        },
+        "ui": {
+          "data": {},
+          "namedInputsExpanded": true
+        }
+      },
+      "QQG_fIdX": {
+        "type": "task/http-request@1",
+        "pos": {
+          "x": 1080,
+          "y": 0
+        },
+        "config": {
+          "element": {
+            "name": "Service version and git commit SHA (root)",
+            "method": "GET",
+            "path": "postman/collections/Remote AI Platform/Health & Operations/Service version and git commit SHA (root).request.yaml"
+          },
+          "environment": "postman/environments/local.environment.yaml",
+          "parseBody": "auto",
+          "requestVariables": [],
+          "scriptsModifyEnvVars": true,
+          "trackGlobalEnvironment": true,
+          "requestVariables__expanded": true
+        },
+        "ui": {
+          "data": {},
+          "namedInputsExpanded": true
+        }
+      },
+      "-B_d0NZl": {
+        "type": "task/http-request@1",
+        "pos": {
+          "x": 1440,
+          "y": 0
+        },
+        "config": {
+          "element": {
+            "name": "Job ingestion freshness per source (OBS-01/OBS-03) (root)",
+            "method": "GET",
+            "path": "postman/collections/Remote AI Platform/Health & Operations/Job ingestion freshness per source (OBS-01-OBS-03) (root).request.yaml"
+          },
+          "environment": "postman/environments/local.environment.yaml",
+          "parseBody": "auto",
+          "requestVariables": [],
+          "scriptsModifyEnvVars": true,
+          "trackGlobalEnvironment": true,
+          "requestVariables__expanded": true
+        },
+        "ui": {
+          "data": {},
+          "namedInputsExpanded": true
+        }
+      },
+      "RPW3uZmG": {
+        "type": "task/http-request@1",
+        "pos": {
+          "x": 1800,
+          "y": 0
+        },
+        "config": {
+          "element": {
+            "name": "List Jobs",
+            "method": "GET",
+            "path": "postman/collections/Remote AI Platform/Job Posts/List Jobs.request.yaml"
+          },
+          "environment": "postman/environments/local.environment.yaml",
+          "parseBody": "auto",
+          "requestVariables": [],
+          "scriptsModifyEnvVars": true,
+          "trackGlobalEnvironment": true,
+          "requestVariables__expanded": true
+        },
+        "ui": {
+          "data": {},
+          "namedInputsExpanded": true
+        }
+      }
+    },
+    "connections": {
+      "4PeyOvhP": {
+        "source": "BKHcAC63",
+        "sourcePort": "@",
+        "target": "E1gSHdHB",
+        "targetPort": "inputs|dFmTCBQ7"
+      },
+      "pi1ikFvs": {
+        "source": "E1gSHdHB",
+        "target": "rdbNwaIH",
+        "sourcePort": "output|dFmTCBQ7",
+        "targetPort": "AI"
+      },
+      "ExzzzZme": {
+        "source": "rdbNwaIH",
+        "target": "VXYXjzZq",
+        "sourcePort": "success",
+        "targetPort": "AI"
+      },
+      "GnepGzlj": {
+        "source": "VXYXjzZq",
+        "target": "QQG_fIdX",
+        "sourcePort": "success",
+        "targetPort": "AI"
+      },
+      "Asyyz9Rw": {
+        "source": "QQG_fIdX",
+        "target": "-B_d0NZl",
+        "sourcePort": "success",
+        "targetPort": "AI"
+      },
+      "_IouW9Nm": {
+        "source": "-B_d0NZl",
+        "target": "RPW3uZmG",
+        "sourcePort": "success",
+        "targetPort": "AI"
+      }
+    },
+    "annotations": {},
+    "groups": {},
+    "webhook": {
+      "payloadContent": "body-only",
+      "responseType": "default"
+    },
+    "forms": {},
+    "modules": {},
+    "io": {
+      "BKHcAC63": {
+        "type": "input",
+        "name": "Start",
+        "typeDef": {
+          "type": "string"
+        }
+      }
+    },
+    "ports": {},
+    "meta": {},
+    "scenes": {},
+    "scenarios": {},
+    "config": {
+      "definitions": {},
+      "constants": {}
+    }
+  },
+  "lockbox": {},
+  "info": {
+    "_postman_id": "c70a29e8-76f3-59e8-97f6-22690f420857"
+  }
+}

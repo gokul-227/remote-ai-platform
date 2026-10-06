@@ -1,0 +1,28 @@
+$kind: http-example
+id: c89a33fc-b350-59fd-aeb5-d39e3e1ac578
+request:
+  url: "{{base_url}}/api/v1/conversations"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "participant_id": "0b00b0a4-a3bb-66e2-6fcc-eca8b18b9133"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

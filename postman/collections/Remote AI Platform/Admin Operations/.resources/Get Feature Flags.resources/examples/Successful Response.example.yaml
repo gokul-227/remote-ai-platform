@@ -1,0 +1,32 @@
+$kind: http-example
+id: 2b2714b6-9175-59f9-b674-056262f305c4
+request:
+  url: "{{base_url}}/api/v1/admin/feature-flags"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "flags": {
+          "key_0": false,
+          "key_1": false,
+          "key_2": true,
+          "key_3": false,
+          "key_4": true
+        }
+      }
+order: 1000

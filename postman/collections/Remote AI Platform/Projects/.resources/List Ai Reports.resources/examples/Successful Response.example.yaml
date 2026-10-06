@@ -1,0 +1,27 @@
+$kind: http-example
+id: 3a113b31-91d9-575e-aa4f-7cb915f57ffc
+request:
+  url: "{{base_url}}/api/v1/projects/:project_id/ai-report"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: project_id
+      value: 76e3fc79-a326-0b17-8d51-bb165405198f
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

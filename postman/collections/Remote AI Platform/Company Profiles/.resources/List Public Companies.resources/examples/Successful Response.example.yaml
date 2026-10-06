@@ -1,0 +1,63 @@
+$kind: http-example
+id: 9e979cb2-3abd-5d86-8909-c6e472c65788
+request:
+  url: "{{base_url}}/api/v1/companies/public"
+  method: GET
+  headers:
+    Accept: application/json
+  queryParams:
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "20"
+      disabled: true
+    - key: is_verified
+      value: "true"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "name": "string",
+          "id": "87c6904a-7951-cd68-5fdd-3d6060750215",
+          "user_id": "165a3fa4-0fb7-3eff-9d1c-1309062eb121",
+          "is_verified": true,
+          "created_at": "2016-08-25T14:15:33.744Z",
+          "updated_at": "2011-08-09T20:48:24.325Z",
+          "website": "string",
+          "logo_url": "string",
+          "description": "string",
+          "industry": "string",
+          "company_size": "string",
+          "location": "string",
+          "country": "string",
+          "hiring_status": "string"
+        },
+        {
+          "name": "string",
+          "id": "1cf7c47b-27be-6497-52af-0278648377fd",
+          "user_id": "2b23153a-06e4-8230-8e0f-0e30a6a82a47",
+          "is_verified": false,
+          "created_at": "2014-10-16T14:27:56.877Z",
+          "updated_at": "2004-02-07T10:19:57.074Z",
+          "website": "string",
+          "logo_url": "string",
+          "description": "string",
+          "industry": "string",
+          "company_size": "string",
+          "location": "string",
+          "country": "string",
+          "hiring_status": "string"
+        }
+      ]
+order: 1000

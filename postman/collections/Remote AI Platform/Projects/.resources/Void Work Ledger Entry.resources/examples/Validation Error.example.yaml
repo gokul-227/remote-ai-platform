@@ -1,0 +1,56 @@
+$kind: http-example
+id: 74e36dc0-2c71-57ff-a8de-17bf1b870db1
+request:
+  url: "{{base_url}}/api/v1/projects/ledger/:entry_id/void"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: entry_id
+      value: db1b60ec-9f71-e76c-0be0-23b4d3c7ef4a
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "reason": "string"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

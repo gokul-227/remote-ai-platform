@@ -1,0 +1,32 @@
+$kind: http-example
+id: f4de5166-2483-5595-be9b-b578a749e1e5
+request:
+  url: "{{base_url}}/api/v1/projects/task-offers/:offer_id"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: offer_id
+      value: a73819a0-d5d8-f0c4-8a45-780bfc1e699a
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "status": "string"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

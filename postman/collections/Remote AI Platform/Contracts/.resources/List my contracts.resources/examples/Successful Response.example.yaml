@@ -1,0 +1,134 @@
+$kind: http-example
+id: 463eedff-0a12-58a2-b393-7f2a84304e58
+request:
+  url: "{{base_url}}/api/v1/contracts/me"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "50"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "8fe2920b-d495-6d95-800a-796dd4240383",
+          "client_id": "1fb250e4-fa49-2c47-6ba9-ccdc54398cce",
+          "worker_id": "b9346cce-44fb-f55c-4cb2-051df90c00b3",
+          "title": "string",
+          "scope_description": "string",
+          "rate_type": "string",
+          "rate_amount": 6392.274405807257,
+          "currency": "string",
+          "status": "string",
+          "created_at": "1955-08-17T22:57:15.180Z",
+          "updated_at": "2007-03-24T09:54:19.746Z",
+          "project_id": "75abb6a2-4457-0e54-f0bb-17eebab8be9f",
+          "client": {
+            "id": "44c50ec5-690b-f344-d785-e1d1305eced8",
+            "full_name": "string",
+            "email": "string",
+            "role": "string"
+          },
+          "worker": {
+            "id": "d548f639-e0e4-fba2-1136-f1c03407e4a6",
+            "full_name": "string",
+            "email": "string",
+            "role": "string"
+          },
+          "terms": "string",
+          "client_signed_at": "1978-12-08T20:01:54.868Z",
+          "worker_signed_at": "2012-10-28T20:02:59.726Z",
+          "start_date": "2020-03-11T02:21:03.383Z",
+          "end_date": "2013-09-15T23:02:37.246Z",
+          "milestones": [
+            {
+              "id": "07f21cf4-21b4-7e78-8ac6-6db06ce7914c",
+              "contract_id": "543c63a9-ee0b-895b-651c-26f3ed608635",
+              "title": "string",
+              "amount": 9507.993776351213,
+              "status": "string",
+              "created_at": "1947-12-22T14:49:03.236Z",
+              "due_date": "1992-09-15T18:24:28.809Z"
+            },
+            {
+              "id": "6c12b883-7b59-f81f-b2a1-d23bb641360f",
+              "contract_id": "a3130c62-24ee-30b5-a61b-16eb2d842c1d",
+              "title": "string",
+              "amount": 1204.3305137194693,
+              "status": "string",
+              "created_at": "1946-01-08T10:51:46.908Z",
+              "due_date": "2020-08-10T23:54:55.984Z"
+            }
+          ]
+        },
+        {
+          "id": "79ce993c-04f3-6310-ae94-157f9bc8d782",
+          "client_id": "c28a0b4c-aaac-bc73-f00d-b955e8c23ee8",
+          "worker_id": "ba28ed19-3302-883b-40ae-ff40ef028250",
+          "title": "string",
+          "scope_description": "string",
+          "rate_type": "string",
+          "rate_amount": 200.9846526198089,
+          "currency": "string",
+          "status": "string",
+          "created_at": "2006-01-14T06:28:04.818Z",
+          "updated_at": "1964-01-14T14:26:35.108Z",
+          "project_id": "f866f228-9dbd-ff02-2207-a0660a66a5e1",
+          "client": {
+            "id": "72d5f977-e051-d3bf-5384-3cf85b93baa0",
+            "full_name": "string",
+            "email": "string",
+            "role": "string"
+          },
+          "worker": {
+            "id": "3c56ab9c-c619-6fac-49da-dfa8608023b2",
+            "full_name": "string",
+            "email": "string",
+            "role": "string"
+          },
+          "terms": "string",
+          "client_signed_at": "2006-07-01T07:53:18.653Z",
+          "worker_signed_at": "1963-09-14T05:42:01.541Z",
+          "start_date": "1995-04-11T01:29:25.829Z",
+          "end_date": "1960-03-04T23:45:38.541Z",
+          "milestones": [
+            {
+              "id": "3cbe96be-bcd2-f209-d1b0-29278ed975d0",
+              "contract_id": "0d2061b9-61ee-95fb-b806-fe02d821f81c",
+              "title": "string",
+              "amount": 387.2794262133539,
+              "status": "string",
+              "created_at": "1959-02-05T22:46:52.423Z",
+              "due_date": "2020-11-08T02:33:43.856Z"
+            },
+            {
+              "id": "0140bef8-36ef-da57-6a37-c204cc782b45",
+              "contract_id": "be7be995-7300-cb2a-9b2d-1e60b8e60e63",
+              "title": "string",
+              "amount": 5139.069694560021,
+              "status": "string",
+              "created_at": "1974-02-16T17:08:29.491Z",
+              "due_date": "2010-09-20T02:59:27.087Z"
+            }
+          ]
+        }
+      ]
+order: 1000

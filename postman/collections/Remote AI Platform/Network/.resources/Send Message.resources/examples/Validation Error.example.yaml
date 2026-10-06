@@ -1,0 +1,56 @@
+$kind: http-example
+id: 1151a7dd-297d-5c69-820f-89967aaeeec3
+request:
+  url: "{{base_url}}/api/v1/conversations/:conversation_id/messages"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: conversation_id
+      value: 45ec9019-1a5a-7bf4-2e5b-11a37bba1fc7
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "content": "string"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

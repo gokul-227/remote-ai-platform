@@ -1,0 +1,48 @@
+$kind: http-example
+id: 68d51a8a-488a-53e1-936e-50d0ad924e2a
+request:
+  url: "{{base_url}}/api/v1/groups/:group_id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: group_id
+      value: 80b69851-ad86-0e76-362d-84fa05ac052b
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "7f545b76-fda9-9d46-d816-a9bf1e302d70",
+        "name": "string",
+        "slug": "string",
+        "description": "string",
+        "category": "string",
+        "tags": [
+          "string",
+          "string"
+        ],
+        "avatar_url": "string",
+        "banner_url": "string",
+        "is_private": false,
+        "is_verified": true,
+        "member_count": 5387,
+        "post_count": 7566,
+        "owner_id": "eaafda98-6fa4-5282-2875-3ac21188d4fc",
+        "created_at": "2006-09-21T10:34:42.713Z",
+        "is_member": false,
+        "my_role": "string"
+      }
+order: 1000

@@ -1,0 +1,38 @@
+$kind: http-example
+id: 98f7bb20-2dba-5229-baf7-d21fa416756d
+request:
+  url: "{{base_url}}/api/v1/auth/me"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "full_name": "string"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "email": "ein@JKjJMRaZlYpYgChQ.in",
+        "full_name": "string",
+        "id": "2686a7b9-3197-57f9-74df-2a998074594d",
+        "is_active": false,
+        "created_at": "1962-03-20T21:55:38.858Z",
+        "updated_at": "2004-01-07T15:41:26.278Z",
+        "role": "ADMIN",
+        "avatar_url": "string"
+      }
+order: 1000

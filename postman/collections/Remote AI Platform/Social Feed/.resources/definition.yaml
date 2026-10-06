@@ -1,0 +1,4 @@
+$kind: collection
+id: ac8a72ab-698e-53b4-8d53-6091891bf2f6
+description: Requests for **Social Feed**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 8000

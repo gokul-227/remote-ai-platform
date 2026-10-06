@@ -1,0 +1,4 @@
+$kind: collection
+id: 591ba54f-ba9a-5f38-858b-8d23576b9328
+description: Requests for **Applications**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 14000

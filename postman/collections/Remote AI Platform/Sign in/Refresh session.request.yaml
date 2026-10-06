@@ -1,0 +1,28 @@
+$kind: http-request
+id: 19f17fa9-df9d-5720-9b4b-cac0b241993b
+description: Replaces an expired `access_token` (they last an hour) using `refresh_token`.
+url: '{{supabase_url}}/auth/v1/token?grant_type=refresh_token'
+method: POST
+headers:
+  apikey: '{{supabase_publishable_key}}'
+  Content-Type: application/json
+queryParams:
+  - key: grant_type
+    value: refresh_token
+body:
+  type: json
+  content: |-
+    {
+      "refresh_token": "{{refresh_token}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Session refreshed", () => {
+        pm.response.to.have.status(200);
+        const session = pm.response.json();
+        pm.environment.set("access_token", session.access_token);
+        pm.environment.set("refresh_token", session.refresh_token);
+      });
+    language: text/javascript
+order: 3000

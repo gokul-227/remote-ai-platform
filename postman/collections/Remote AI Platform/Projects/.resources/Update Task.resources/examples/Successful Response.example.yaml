@@ -1,0 +1,35 @@
+$kind: http-example
+id: 207b86b2-0c25-58e0-ab58-4baa6298827c
+request:
+  url: "{{base_url}}/api/v1/projects/tasks/:task_id"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: task_id
+      value: bb63861d-4f8c-8f12-91a7-457a5ef998cc
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "status": "string",
+        "assigned_user_id": "9fb9e32a-f46e-e274-893b-8e0c95e2d25e",
+        "priority": "string",
+        "deadline": "1991-12-08T08:06:14.155Z"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

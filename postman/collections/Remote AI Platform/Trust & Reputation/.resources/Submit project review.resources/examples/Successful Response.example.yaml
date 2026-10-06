@@ -1,0 +1,45 @@
+$kind: http-example
+id: 73884f11-109f-5ca2-921a-cfc095a1bd76
+request:
+  url: "{{base_url}}/api/v1/trust/reviews"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "project_id": "a9678827-3c8d-ac74-123d-e00f250ef9ca",
+        "reviewee_id": "41dfcf0e-5635-c6e8-c4cf-58abb40809d4",
+        "rating": 2,
+        "comment": "string"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "995b435e-d59a-e92a-4fc1-ec41b47b0eb5",
+        "project_id": "e26d0217-7703-36e7-4cc1-45ec5241dc2a",
+        "reviewer_id": "b7f23564-bdf5-d3e5-4839-d621323e4f84",
+        "reviewee_id": "32e78390-93f8-3373-cca1-17278fe9d439",
+        "rating": 2655,
+        "comment": "string",
+        "created_at": "1993-02-03T23:23:42.451Z",
+        "reviewer": {
+          "id": "5f384820-53fb-ca03-2ddc-225b5a0154fb",
+          "full_name": "string",
+          "role": "string"
+        }
+      }
+order: 1000

@@ -1,0 +1,34 @@
+$kind: http-example
+id: a51ab40e-2172-5486-bc55-b87e901fbbc5
+request:
+  url: "{{base_url}}/api/v1/engineers/me/resume"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: multipart/form-data
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: formdata
+    content:
+      - type: text
+        key: file
+        value: string
+        description: "(Required) "
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "resume_url": "string",
+        "ai_parse_status": "string",
+        "message": "string"
+      }
+order: 1000

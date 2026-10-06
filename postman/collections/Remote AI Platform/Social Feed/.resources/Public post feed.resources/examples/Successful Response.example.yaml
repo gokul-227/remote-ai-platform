@@ -1,0 +1,78 @@
+$kind: http-example
+id: 9917bef1-5b4a-58d6-986a-eba30253e51c
+request:
+  url: "{{base_url}}/api/v1/social/posts/public"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: page
+      value: "1"
+      disabled: true
+    - key: page_size
+      value: "20"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "posts": [
+          {
+            "id": "42325548-9324-7b93-451e-f65a8929336b",
+            "author_id": "299c0a0b-9d9d-2508-2537-6b69ed3e6a21",
+            "content": "string",
+            "visibility": "string",
+            "like_count": 4571,
+            "comment_count": 7552,
+            "created_at": "1970-12-18T22:38:43.282Z",
+            "updated_at": "1947-08-28T08:01:57.189Z",
+            "author": {
+              "id": "4c4d3bdb-84db-82ee-3977-f5286805ba60",
+              "full_name": "string",
+              "role": "string",
+              "avatar_url": "string"
+            },
+            "image_url": "string",
+            "link_url": "string",
+            "link_preview_title": "string",
+            "liked_by_me": false
+          },
+          {
+            "id": "f6d05525-80a5-f8a5-73b0-a244e73d0d56",
+            "author_id": "66725eb9-8584-7cd0-07d7-736fdb449941",
+            "content": "string",
+            "visibility": "string",
+            "like_count": 8960,
+            "comment_count": 1874,
+            "created_at": "1980-07-04T08:14:24.370Z",
+            "updated_at": "1967-11-25T05:56:44.224Z",
+            "author": {
+              "id": "09b252d3-e075-ed37-29eb-1d8eac31d350",
+              "full_name": "string",
+              "role": "string",
+              "avatar_url": "string"
+            },
+            "image_url": "string",
+            "link_url": "string",
+            "link_preview_title": "string",
+            "liked_by_me": false
+          }
+        ],
+        "total": 7184,
+        "page": 5013,
+        "page_size": 593,
+        "has_more": false
+      }
+order: 1000

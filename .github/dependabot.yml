@@ -21,6 +21,18 @@ updates:
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
+  - package-ecosystem: npm
+    # Postman tooling for make api-sync (own lockfile, not a workspace). A
+    # converter/CLI update may change the generated collection; the Postman
+    # sync workflow regenerates it in the same PR.
+    directory: /tools
+    target-branch: dev
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 2
+    labels: [dependencies]
+    groups:
+      docs-tools:
+        patterns: ["*"]
   - package-ecosystem: pip
     directory: /apps/api
     target-branch: dev

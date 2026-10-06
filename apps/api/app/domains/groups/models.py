@@ -40,12 +40,22 @@ class Group(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    # Relationships
+    # Relationships. Memberships and posts belong to the group: deleting it
+    # deletes them (the foreign keys are ON DELETE CASCADE). Without this the
+    # ORM nulled their NOT NULL group_id first and the delete failed with 500.
     memberships: Mapped[list["GroupMembership"]] = relationship(
-        "GroupMembership", back_populates="group", lazy="select"
+        "GroupMembership",
+        back_populates="group",
+        lazy="select",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
     posts: Mapped[list["GroupPost"]] = relationship(
-        "GroupPost", back_populates="group", lazy="select"
+        "GroupPost",
+        back_populates="group",
+        lazy="select",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
 

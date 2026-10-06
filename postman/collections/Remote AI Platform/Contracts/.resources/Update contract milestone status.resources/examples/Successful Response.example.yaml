@@ -1,0 +1,44 @@
+$kind: http-example
+id: a2cb1fa2-f041-5140-acd3-c30445001cee
+request:
+  url: "{{base_url}}/api/v1/contracts/:contract_id/milestones/:milestone_id/status"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: contract_id
+      value: 90f2315c-4678-1f4b-54bd-bddb59d3ecec
+      description: "(Required) "
+    - key: milestone_id
+      value: 0197d28c-dba6-6740-5c11-c7d09fdb1bab
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "status": "IN_PROGRESS"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "34a9ffde-bebd-3675-6051-ff0a74c15cc9",
+        "contract_id": "cbf46876-693e-2a8f-ae35-c3e8451e5554",
+        "title": "string",
+        "amount": 7252.800934948027,
+        "status": "string",
+        "created_at": "1954-11-24T00:59:10.059Z",
+        "due_date": "1972-12-18T20:34:34.027Z"
+      }
+order: 1000

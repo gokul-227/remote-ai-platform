@@ -1,0 +1,94 @@
+name: Globals
+values:
+  - key: application_id
+    value: ""
+    enabled: true
+    type: default
+  - key: comment_id
+    value: ""
+    enabled: true
+    type: default
+  - key: company_id
+    value: ""
+    enabled: true
+    type: default
+  - key: connection_id
+    value: ""
+    enabled: true
+    type: default
+  - key: contract_id
+    value: ""
+    enabled: true
+    type: default
+  - key: conversation_id
+    value: ""
+    enabled: true
+    type: default
+  - key: engineer_id
+    value: ""
+    enabled: true
+    type: default
+  - key: entry_id
+    value: ""
+    enabled: true
+    type: default
+  - key: group_id
+    value: ""
+    enabled: true
+    type: default
+  - key: job_id
+    value: ""
+    enabled: true
+    type: default
+  - key: match_id
+    value: ""
+    enabled: true
+    type: default
+  - key: milestone_id
+    value: ""
+    enabled: true
+    type: default
+  - key: notification_id
+    value: ""
+    enabled: true
+    type: default
+  - key: offer_id
+    value: ""
+    enabled: true
+    type: default
+  - key: payment_id
+    value: ""
+    enabled: true
+    type: default
+  - key: post_id
+    value: ""
+    enabled: true
+    type: default
+  - key: profile_id
+    value: ""
+    enabled: true
+    type: default
+  - key: project_id
+    value: ""
+    enabled: true
+    type: default
+  - key: report_id
+    value: ""
+    enabled: true
+    type: default
+  - key: submission_id
+    value: ""
+    enabled: true
+    type: default
+  - key: task_id
+    value: ""
+    enabled: true
+    type: default
+  - key: user_id
+    value: ""
+    enabled: true
+    type: default
+  - key: verification_id
+    value: ""
+    enabled: true
+    type: default

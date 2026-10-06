@@ -1,0 +1,4 @@
+$kind: collection
+id: 34530d40-585c-5259-b4af-9521aa00ddd1
+description: Requests for **AI Matching Engine**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 7000

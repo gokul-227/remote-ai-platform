@@ -90,3 +90,8 @@ screenshot-pages/mobile/
 screenshot-pages/manifest.json
 screenshot-pages/README.md
 
+
+# ─── Postman (Native Git) ─────────────────────────────────────────────────────
+# Written by the Postman app when someone opens this folder: their own
+# workspace binding. CI writes its own at publish time.
+.postman/

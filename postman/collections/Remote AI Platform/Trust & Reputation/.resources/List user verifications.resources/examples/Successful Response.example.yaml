@@ -1,0 +1,56 @@
+$kind: http-example
+id: 05bd3054-3346-5419-8e1b-bdd1ac78cd7a
+request:
+  url: "{{base_url}}/api/v1/trust/verifications/:user_id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "50"
+      disabled: true
+  pathVariables:
+    - key: user_id
+      value: 9050d15c-9de0-098d-0765-c23c06d133d2
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "9038e48e-dad3-0dfd-94c0-50b33f8f3ff8",
+          "user_id": "0681c8f8-e657-8e99-d2fc-ec13a4eb58b5",
+          "verification_type": "string",
+          "status": "string",
+          "created_at": "1986-11-01T15:38:19.139Z",
+          "verifier_notes": "string",
+          "verified_at": "1956-07-24T21:04:03.236Z",
+          "reviewed_by_id": "43352477-04b3-e4ec-a444-cf63ebde45fd"
+        },
+        {
+          "id": "9ca15f9c-a51c-aeec-379b-eb9a347be53a",
+          "user_id": "9c5372e4-6a12-66d5-8920-93f0cacf5167",
+          "verification_type": "string",
+          "status": "string",
+          "created_at": "1960-03-14T22:44:22.726Z",
+          "verifier_notes": "string",
+          "verified_at": "2018-12-11T02:50:17.778Z",
+          "reviewed_by_id": "33ab1d32-0b0c-7890-51dd-6ea0dc61d4f3"
+        }
+      ]
+order: 1000

@@ -1,0 +1,4 @@
+$kind: collection
+id: a33e0701-deb1-5724-8de1-116c1f7172ad
+description: Requests for **Health & Operations**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 1000

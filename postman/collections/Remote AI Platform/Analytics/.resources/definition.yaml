@@ -1,0 +1,4 @@
+$kind: collection
+id: 21465a7b-c799-50e5-a8db-e8fc9f0664d8
+description: Requests for **Analytics**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 21000

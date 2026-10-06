@@ -1,0 +1,38 @@
+$kind: http-example
+id: d1c91d36-fad4-5504-afeb-a86be689be87
+request:
+  url: "{{base_url}}/api/v1/admin/ai-usage"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "total_calls": 5590,
+        "total_prompt_tokens": 774,
+        "total_completion_tokens": 7679,
+        "total_tokens": 5446,
+        "estimated_cost_usd": 2963.482332415879,
+        "model_breakdown": {
+          "key_0": 4982,
+          "key_1": 2211
+        },
+        "feature_breakdown": {
+          "key_0": 1489,
+          "key_1": 7377
+        }
+      }
+order: 1000

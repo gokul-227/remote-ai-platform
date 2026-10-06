@@ -1,0 +1,145 @@
+name: Architecture sync
+
+# Keeps docs/architecture/ (architecture.yaml -> .drawio -> .png) in step with
+# the repository. tools/architecture discovers components from manifests,
+# Settings, routers, deploy config and workflows -- whoever changed them.
+#
+# Pull requests: regenerate. If the committed artifacts are stale, either
+#   - same-repo PR: push a "docs: sync" commit to the PR branch (reviewed in
+#     the PR), then dispatch CI, CodeQL and both sync workflows for it -- a
+#     GITHUB_TOKEN push triggers no workflows, a dispatch does (a
+#     DOCS_SYNC_TOKEN secret, if set, pushes as a user and CI runs by itself);
+#   - fork PR: fail with the drift report and attach the regenerated files.
+# Pushes to dev/prod only check; nothing is ever committed to those branches.
+#
+# No loop: a sync commit regenerates to the same bytes, so the next run finds
+# no drift; and a run never commits on top of its own sync commit.
+
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "infra/**"
+      - "supabase/**"
+      - "tools/architecture/**"
+      - "docs/architecture/**"
+      - ".github/workflows/**"
+      - "README.md"
+      - "**/Dockerfile*"
+      - "**/docker-compose*"
+      - "**/*.tf"
+  push:
+    branches: [dev, prod]
+    paths:
+      - "apps/**"
+      - "infra/**"
+      - "supabase/**"
+      - "tools/architecture/**"
+      - "docs/architecture/**"
+      - ".github/workflows/**"
+      - "README.md"
+      - "**/Dockerfile*"
+      - "**/docker-compose*"
+      - "**/*.tf"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: architecture-sync-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    name: Architecture (discover, render, drift)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # push the sync commit to a same-repo PR branch
+      actions: write # dispatch the checks for that commit
+    env:
+      # Push a sync commit only for same-repo PRs, and only with a token that re-triggers CI.
+      AUTO_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+      USER_TOKEN: ${{ secrets.DOCS_SYNC_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The PR branch itself (not the merge commit) so a sync commit can go on it.
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          token: ${{ secrets.DOCS_SYNC_TOKEN || github.token }}
+          persist-credentials: ${{ github.event_name == 'pull_request' }}
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Install tooling
+        run: pip install "pyyaml==6.0.3" "pytest==9.1.1"
+
+      - name: Unit tests (discovery, model, draw.io)
+        run: python -m pytest -q -p no:cacheprovider tools/tests/test_architecture.py
+
+      - name: Regenerate architecture artifacts
+        # Renders the PNG with the digest-pinned headless draw.io image.
+        run: python -m tools.architecture sync --png always
+
+      - name: Detect drift
+        id: drift
+        run: |
+          if [ -n "$(git status --porcelain -- docs/architecture)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Architecture drift"
+              echo '```'
+              git status --short -- docs/architecture
+              git diff --stat -- docs/architecture/architecture.yaml
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Architecture artifacts are up to date." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Commit regenerated artifacts to the PR branch
+        if: steps.drift.outputs.changed == 'true' && env.AUTO_COMMIT == 'true'
+        env:
+          BRANCH: ${{ github.head_ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "$(git log -1 --format=%s)" = "docs: sync generated architecture artifacts" ]; then
+            echo "::error::Still drifting right after a sync commit -- generation is not deterministic. Not committing again."
+            exit 1
+          fi
+          git config user.name "docs-sync[bot]"
+          git config user.email "docs-sync@users.noreply.github.com"
+          git add docs/architecture
+          git commit -m "docs: sync generated architecture artifacts"
+          git fetch origin "$BRANCH" && git rebase FETCH_HEAD   # the other sync workflow may have pushed first
+          git push origin "HEAD:refs/heads/$BRANCH"
+          if [ "$USER_TOKEN" != "true" ]; then
+            # A GITHUB_TOKEN push starts no workflows: run the required checks
+            # (and both sync checks) for the new head explicitly.
+            for workflow in ci.yml codeql.yml architecture-sync.yml postman-sync.yml; do
+              gh workflow run "$workflow" --ref "$BRANCH"
+            done
+          fi
+          echo "Pushed a sync commit to $BRANCH; checks run on it." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload regenerated artifacts
+        if: steps.drift.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: architecture
+          path: docs/architecture/
+          retention-days: 7
+
+      - name: Fail on drift
+        if: steps.drift.outputs.changed == 'true' && env.AUTO_COMMIT != 'true'
+        run: |
+          git stash --quiet -- docs/architecture
+          python -m tools.architecture check || {
+            echo "::error::Architecture drift detected. Run 'make architecture-sync' (or download the 'architecture' artifact of this run) and commit docs/architecture/."
+            exit 1
+          }

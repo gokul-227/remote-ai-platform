@@ -1,0 +1,141 @@
+$kind: http-example
+id: 6e92fc49-3e27-5fd6-9358-6152b0a64005
+request:
+  url: "{{base_url}}/api/v1/engineers/me"
+  method: PUT
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "country": "string",
+        "profile_image_url": "string",
+        "headline": "string",
+        "bio": "string",
+        "location": "string",
+        "timezone": "string",
+        "availability": "string",
+        "remote_preference": "string",
+        "years_of_experience": 13,
+        "primary_role": "string",
+        "certifications": [
+          {
+            "key_0": "string",
+            "key_1": 6181
+          },
+          {
+            "key_0": 7174,
+            "key_1": "string",
+            "key_2": "string"
+          }
+        ],
+        "previous_companies": [
+          "string",
+          "string"
+        ],
+        "employment_type": "string",
+        "available_hours": 144,
+        "hourly_rate": 7476.694576907903,
+        "desired_salary_min": 9273.012357298285,
+        "languages": [
+          "string",
+          "string"
+        ],
+        "github_url": "string",
+        "linkedin_url": "string",
+        "portfolio_url": "string",
+        "skills": [
+          "string",
+          "string"
+        ],
+        "experience": [
+          {
+            "company": "string",
+            "title": "string",
+            "start_date": "string",
+            "end_date": "string",
+            "is_current": false,
+            "description": "string"
+          },
+          {
+            "company": "string",
+            "title": "string",
+            "start_date": "string",
+            "end_date": "string",
+            "is_current": false,
+            "description": "string"
+          }
+        ],
+        "projects": [
+          {
+            "title": "string",
+            "description": "string",
+            "url": "string",
+            "github_url": "string"
+          },
+          {
+            "title": "string",
+            "description": "string",
+            "url": "string",
+            "github_url": "string"
+          }
+        ],
+        "education": [
+          {
+            "institution": "string",
+            "degree": "string",
+            "field_of_study": "string",
+            "start_year": 660,
+            "end_year": 7209
+          },
+          {
+            "institution": "string",
+            "degree": "string",
+            "field_of_study": "string",
+            "start_year": 3266,
+            "end_year": 5267
+          }
+        ],
+        "is_public": false,
+        "is_open_to_work": true
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

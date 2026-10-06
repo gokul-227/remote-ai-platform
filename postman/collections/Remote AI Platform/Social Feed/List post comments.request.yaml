@@ -1,0 +1,106 @@
+$kind: http-request
+id: 1817bd4a-94aa-57c2-b5a6-268c5b0a6d00
+description: |-
+  `GET /api/v1/social/posts/{post_id}/comments`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{post_id}}` | string (uuid) | "Social Feed › Create a post" or "groups › Create Group Post" or "groups › List Group Posts" |  |
+
+  **Query parameters (optional ones are disabled until you enable them)**
+
+  | Name | Type | Required | Default | Description |
+  | --- | --- | --- | --- | --- |
+  | `page` | integer | no | `1` |  |
+  | `page_size` | integer | no | `20` |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | CommentResponse[] |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{post_id}}` — "Social Feed › Create a post" or "groups › Create Group Post" or "groups › List Group Posts"
+
+  **Sets for later requests**
+
+  - `{{comment_id}}`
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/social/posts/:post_id/comments"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: true
+  - key: page_size
+    value: "20"
+    disabled: true
+pathVariables:
+  - key: post_id
+    value: "{{post_id}}"
+    description: "(Required) "
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/social/posts/{post_id}/comments) -- edit the API or postman/overrides/, not this script.
+      if (!pm.variables.get("post_id")) {
+        console.log("Skipped: {{post_id}} is not set -- run \"Social Feed › Create a post\" or \"groups › Create Group Post\" or \"groups › List Group Posts\" first.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/social/posts/{post_id}/comments) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"type":"array","items":{"$ref":"#/definitions/CommentResponse"},"definitions":{"AuthorSummary":{"properties":{"id":{"type":"string"},"full_name":{"type":"string"},"avatar_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"role":{"type":"string"}},"type":"object","required":["id","full_name","role"]},"CommentResponse":{"properties":{"id":{"type":"string"},"post_id":{"type":"string"},"author_id":{"type":"string"},"author":{"anyOf":[{"$ref":"#/definitions/AuthorSummary"},{"type":"null"}]},"content":{"type":"string"},"created_at":{"type":"string"}},"type":"object","required":["id","post_id","author_id","content","created_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+        const body = pm.response.json();
+        const comment_id = body[0]?.id;
+        if (comment_id) pm.environment.set("comment_id", String(comment_id));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/List post comments.resources/examples
+order: 6000

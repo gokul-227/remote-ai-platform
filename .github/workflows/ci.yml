@@ -4,6 +4,9 @@ on:
   push:
     branches: [prod, dev]
   pull_request:
+  # Run by the docs-sync workflows for the commit they push to a PR branch
+  # (a GITHUB_TOKEN push does not trigger workflows; a dispatch does).
+  workflow_dispatch: {}
 
 # Least-privilege default: none of these jobs push commits, create releases,
 # or otherwise need write access to the repo -- they only check out code,

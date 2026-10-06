@@ -1,0 +1,56 @@
+$kind: http-example
+id: cf9b003b-5ab8-5d68-af1e-f7695a08fe09
+request:
+  url: "{{base_url}}/api/v1/search?q=string"
+  method: GET
+  headers:
+    Accept: application/json
+  queryParams:
+    - key: q
+      value: string
+      description: (Required) Keywords search across jobs and profiles
+    - key: is_remote
+      value: "true"
+      disabled: true
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "10"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

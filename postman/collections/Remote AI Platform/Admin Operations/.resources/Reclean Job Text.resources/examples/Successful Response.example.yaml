@@ -1,0 +1,26 @@
+$kind: http-example
+id: ec83345c-2350-510f-b3ac-4b2a1d022e46
+request:
+  url: "{{base_url}}/api/v1/admin/jobs/reclean-text"
+  method: POST
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": 397
+      }
+order: 1000

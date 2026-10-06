@@ -1,0 +1,32 @@
+$kind: collection
+id: 896b05a4-7e2b-5102-9272-1e856ac9fa7b
+description: |-
+  Run these first. They sign you in with Supabase Auth (the API's only identity
+  provider) and store your session in the environment as `access_token`, which
+  every other request sends as its bearer token.
+
+  1. Set `email` in your environment.
+  2. "Send sign-in code" emails you a code. On `local` (make postman-stack) no
+     email is sent: the code is always 123456 and already set as `otp_code`.
+  3. Put the code in `otp_code` and run "Verify code".
+  4. "Who am I" confirms the API accepts the token. Your account is created on
+     the first API call; choose a role with "Update Role" under Authentication.
+
+  You rarely need to run these by hand: every request refreshes an expiring
+  token, and on `local` (auto_sign_in) signs in by itself.
+
+  Hand-maintained in postman/overrides/Sign in/ -- the rest of the collection
+  is generated from the API (make api-sync).
+order: 100
+scripts:
+  - type: http:beforeRequest
+    code: |-
+      if (pm.variables.get("mock_run") === "true") {
+        pm.execution.skipRequest(); // the mock has no sign-in service
+      }
+      for (const name of ["supabase_url", "supabase_publishable_key", "email"]) {
+        if (!pm.environment.get(name)) {
+          throw new Error(`Set "${name}" in your Postman environment first (see the WORKSPACE-README document).`);
+        }
+      }
+    language: text/javascript

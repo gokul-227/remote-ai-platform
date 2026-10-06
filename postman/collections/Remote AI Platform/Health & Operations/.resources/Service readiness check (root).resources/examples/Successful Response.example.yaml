@@ -1,0 +1,39 @@
+$kind: http-example
+id: 4aebb06c-8a85-50ba-9263-d39839306e5b
+request:
+  url: "{{base_url}}/health/ready"
+  method: GET
+  headers:
+    Accept: application/json
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "status": "string",
+        "version": "string",
+        "environment": "string",
+        "timestamp": "string",
+        "services": {
+          "key_0": {
+            "service": "string",
+            "status": "string",
+            "latency_ms": 5259.69029404223,
+            "checked_at": "string",
+            "details": {
+              "key_0": 2895.3163232654333,
+              "key_1": 4415,
+              "key_2": "string"
+            },
+            "error": "string"
+          }
+        }
+      }
+order: 1000

@@ -1,0 +1,26 @@
+$kind: http-example
+id: 3b629b6b-edcb-5603-a11e-c7c56168491d
+request:
+  url: "{{base_url}}/api/v1/social/posts/:post_id/comments/:comment_id"
+  method: DELETE
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: post_id
+      value: 27914225-f4f0-b8a7-19e1-5d21d690b4ff
+      description: "(Required) "
+    - key: comment_id
+      value: 1a48cae5-ac3b-0767-53d1-d968ddee4e45
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 204
+  statusText: No Content
+  body:
+    type: text
+    content: ""
+order: 1000
