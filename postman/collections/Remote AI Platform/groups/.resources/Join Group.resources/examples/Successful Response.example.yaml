@@ -1,0 +1,39 @@
+$kind: http-example
+id: 89a6d2f2-4a34-50d2-825b-fd3a25dc78ef
+request:
+  url: "{{base_url}}/api/v1/groups/:group_id/join"
+  method: POST
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: group_id
+      value: 80b69851-ad86-0e76-362d-84fa05ac052b
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "68a35da9-a7b1-7502-af30-e9285f69b9dd",
+        "group_id": "f2e3bf9a-4c62-af70-8571-5fb08e59e10d",
+        "user_id": "d5c050de-d22f-4e6e-62a6-2bed175353f5",
+        "role": "string",
+        "status": "string",
+        "joined_at": "1997-03-22T15:21:37.557Z",
+        "member": {
+          "key_0": "string",
+          "key_1": 4228.873867541552
+        }
+      }
+order: 1000

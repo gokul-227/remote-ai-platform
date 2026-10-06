@@ -1,0 +1,26 @@
+$kind: http-example
+id: 5d370712-f5ec-5f0f-9ed3-ab21117b492e
+request:
+  url: "{{base_url}}/api/v1/notifications/unread-count"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": 7630.469657015055
+      }
+order: 1000

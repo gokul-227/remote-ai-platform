@@ -1,0 +1,32 @@
+$kind: http-example
+id: 590c1073-39e4-50de-8e8f-a5e07e3152c1
+request:
+  url: "{{base_url}}/api/v1/admin/jobs/:job_id/status"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: job_id
+      value: 14d1d6f9-9bb3-2d2b-c03c-96def964a9bc
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "is_active": false
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

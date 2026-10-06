@@ -1,0 +1,78 @@
+$kind: http-example
+id: 5476f1d3-4dfb-5fdb-9315-e09dab33fc70
+request:
+  url: "{{base_url}}/api/v1/engineers"
+  method: GET
+  headers:
+    Accept: application/json
+  queryParams:
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "20"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "400bebba-52c0-f270-2bf4-2308429dfc57",
+          "user_id": "7b586744-a1fd-db9f-e45b-3dd75b785c1d",
+          "created_at": "2014-12-12T19:11:22.133Z",
+          "updated_at": "1948-10-31T13:26:39.269Z",
+          "country": "string",
+          "profile_image_url": "string",
+          "headline": "string",
+          "bio": "string",
+          "location": "string",
+          "timezone": "string",
+          "availability": "string",
+          "remote_preference": "string",
+          "years_of_experience": 0,
+          "primary_role": "string",
+          "employment_type": "string",
+          "available_hours": 111,
+          "hourly_rate": 1289.6880903281271,
+          "github_url": "string",
+          "linkedin_url": "string",
+          "portfolio_url": "string",
+          "is_public": true,
+          "is_open_to_work": true,
+          "full_name": "string"
+        },
+        {
+          "id": "5c724e45-b50d-962c-29c9-79bc4fc68138",
+          "user_id": "e497b1df-b102-1f84-2a25-ea50ee85c616",
+          "created_at": "1956-10-28T04:35:21.547Z",
+          "updated_at": "2024-06-28T23:36:24.333Z",
+          "country": "string",
+          "profile_image_url": "string",
+          "headline": "string",
+          "bio": "string",
+          "location": "string",
+          "timezone": "string",
+          "availability": "string",
+          "remote_preference": "string",
+          "years_of_experience": 0,
+          "primary_role": "string",
+          "employment_type": "string",
+          "available_hours": 86,
+          "hourly_rate": 1557.0024400949478,
+          "github_url": "string",
+          "linkedin_url": "string",
+          "portfolio_url": "string",
+          "is_public": true,
+          "is_open_to_work": true,
+          "full_name": "string"
+        }
+      ]
+order: 1000

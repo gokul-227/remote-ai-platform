@@ -1,0 +1,4 @@
+$kind: collection
+id: ab1e4d23-7d74-5977-8609-52667af8dc45
+description: Requests for **Company Profiles**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 5000

@@ -1,0 +1,56 @@
+$kind: http-example
+id: f89bd991-a8c7-5686-8f88-6c0fb796bf18
+request:
+  url: "{{base_url}}/api/v1/projects/milestones/:milestone_id/status"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: milestone_id
+      value: 0197d28c-dba6-6740-5c11-c7d09fdb1bab
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "status": "TODO"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

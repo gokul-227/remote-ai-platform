@@ -1,0 +1,32 @@
+$kind: http-example
+id: 2548423a-d134-5cee-9323-bbcba01a4db7
+request:
+  url: "{{base_url}}/api/v1/projects/tasks/:task_id/offers"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: task_id
+      value: bb63861d-4f8c-8f12-91a7-457a5ef998cc
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "candidate_id": "0f463206-9337-ec33-1b37-c1156cad384e"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

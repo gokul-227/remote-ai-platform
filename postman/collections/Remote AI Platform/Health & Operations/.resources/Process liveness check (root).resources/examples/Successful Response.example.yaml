@@ -1,0 +1,25 @@
+$kind: http-example
+id: cc6a0644-c8db-5ea5-b3a0-211587f243ed
+request:
+  url: "{{base_url}}/health/live"
+  method: GET
+  headers:
+    Accept: application/json
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "version": "string",
+        "environment": "string",
+        "timestamp": "string",
+        "status": "HEALTHY"
+      }
+order: 1000

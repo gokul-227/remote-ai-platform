@@ -1,0 +1,23 @@
+$kind: http-example
+id: 8d5bb363-a8c6-5198-bf9d-2c49b3fb7f98
+request:
+  url: "{{base_url}}/api/v1/conversations/unread-count"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

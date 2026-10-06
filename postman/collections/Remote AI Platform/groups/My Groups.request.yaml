@@ -1,0 +1,78 @@
+$kind: http-request
+id: 13a7bc46-d910-587d-883c-b4e2234c3a4f
+description: |-
+  List all groups the current user is an active member of.
+
+  `GET /api/v1/groups/me/joined`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Query parameters (optional ones are disabled until you enable them)**
+
+  | Name | Type | Required | Default | Description |
+  | --- | --- | --- | --- | --- |
+  | `page` | integer | no | `1` |  |
+  | `page_size` | integer | no | `20` |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | GroupListResponse |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+url: "{{base_url}}/api/v1/groups/me/joined"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: page
+    value: "1"
+    disabled: true
+  - key: page_size
+    value: "20"
+    disabled: true
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: // Generated from OpenAPI (GET /api/v1/groups/me/joined) -- edit the API or postman/overrides/, not this script.
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/groups/me/joined) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/GroupListResponse","definitions":{"GroupListResponse":{"properties":{"groups":{"items":{"$ref":"#/definitions/GroupResponse"},"type":"array"},"total":{"type":"integer"},"page":{"type":"integer"},"page_size":{"type":"integer"}},"type":"object","required":["groups","total","page","page_size"]},"GroupResponse":{"properties":{"id":{"type":"string"},"name":{"type":"string"},"slug":{"type":"string"},"description":{"anyOf":[{"type":"string"},{"type":"null"}]},"category":{"type":"string"},"tags":{"items":{"type":"string"},"type":"array"},"avatar_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"banner_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"is_private":{"type":"boolean"},"is_verified":{"type":"boolean"},"member_count":{"type":"integer"},"post_count":{"type":"integer"},"owner_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"created_at":{"type":"string"},"is_member":{"type":"boolean"},"my_role":{"anyOf":[{"type":"string"},{"type":"null"}]}},"type":"object","required":["id","name","slug","description","category","tags","avatar_url","banner_url","is_private","is_verified","member_count","post_count","owner_id","created_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/My Groups.resources/examples
+order: 7000

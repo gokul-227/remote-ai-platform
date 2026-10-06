@@ -1,0 +1,56 @@
+$kind: http-example
+id: 9d3b4074-5c8b-5d9e-b624-d0a3680ab44a
+request:
+  url: "{{base_url}}/api/v1/admin/users"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "50"
+      disabled: true
+    - key: role
+      value: ADMIN
+      disabled: true
+      description: " (This can only be one of ENGINEER,COMPANY,ADMIN)"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "email": "njoj1MNBKbnNYJh@oVRNWDUkHepkEUJRPm.mfyi",
+          "full_name": "string",
+          "id": "197e5e8e-c043-95bd-b4d5-ac128c35b724",
+          "is_active": false,
+          "created_at": "1986-01-24T10:10:59.244Z",
+          "updated_at": "1950-01-23T00:56:01.016Z",
+          "role": "ADMIN",
+          "avatar_url": "string"
+        },
+        {
+          "email": "XbvdcNYhDpCDcq@RVq.udr",
+          "full_name": "string",
+          "id": "931b159d-b35c-bdd2-7232-05240eb8565d",
+          "is_active": false,
+          "created_at": "1947-12-14T22:55:39.541Z",
+          "updated_at": "1951-07-14T00:45:41.186Z",
+          "role": "ADMIN",
+          "avatar_url": "string"
+        }
+      ]
+order: 1000

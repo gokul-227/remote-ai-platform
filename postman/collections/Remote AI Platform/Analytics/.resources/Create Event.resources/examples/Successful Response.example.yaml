@@ -1,0 +1,43 @@
+$kind: http-example
+id: 03aa6562-8088-505d-be34-bfdaef41fa2d
+request:
+  url: "{{base_url}}/api/v1/analytics/events"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "event_name": "string",
+        "properties": {
+          "key_0": false
+        }
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "1036c6a3-2b9a-99ad-8ef9-0fdbf296f9f4",
+        "event_name": "string",
+        "user_id": "d17a2ef8-9104-3949-f8e5-31dc89b40d0c",
+        "properties": {
+          "key_0": 9373.69372928515,
+          "key_1": 8159,
+          "key_2": "string",
+          "key_3": 4070.1316320337355
+        },
+        "created_at": "1950-10-18T11:23:10.824Z"
+      }
+order: 1000

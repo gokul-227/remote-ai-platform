@@ -1,0 +1,23 @@
+$kind: http-example
+id: 9bf27a4b-4b10-5854-8fcb-c48ea287bc3a
+request:
+  url: "{{base_url}}/api/v1/groups/:group_id/leave"
+  method: POST
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: group_id
+      value: 80b69851-ad86-0e76-362d-84fa05ac052b
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 204
+  statusText: No Content
+  body:
+    type: text
+    content: ""
+order: 1000

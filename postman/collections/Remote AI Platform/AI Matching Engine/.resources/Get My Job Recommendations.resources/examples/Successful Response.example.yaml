@@ -1,0 +1,214 @@
+$kind: http-example
+id: e0ef78e3-ea22-584c-b707-87d7767c8e5d
+request:
+  url: "{{base_url}}/api/v1/matching/recommendations"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "20"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "8b2bb3da-857e-958c-7699-c0f35507821f",
+          "engineer_id": "2ac4cf7f-5123-15c9-47a7-13602a96c2fa",
+          "job_id": "406039c1-eee6-eb10-a941-65924c67d6c9",
+          "overall_score": 5100.030831526965,
+          "skill_score": 3818.0728699080646,
+          "experience_score": 5142.0297170989215,
+          "role_score": 8714.708620682359,
+          "timezone_score": 7022.523384075612,
+          "availability_score": 3889.9750891141593,
+          "compensation_score": 1983.286903705448,
+          "remote_score": 6641.581424046308,
+          "reasoning": "string",
+          "matching_skills": [
+            "string",
+            "string"
+          ],
+          "missing_skills": [
+            "string",
+            "string"
+          ],
+          "status": "string",
+          "created_at": "1994-02-11T14:44:09.138Z",
+          "updated_at": "2014-09-06T03:48:53.575Z",
+          "job": {
+            "title": "string",
+            "description": "string",
+            "id": "7a3844d4-7868-2e5d-a370-069bc664d23a",
+            "slug": "string",
+            "source": "string",
+            "is_active": false,
+            "posted_at": "1982-07-31T04:13:52.351Z",
+            "created_at": "2016-12-01T20:28:27.999Z",
+            "updated_at": "1976-01-09T10:16:03.776Z",
+            "company_name": "string",
+            "company_logo": "string",
+            "location": "string",
+            "is_remote": true,
+            "job_type": "unspecified",
+            "experience_level": "string",
+            "budget_min": 2997.985715046525,
+            "budget_max": 8116.711659822613,
+            "timeline": "string",
+            "remote_preference": "string",
+            "salary_min": 8084.100016858429,
+            "salary_max": 2387.6133444719017,
+            "salary_period": "hour",
+            "currency": "USD",
+            "external_url": "string",
+            "ai_analysis": {
+              "key_0": 1655,
+              "key_1": true
+            },
+            "company_id": "1ccc0836-b378-08ff-9ca0-2d70e1a124d3",
+            "external_id": "string",
+            "expired_at": "1966-05-07T08:28:50.987Z"
+          },
+          "engineer": {
+            "id": "cb625d69-8007-1974-ebae-eca1dcbe1226",
+            "user_id": "4d31efd4-7474-9441-91ae-cd00358034ba",
+            "created_at": "1982-07-25T12:14:31.570Z",
+            "updated_at": "2025-02-09T09:15:34.790Z",
+            "country": "string",
+            "profile_image_url": "string",
+            "headline": "string",
+            "bio": "string",
+            "location": "string",
+            "timezone": "string",
+            "availability": "string",
+            "remote_preference": "string",
+            "years_of_experience": 0,
+            "primary_role": "string",
+            "employment_type": "string",
+            "available_hours": 105,
+            "hourly_rate": 8253.438170067966,
+            "desired_salary_min": 8473.748441319913,
+            "github_url": "string",
+            "linkedin_url": "string",
+            "portfolio_url": "string",
+            "is_public": true,
+            "is_open_to_work": true,
+            "full_name": "string",
+            "resume_url": "string",
+            "parsed_resume_data": {
+              "key_0": true,
+              "key_1": "string"
+            },
+            "ai_summary": "string",
+            "profile_score": 9015.87039930746
+          }
+        },
+        {
+          "id": "17ad9d60-6250-6d6b-3887-8a260daa23d3",
+          "engineer_id": "e663208d-bbb1-9261-9b91-d42e56cde92a",
+          "job_id": "f6c9c87d-e44b-2d68-9a4a-3f01067b4935",
+          "overall_score": 4306.6755519248545,
+          "skill_score": 644.8194826953113,
+          "experience_score": 6217.556167393923,
+          "role_score": 6667.0792223885655,
+          "timezone_score": 9697.870616801083,
+          "availability_score": 5733.888112008572,
+          "compensation_score": 3665.8422858454287,
+          "remote_score": 2473.5164386220276,
+          "reasoning": "string",
+          "matching_skills": [
+            "string",
+            "string"
+          ],
+          "missing_skills": [
+            "string",
+            "string"
+          ],
+          "status": "string",
+          "created_at": "1968-11-04T17:00:10.765Z",
+          "updated_at": "1967-06-04T23:09:25.808Z",
+          "job": {
+            "title": "string",
+            "description": "string",
+            "id": "e7f445ca-bb77-c37c-3faf-2d20c13dca53",
+            "slug": "string",
+            "source": "string",
+            "is_active": true,
+            "posted_at": "1985-01-15T18:18:00.009Z",
+            "created_at": "1952-07-06T04:20:23.160Z",
+            "updated_at": "1994-05-19T02:24:31.687Z",
+            "company_name": "string",
+            "company_logo": "string",
+            "location": "string",
+            "is_remote": true,
+            "job_type": "unspecified",
+            "experience_level": "string",
+            "budget_min": 2827.420341782272,
+            "budget_max": 7469.367778394371,
+            "timeline": "string",
+            "remote_preference": "string",
+            "salary_min": 3169.9982192367315,
+            "salary_max": 9188.234873581678,
+            "salary_period": "month",
+            "currency": "USD",
+            "external_url": "string",
+            "ai_analysis": {
+              "key_0": "string",
+              "key_1": "string"
+            },
+            "company_id": "5f6d94b7-db16-ee3b-c438-c77ccd4e89c7",
+            "external_id": "string",
+            "expired_at": "1962-05-22T20:03:29.404Z"
+          },
+          "engineer": {
+            "id": "f08fabd0-ebd9-c355-bb1f-b04a69495aaa",
+            "user_id": "4fcc11f7-f657-2238-098b-1540a5c6dace",
+            "created_at": "1952-11-23T18:21:37.319Z",
+            "updated_at": "1988-11-23T03:35:05.901Z",
+            "country": "string",
+            "profile_image_url": "string",
+            "headline": "string",
+            "bio": "string",
+            "location": "string",
+            "timezone": "string",
+            "availability": "string",
+            "remote_preference": "string",
+            "years_of_experience": 0,
+            "primary_role": "string",
+            "employment_type": "string",
+            "available_hours": 166,
+            "hourly_rate": 9175.771053414792,
+            "desired_salary_min": 8457.857724279165,
+            "github_url": "string",
+            "linkedin_url": "string",
+            "portfolio_url": "string",
+            "is_public": true,
+            "is_open_to_work": true,
+            "full_name": "string",
+            "resume_url": "string",
+            "parsed_resume_data": {
+              "key_0": "string",
+              "key_1": 6767
+            },
+            "ai_summary": "string",
+            "profile_score": 3058.3894485607743
+          }
+        }
+      ]
+order: 1000

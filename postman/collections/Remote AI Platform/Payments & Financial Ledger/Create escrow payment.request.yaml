@@ -1,0 +1,101 @@
+$kind: http-request
+id: 9db496bd-0240-5a69-b17a-91b13f98a341
+description: |-
+  Authorize and hold funds in escrow for a project or task with idempotency support.
+
+  `POST /api/v1/payments/escrow`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Query parameters (optional ones are disabled until you enable them)**
+
+  | Name | Type | Required | Default | Description |
+  | --- | --- | --- | --- | --- |
+  | `idempotency_key` | string \\\| null | no |  |  |
+
+  **Request body (application/json, DirectEscrowCreate)**
+
+  | Field | Type | Required | Description |
+  | --- | --- | --- | --- |
+  | `project_id` | string (uuid) | yes |  |
+  | `task_id` | string (uuid) \\\| null | no |  |
+  | `payee_id` | string (uuid) | yes |  |
+  | `amount` | number | yes |  |
+  | `currency` | string | no |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 201 | Successful Response | PaymentTransactionResponse |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 201
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+url: "{{base_url}}/api/v1/payments/escrow"
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+queryParams:
+  - key: idempotency_key
+    value: string
+    disabled: true
+body:
+  type: json
+  content: |-
+    {
+      "project_id": "5821698d-d339-4cf9-6265-1cbc11ac164c",
+      "payee_id": "5bfddd1c-f054-7d40-aa81-166bb18a0d06",
+      "amount": 3838.3201803080738,
+      "task_id": "18a241ba-62d3-be8b-a78d-5864ba1e46e4",
+      "currency": "USD"
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/payments/escrow) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/payments/escrow) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (201)", () => {
+          pm.expect([201]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/PaymentTransactionResponse","definitions":{"PaymentPartySummary":{"properties":{"id":{"type":"string"},"full_name":{"type":"string"},"email":{"type":"string"},"role":{"type":"string"}},"type":"object","required":["id","full_name","email","role"]},"PaymentTransactionResponse":{"properties":{"id":{"type":"string"},"project_id":{"type":"string"},"task_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"payer_id":{"type":"string"},"payee_id":{"type":"string"},"payer":{"anyOf":[{"$ref":"#/definitions/PaymentPartySummary"},{"type":"null"}]},"payee":{"anyOf":[{"$ref":"#/definitions/PaymentPartySummary"},{"type":"null"}]},"amount":{"type":"number"},"currency":{"type":"string"},"status":{"type":"string"},"provider":{"type":"string"},"provider_reference":{"type":"string"},"created_at":{"type":"string"},"released_at":{"anyOf":[{"type":"string"},{"type":"null"}]},"client_secret":{"anyOf":[{"type":"string"},{"type":"null"}]}},"type":"object","required":["id","project_id","payer_id","payee_id","amount","currency","status","provider","provider_reference","created_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Create escrow payment.resources/examples
+order: 1000

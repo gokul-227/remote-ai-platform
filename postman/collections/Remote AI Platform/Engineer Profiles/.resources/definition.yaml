@@ -1,0 +1,4 @@
+$kind: collection
+id: fc39d611-42ea-55d4-be29-b6bc77149c80
+description: Requests for **Engineer Profiles**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 3000

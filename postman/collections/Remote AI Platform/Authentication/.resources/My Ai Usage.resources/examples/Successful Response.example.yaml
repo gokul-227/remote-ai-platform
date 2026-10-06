@@ -1,0 +1,26 @@
+$kind: http-example
+id: 9095dac8-c735-5509-b9e5-3908c1616154
+request:
+  url: "{{base_url}}/api/v1/auth/me/ai-usage"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": 5191
+      }
+order: 1000

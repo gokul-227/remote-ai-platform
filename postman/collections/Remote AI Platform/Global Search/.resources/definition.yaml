@@ -1,0 +1,4 @@
+$kind: collection
+id: c136a38c-529d-5480-a2a4-0244f463aa24
+description: Requests for **Global Search**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 6000

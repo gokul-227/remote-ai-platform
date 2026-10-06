@@ -1,0 +1,62 @@
+$kind: http-example
+id: e06c992d-8ab5-5ad5-b830-d51627791e0b
+request:
+  url: "{{base_url}}/api/v1/social/posts/:post_id/comments"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: page
+      value: "1"
+      disabled: true
+    - key: page_size
+      value: "20"
+      disabled: true
+  pathVariables:
+    - key: post_id
+      value: 27914225-f4f0-b8a7-19e1-5d21d690b4ff
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "5f763c5d-f972-d275-0e62-6bdb2ae03ef0",
+          "post_id": "ca4efee8-d850-f782-19fb-19768a02c5c2",
+          "author_id": "894738f2-58dc-69af-a289-d2ff63197e72",
+          "content": "string",
+          "created_at": "1984-10-20T05:46:23.702Z",
+          "author": {
+            "id": "d22cdbfa-40e7-2fe0-5229-61f9dae3ec30",
+            "full_name": "string",
+            "role": "string",
+            "avatar_url": "string"
+          }
+        },
+        {
+          "id": "ee907c27-c391-c4ee-8394-1f45661384a4",
+          "post_id": "03b1c743-bac6-c7bb-45a8-121d6d73dcd2",
+          "author_id": "3009d0ab-f2a8-00eb-04bf-5664ace3d1d0",
+          "content": "string",
+          "created_at": "2000-02-19T13:54:22.255Z",
+          "author": {
+            "id": "7e6f729c-5ae2-6ccc-f611-5124033de343",
+            "full_name": "string",
+            "role": "string",
+            "avatar_url": "string"
+          }
+        }
+      ]
+order: 1000

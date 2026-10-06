@@ -1,0 +1,52 @@
+$kind: http-example
+id: 5f634565-1dea-5b98-8087-8e40e8624a51
+request:
+  url: "{{base_url}}/api/v1/trust/verifications"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: status
+      value: REJECTED
+      disabled: true
+    - key: limit
+      value: "100"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "1788dfd2-4627-9474-6635-66b35f2565cf",
+          "user_id": "9f8585bf-ad8b-4ac9-f078-848947a2a1be",
+          "verification_type": "string",
+          "status": "string",
+          "created_at": "1961-02-11T06:24:19.322Z",
+          "verifier_notes": "string",
+          "verified_at": "1986-03-23T17:54:39.402Z",
+          "reviewed_by_id": "d2640578-e04a-3579-9b1e-e168d29d3534"
+        },
+        {
+          "id": "39e3ad25-582e-b740-04e7-d687c349c21d",
+          "user_id": "7f8c79fa-539b-20eb-c429-9625e91f3b3a",
+          "verification_type": "string",
+          "status": "string",
+          "created_at": "1972-12-10T13:17:07.284Z",
+          "verifier_notes": "string",
+          "verified_at": "1984-12-26T22:33:01.717Z",
+          "reviewed_by_id": "953fc341-2a2e-f3f8-1d33-c3eb9f823e19"
+        }
+      ]
+order: 1000

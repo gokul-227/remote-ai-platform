@@ -1,0 +1,92 @@
+$kind: http-example
+id: e6300eef-d6ed-5eb9-868d-7178c37f98e8
+request:
+  url: "{{base_url}}/api/v1/jobs"
+  method: GET
+  headers:
+    Accept: application/json
+  queryParams:
+    - key: query
+      value: string
+      disabled: true
+      description: Keywords search in title or description
+    - key: is_remote
+      value: "true"
+      disabled: true
+      description: Filter for remote jobs
+    - key: job_type
+      value: string
+      disabled: true
+      description: full-time, contract, part-time
+    - key: experience_level
+      value: string
+      disabled: true
+      description: junior, mid, senior, lead
+    - key: min_salary
+      value: "7314.978456124663"
+      disabled: true
+    - key: max_salary
+      value: "7314.978456124663"
+      disabled: true
+    - key: salary_currency
+      value: UJf
+      disabled: true
+      description: ISO currency of min/max_salary (required with them)
+    - key: salary_period
+      value: month
+      disabled: true
+      description: Period of min/max_salary (required with them)
+    - key: skills
+      value: string
+      disabled: true
+      description: Match any of these skills
+    - key: source
+      value: string
+      disabled: true
+      description: Filter by source (REMOTEOK, ARBEITNOW, etc.)
+    - key: company_id
+      value: a465afbe-c517-2e42-de25-2dc7515b8b49
+      disabled: true
+      description: Filter by company profile UUID
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "20"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

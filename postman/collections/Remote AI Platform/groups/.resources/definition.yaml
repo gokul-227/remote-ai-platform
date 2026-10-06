@@ -1,0 +1,4 @@
+$kind: collection
+id: b0027c44-9224-5dea-a138-598424a7dc18
+description: Requests for **groups**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 9000

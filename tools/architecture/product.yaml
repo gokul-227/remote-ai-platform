@@ -1,0 +1,203 @@
+# Product architecture catalog: groups what the code exposes into product
+# features (docs/architecture/product.*).
+#
+# Screens come from the web app's route registry (apps/web/src/figma/App.tsx)
+# with their navigation labels (rap_shell.tsx); API domains from the routers
+# mounted in apps/api/app/main.py; personas from UserRole; platform services
+# from the infrastructure model (architecture.yaml). Every screen and every
+# API domain must belong to exactly one feature: a new one fails the sync until
+# it is placed here. `uses` names infrastructure components or groups.
+
+title: Remote AI Platform — product architecture
+subtitle: Every feature end to end — who uses it, its screens, the API behind it and the services it relies on.
+
+personas:
+  - {id: visitor, name: Visitor, detail: "Browses public jobs and company pages", icon: concepts/globe}
+  - {id: professional, name: Professional, role: ENGINEER, detail: "Finds work, applies, delivers and gets paid", icon: concepts/user}
+  - {id: organisation, name: Organisation, role: COMPANY, detail: "Posts work, hires and runs contracts", icon: concepts/building-2}
+  - {id: admin, name: Admin, role: ADMIN, detail: "Moderates, verifies and operates the platform", icon: concepts/user-cog}
+
+# `step` places a feature on the end-to-end hiring journey.
+features:
+  - id: identity
+    icon: concepts/log-in
+    name: Sign-in & onboarding
+    step: 1
+    personas: [professional, organisation]
+    screens: [onboarding, settings, security]
+    api: [auth]
+    uses: [auth, resend]
+  - id: profiles
+    icon: concepts/user
+    name: Professional profiles
+    step: 2
+    personas: [professional, organisation]
+    screens: [profile, dash, engineer, engineers]
+    api: [engineers]
+    uses: [storage, ai-providers]
+  - id: discovery
+    icon: concepts/search
+    name: Job discovery
+    step: 3
+    personas: [visitor, professional]
+    screens: [jobs, jobdetail, saved, search, companies, company]
+    api: [jobs, saved_jobs, search]
+    uses: [job-boards, redis]
+  - id: matching
+    icon: concepts/sparkles
+    name: AI matching
+    step: 4
+    personas: [professional, organisation]
+    screens: [recs, ride]
+    api: [matching]
+    uses: [ai-providers]
+  - id: hiring
+    icon: concepts/building-2
+    name: Organisation hiring
+    personas: [organisation]
+    screens: [codash, cojobs, postjob, candidates, talent, coprofile]
+    api: [companies]
+    uses: [storage]
+  - id: applications
+    icon: concepts/briefcase
+    name: Applications
+    step: 5
+    personas: [professional, organisation]
+    screens: [applications]
+    api: [applications]
+    uses: [resend]
+  - id: messaging
+    icon: concepts/messages-square
+    name: Network & messaging
+    step: 6
+    personas: [professional, organisation]
+    screens: [network, messenger, notifications]
+    api: [network, notifications]
+    uses: [resend]
+  - id: community
+    icon: concepts/users
+    name: Community
+    personas: [professional, organisation]
+    screens: [feed, groups, group]
+    api: [social, groups]
+    uses: []
+  - id: contracts
+    icon: concepts/file-signature
+    name: Contracts & payments
+    step: 7
+    personas: [professional, organisation]
+    screens: [contracts, contractsign, earnings, copayments]
+    api: [contracts, payments]
+    uses: [stripe]
+  - id: delivery
+    icon: concepts/kanban
+    name: Projects & delivery
+    step: 8
+    personas: [professional, organisation]
+    screens: [workspace, projects, taskmarket, submissions, worklog, work]
+    api: [projects]
+    uses: [storage]
+  - id: trust
+    icon: concepts/star
+    name: Reviews, trust & quality
+    step: 9
+    personas: [professional, organisation]
+    screens: [reviews, quality]
+    api: [trust, quality]
+    uses: [ai-providers]
+  - id: admin
+    icon: concepts/shield-check
+    name: Administration & moderation
+    personas: [admin]
+    screens: [admin, adminusers, adminjobs, reports, verifications, audit, sync, aiusage, health, flags, orgs]
+    api: [admin, admin.moderation, analytics, health]
+    uses: [job-boards, ai-providers, sentry]
+  - id: help
+    icon: concepts/life-buoy
+    name: Help & legal
+    personas: [visitor, professional, organisation]
+    screens: [help, terms, privacy, impressum]
+    api: []
+    uses: []
+
+# Labels for screens that are not in the navigation (detail pages and legal).
+screen_labels:
+  earnings: Payments (professional)
+  copayments: Payments (organisation)
+  jobdetail: Job detail
+  engineer: Professional detail
+  company: Company page
+  group: Group page
+  contractsign: Sign contract
+  recs: Recommendations
+  applications: My applications
+  saved: Saved jobs
+  search: Search
+  network: People
+  messenger: Messages
+  notifications: Notifications
+  feed: Home feed
+  groups: Groups
+  jobs: Jobs
+  talent: Talent
+  work: Work
+  orgs: Organisations
+  terms: Terms
+  privacy: Privacy
+  impressum: Impressum
+
+# The technology behind the product, shown only when the repository proves it
+# is used. Rules: npm (any package.json dependency or devDependency in the
+# repo), py (apps/api runtime or dev dependency), file (glob), file_contains
+# ({glob, regex}). Icons: brand marks, or a concepts/ glyph where a tool has none.
+stack:
+  - group: Frontend (apps/web)
+    items:
+      - {name: Next.js, npm: next, icon: nextdotjs}
+      - {name: React, npm: react, icon: react}
+      - {name: TypeScript, npm: typescript, icon: typescript}
+      - {name: Tailwind CSS, npm: tailwindcss, icon: tailwindcss}
+      - {name: TanStack Query, npm: "@tanstack/react-query", icon: reactquery}
+      - {name: Zod, npm: zod, icon: zod}
+      - {name: supabase-js, npm: "@supabase/supabase-js", icon: supabase}
+      - {name: OpenNext, npm: "@opennextjs/cloudflare", icon: cloudflare}
+  - group: Backend (apps/api)
+    items:
+      - {name: Python 3.11, file: apps/api/Dockerfile, icon: python}
+      - {name: FastAPI, py: fastapi, icon: fastapi}
+      - {name: Pydantic, py: pydantic, icon: pydantic}
+      - {name: SQLAlchemy, py: sqlalchemy, icon: sqlalchemy}
+      - {name: Alembic, py: alembic, icon: concepts/database}
+      - {name: LiteLLM, py: litellm, icon: concepts/bot}
+      - {name: PyJWT (JWKS), py: pyjwt, icon: concepts/key-round}
+      - {name: boto3 (S3), py: boto3, icon: concepts/cloud}
+  - group: Quality
+    items:
+      - {name: pytest, py: pytest, icon: pytest}
+      - {name: Ruff, py: ruff, icon: ruff}
+      - {name: mypy, py: mypy, icon: python}
+      - {name: Vitest, npm: vitest, icon: vitest}
+      - {name: ESLint, npm: eslint, icon: eslint}
+      - {name: Prettier, npm: prettier, icon: prettier}
+      - {name: Playwright E2E, npm: "@playwright/test", icon: concepts/flask-conical}
+      - {name: Postman CLI, npm: postman-cli, icon: postman}
+  - group: Build & delivery
+    items:
+      - {name: GitHub, file: .github/CODEOWNERS, icon: github}
+      - {name: GitHub Actions, file: .github/workflows/ci.yml, icon: githubactions}
+      - {name: CodeQL, file: .github/workflows/codeql.yml, icon: concepts/shield-check}
+      - {name: gitleaks, file_contains: {glob: .github/workflows/ci.yml, regex: gitleaks}, icon: concepts/lock}
+      - {name: Dependabot, file: .github/dependabot.yml, icon: dependabot}
+      - {name: Docker, file: apps/api/Dockerfile, icon: docker}
+      - {name: Turborepo, file: turbo.json, icon: turborepo}
+      - {name: Wrangler, npm: wrangler, icon: cloudflare}
+  - group: Operations
+    items:
+      - {name: Infisical secrets, file_contains: {glob: README.md, regex: Infisical}, icon: concepts/key-round}
+      - {name: Scheduled job sync, file: .github/workflows/scheduled-job-sync.yml, icon: concepts/clock}
+      - {name: Canary & keep-warm, file: .github/workflows/production-canary.yml, icon: concepts/radar}
+      - {name: Prometheus /metrics, py: prometheus-fastapi-instrumentator, icon: prometheus}
+      - {name: Structured logs, py: structlog, icon: concepts/activity}
+      - {name: Backups (ops/backup), file: ops/backup/backup.sh, icon: concepts/database}
+      - {name: Docs sync (draw.io · OpenAPI · Postman), file: tools/api_docs/postman.mjs, icon: diagramsdotnet}
+

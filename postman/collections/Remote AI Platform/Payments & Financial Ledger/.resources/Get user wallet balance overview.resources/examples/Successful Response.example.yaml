@@ -1,0 +1,32 @@
+$kind: http-example
+id: 8a67c6ec-7602-56c6-8df3-138e3934c388
+request:
+  url: "{{base_url}}/api/v1/payments/wallet"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "user_id": "25fec411-bb23-1413-052c-96745210de55",
+        "escrow_held": 2998.2987930998206,
+        "total_earned": 6752.194901928306,
+        "total_spent": 2408.7807000614703,
+        "total_released": 3295.7574701867998,
+        "currency": "string",
+        "payments_enabled": false
+      }
+order: 1000
