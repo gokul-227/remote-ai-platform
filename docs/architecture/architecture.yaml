@@ -109,14 +109,6 @@ components:
     - search
     - social
     - trust
-- id: worker
-  name: Background worker
-  type: worker
-  technology: Task queue
-  group: render
-  status: active
-  evidence:
-  - infra/deploy/render.yaml ~ /type:\s*(worker|cron)/
 - id: auth
   name: Supabase Auth
   type: identity
@@ -332,9 +324,6 @@ connections:
 - from: api
   to: redis
   label: RESP
-- from: api
-  to: worker
-  label: Enqueue
 - from: api
   to: ai-providers
   label: LiteLLM
