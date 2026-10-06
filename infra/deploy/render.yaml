@@ -55,3 +55,14 @@ services:
       #   MISTRAL_API_KEY     free-tier AI keys (any subset)
       #   EMAIL_PROVIDER=resend, RESEND_API_KEY
       #   SENTRY_DSN
+
+  # Nightly cleanup of expired job posts (test for docs auto-sync).
+  - type: cron
+    name: remote-ai-platform-expire-jobs
+    runtime: docker
+    plan: free
+    schedule: "0 3 * * *"
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: ./apps/api
+    region: oregon
+    dockerCommand: python -m app.scripts.expire_jobs

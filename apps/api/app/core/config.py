@@ -138,8 +138,7 @@ class Settings(BaseSettings):
         "groq/openai/gpt-oss-20b,"
         "gemini/gemini-2.0-flash,"
         "cerebras/llama-3.3-70b,"
-        "openrouter/meta-llama/llama-3.3-70b-instruct:free,"
-        "mistral/mistral-small-latest"
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
     )
     # Upper bound for one completion across every model tried.
     AI_TOTAL_BUDGET_SECONDS: int = 45

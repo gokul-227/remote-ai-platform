@@ -131,12 +131,14 @@ async def list_public_company_jobs(
     service: JobService = Depends(get_job_service),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    oldest_first: bool = Query(False, description="Sort by posting date, oldest first"),
 ) -> list[JobPostResponse]:
     """Get public job listings for a specific company profile (no auth required)."""
+    order = JobPost.posted_at.asc() if oldest_first else JobPost.posted_at.desc()
     result = await service.repo.db.execute(
         select(JobPost)
         .where(JobPost.company_id == company_id, JobPost.is_active.is_(True), JobPost.expired_at.is_(None))
-        .order_by(JobPost.posted_at.desc())
+        .order_by(order)
         .offset(skip)
         .limit(limit)
     )
@@ -169,6 +171,28 @@ async def get_job_by_id(
     if not job.is_active and not is_admin and not await _owns_job(db, job, current_user):
         raise HTTPException(status_code=404, detail="Job post not found")
     return JobPostResponse.model_validate(job)
+
+
+@router.get("/{job_id}/similar", response_model=list[JobPostResponse])
+async def list_similar_jobs(
+    job_id: uuid.UUID,
+    service: JobService = Depends(get_job_service),
+    limit: int = Query(5, ge=1, le=20),
+) -> list[JobPostResponse]:
+    """Other open jobs with the same title (no auth required)."""
+    job = await service.get_by_id(job_id)
+    result = await service.repo.db.execute(
+        select(JobPost)
+        .where(
+            JobPost.id != job.id,
+            JobPost.title == job.title,
+            JobPost.is_active.is_(True),
+            JobPost.expired_at.is_(None),
+        )
+        .order_by(JobPost.posted_at.desc())
+        .limit(limit)
+    )
+    return [JobPostResponse.model_validate(j) for j in result.scalars().all()]
 
 
 @router.patch("/{job_id}", response_model=JobPostResponse)
