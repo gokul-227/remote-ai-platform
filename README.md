@@ -64,9 +64,12 @@ make architecture-sync / make api-sync / make docs-test
   The PNG needs draw.io desktop or Docker; otherwise the PR workflow renders it.
 - **Postman**: built with Postman's own converter and CLI, validated with `postman collection lint`, an OpenAPI
   coverage check and an environment check, and run in full against the mock and a live API in CI.
-- **CI**: `architecture-sync.yml` and `postman-sync.yml` regenerate on PRs. With a `DOCS_SYNC_TOKEN` secret they
-  commit the update to the PR branch; without it they fail with the drift and attach the regenerated files.
-  Publishing to a Postman workspace is optional (`POSTMAN_API_KEY` secret + `POSTMAN_WORKSPACE_ID` variable).
+- **CI**: on every PR, `architecture-sync.yml` and `postman-sync.yml` regenerate, commit any update to the PR
+  branch as `docs-sync[bot]` and re-run the checks on it (fork PRs fail with the drift and the regenerated files
+  attached instead). Each also keeps one PR comment up to date with what the PR changes: components and
+  connections with before/after diagrams, and endpoints added, removed or changed with the Postman requests
+  affected. Pushes to `dev`/`prod` only check. After a merge to `prod` the Postman workspace is mirrored from the
+  repository (`POSTMAN_API_KEY` secret + `POSTMAN_WORKSPACE_ID` variable).
 
 ## Use the API from Postman
 
