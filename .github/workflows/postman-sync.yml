@@ -23,6 +23,8 @@ on:
     paths:
       - "apps/api/**"
       - "tools/api_docs/**"
+      - "tools/docs_report.py"
+      - "tools/post_docs_report.sh"
       - "tools/package.json"
       - "tools/package-lock.json"
       - "docs/api/**"
@@ -35,6 +37,8 @@ on:
     paths:
       - "apps/api/**"
       - "tools/api_docs/**"
+      - "tools/docs_report.py"
+      - "tools/post_docs_report.sh"
       - "tools/package.json"
       - "tools/package-lock.json"
       - "docs/api/**"
@@ -61,6 +65,7 @@ jobs:
     permissions:
       contents: write # push the sync commit to a same-repo PR branch
       actions: write # dispatch the checks for that commit
+      pull-requests: write # the PR comment showing what changed
     env:
       AUTO_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
       USER_TOKEN: ${{ secrets.DOCS_SYNC_TOKEN != '' }}
@@ -70,6 +75,7 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           token: ${{ secrets.DOCS_SYNC_TOKEN || github.token }}
           persist-credentials: ${{ github.event_name == 'pull_request' }}
+          fetch-depth: 0 # merge base for the PR comment's before/after
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -139,6 +145,18 @@ jobs:
             done
           fi
           echo "Pushed a sync commit to $BRANCH; checks run on it." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Show the changes in the pull request
+        # One comment per kind, updated in place on every push: what changed
+        # against the base branch (whoever regenerated it -- CI or the author).
+        if: env.AUTO_COMMIT == 'true'
+        continue-on-error: true # a comment failure must not block the PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.base_ref }}
+          PYTHON: apps/api/.venv/bin/python
+        run: tools/post_docs_report.sh api
 
       - name: Upload regenerated artifacts
         if: steps.drift.outputs.changed == 'true'
