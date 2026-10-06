@@ -1,0 +1,47 @@
+$kind: http-example
+id: 338b2871-99a9-5bf9-bded-ecc9abbb866d
+request:
+  url: "{{base_url}}/api/v1/jobs/:job_id/share-link"
+  method: GET
+  headers:
+    Accept: application/json
+  pathVariables:
+    - key: job_id
+      value: 14d1d6f9-9bb3-2d2b-c03c-96def964a9bc
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

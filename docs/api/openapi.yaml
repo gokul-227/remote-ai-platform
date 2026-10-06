@@ -1258,6 +1258,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}/share-link:
+    get:
+      tags:
+      - Job Posts
+      summary: Get Job Share Link
+      description: Public link to a job posting, for sharing.
+      operationId: get_job_share_link_api_v1_jobs__job_id__share_link_get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Get Job Share Link Api V1 Jobs  Job Id  Share Link Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/jobs/sync:
     post:
       tags:

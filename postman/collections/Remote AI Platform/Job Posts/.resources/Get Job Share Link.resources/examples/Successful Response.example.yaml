@@ -1,0 +1,28 @@
+$kind: http-example
+id: 20407738-8447-5e64-ba47-91749352563c
+request:
+  url: "{{base_url}}/api/v1/jobs/:job_id/share-link"
+  method: GET
+  headers:
+    Accept: application/json
+  pathVariables:
+    - key: job_id
+      value: 14d1d6f9-9bb3-2d2b-c03c-96def964a9bc
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": "string",
+        "key_1": "string",
+        "key_2": "string"
+      }
+order: 1000
