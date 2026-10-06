@@ -1,24 +1,17 @@
 $kind: http-example
-id: 3d9fd56e-0a47-55b4-90ea-18265a9bc4be
+id: b42a0f9e-b18f-5904-9d22-a40165eda9b6
 request:
-  url: "{{base_url}}/api/v1/jobs/company/:company_id"
+  url: "{{base_url}}/api/v1/jobs/:job_id/similar"
   method: GET
   headers:
     Accept: application/json
   queryParams:
-    - key: skip
-      value: "0"
-      disabled: true
     - key: limit
-      value: "20"
+      value: "5"
       disabled: true
-    - key: oldest_first
-      value: "false"
-      disabled: true
-      description: Sort by posting date, oldest first
   pathVariables:
-    - key: company_id
-      value: 8be38624-ef0d-7b62-08b2-d33062bc1d71
+    - key: job_id
+      value: 14d1d6f9-9bb3-2d2b-c03c-96def964a9bc
       description: "(Required) "
   body:
     type: text

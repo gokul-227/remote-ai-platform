@@ -1124,6 +1124,15 @@ paths:
           minimum: 1
           default: 20
           title: Limit
+      - name: oldest_first
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Sort by posting date, oldest first
+          default: false
+          title: Oldest First
+        description: Sort by posting date, oldest first
       responses:
         '200':
           description: Successful Response
@@ -1203,6 +1212,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobPostResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}/similar:
+    get:
+      tags:
+      - Job Posts
+      summary: List Similar Jobs
+      description: Other open jobs with the same title (no auth required).
+      operationId: list_similar_jobs_api_v1_jobs__job_id__similar_get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 20
+          minimum: 1
+          default: 5
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobPostResponse'
+                title: Response List Similar Jobs Api V1 Jobs  Job Id  Similar Get
         '422':
           description: Validation Error
           content:

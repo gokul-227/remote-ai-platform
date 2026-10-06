@@ -54,6 +54,7 @@ Every request in the collection, in run order.
 | List Jobs | `GET /api/v1/jobs` | Public |  | `{{job_id}}` |
 | List Sitemap Entries | `GET /api/v1/jobs/sitemap-entries` | Public |  |  |
 | List Company Jobs | `GET /api/v1/jobs/company` | Bearer |  | `{{company_id}}` |
+| List Similar Jobs | `GET /api/v1/jobs/{job_id}/similar` | Public | `{{job_id}}` |  |
 | List Public Company Jobs | `GET /api/v1/jobs/company/{company_id}` | Public | `{{company_id}}` |  |
 | Get Job By Id | `GET /api/v1/jobs/{job_id}` | Bearer | `{{job_id}}` |  |
 | Update Job | `PATCH /api/v1/jobs/{job_id}` | Bearer | `{{job_id}}` |  |

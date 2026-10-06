@@ -1,24 +1,17 @@
 $kind: http-example
-id: 09b73623-d25c-5ddc-b8a1-53bea50edf6e
+id: 71159cf8-975f-5b67-911f-040af757d68a
 request:
-  url: "{{base_url}}/api/v1/jobs/company/:company_id"
+  url: "{{base_url}}/api/v1/jobs/:job_id/similar"
   method: GET
   headers:
     Accept: application/json
   queryParams:
-    - key: skip
-      value: "0"
-      disabled: true
     - key: limit
-      value: "20"
+      value: "5"
       disabled: true
-    - key: oldest_first
-      value: "false"
-      disabled: true
-      description: Sort by posting date, oldest first
   pathVariables:
-    - key: company_id
-      value: 8be38624-ef0d-7b62-08b2-d33062bc1d71
+    - key: job_id
+      value: 14d1d6f9-9bb3-2d2b-c03c-96def964a9bc
       description: "(Required) "
   body:
     type: text
@@ -35,68 +28,68 @@ response:
         {
           "title": "string",
           "description": "string",
-          "id": "d4047ee9-8cda-b916-39ab-cbe79b9226ff",
+          "id": "67b2e60d-9795-e321-4291-111c56980f9d",
           "slug": "string",
           "source": "string",
-          "is_active": true,
-          "posted_at": "2021-09-09T00:26:44.904Z",
-          "created_at": "1967-11-29T15:32:02.562Z",
-          "updated_at": "2004-08-30T00:15:23.446Z",
+          "is_active": false,
+          "posted_at": "1979-03-30T21:59:19.476Z",
+          "created_at": "1946-06-19T05:38:30.830Z",
+          "updated_at": "1963-03-07T19:23:56.572Z",
           "company_name": "string",
           "company_logo": "string",
           "location": "string",
           "is_remote": true,
           "job_type": "unspecified",
           "experience_level": "string",
-          "budget_min": 9203.738644719124,
-          "budget_max": 9593.019234016538,
+          "budget_min": 9733.20857156068,
+          "budget_max": 2401.4915945008397,
           "timeline": "string",
           "remote_preference": "string",
-          "salary_min": 9858.252487611026,
-          "salary_max": 5804.82488963753,
+          "salary_min": 8878.716661129147,
+          "salary_max": 4586.953800171614,
           "salary_period": "month",
           "currency": "USD",
           "external_url": "string",
           "ai_analysis": {
-            "key_0": 9061.44994776696
+            "key_0": true,
+            "key_1": "string"
           },
-          "company_id": "7a416a3f-71d7-b6eb-5111-eefe94fc5eca",
+          "company_id": "54e16484-d693-2604-281e-b89c716abbb1",
           "external_id": "string",
-          "expired_at": "2004-07-10T19:13:45.038Z"
+          "expired_at": "1966-02-24T14:54:10.947Z"
         },
         {
           "title": "string",
           "description": "string",
-          "id": "3dc552a0-992d-c3d7-50b0-cec7ffab8f63",
+          "id": "3923e52c-9b33-5442-1ae5-27dcfe3d4f65",
           "slug": "string",
           "source": "string",
           "is_active": false,
-          "posted_at": "1967-07-31T23:22:15.272Z",
-          "created_at": "2000-05-30T18:29:38.002Z",
-          "updated_at": "1952-11-30T09:05:12.452Z",
+          "posted_at": "1968-11-15T05:57:36.443Z",
+          "created_at": "1974-10-24T00:55:31.992Z",
+          "updated_at": "1989-12-24T12:48:37.559Z",
           "company_name": "string",
           "company_logo": "string",
           "location": "string",
           "is_remote": true,
           "job_type": "unspecified",
           "experience_level": "string",
-          "budget_min": 517.7724733948708,
-          "budget_max": 5128.164514899254,
+          "budget_min": 2733.7910956703126,
+          "budget_max": 1866.1465006880462,
           "timeline": "string",
           "remote_preference": "string",
-          "salary_min": 129.60168533027172,
-          "salary_max": 9407.350334804505,
+          "salary_min": 5736.921192146838,
+          "salary_max": 4790.1356080546975,
           "salary_period": "hour",
           "currency": "USD",
           "external_url": "string",
           "ai_analysis": {
-            "key_0": "string",
-            "key_1": 1129,
-            "key_2": 2418.6094594188035
+            "key_0": 2757.9619479365647,
+            "key_1": 4368.547257035971
           },
-          "company_id": "4a1803cf-dc67-88d3-6f79-e0901f6d726d",
+          "company_id": "d9bd0f4e-9a2c-32d5-b973-1e9c99f66b98",
           "external_id": "string",
-          "expired_at": "1981-02-04T20:41:00.108Z"
+          "expired_at": "2011-09-12T07:41:00.394Z"
         }
       ]
 order: 1000

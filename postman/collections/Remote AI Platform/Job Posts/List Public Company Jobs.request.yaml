@@ -19,6 +19,7 @@ description: |-
   | --- | --- | --- | --- | --- |
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `20` |  |
+  | `oldest_first` | boolean | no | `false` | Sort by posting date, oldest first |
 
   **Responses**
 
@@ -53,6 +54,10 @@ queryParams:
   - key: limit
     value: "20"
     disabled: true
+  - key: oldest_first
+    value: "false"
+    disabled: true
+    description: Sort by posting date, oldest first
 pathVariables:
   - key: company_id
     value: "{{company_id}}"
@@ -94,4 +99,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/List Public Company Jobs.resources/examples
-order: 6000
+order: 7000
