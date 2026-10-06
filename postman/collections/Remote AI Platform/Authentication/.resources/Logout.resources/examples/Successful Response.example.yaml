@@ -1,0 +1,19 @@
+$kind: http-example
+id: 7014f864-363f-54b8-a1b5-595c84bb7d00
+request:
+  url: "{{base_url}}/api/v1/auth/logout"
+  method: POST
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 204
+  statusText: No Content
+  body:
+    type: text
+    content: ""
+order: 1000

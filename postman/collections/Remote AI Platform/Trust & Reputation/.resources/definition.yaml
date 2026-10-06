@@ -1,0 +1,4 @@
+$kind: collection
+id: b432e451-a04a-52bd-a7d1-0cb26e66e3db
+description: Requests for **Trust & Reputation**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 10000

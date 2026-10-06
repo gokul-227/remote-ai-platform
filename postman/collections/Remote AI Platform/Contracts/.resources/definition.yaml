@@ -1,0 +1,4 @@
+$kind: collection
+id: 4c625601-a475-55c1-83bd-094a2bf4d104
+description: Requests for **Contracts**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 15000

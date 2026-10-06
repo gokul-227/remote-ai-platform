@@ -1,0 +1,4 @@
+$kind: collection
+id: 2a0cb7d9-5b5a-5217-a126-c8f1e499762b
+description: Requests for **Network**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 18000

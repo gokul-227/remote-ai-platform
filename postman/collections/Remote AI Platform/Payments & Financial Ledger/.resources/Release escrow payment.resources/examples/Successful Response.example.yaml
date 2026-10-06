@@ -1,0 +1,54 @@
+$kind: http-example
+id: 8db9bbca-286e-56ef-aed4-1b8663d2cd11
+request:
+  url: "{{base_url}}/api/v1/payments/:payment_id/release"
+  method: POST
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: payment_id
+      value: 5087853b-aa6f-ccf6-d303-2dda93f34b56
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "c308f2da-e2c7-c56d-2554-c99efb6a98e5",
+        "project_id": "e0a67539-b494-2b7d-7b32-51c914c6407e",
+        "payer_id": "c3b871bd-20ca-d5b8-963c-4ce9be579bda",
+        "payee_id": "b51819fb-4456-9a05-8beb-b76c7dee2500",
+        "amount": 7712.790842633694,
+        "currency": "string",
+        "status": "string",
+        "provider": "string",
+        "provider_reference": "string",
+        "created_at": "1972-08-11T06:15:32.592Z",
+        "task_id": "7fb98823-d523-a315-bdc5-122ff75543f3",
+        "payer": {
+          "id": "24aa0c17-633f-c8cc-48c9-7b0af784b5d7",
+          "full_name": "string",
+          "email": "string",
+          "role": "string"
+        },
+        "payee": {
+          "id": "d9d25e84-304c-ec02-4cbc-5c41142fc621",
+          "full_name": "string",
+          "email": "string",
+          "role": "string"
+        },
+        "released_at": "1997-06-25T01:00:42.179Z",
+        "client_secret": "string"
+      }
+order: 1000

@@ -1,0 +1,26 @@
+$kind: http-example
+id: 3b50ec27-037c-5b77-8cef-e5d3073cd6d9
+request:
+  url: "{{base_url}}/api/v1/admin/erasures/retry"
+  method: POST
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": 1016
+      }
+order: 1000

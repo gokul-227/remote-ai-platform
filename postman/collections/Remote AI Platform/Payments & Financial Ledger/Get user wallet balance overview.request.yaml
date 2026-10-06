@@ -1,0 +1,63 @@
+$kind: http-request
+id: 77a55261-6af4-5af5-a9e8-e63332cb9766
+description: |-
+  Calculate and return escrow balances, total earned, and total spent for current user.
+
+  `GET /api/v1/payments/wallet`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | WalletBalanceResponse |
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+url: "{{base_url}}/api/v1/payments/wallet"
+method: GET
+headers:
+  Accept: application/json
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: // Generated from OpenAPI (GET /api/v1/payments/wallet) -- edit the API or postman/overrides/, not this script.
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/payments/wallet) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/WalletBalanceResponse","definitions":{"CurrencyBalance":{"properties":{"currency":{"type":"string"},"escrow_held":{"type":"number"},"total_earned":{"type":"number"},"total_spent":{"type":"number"},"total_released":{"type":"number"}},"type":"object","required":["currency","escrow_held","total_earned","total_spent","total_released"]},"WalletBalanceResponse":{"properties":{"user_id":{"type":"string"},"by_currency":{"items":{"$ref":"#/definitions/CurrencyBalance"},"type":"array"},"escrow_held":{"anyOf":[{"type":"number"},{"type":"null"}]},"total_earned":{"anyOf":[{"type":"number"},{"type":"null"}]},"total_spent":{"anyOf":[{"type":"number"},{"type":"null"}]},"total_released":{"anyOf":[{"type":"number"},{"type":"null"}]},"currency":{"anyOf":[{"type":"string"},{"type":"null"}]},"payments_enabled":{"type":"boolean"}},"type":"object","required":["user_id","escrow_held","total_earned","total_spent","total_released"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Get user wallet balance overview.resources/examples
+order: 4000

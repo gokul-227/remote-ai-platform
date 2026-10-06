@@ -1,0 +1,30 @@
+$kind: http-example
+id: 2b4a60b1-6013-5952-875d-3b8c724a6bed
+request:
+  url: "{{base_url}}/api/v1/saved-jobs"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "20"
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

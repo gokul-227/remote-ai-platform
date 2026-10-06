@@ -1,0 +1,26 @@
+$kind: http-example
+id: 2baf7eec-3553-56c2-9c79-046b32c1f601
+request:
+  url: "{{base_url}}/health"
+  method: GET
+  headers:
+    Accept: application/json
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": "string",
+        "key_1": 2828,
+        "key_2": "string",
+        "key_3": true,
+        "key_4": 3431.7617071792483
+      }
+order: 1000

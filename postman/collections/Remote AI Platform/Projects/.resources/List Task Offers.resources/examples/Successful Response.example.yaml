@@ -1,0 +1,23 @@
+$kind: http-example
+id: 282310d7-7dba-5de3-a75e-9dcc67c3f166
+request:
+  url: "{{base_url}}/api/v1/projects/task-offers"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

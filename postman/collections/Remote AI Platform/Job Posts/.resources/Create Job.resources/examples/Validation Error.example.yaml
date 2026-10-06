@@ -1,0 +1,76 @@
+$kind: http-example
+id: d0f4dabe-67b4-5396-9080-95e259476e24
+request:
+  url: "{{base_url}}/api/v1/jobs"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "title": "string",
+        "description": "string",
+        "company_name": "string",
+        "company_logo": "string",
+        "location": "string",
+        "is_remote": true,
+        "job_type": "unspecified",
+        "experience_level": "string",
+        "budget_min": 33.83304923772812,
+        "budget_max": 8162.4874961562455,
+        "timeline": "string",
+        "remote_preference": "string",
+        "salary_min": 4680.053102783859,
+        "salary_max": 871.1825078353286,
+        "salary_period": "month",
+        "currency": "USD",
+        "external_url": "string",
+        "ai_analysis": {
+          "key_0": false,
+          "key_1": true,
+          "key_2": 4137.94866995886
+        },
+        "company_id": "7b891851-061a-ec46-abac-d942f3262902",
+        "external_id": "string",
+        "source": "DIRECT"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

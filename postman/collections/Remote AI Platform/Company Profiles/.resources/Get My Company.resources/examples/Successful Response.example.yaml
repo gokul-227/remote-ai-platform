@@ -1,0 +1,39 @@
+$kind: http-example
+id: f503b6de-2553-581b-9108-b08b1dde7b12
+request:
+  url: "{{base_url}}/api/v1/companies/me"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "name": "string",
+        "id": "85eeff8f-adaf-a963-06e6-cacd22af1111",
+        "user_id": "f4e61240-a166-07e5-810c-68161a9aa04f",
+        "is_verified": false,
+        "created_at": "1967-12-26T07:57:40.344Z",
+        "updated_at": "2023-11-08T12:26:41.349Z",
+        "website": "string",
+        "logo_url": "string",
+        "description": "string",
+        "industry": "string",
+        "company_size": "string",
+        "location": "string",
+        "country": "string",
+        "hiring_status": "string"
+      }
+order: 1000

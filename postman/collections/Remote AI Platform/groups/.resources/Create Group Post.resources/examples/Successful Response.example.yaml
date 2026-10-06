@@ -1,0 +1,54 @@
+$kind: http-example
+id: 1e0d9d9f-fea8-55b6-b49b-acbbd6e19d27
+request:
+  url: "{{base_url}}/api/v1/groups/:group_id/posts"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: group_id
+      value: 80b69851-ad86-0e76-362d-84fa05ac052b
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "content": "string",
+        "media_urls": [
+          "string",
+          "string"
+        ]
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "c9c75bfa-463e-e332-c619-1494fb913b27",
+        "group_id": "1d562c15-d2d1-b7d3-79cf-f8e6795ccac5",
+        "author_id": "d9731df5-b409-299a-5548-f5f539c9cf8e",
+        "content": "string",
+        "media_urls": [
+          "string",
+          "string"
+        ],
+        "like_count": 3859,
+        "comment_count": 2182,
+        "is_pinned": true,
+        "created_at": "1970-02-22T09:38:13.479Z",
+        "updated_at": "1978-08-14T13:25:23.064Z",
+        "author": {
+          "key_0": 9734.44523755461
+        }
+      }
+order: 1000

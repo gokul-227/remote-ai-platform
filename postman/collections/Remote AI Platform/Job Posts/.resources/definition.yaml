@@ -1,0 +1,4 @@
+$kind: collection
+id: 7c313c1a-6ff7-5dab-b86d-30bc97066836
+description: Requests for **Job Posts**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 4000

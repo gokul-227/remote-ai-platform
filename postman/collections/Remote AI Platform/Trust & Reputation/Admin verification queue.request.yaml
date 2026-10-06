@@ -1,0 +1,88 @@
+$kind: http-request
+id: bce2b17a-934f-5098-9855-66f48a4bad92
+description: |-
+  Verification requests awaiting (or past) admin review, oldest first.
+
+  `GET /api/v1/trust/verifications`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Query parameters (optional ones are disabled until you enable them)**
+
+  | Name | Type | Required | Default | Description |
+  | --- | --- | --- | --- | --- |
+  | `status` | string \\\| null | no | `"SELF_REPORTED"` |  |
+  | `limit` | integer | no | `100` |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | VerificationResponse[] |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Sets for later requests**
+
+  - `{{user_id}}`
+  - `{{verification_id}}`
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+url: "{{base_url}}/api/v1/trust/verifications"
+method: GET
+headers:
+  Accept: application/json
+queryParams:
+  - key: status
+    value: REJECTED
+    disabled: true
+  - key: limit
+    value: "100"
+    disabled: true
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: // Generated from OpenAPI (GET /api/v1/trust/verifications) -- edit the API or postman/overrides/, not this script.
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/trust/verifications) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"type":"array","items":{"$ref":"#/definitions/VerificationResponse"},"definitions":{"VerificationResponse":{"properties":{"id":{"type":"string"},"user_id":{"type":"string"},"verification_type":{"type":"string"},"status":{"type":"string"},"verifier_notes":{"anyOf":[{"type":"string"},{"type":"null"}]},"verified_at":{"anyOf":[{"type":"string"},{"type":"null"}]},"reviewed_by_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"created_at":{"type":"string"}},"type":"object","required":["id","user_id","verification_type","status","created_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+        const body = pm.response.json();
+        const user_id = body[0]?.id;
+        if (user_id) pm.environment.set("user_id", String(user_id));
+        const verification_id = body[0]?.id;
+        if (verification_id) pm.environment.set("verification_id", String(verification_id));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Admin verification queue.resources/examples
+order: 3000

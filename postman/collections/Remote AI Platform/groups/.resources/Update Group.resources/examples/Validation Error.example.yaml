@@ -1,0 +1,65 @@
+$kind: http-example
+id: 0e67d548-8d67-5b64-88d7-a7aff06ec310
+request:
+  url: "{{base_url}}/api/v1/groups/:group_id"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: group_id
+      value: 80b69851-ad86-0e76-362d-84fa05ac052b
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "name": "string",
+        "description": "string",
+        "category": "string",
+        "tags": [
+          "string",
+          "string"
+        ],
+        "is_private": false,
+        "avatar_url": "string",
+        "banner_url": "string"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

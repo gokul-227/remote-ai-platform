@@ -1,0 +1,4 @@
+$kind: collection
+id: cc26468a-4e97-595d-9b3e-3ede0c36a71b
+description: Requests for **quality**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 20000

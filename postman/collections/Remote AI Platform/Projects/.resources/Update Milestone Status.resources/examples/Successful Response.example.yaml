@@ -1,0 +1,32 @@
+$kind: http-example
+id: 7fe0b435-1f1e-5fe3-87d0-a1ea319179bb
+request:
+  url: "{{base_url}}/api/v1/projects/milestones/:milestone_id/status"
+  method: PATCH
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: milestone_id
+      value: 0197d28c-dba6-6740-5c11-c7d09fdb1bab
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "status": "TODO"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

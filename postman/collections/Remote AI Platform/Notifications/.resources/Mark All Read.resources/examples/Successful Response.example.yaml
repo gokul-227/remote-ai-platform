@@ -1,0 +1,19 @@
+$kind: http-example
+id: 51eace52-f90f-5dd1-8e91-b8f986e879cb
+request:
+  url: "{{base_url}}/api/v1/notifications/read-all"
+  method: PATCH
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 204
+  statusText: No Content
+  body:
+    type: text
+    content: ""
+order: 1000

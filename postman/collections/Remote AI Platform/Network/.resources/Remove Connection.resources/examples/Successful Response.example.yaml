@@ -1,0 +1,23 @@
+$kind: http-example
+id: 0727372a-929c-5468-9ef0-9c1fadaf5838
+request:
+  url: "{{base_url}}/api/v1/connections/:connection_id"
+  method: DELETE
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: connection_id
+      value: d92e81fb-2dee-df64-f87b-c3e0fab05d0b
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 204
+  statusText: No Content
+  body:
+    type: text
+    content: ""
+order: 1000

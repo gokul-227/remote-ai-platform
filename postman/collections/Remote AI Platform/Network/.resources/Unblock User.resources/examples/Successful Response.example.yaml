@@ -1,0 +1,23 @@
+$kind: http-example
+id: fa4e90f4-880f-56af-99a8-043ad6561d8d
+request:
+  url: "{{base_url}}/api/v1/blocks/:user_id"
+  method: DELETE
+  headers:
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: user_id
+      value: 9050d15c-9de0-098d-0765-c23c06d133d2
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 204
+  statusText: No Content
+  body:
+    type: text
+    content: ""
+order: 1000
