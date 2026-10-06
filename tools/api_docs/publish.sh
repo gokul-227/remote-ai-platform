@@ -47,6 +47,15 @@ mkdir -p "$STAGE"
 cp -R "$ROOT/postman" "$ROOT/.postman" "$STAGE/"
 rm -rf "$STAGE/postman/overrides" # merged into the collection; not a Postman entity
 COLLECTION=$(sed -n 's/^ *\.\.\/postman\/collections\/[^:]*: *//p' "$STAGE/.postman/resources.yaml" | head -1)
+if [ -z "$COLLECTION" ] && [ -n "${POSTMAN_API_KEY:-}" ]; then
+  # No local cloud mapping (a fresh checkout, e.g. CI): find the collection in
+  # the workspace by name, so existing items keep their cloud ids. Otherwise
+  # every item would be sent as new and Postman rejects the update (HTTP 400).
+  NAME=$(basename "$(find "$ROOT/postman/collections" -mindepth 1 -maxdepth 1 -type d | head -1)")
+  COLLECTION=$(curl -sf -H "X-Api-Key: $POSTMAN_API_KEY" \
+    "https://api.getpostman.com/workspaces/$(workspace_of "$BINDING")" |
+    NAME="$NAME" node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const c=(JSON.parse(s).workspace.collections||[]).find(c=>c.name===process.env.NAME);console.log(c?c.uid:"")})')
+fi
 node "$ROOT/tools/api_docs/stage_publish.mjs" "$STAGE" "$OWNER" "$COLLECTION"
 
 cd "$STAGE"
