@@ -195,6 +195,16 @@ async def list_similar_jobs(
     return [JobPostResponse.model_validate(j) for j in result.scalars().all()]
 
 
+@router.get("/{job_id}/share-link", response_model=dict[str, str])
+async def get_job_share_link(
+    job_id: uuid.UUID,
+    service: JobService = Depends(get_job_service),
+) -> dict[str, str]:
+    """Public link to a job posting, for sharing."""
+    job = await service.get_by_id(job_id)
+    return {"url": f"{settings.FRONTEND_URL}/#/jobs/{job.id}"}
+
+
 @router.patch("/{job_id}", response_model=JobPostResponse)
 async def update_job(
     job_id: uuid.UUID,
