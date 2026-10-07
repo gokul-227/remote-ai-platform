@@ -1,22 +1,22 @@
 name: Postman sync
 
-# FastAPI -> docs/api/openapi.yaml -> postman/collections/ (Collection v3, YAML).
-# Generated with Postman's own converter and CLI (tools/api_docs), validated
-# with `postman collection lint` plus an OpenAPI coverage check.
+# FastAPI app -> OpenAPI -> the Postman cloud collection. No Postman files live
+# in the repository: the collection exists only in the Postman workspace.
 #
-# GitHub is the source of truth for the collection:
-# - Pull requests: regenerate; on drift, same-repo PRs get a sync commit on the
-#   PR branch (then CI, CodeQL and both sync workflows are dispatched for it,
-#   since a GITHUB_TOKEN push triggers none); fork PRs fail with the drift
-#   report and the regenerated files attached. Pushes to dev/prod only check.
-# - live: start the API with local sign-in and run the whole committed
-#   collection (every request's generated tests) with the Postman CLI, plus a
-#   run against the generated mock, so what is merged demonstrably works.
-# - publish (optional; POSTMAN_API_KEY secret + POSTMAN_WORKSPACE_ID variable):
-#   mirror prod into that Postman workspace after every change and daily, so
-#   edits made only in Postman are reverted (POSTMAN_PUSH_STRATEGY, default
-#   force-sync, which also deletes what the repo no longer has -- use a
-#   workspace dedicated to this repository).
+# - openapi (PRs, pushes to dev/prod): regenerate docs/api/openapi.yaml from the
+#   app and convert it to a collection (dry run, Postman is not contacted). On
+#   drift, same-repo PRs get a sync commit on the PR branch (then CI, CodeQL and
+#   both sync workflows are dispatched for it, since a GITHUB_TOKEN push
+#   triggers none); fork PRs fail with the drift report and the regenerated
+#   spec attached. Pushes to dev/prod only check.
+# - publish (pushes to prod, manual runs on prod): rebuild the OpenAPI document
+#   from the code into a temp file and update ONE existing collection through
+#   the Postman API (tools/api_docs/postman_sync.mjs). Unchanged API -> nothing
+#   is sent. Never runs for pull requests, so forks never reach the secret.
+#
+# Configuration: secret POSTMAN_API_KEY; variable POSTMAN_COLLECTION_ID (or
+# POSTMAN_WORKSPACE_ID to find/create the collection by the API's title);
+# optional variable POSTMAN_BASE_URL for the collection's {{baseUrl}}.
 
 on:
   pull_request:
@@ -25,12 +25,11 @@ on:
       - "tools/api_docs/**"
       - "tools/docs_report.py"
       - "tools/post_docs_report.sh"
+      - "tools/tests/test_api_docs.py"
       - "tools/package.json"
       - "tools/package-lock.json"
       - "docs/api/**"
-      - "postman/**"
       - "Makefile"
-      - "tests/e2e/mock-supabase/**"
       - ".github/workflows/postman-sync.yml"
   push:
     branches: [dev, prod]
@@ -39,15 +38,12 @@ on:
       - "tools/api_docs/**"
       - "tools/docs_report.py"
       - "tools/post_docs_report.sh"
+      - "tools/tests/test_api_docs.py"
       - "tools/package.json"
       - "tools/package-lock.json"
       - "docs/api/**"
-      - "postman/**"
       - "Makefile"
-      - "tests/e2e/mock-supabase/**"
       - ".github/workflows/postman-sync.yml"
-  schedule:
-    - cron: "41 4 * * *" # daily re-mirror of prod into the Postman workspace
   workflow_dispatch: {}
 
 permissions:
@@ -58,8 +54,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sync:
-    name: OpenAPI + Postman (generate, validate, drift)
+  openapi:
+    name: OpenAPI (generate, convert, drift)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -98,43 +94,47 @@ jobs:
           npm install -g npm@12.1.0
           npm ci --prefix tools --ignore-scripts --no-audit --no-fund
 
-      - name: Pipeline tests (fixture specs through the real converter and CLI)
+      - name: Pipeline tests (export, fixture specs through the real converter)
         run: apps/api/.venv/bin/python -m pytest -q -p no:cacheprovider tools/tests/test_api_docs.py
 
-      - name: Regenerate OpenAPI and Postman collection
-        run: make api-sync
+      - name: Regenerate OpenAPI
+        run: |
+          make api-sync || { echo "::error::❌ Failed to generate the OpenAPI specification."; exit 1; }
+
+      - name: Convert to a Postman collection (dry run)
+        run: node tools/api_docs/postman_sync.mjs docs/api/openapi.yaml --dry-run
 
       - name: Detect drift
         id: drift
         run: |
-          if [ -n "$(git status --porcelain -- docs/api postman)" ]; then
+          if [ -n "$(git status --porcelain -- docs/api)" ]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
             {
-              echo "### API documentation drift"
+              echo "### OpenAPI drift"
               echo '```'
-              git status --short -- docs/api postman | head -60
+              git diff --stat -- docs/api
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "OpenAPI and Postman artifacts are up to date." >> "$GITHUB_STEP_SUMMARY"
+            echo "OpenAPI document is up to date." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Commit regenerated artifacts to the PR branch
+      - name: Commit regenerated OpenAPI to the PR branch
         if: steps.drift.outputs.changed == 'true' && env.AUTO_COMMIT == 'true'
         env:
           BRANCH: ${{ github.head_ref }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ "$(git log -1 --format=%s)" = "docs: sync generated OpenAPI and Postman artifacts" ]; then
+          if [ "$(git log -1 --format=%s)" = "docs: sync generated OpenAPI document" ]; then
             echo "::error::Still drifting right after a sync commit -- generation is not deterministic. Not committing again."
             exit 1
           fi
           git config user.name "docs-sync[bot]"
           git config user.email "docs-sync@users.noreply.github.com"
-          git add -A docs/api postman
-          git commit -m "docs: sync generated OpenAPI and Postman artifacts"
+          git add docs/api
+          git commit -m "docs: sync generated OpenAPI document"
           git fetch origin "$BRANCH" && git rebase FETCH_HEAD   # the architecture sync may have pushed first
           git push origin "HEAD:refs/heads/$BRANCH"
           if [ "$USER_TOKEN" != "true" ]; then
@@ -158,31 +158,32 @@ jobs:
           PYTHON: apps/api/.venv/bin/python
         run: tools/post_docs_report.sh api
 
-      - name: Upload regenerated artifacts
+      - name: Upload regenerated OpenAPI
         if: steps.drift.outputs.changed == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: api-docs
-          path: |
-            docs/api/
-            postman/collections/
+          name: openapi
+          path: docs/api/
           retention-days: 7
 
       - name: Fail on drift
         if: steps.drift.outputs.changed == 'true' && env.AUTO_COMMIT != 'true'
         run: |
-          git stash --quiet --include-untracked -- docs/api postman
+          git stash --quiet -- docs/api
           make api-check || {
-            echo "::error::API documentation drift detected. Run 'make api-sync' and commit docs/api/ and postman/."
+            echo "::error::❌ OpenAPI document is out of date. Run 'make api-sync' and commit docs/api/."
             exit 1
           }
 
-  live:
-    name: Whole collection against a running API (Postman CLI)
-    needs: sync
-    if: github.event_name != 'schedule'
+  publish:
+    name: Update the Postman cloud collection
+    needs: openapi
+    if: github.ref == 'refs/heads/prod' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
+    concurrency:
+      group: postman-publish
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -198,64 +199,34 @@ jobs:
           cache: "npm"
           cache-dependency-path: tools/package-lock.json
 
-      - name: Install tooling
+      - name: Install API (to import the FastAPI app) and the converter
         run: |
-          pip install "pyjwt[crypto]==2.15.1"   # mock Supabase Auth
+          pip install hatchling
+          python -m venv apps/api/.venv
+          apps/api/.venv/bin/pip install -e apps/api "pyyaml==6.0.3"
           npm install -g npm@12.1.0
           npm ci --prefix tools --ignore-scripts --no-audit --no-fund
 
-      - name: Collection against the generated mock (contract)
-        run: make postman-test-mock
-
-      - name: Start API on :8000 with local sign-in (no accounts, no secrets)
+      - name: Generate OpenAPI from the code (temporary file)
         run: |
-          cp .env.example .env
-          make postman-stack PYTHON=python3
+          apps/api/.venv/bin/python tools/api_docs/export_openapi.py "$RUNNER_TEMP/openapi.yaml" ||
+            { echo "::error::❌ Failed to generate the OpenAPI specification."; exit 1; }
 
-      - name: Whole collection against the API (environment "local")
-        run: make postman-test
-
-      - name: Stack logs on failure
-        if: failure()
-        run: |
-          docker compose -p rap-e2e -f infra/docker/docker-compose.yml -f tests/e2e/docker-compose.e2e.yml logs --tail=100 api
-          cat .cache/mock-supabase.log || true
-
-  publish:
-    name: Mirror into the Postman workspace
-    needs: sync
-    if: >
-      vars.POSTMAN_WORKSPACE_ID != '' &&
-      github.ref == 'refs/heads/prod' &&
-      (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: postman-publish
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: "22"
-          cache: "npm"
-          cache-dependency-path: tools/package-lock.json
-
-      - name: Mirror collection and environments
+      - name: Sync the collection through the Postman API
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          POSTMAN_COLLECTION_ID: ${{ vars.POSTMAN_COLLECTION_ID }}
           POSTMAN_WORKSPACE_ID: ${{ vars.POSTMAN_WORKSPACE_ID }}
-          POSTMAN_PUSH_STRATEGY: ${{ vars.POSTMAN_PUSH_STRATEGY || 'force-sync' }}
+          POSTMAN_BASE_URL: ${{ vars.POSTMAN_BASE_URL }}
         run: |
           set -euo pipefail
           if [ -z "$POSTMAN_API_KEY" ]; then
-            echo "::notice::POSTMAN_API_KEY is not set; skipping the Postman publish."
+            echo "::notice::POSTMAN_API_KEY is not set; skipping the Postman sync."
             exit 0
           fi
-          npm install -g npm@12.1.0
-          npm ci --prefix tools --ignore-scripts --no-audit --no-fund
-          tools/api_docs/publish.sh | tee publish.log
-          { echo "### Postman workspace mirrored from prod"; echo '```'; tail -40 publish.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          node tools/api_docs/postman_sync.mjs "$RUNNER_TEMP/openapi.yaml" | tee "$RUNNER_TEMP/postman.log"
+          { echo "### Postman collection"; echo '```'; cat "$RUNNER_TEMP/postman.log"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the temporary OpenAPI document
+        if: always()
+        run: rm -f "$RUNNER_TEMP/openapi.yaml" "$RUNNER_TEMP/postman.log"

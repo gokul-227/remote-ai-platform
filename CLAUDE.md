@@ -38,9 +38,10 @@ npm run dev / npm run build / npm run lint / npx tsc --noEmit / npm test
 # E2E (see README): mock Supabase + docker-compose.e2e.yml, then
 cd tests/e2e && npx playwright test
 
-# Generated docs (never hand-edit docs/architecture, docs/api, postman/collections)
-make docs-sync      # architecture diagram + OpenAPI + Postman v3 collection
+# Generated docs (never hand-edit docs/architecture, docs/api)
+make docs-sync      # architecture diagram + OpenAPI
 make docs-check     # CI's drift check
+make postman-sync DRY_RUN=1   # OpenAPI -> Postman collection; CI pushes it to the Postman cloud from prod
 ```
 
 ## Architecture, in one paragraph

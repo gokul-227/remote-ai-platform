@@ -1,4 +1,0 @@
-$kind: collection
-id: 1b0e8664-00e0-5eb4-84ac-12056d6e18c7
-description: Requests for **Projects**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
-order: 16000

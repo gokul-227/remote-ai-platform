@@ -44,74 +44,61 @@ from the web app's routes, the API's routers and the user roles:
 
 ## Generated documentation
 
-The architecture diagram, the OpenAPI document and the Postman collection are generated from the code
-and checked in CI; **do not edit them by hand**.
+The architecture diagrams and the OpenAPI document are generated from the code and checked in CI; **do not
+edit them by hand**. The Postman collection is not in the repository at all: CI builds it from the code and
+updates it in the Postman cloud workspace.
 
 ```text
 Code / infrastructure → tools/architecture (catalog rules) → architecture.yaml → .drawio → .png
-FastAPI app           → docs/api/openapi.yaml → Postman Collection v3 (YAML) in postman/collections/
+FastAPI app           → OpenAPI (docs/api/openapi.yaml)    → Postman cloud collection (via the Postman API)
 ```
 
 ```bash
-make docs-sync      # regenerate everything (needs apps/api/.venv and Node 22+)
+make docs-sync      # regenerate everything (needs apps/api/.venv; the PNG needs draw.io or Docker)
 make docs-check     # what CI runs: fail if anything is stale
 make architecture-sync / make api-sync / make docs-test
 ```
 
-- **Architecture**: components come only from repository evidence (manifests, Settings, routers, aggregators,
-  deploy config, workflows). Evidence the rules don't recognise — a new dependency, AI provider, job board
-  or external-service setting — fails the sync until it is classified in `tools/architecture/catalog.yaml`.
-  The PNG needs draw.io desktop or Docker; otherwise the PR workflow renders it.
-- **Postman**: built with Postman's own converter and CLI, validated with `postman collection lint`, an OpenAPI
-  coverage check and an environment check, and run in full against the mock and a live API in CI.
-- **CI**: on every PR, `architecture-sync.yml` and `postman-sync.yml` regenerate, commit any update to the PR
-  branch as `docs-sync[bot]` and re-run the checks on it (fork PRs fail with the drift and the regenerated files
-  attached instead). Each also keeps one PR comment up to date with what the PR changes: components and
-  connections with before/after diagrams, and endpoints added, removed or changed with the Postman requests
-  affected. Pushes to `dev`/`prod` only check. After a merge to `prod` the Postman workspace is mirrored from the
-  repository (`POSTMAN_API_KEY` secret + `POSTMAN_WORKSPACE_ID` variable).
+**Architecture.** Source of truth: the code, infrastructure and workflows, read by `tools/architecture` with
+the rules in `tools/architecture/catalog.yaml` and `product.yaml` (the only files to edit by hand).
+Everything in `docs/architecture/` is generated: `*.yaml` (the machine-readable model, with evidence paths)
+→ `*.drawio` → `*.png`. Generation is deterministic, so a second `make architecture-sync` changes nothing.
+Evidence the rules don't recognise (a new dependency, AI provider, job board or external-service setting)
+fails the sync until it is classified in `catalog.yaml`.
 
-## Use the API from Postman
+**CI** (`architecture-sync.yml`, `postman-sync.yml`) regenerates on every PR that touches the code. On a
+same-repo PR, any update is committed to the PR branch as `docs-sync[bot]` and the checks re-run on it. A run
+never commits twice in a row, so it can't loop. Fork PRs fail with the drift and the regenerated files
+attached: run `make architecture-sync` (or `make api-sync`) and commit. Each workflow keeps one PR comment
+up to date showing what changed. Pushes to `dev`/`prod` only check.
 
-GitHub is the source of truth: everything in `postman/` is generated from the API (or hand-written in
-`postman/overrides/` and `postman/environments/`) and travels with every clone. Change those, never a cloud
-copy — CI flags hand edits to generated files as drift, and edits made only in a Postman workspace are
-overwritten by the next mirror.
+## Postman (cloud only)
 
-| Folder | What it is |
-| --- | --- |
-| `collections/Remote AI Platform` | every endpoint, with documentation, variables, auth, params, body and tests |
-| `environments/` | `local`, `dev`, `prod` — tokens are never committed |
-| `globals/` | the id variables requests pass to each other |
-| `specs/` | the OpenAPI document the collection is generated from |
-| `mocks/` | a mock server generated from the spec (`postman mock run postman/mocks/remote-ai-platform/config.yaml`) |
-| `documents/` | workspace docs: README, API reference, request dependencies, testing |
-| `flows/` | Postman Flows for the main journeys (health check, professional applies, organisation hires); blocks point at request files by path, so they work in any clone |
-| `overrides/` | hand-written: extra tests and guards per request, and the *Sign in* folder |
+On every push to `prod` that touches the API (and on a manual run of **Postman sync** on `prod`), CI exports
+OpenAPI from the FastAPI app into a temporary file, converts it with Postman's official converter, and
+updates **one** collection through the Postman API. The update replaces the collection's requests; edits
+made only in Postman are overwritten. The collection stores the hash of what it was built from
+(`openapi_sha256`), so an unchanged API sends nothing. Pull requests only do a dry-run conversion; they
+never get the key.
 
-**Open it:** Postman 12+ → **Files** → **Open folder** → this repository, then pick an environment:
+Configure it under **Settings → Secrets and variables → Actions**:
 
-- `local` — `make postman-stack` runs the API on :8000 with a local sign-in service (code always `123456`);
-  requests sign in by themselves.
-- `dev` — set `email`, `supabase_url`, `supabase_publishable_key` (from Infisical / your `.env`) as current
-  values, then run **Sign in**.
-- `prod` — the same, but read-only: requests that change data are skipped (`allow_writes` is `false`).
+| Name | Kind | Value |
+| --- | --- | --- |
+| `POSTMAN_API_KEY` | secret | a Postman API key whose user can edit the workspace |
+| `POSTMAN_COLLECTION_ID` | variable | the collection's uid (Postman → collection → Info). Pins the target |
+| `POSTMAN_WORKSPACE_ID` | variable | alternative to the above: the collection named like the API's title is found there, or created on the first run (the log prints its uid; set it as `POSTMAN_COLLECTION_ID`) |
+| `POSTMAN_BASE_URL` | variable, optional | the collection's `{{baseUrl}}` (default `http://localhost:8000`) |
 
-Every request documents what it needs, which earlier request provides it, and what it tests. Ids are passed
-along automatically, tokens refresh themselves, and session-ending requests only run when
-`allow_destructive` is `true`.
+Without `POSTMAN_API_KEY` the job is skipped with a notice.
 
-**Test from a terminal** (Postman CLI — what CI runs on every API change):
+Locally: `make postman-sync DRY_RUN=1` converts without contacting Postman. With the variables above set in
+your shell, `make postman-sync` updates the collection.
 
-```bash
-make postman-test-mock                      # whole collection against the generated mock, no Docker
-make postman-stack && make postman-test     # whole collection against the real API (ENV=dev|prod also work)
-make postman-stack-down
-```
-
-To work in a cloud workspace instead, mirror the repo into one dedicated to it:
-`POSTMAN_API_KEY=… POSTMAN_WORKSPACE_ID=… make postman-push` (or set those as a repository secret and variable
-and CI mirrors `prod` after every change and daily).
+Troubleshooting: *authentication failed* → the key is wrong or expired, or its user can't edit the
+workspace. *could not be read* → `POSTMAN_COLLECTION_ID` is wrong. *N collections named …* → delete the
+duplicates or pin `POSTMAN_COLLECTION_ID`. *Failed to generate/convert the OpenAPI specification* → run
+`make postman-sync DRY_RUN=1` locally.
 
 ## Local development
 

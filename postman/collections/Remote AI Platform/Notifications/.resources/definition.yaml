@@ -1,4 +1,0 @@
-$kind: collection
-id: e280729b-384a-5c81-8c6a-b482c47bd82b
-description: Requests for **Notifications**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
-order: 17000
