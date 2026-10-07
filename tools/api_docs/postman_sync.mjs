@@ -6,7 +6,8 @@
 //
 // Converts with Postman's own converter (openapi-to-postmanv2), then through the
 // Postman API (https://api.getpostman.com):
-//   POSTMAN_COLLECTION_ID set  -> update that collection
+//   POSTMAN_COLLECTION_ID set  -> update that collection (if it was deleted,
+//                                 fall back to the workspace below)
 //   else POSTMAN_WORKSPACE_ID  -> update the collection named like the API in
 //                                 that workspace, or create it once (first run)
 // The converted collection's hash is stored as the collection variable
@@ -155,21 +156,35 @@ async function main() {
   }
 
   const workspaceId = process.env.POSTMAN_WORKSPACE_ID;
-  let uid = process.env.POSTMAN_COLLECTION_ID || (workspaceId && (await findCollection(workspaceId, name)));
-  if (!uid && !workspaceId) fail("Set the POSTMAN_COLLECTION_ID or POSTMAN_WORKSPACE_ID repository variable.");
+  if (!process.env.POSTMAN_COLLECTION_ID && !workspaceId) fail("Set the POSTMAN_WORKSPACE_ID (or POSTMAN_COLLECTION_ID) repository variable.");
+
+  // A pinned collection that was deleted is not an error: fall back to the
+  // workspace (find by name, or create), so nobody has to edit variables.
+  let current;
+  let uid = process.env.POSTMAN_COLLECTION_ID;
+  if (uid) {
+    current = await postman("GET", `/collections/${encodeURIComponent(uid)}`);
+    if (!current.ok && current.status !== 404) {
+      fail(`Postman collection ${uid} could not be read (HTTP ${current.status}): ${current.error}`);
+    }
+    if (!current.ok) {
+      if (!workspaceId) fail(`Postman collection ${uid} no longer exists. Set POSTMAN_WORKSPACE_ID so it can be recreated.`);
+      console.log(`Collection ${uid} no longer exists; using workspace ${workspaceId}.`);
+      uid = undefined;
+    }
+  }
+  if (!uid) {
+    uid = await findCollection(workspaceId, name);
+    if (uid) current = await postman("GET", `/collections/${encodeURIComponent(uid)}`);
+  }
 
   if (!uid) {
     const res = await postman("POST", `/collections?workspace=${encodeURIComponent(workspaceId)}`, { collection });
     if (!res.ok) fail(`Postman collection synchronization failed: could not create it (HTTP ${res.status}): ${res.error}`);
-    uid = res.data.collection.uid;
-    console.log(`✅ Created collection "${name}" (${uid}). Set the POSTMAN_COLLECTION_ID variable to ${uid} to pin it.`);
+    console.log(`✅ Created collection "${name}" (${res.data.collection.uid}) in workspace ${workspaceId}; later runs update it.`);
     return;
   }
-
-  const current = await postman("GET", `/collections/${encodeURIComponent(uid)}`);
-  if (!current.ok) {
-    fail(`Postman collection ${uid} could not be read (HTTP ${current.status}). Check POSTMAN_COLLECTION_ID: ${current.error}`);
-  }
+  if (!current.ok) fail(`Postman collection ${uid} could not be read (HTTP ${current.status}): ${current.error}`);
   const stored = (current.data.collection.variable || []).find((v) => v.key === HASH_VAR)?.value;
   if (stored === hash) {
     console.log(`✅ Collection ${uid} is already up to date; nothing sent.`);

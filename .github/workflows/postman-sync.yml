@@ -216,7 +216,8 @@ jobs:
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
           POSTMAN_COLLECTION_ID: ${{ vars.POSTMAN_COLLECTION_ID }}
-          POSTMAN_WORKSPACE_ID: ${{ vars.POSTMAN_WORKSPACE_ID }}
+          # Personal_WorkSpace by default; not secret. A variable overrides it.
+          POSTMAN_WORKSPACE_ID: ${{ vars.POSTMAN_WORKSPACE_ID || '76e556cc-1a09-48ea-b854-2cfae1c5468f' }}
           POSTMAN_BASE_URL: ${{ vars.POSTMAN_BASE_URL }}
         run: |
           set -euo pipefail

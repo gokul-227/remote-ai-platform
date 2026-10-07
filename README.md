@@ -86,17 +86,19 @@ Configure it under **Settings → Secrets and variables → Actions**:
 | Name | Kind | Value |
 | --- | --- | --- |
 | `POSTMAN_API_KEY` | secret | a Postman API key whose user can edit the workspace |
-| `POSTMAN_COLLECTION_ID` | variable | the collection's uid (Postman → collection → Info). Pins the target |
-| `POSTMAN_WORKSPACE_ID` | variable | alternative to the above: the collection named like the API's title is found there, or created on the first run (the log prints its uid; set it as `POSTMAN_COLLECTION_ID`) |
+| `POSTMAN_WORKSPACE_ID` | variable, optional | the workspace holding the collection (defaults to the one set in `postman-sync.yml`) |
+| `POSTMAN_COLLECTION_ID` | variable, optional | pin one collection's uid; if it is ever deleted, the sync falls back to the workspace |
 | `POSTMAN_BASE_URL` | variable, optional | the collection's `{{baseUrl}}` (default `http://localhost:8000`) |
 
+The first run creates the "Remote AI Platform" collection in the workspace. Every later run finds it by name and
+updates it. If someone deletes it, the next run creates it again; no variable has to change.
 Without `POSTMAN_API_KEY` the job is skipped with a notice.
 
 Locally: `make postman-sync DRY_RUN=1` converts without contacting Postman. With the variables above set in
 your shell, `make postman-sync` updates the collection.
 
 Troubleshooting: *authentication failed* → the key is wrong or expired, or its user can't edit the
-workspace. *could not be read* → `POSTMAN_COLLECTION_ID` is wrong. *N collections named …* → delete the
+workspace. *N collections named …* → delete the
 duplicates or pin `POSTMAN_COLLECTION_ID`. *Failed to generate/convert the OpenAPI specification* → run
 `make postman-sync DRY_RUN=1` locally.
 
