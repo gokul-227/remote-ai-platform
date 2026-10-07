@@ -690,9 +690,9 @@ stack:
   - name: Playwright E2E
     icon: concepts/flask-conical
     evidence: 'package.json: @playwright/test'
-  - name: Postman CLI
+  - name: Postman (OpenAPI converter)
     icon: postman
-    evidence: 'package.json: postman-cli'
+    evidence: 'package.json: openapi-to-postmanv2'
 - group: Build & delivery
   items:
   - name: GitHub
@@ -739,9 +739,9 @@ stack:
   - name: Backups (ops/backup)
     icon: concepts/database
     evidence: ops/backup/backup.sh
-  - name: Docs sync (draw.io · OpenAPI · Postman)
+  - name: Docs sync (draw.io · OpenAPI · Postman cloud)
     icon: diagramsdotnet
-    evidence: tools/api_docs/postman.mjs
+    evidence: tools/api_docs/postman_sync.mjs
 evidence:
 - apps/web/src/figma/App.tsx
 - apps/web/src/figma/rap_shell.tsx

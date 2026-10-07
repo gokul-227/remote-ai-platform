@@ -1,4 +1,6 @@
-# Generated documentation: architecture diagram, OpenAPI and the Postman collection.
+# Generated documentation: architecture diagram and OpenAPI. The Postman
+# collection is not kept in the repository; `make postman-sync` (and CI on prod)
+# builds it from the code and updates the Postman cloud collection.
 #
 #   make docs-sync    regenerate everything (what CI checks)
 #   make docs-check   fail if any generated artifact is stale
@@ -10,7 +12,7 @@ PYTHON ?= $(if $(wildcard apps/api/.venv/bin/python),apps/api/.venv/bin/python,p
 NODE_TOOLS := tools/node_modules/.package-lock.json
 
 .PHONY: docs-sync docs-check architecture-sync architecture-check api-sync api-check docs-test \
-	postman-stack postman-stack-down postman-test postman-test-mock postman-push
+	postman-sync
 
 docs-sync: architecture-sync api-sync
 
@@ -22,42 +24,23 @@ architecture-sync:
 architecture-check:
 	$(PYTHON) -m tools.architecture check
 
-api-sync: $(NODE_TOOLS)
+api-sync:
 	$(PYTHON) tools/api_docs/export_openapi.py
-	node tools/api_docs/postman.mjs
 
-api-check: $(NODE_TOOLS)
+api-check:
 	$(PYTHON) tools/api_docs/export_openapi.py --check
-	node tools/api_docs/postman.mjs --check
 
 docs-test: $(NODE_TOOLS)
 	$(PYTHON) -m pytest -q -p no:cacheprovider tools/tests
 
-# ── Using the API from Postman (see README) ──────────────────────────────────
+# ── Postman cloud collection (see README) ────────────────────────────────────
 
-postman-stack:                  ## API on :8000 + local sign-in (code 123456), needs Docker
-	PYTHON=$(PYTHON) tools/api_docs/stack.sh up
+# OpenAPI straight from the code -> one Postman collection. Without
+# POSTMAN_API_KEY (or with DRY_RUN=1) it only converts and validates.
+postman-sync: $(NODE_TOOLS)
+	$(PYTHON) tools/api_docs/export_openapi.py .cache/openapi.yaml
+	node tools/api_docs/postman_sync.mjs .cache/openapi.yaml $(if $(DRY_RUN),--dry-run)
 
-postman-stack-down:
-	tools/api_docs/stack.sh down
-
-postman-test: $(NODE_TOOLS)     ## run the whole collection (ENV=local|dev|prod, default local)
-	tools/node_modules/.bin/postman collection run "postman/collections/Remote AI Platform" \
-		--environment postman/environments/$(or $(ENV),local).environment.yaml \
-		--globals postman/globals/workspace.globals.yaml \
-		--no-report-events --disable-unicode
-
-postman-test-mock: $(NODE_TOOLS) ## run the whole collection against the generated mock (no Docker)
-	tools/node_modules/.bin/postman collection run "postman/collections/Remote AI Platform" \
-		--environment postman/environments/local.environment.yaml \
-		--globals postman/globals/workspace.globals.yaml \
-		--use-mock "{{base_url}} mock:./postman/mocks/remote-ai-platform" \
-		--env-var mock_run=true --env-var auto_sign_in=false \
-		--no-report-events --disable-unicode
-
-postman-push: $(NODE_TOOLS)     ## mirror the repo into your Postman workspace
-	tools/api_docs/publish.sh
-
-# Pinned official Postman tooling; install scripts stay off (see tools/.npmrc).
+# Pinned official Postman converter; install scripts stay off (see tools/.npmrc).
 $(NODE_TOOLS): tools/package.json tools/package-lock.json
 	npm ci --prefix tools --ignore-scripts --no-audit --no-fund

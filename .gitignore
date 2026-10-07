@@ -91,7 +91,10 @@ screenshot-pages/manifest.json
 screenshot-pages/README.md
 
 
-# ─── Postman (Native Git) ─────────────────────────────────────────────────────
-# Written by the Postman app when someone opens this folder: their own
-# workspace binding. CI writes its own at publish time.
+# ─── Postman ──────────────────────────────────────────────────────────────────
+# The collection lives only in the Postman cloud workspace; never commit
+# Postman exports or the Postman app's folder binding.
 .postman/
+postman/
+*.postman_collection.json
+*.postman_environment.json

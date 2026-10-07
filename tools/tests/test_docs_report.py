@@ -12,7 +12,6 @@ import yaml
 from tools.docs_report import MARKERS, api_report, architecture_report, operation_changes
 
 REPO = "owner/repo"
-REQUESTS = "postman/collections/Remote AI Platform/Job Posts"
 
 
 def component(cid: str, name: str, **extra: str) -> dict[str, str]:
@@ -63,8 +62,6 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     write(tmp_path, "docs/architecture/architecture.yaml", ARCH)
     write(tmp_path, "docs/architecture/architecture.png", "png v1")
     write(tmp_path, "docs/api/openapi.yaml", SPEC)
-    write(tmp_path, f"{REQUESTS}/List Public Company Jobs.request.yaml", "v1")
-    write(tmp_path, f"{REQUESTS}/Legacy.request.yaml", "v1")
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -120,9 +117,6 @@ def test_api_added_removed_and_changed_endpoints(repo: Path) -> None:
     }
     spec["components"]["schemas"]["Notification"] = {"type": "object"}
     write(repo, "docs/api/openapi.yaml", spec)
-    (repo / REQUESTS / "Legacy.request.yaml").unlink()
-    write(repo, f"{REQUESTS}/List Public Company Jobs.request.yaml", "v2")
-    write(repo, "postman/collections/Remote AI Platform/Notifications/Create Notification.request.yaml", "v1")
     head = commit(repo)
 
     report = api_report(base, head, REPO)
@@ -131,11 +125,6 @@ def test_api_added_removed_and_changed_endpoints(repo: Path) -> None:
     assert "| ➖ | `DELETE /legacy` | removed — Legacy |" in report
     assert "query parameter `oldest_first` added; authorization changed" in report
     assert "`Notification` added" in report
-    assert "added: [Notifications › Create Notification]" in report
-    assert "removed: [Job Posts › Legacy]" in report
-    assert "updated: [Job Posts › List Public Company Jobs]" in report
-    # A removed request links to the base commit, where it still exists.
-    assert f"blob/{base}/postman/collections/Remote%20AI%20Platform/Job%20Posts/Legacy.request.yaml" in report
 
 
 def test_operation_changes_body_and_responses() -> None:

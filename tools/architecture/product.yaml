@@ -180,7 +180,7 @@ stack:
       - {name: ESLint, npm: eslint, icon: eslint}
       - {name: Prettier, npm: prettier, icon: prettier}
       - {name: Playwright E2E, npm: "@playwright/test", icon: concepts/flask-conical}
-      - {name: Postman CLI, npm: postman-cli, icon: postman}
+      - {name: Postman (OpenAPI converter), npm: openapi-to-postmanv2, icon: postman}
   - group: Build & delivery
     items:
       - {name: GitHub, file: .github/CODEOWNERS, icon: github}
@@ -199,5 +199,5 @@ stack:
       - {name: Prometheus /metrics, py: prometheus-fastapi-instrumentator, icon: prometheus}
       - {name: Structured logs, py: structlog, icon: concepts/activity}
       - {name: Backups (ops/backup), file: ops/backup/backup.sh, icon: concepts/database}
-      - {name: Docs sync (draw.io · OpenAPI · Postman), file: tools/api_docs/postman.mjs, icon: diagramsdotnet}
+      - {name: Docs sync (draw.io · OpenAPI · Postman cloud), file: tools/api_docs/postman_sync.mjs, icon: diagramsdotnet}
 

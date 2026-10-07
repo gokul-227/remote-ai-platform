@@ -1,4 +1,0 @@
-$kind: collection
-id: 2c754219-4e46-57a9-b4d1-523411bc8668
-description: Requests for **Admin Operations**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
-order: 11000
