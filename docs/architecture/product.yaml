@@ -354,7 +354,7 @@ web:
   provider: Cloudflare Workers
   screens: 55
 api:
-  technology: FastAPI 0.142 · Docker
+  technology: FastAPI 0.143 · Docker
   provider: Render web service
   domains:
   - domain: health
@@ -486,7 +486,7 @@ infrastructure:
     status: active
   - id: api
     name: Backend API
-    technology: FastAPI 0.142 · Docker
+    technology: FastAPI 0.143 · Docker
     icon: fastapi
     group: render
     status: active
