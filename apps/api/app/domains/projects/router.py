@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.quality_engine import QualityEngineAgent
@@ -29,6 +30,7 @@ from app.domains.projects.models import (
     TaskAssignmentOffer,
     TaskComment,
     TaskDependency,
+    TaskWatcher,
     WorkLedgerEntry,
     WorkSubmission,
 )
@@ -73,6 +75,27 @@ class MilestoneStatusUpdate(BaseModel):
     status: str = Field(pattern="^(TODO|IN_PROGRESS|IN_REVIEW|DONE|COMPLETED)$")
 
 
+ItemType = Literal["TASK", "BUG", "STORY", "EPIC"]
+Priority = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+
+
+def _clean_labels(labels: list[str] | None) -> list[str] | None:
+    if labels is None:
+        return None
+    out: list[str] = []
+    for raw in labels:
+        label = raw.strip().lower()
+        if not label:
+            continue
+        if len(label) > 40:
+            raise ValueError("labels are at most 40 characters")
+        if label not in out:
+            out.append(label)
+    if len(out) > 10:
+        raise ValueError("at most 10 labels")
+    return out
+
+
 class TaskCreate(BaseModel):
     project_id: uuid.UUID
     title: str = Field(min_length=1, max_length=255)
@@ -80,16 +103,28 @@ class TaskCreate(BaseModel):
     milestone: str | None = None
     required_skills: list[str] = Field(default_factory=list)
     assigned_user_id: uuid.UUID | None = None
-    priority: str = "MEDIUM"
+    priority: Priority = "MEDIUM"
+    item_type: ItemType = "TASK"
+    labels: list[str] = Field(default_factory=list)
     deadline: datetime | None = None
     estimated_hours: float | None = Field(default=None, ge=0)
 
+    _labels = field_validator("labels")(lambda cls, v: _clean_labels(v))
+
 
 class TaskUpdate(BaseModel):
+    # When sent, the edit is refused if someone else changed the item first.
+    expected_version: int | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
     status: str | None = None
     assigned_user_id: uuid.UUID | None = None
-    priority: str | None = None
+    priority: Priority | None = None
+    item_type: ItemType | None = None
+    labels: list[str] | None = None
     deadline: datetime | None = None
+
+    _labels = field_validator("labels")(lambda cls, v: _clean_labels(v))
 
 
 class TaskDependencyCreate(BaseModel):
@@ -630,9 +665,14 @@ async def create_task(
     db: AsyncSession = Depends(get_db),
 ):
     project = await require_project_access(data.project_id, current_user, db)
+    if data.assigned_user_id is not None:
+        assignee = await db.get(User, data.assigned_user_id)
+        if assignee is None or not assignee.is_active or not await can_access(project, assignee, db):
+            raise HTTPException(status_code=422, detail="Assignee must be a member of this project")
     task = ProjectTask(**data.model_dump())
     db.add(task)
     await db.flush()
+    db.add(TaskWatcher(task_id=task.id, user_id=current_user.id))
     await record_activity(db, project.id, current_user.id, "TASK_CREATED", {"title": task.title})
     return task
 
@@ -640,21 +680,47 @@ async def create_task(
 @router.get("/{project_id}/tasks")
 async def list_project_tasks(
     project_id: uuid.UUID,
+    response: Response,
+    status_filter: str | None = Query(None, alias="status"),
+    assignee: str | None = Query(None, description="'me', 'none' or a user id"),
+    priority: str | None = None,
+    item_type: str | None = None,
+    label: str | None = None,
+    q: str | None = Query(None, max_length=100),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(500, ge=1, le=500),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     await require_project_access(project_id, current_user, db)
-    return (
-        (
-            await db.execute(
-                select(ProjectTask)
-                .where(ProjectTask.project_id == project_id)
-                .order_by(ProjectTask.created_at.asc())
-            )
+    query = select(ProjectTask).where(ProjectTask.project_id == project_id)
+    if status_filter:
+        query = query.where(ProjectTask.status == status_filter)
+    if assignee == "me":
+        query = query.where(ProjectTask.assigned_user_id == current_user.id)
+    elif assignee == "none":
+        query = query.where(ProjectTask.assigned_user_id.is_(None))
+    elif assignee:
+        try:
+            query = query.where(ProjectTask.assigned_user_id == uuid.UUID(assignee))
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="assignee must be 'me', 'none' or a user id") from exc
+    if priority:
+        query = query.where(ProjectTask.priority == priority)
+    if item_type:
+        query = query.where(ProjectTask.item_type == item_type)
+    if q:
+        pattern = f"%{q.strip().lower()}%"
+        query = query.where(
+            or_(func.lower(ProjectTask.title).like(pattern), func.lower(ProjectTask.description).like(pattern))
         )
-        .scalars()
-        .all()
-    )
+    rows = list((await db.execute(query.order_by(ProjectTask.created_at.asc(), ProjectTask.id))).scalars().all())
+    # Labels are a JSON list; filter in Python so SQLite and PostgreSQL agree.
+    if label:
+        wanted = label.strip().lower()
+        rows = [t for t in rows if wanted in (t.labels or [])]
+    response.headers["X-Total-Count"] = str(len(rows))
+    return rows[skip : skip + limit]
 
 
 @router.post("/tasks/{task_id}/ledger", status_code=status.HTTP_201_CREATED)
@@ -1369,6 +1435,15 @@ async def update_task(
         raise HTTPException(status_code=404, detail="Task not found")
     project = await require_project_access(task.project_id, current_user, db)
     updates = data.model_dump(exclude_unset=True)
+    expected_version = updates.pop("expected_version", None)
+    if expected_version is not None and expected_version != task.version:
+        raise HTTPException(
+            status_code=409, detail="This work item was changed by someone else; reload and try again"
+        )
+    if updates.get("assigned_user_id") is not None:
+        assignee = await db.get(User, updates["assigned_user_id"])
+        if assignee is None or not assignee.is_active or not await can_access(project, assignee, db):
+            raise HTTPException(status_code=422, detail="Assignee must be a member of this project")
     if updates.get("status") and updates["status"] not in TASK_STATUSES:
         raise HTTPException(status_code=422, detail="Invalid task status")
     if updates.get("status") == "COMPLETED":
@@ -1396,10 +1471,76 @@ async def update_task(
         setattr(task, key, value)
     if task.status == "COMPLETED":
         task.completed_at = datetime.utcnow()
+    task.version += 1
     await record_activity(
-        db, project.id, current_user.id, "TASK_UPDATED", {"task_id": str(task.id), **updates}
+        db, project.id, current_user.id, "TASK_UPDATED", {"task_id": str(task.id), **jsonable_encoder(updates)}
     )
+    watcher_ids = (
+        await db.execute(select(TaskWatcher.user_id).where(TaskWatcher.task_id == task.id))
+    ).scalars()
+    for watcher_id in watcher_ids:
+        if watcher_id != current_user.id:
+            await notify_user(
+                db, watcher_id, "Work item updated",
+                f"“{task.title}” changed: {', '.join(sorted(updates)) or 'details'}.", "project",
+            )
     return task
+
+
+async def _depends_on(db: AsyncSession, start: uuid.UUID, target: uuid.UUID) -> bool:
+    """True when `start` already (transitively) depends on `target`."""
+    seen: set[uuid.UUID] = set()
+    frontier = [start]
+    while frontier:
+        rows = await db.execute(
+            select(TaskDependency.depends_on_task_id).where(TaskDependency.task_id.in_(frontier))
+        )
+        nxt = []
+        for dep in rows.scalars():
+            if dep == target:
+                return True
+            if dep not in seen:
+                seen.add(dep)
+                nxt.append(dep)
+        frontier = nxt
+    return False
+
+
+@router.post("/tasks/{task_id}/watch", status_code=status.HTTP_200_OK)
+async def watch_task(
+    task_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(ProjectTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await require_project_access(task.project_id, current_user, db)
+    exists = await db.scalar(
+        select(TaskWatcher).where(TaskWatcher.task_id == task.id, TaskWatcher.user_id == current_user.id)
+    )
+    if not exists:
+        db.add(TaskWatcher(task_id=task.id, user_id=current_user.id))
+        await db.flush()
+    return {"task_id": str(task.id), "watching": True}
+
+
+@router.delete("/tasks/{task_id}/watch", status_code=status.HTTP_200_OK)
+async def unwatch_task(
+    task_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    task = await db.get(ProjectTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await require_project_access(task.project_id, current_user, db)
+    row = await db.scalar(
+        select(TaskWatcher).where(TaskWatcher.task_id == task.id, TaskWatcher.user_id == current_user.id)
+    )
+    if row:
+        await db.delete(row)
+    return {"task_id": str(task.id), "watching": False}
 
 
 @router.post("/tasks/{task_id}/dependencies", status_code=status.HTTP_201_CREATED)
@@ -1427,6 +1568,8 @@ async def add_task_dependency(
     )
     if existing:
         return existing
+    if await _depends_on(db, prerequisite.id, task.id):
+        raise HTTPException(status_code=409, detail="That dependency would create a cycle")
     dependency = TaskDependency(task_id=task.id, depends_on_task_id=prerequisite.id)
     db.add(dependency)
     await db.flush()

@@ -77,6 +77,7 @@ SOURCES: tuple[Source, ...] = (
     Source("project_activity", ("actor_id",)),
     Source("project_reviews", ("reviewer_id", "reviewee_id")),
     Source("task_comments", ("author_id",)),
+    Source("task_watchers", ("user_id",)),
     Source("task_assignment_offers", ("candidate_user_id",)),
     Source("work_submissions", ("submitted_by_id",), drop=frozenset({"reviewed_by_id"})),
     Source("work_ledger_entries", ("worker_id",), drop=frozenset({"voided_by_id"})),
