@@ -27,19 +27,18 @@ from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.router import router as admin_router
 from app.domains.analytics.router import router as analytics_router
 from app.domains.applications.router import router as applications_router
+from app.domains.assistant.router import router as assistant_router
 
 # Domain routers — imported as they are implemented
 from app.domains.auth.router import router as auth_router
 from app.domains.companies.router import router as companies_router
 from app.domains.contracts.router import router as contracts_router
 from app.domains.deliverables.router import router as deliverables_router
-from app.domains.meetings.router import router as meetings_router
-from app.domains.support.router import router as support_router, staff_router as support_staff_router
-from app.domains.assistant.router import router as assistant_router
 from app.domains.engineers.router import router as engineers_router
 from app.domains.groups.router import router as groups_router
 from app.domains.jobs.router import router as jobs_router
 from app.domains.matching.router import router as matching_router
+from app.domains.meetings.router import router as meetings_router
 from app.domains.network.router import router as network_router
 from app.domains.notifications.router import router as notifications_router
 from app.domains.payments.router import router as payments_router
@@ -48,6 +47,8 @@ from app.domains.quality.router import router as quality_router
 from app.domains.saved_jobs.router import router as saved_jobs_router
 from app.domains.search.router import router as search_router
 from app.domains.social.router import router as social_router
+from app.domains.support.router import router as support_router
+from app.domains.support.router import staff_router as support_staff_router
 from app.domains.trust.router import router as trust_router
 
 logger = structlog.get_logger(__name__)
