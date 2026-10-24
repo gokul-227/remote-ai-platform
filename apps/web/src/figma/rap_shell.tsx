@@ -9,6 +9,7 @@ const sections: Record<string, string[][]> = {
     ["network", "My network", "users"],
     ["groups", "Groups", "users"],
     ["messenger", "Messages", "chat"],
+    ["meetings", "Meetings", "video"],
     ["notifications", "Notifications", "bell"],
     ["profile", "My profile", "user"],
   ],
@@ -24,6 +25,7 @@ const sections: Record<string, string[][]> = {
   Workspace: [
     ["workspace", "Overview", "layers"],
     ["projects", "Project board", "board"],
+    ["assistant", "AI assistant", "spark"],
     ["taskmarket", "Task offers", "inbox"],
     ["submissions", "Submissions", "file"],
     ["worklog", "Work log", "clock"],
@@ -48,6 +50,7 @@ const sections: Record<string, string[][]> = {
     ["security", "Security & verification", "shield"],
     ["profile", "Profile & visibility", "user"],
     ["help", "Help center", "question"],
+    ["support", "Contact support", "chat"],
   ],
   Admin: [
     ["admin", "Platform overview", "chart"],

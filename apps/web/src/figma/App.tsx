@@ -47,6 +47,9 @@ const Earnings = lazy(() => import("./rap_work").then((m) => ({ default: m.Earni
 const CoPayments = lazy(() => import("./rap_work").then((m) => ({ default: m.CoPayments })));
 const TaskMarketplace = lazy(() => import("./rap_work").then((m) => ({ default: m.TaskMarketplace })));
 const WorkLedger = lazy(() => import("./rap_enterprise").then((m) => ({ default: m.WorkLedger })));
+const Meetings = lazy(() => import("./rap_collab").then((m) => ({ default: m.Meetings })));
+const Support = lazy(() => import("./rap_collab").then((m) => ({ default: m.Support })));
+const Assistant = lazy(() => import("./rap_collab").then((m) => ({ default: m.Assistant })));
 const HelpCenter = lazy(() => import("./rap_enterprise").then((m) => ({ default: m.HelpCenter })));
 
 export const REG: Record<string, any> = {
@@ -54,6 +57,9 @@ export const REG: Record<string, any> = {
   reviews: () => <TaskMarketplace initial="reviews" />,
   worklog: WorkLedger,
   help: HelpCenter,
+  meetings: Meetings,
+  support: Support,
+  assistant: Assistant,
   adminusers: () => <Admin initial="adminusers" />,
   adminjobs: () => <Admin initial="adminjobs" />,
   reports: () => <Admin initial="reports" />,
