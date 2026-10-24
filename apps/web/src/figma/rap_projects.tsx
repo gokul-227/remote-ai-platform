@@ -191,7 +191,9 @@ export function Projects() {
     created: t.created_at,
     deadline: t.deadline,
   }));
-  const shown = iss.filter((i) => (i.t + i.as + i.ep + i.type + i.labels.join(" ")).toLowerCase().includes(q.toLowerCase()));
+  const shown = iss.filter((i) =>
+    (i.t + i.as + i.ep + i.type + i.labels.join(" ")).toLowerCase().includes(q.toLowerCase()),
+  );
   const open = iss.find((i) => i.id === openId) || null;
   const issueBox = useRef<HTMLDivElement>(null);
   useDialogFocus(issueBox, !!open, () => setOpenId(null));
@@ -213,7 +215,10 @@ export function Projects() {
       return api.patch(`/projects/tasks/${id}`, v ? { ...body, expected_version: v } : body);
     }, ok);
   const watch = (id: string, on: boolean) =>
-    act(() => (on ? api.post(`/projects/tasks/${id}/watch`) : api.delete(`/projects/tasks/${id}/watch`)), on ? "You’ll be notified about changes" : "Stopped watching");
+    act(
+      () => (on ? api.post(`/projects/tasks/${id}/watch`) : api.delete(`/projects/tasks/${id}/watch`)),
+      on ? "You’ll be notified about changes" : "Stopped watching",
+    );
   const move = (id: string, col: string) => {
     const i = iss.find((x) => x.id === id);
     if (i && i.st !== col) patch(id, { status: STATUS_OF[col] }, "Task moved");
@@ -227,7 +232,10 @@ export function Projects() {
         description: nt.desc.trim() || undefined,
         priority: nt.pri,
         item_type: nt.type,
-        labels: nt.labels.split(",").map((l) => l.trim()).filter(Boolean),
+        labels: nt.labels
+          .split(",")
+          .map((l) => l.trim())
+          .filter(Boolean),
         milestone: nt.ep.trim() || undefined,
       });
       setNt({ title: "", desc: "", pri: "MEDIUM", ep: "", type: "TASK", labels: "" });
@@ -881,7 +889,10 @@ export function Projects() {
                       key={`${open.id}-${open.version}`}
                       defaultValue={open.labels.join(", ")}
                       onBlur={(e) => {
-                        const next = e.target.value.split(",").map((l) => l.trim()).filter(Boolean);
+                        const next = e.target.value
+                          .split(",")
+                          .map((l) => l.trim())
+                          .filter(Boolean);
                         if (next.join(",") !== open.labels.join(",")) patch(open.id, { labels: next }, "Labels saved");
                       }}
                       className="w-40 rounded border border-slate-200 px-1 text-sm"
@@ -953,7 +964,11 @@ export function Projects() {
               </select>
             </Field>
             <Field label="Labels (comma separated)">
-              <input value={nt.labels} onChange={(e) => setNt({ ...nt, labels: e.target.value })} className={inputCls} />
+              <input
+                value={nt.labels}
+                onChange={(e) => setNt({ ...nt, labels: e.target.value })}
+                className={inputCls}
+              />
             </Field>
             <Field label="Milestone / epic">
               <input

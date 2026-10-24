@@ -1,0 +1,12 @@
+{
+  // Static assets only (free plan): the console is a client-side app that talks to the API.
+  "name": "remote-ai-platform-admin",
+  "compatibility_date": "2026-09-03",
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "dev": { "name": "remote-ai-platform-admin-dev" }
+  }
+}

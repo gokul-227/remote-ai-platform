@@ -5,7 +5,7 @@ Repository pattern implementation for User persistence.
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.models import User, UserRole
@@ -59,8 +59,12 @@ class UserRepository:
         limit: int = 50,
         role: UserRole | None = None,
         is_active: bool | None = None,
+        q: str | None = None,
     ) -> Sequence[User]:
         stmt = select(User)
+        if q:
+            pattern = f"%{q.strip().lower()}%"
+            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.full_name).like(pattern)))
         if role is not None:
             stmt = stmt.where(User.role == role)
         if is_active is not None:

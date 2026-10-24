@@ -119,6 +119,16 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build
 
+      - name: Admin console (type check, tests, static build)
+        working-directory: apps/admin
+        env:
+          NEXT_PUBLIC_DEPLOY_ENV: development
+        run: |
+          npx tsc --noEmit
+          npm test
+          npm run build
+          test -f out/index.html
+
       - name: Cloudflare Workers runtime smoke
         # E2E runs the site on Node.js; production runs on Workers. Build the
         # real Worker bundle and serve it with workerd (no Cloudflare account

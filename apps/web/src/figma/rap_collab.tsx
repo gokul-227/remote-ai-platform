@@ -8,7 +8,17 @@ import { useApi, safeHref, timeAgo, statusOf } from "./live";
    deliverables. All data is live; links from users go through safeHref and
    open with noopener so a destination page can never reach this app. */
 
-function Page({ title, sub, action, children }: { title: string; sub: string; action?: ReactNode; children: ReactNode }) {
+function Page({
+  title,
+  sub,
+  action,
+  children,
+}: {
+  title: string;
+  sub: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="v2-page">
       <header className="v2-page-head">
@@ -44,8 +54,7 @@ function Failed({ retry }: { retry: () => void }) {
   );
 }
 
-const fmt = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 const human = (s: string) => s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 
 function openExternal(url: string | undefined) {
@@ -145,19 +154,41 @@ export function Meetings() {
                     {me && ["UPCOMING", "JOINABLE"].includes(m.phase) && (
                       <>
                         {me.response !== "ACCEPTED" && (
-                          <Btn sm v="line" onClick={() => act(() => api.post(`/meetings/${m.id}/respond`, { response: "ACCEPTED" }), "You accepted the meeting.")}>
+                          <Btn
+                            sm
+                            v="line"
+                            onClick={() =>
+                              act(
+                                () => api.post(`/meetings/${m.id}/respond`, { response: "ACCEPTED" }),
+                                "You accepted the meeting.",
+                              )
+                            }
+                          >
                             Accept
                           </Btn>
                         )}
                         {me.response !== "DECLINED" && (
-                          <Btn sm v="ghost" onClick={() => act(() => api.post(`/meetings/${m.id}/respond`, { response: "DECLINED" }), "You declined the meeting.")}>
+                          <Btn
+                            sm
+                            v="ghost"
+                            onClick={() =>
+                              act(
+                                () => api.post(`/meetings/${m.id}/respond`, { response: "DECLINED" }),
+                                "You declined the meeting.",
+                              )
+                            }
+                          >
                             Decline
                           </Btn>
                         )}
                       </>
                     )}
                     {mine && ["UPCOMING", "JOINABLE"].includes(m.phase) && (
-                      <Btn sm v="ghost" onClick={() => act(() => api.post(`/meetings/${m.id}/cancel`), "Meeting cancelled.")}>
+                      <Btn
+                        sm
+                        v="ghost"
+                        onClick={() => act(() => api.post(`/meetings/${m.id}/cancel`), "Meeting cancelled.")}
+                      >
                         Cancel
                       </Btn>
                     )}
@@ -550,7 +581,8 @@ export function Assistant({ go }: { go?: (r: string) => void }) {
       setTurns((t) => [...t, { role: "assistant", text: r.data.reply, out: r.data }]);
     } catch (e) {
       const s = statusOf(e);
-      const fallback = s === 429 ? "You’ve reached the AI allowance for now." : "The assistant is unavailable right now.";
+      const fallback =
+        s === 429 ? "You’ve reached the AI allowance for now." : "The assistant is unavailable right now.";
       setTurns((t) => [...t, { role: "assistant", text: extractErrorMessage(e, fallback) }]);
     } finally {
       setBusy(false);
@@ -562,14 +594,25 @@ export function Assistant({ go }: { go?: (r: string) => void }) {
       const st = r.data.status as string;
       const res = r.data.result as Record<string, any> | null;
       const note =
-        st === "EXECUTED" ? "Done." : st === "FAILED" ? `It didn’t work: ${res?.error ?? "unknown error"}` : "Cancelled.";
-      setTurns((t) => t.map((x, k) => (k === i ? { ...x, actionState: note, out: x.out && { ...x.out, result: res } } : x)));
+        st === "EXECUTED"
+          ? "Done."
+          : st === "FAILED"
+            ? `It didn’t work: ${res?.error ?? "unknown error"}`
+            : "Cancelled.";
+      setTurns((t) =>
+        t.map((x, k) => (k === i ? { ...x, actionState: note, out: x.out && { ...x.out, result: res } } : x)),
+      );
     } catch (e) {
-      setTurns((t) => t.map((x, k) => (k === i ? { ...x, actionState: extractErrorMessage(e, "Couldn’t complete that.") } : x)));
+      setTurns((t) =>
+        t.map((x, k) => (k === i ? { ...x, actionState: extractErrorMessage(e, "Couldn’t complete that.") } : x)),
+      );
     }
   };
   return (
-    <Page title="Assistant" sub="Ask about your work. It acts only with your permissions and asks before changing anything.">
+    <Page
+      title="Assistant"
+      sub="Ask about your work. It acts only with your permissions and asks before changing anything."
+    >
       <Card c="grid gap-3">
         {turns.length === 0 && (
           <div className="text-sm text-slate-500">
@@ -579,7 +622,10 @@ export function Assistant({ go }: { go?: (r: string) => void }) {
         )}
         <ol className="grid gap-2" aria-live="polite">
           {turns.map((t, i) => (
-            <li key={i} className={`rounded-lg p-3 text-sm ${t.role === "user" ? "ml-10 bg-slate-50" : "mr-10 bg-[#E8F0FC]"}`}>
+            <li
+              key={i}
+              className={`rounded-lg p-3 text-sm ${t.role === "user" ? "ml-10 bg-slate-50" : "mr-10 bg-[#E8F0FC]"}`}
+            >
               <p className="whitespace-pre-line">{t.text}</p>
               {t.out?.kind === "READ" && t.out.result && <ResultList result={t.out.result} go={go} />}
               {t.out?.kind === "DRAFT" && t.out.result?.draft && (
@@ -652,10 +698,15 @@ function ResultList({ result, go }: { result: Record<string, any>; go?: (r: stri
     <ul className="mt-2 grid gap-1">
       {items.map((it, k) => (
         <li key={k}>
-          <button className="text-left text-[#0552CC] underline" onClick={() => go?.(String(it.link || "").replace(/^#/, ""))}>
+          <button
+            className="text-left text-[#0552CC] underline"
+            onClick={() => go?.(String(it.link || "").replace(/^#/, ""))}
+          >
             {it.title}
           </button>{" "}
-          <span className="text-slate-500">{[it.company, it.status && human(it.status), it.priority].filter(Boolean).join(" · ")}</span>
+          <span className="text-slate-500">
+            {[it.company, it.status && human(it.status), it.priority].filter(Boolean).join(" · ")}
+          </span>
         </li>
       ))}
     </ul>
@@ -683,7 +734,12 @@ interface Deliverable {
   created_at: string;
 }
 
-const DSTATUS: Record<string, string> = { SUBMITTED: "blue", CHANGES_REQUESTED: "amber", ACCEPTED: "green", WITHDRAWN: "gray" };
+const DSTATUS: Record<string, string> = {
+  SUBMITTED: "blue",
+  CHANGES_REQUESTED: "amber",
+  ACCEPTED: "green",
+  WITHDRAWN: "gray",
+};
 
 export function Deliverables({
   contractId,
@@ -766,7 +822,12 @@ export function Deliverables({
                   </div>
                   {d.kind === "CODE" && (
                     <p className="mt-1 font-mono text-xs break-all">
-                      <a className="text-[#0552CC] underline" href={safeHref(`${d.repo_url}/commit/${d.commit_sha}`)} target="_blank" rel="noopener noreferrer">
+                      <a
+                        className="text-[#0552CC] underline"
+                        href={safeHref(`${d.repo_url}/commit/${d.commit_sha}`)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         {d.repo_url?.replace("https://github.com/", "")}@{d.commit_sha?.slice(0, 12)}
                       </a>
                       {d.branch && ` (${d.branch})`}
@@ -780,7 +841,12 @@ export function Deliverables({
                   {d.kind === "DEMO" && (
                     <p className="mt-1 text-xs">
                       {d.environment && <Tag>{d.environment}</Tag>}{" "}
-                      <a className="text-[#0552CC] underline break-all" href={safeHref(d.demo_url)} target="_blank" rel="noopener noreferrer">
+                      <a
+                        className="text-[#0552CC] underline break-all"
+                        href={safeHref(d.demo_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         Open demo in a new tab
                       </a>
                     </p>
@@ -858,7 +924,8 @@ function SubmitDeliverable({
     const base = `/contracts/${contractId}/deliverables`;
     const common = { milestone_id: milestone, title, notes: notes || null, supersedes_id: supersedes?.id ?? null };
     try {
-      if (kind === "code") await api.post(`${base}/code`, { ...common, repo_url: repo, branch: branch || null, commit_sha: sha });
+      if (kind === "code")
+        await api.post(`${base}/code`, { ...common, repo_url: repo, branch: branch || null, commit_sha: sha });
       else if (kind === "demo") await api.post(`${base}/demo`, { ...common, demo_url: url, environment: env || null });
       else {
         if (!file) {
@@ -899,14 +966,24 @@ function SubmitDeliverable({
         {kind === "code" && (
           <>
             <Field label="GitHub repository">
-              <input className={inputCls} placeholder="https://github.com/owner/repo" value={repo} onChange={(e) => setRepo(e.target.value)} />
+              <input
+                className={inputCls}
+                placeholder="https://github.com/owner/repo"
+                value={repo}
+                onChange={(e) => setRepo(e.target.value)}
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Branch (optional)">
                 <input className={inputCls} value={branch} onChange={(e) => setBranch(e.target.value)} />
               </Field>
               <Field label="Full commit SHA">
-                <input className={`${inputCls} font-mono`} value={sha} onChange={(e) => setSha(e.target.value)} maxLength={40} />
+                <input
+                  className={`${inputCls} font-mono`}
+                  value={sha}
+                  onChange={(e) => setSha(e.target.value)}
+                  maxLength={40}
+                />
               </Field>
             </div>
             <p className="text-xs text-slate-500">The deliverable stays tied to this exact commit.</p>

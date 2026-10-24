@@ -99,12 +99,13 @@ async def list_all_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     role: UserRole | None = Query(None),
+    q: str | None = Query(None, max_length=100, description="Search email or name"),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> list[UserResponse]:
     """List all registered platform users (Admin only)."""
     repo = UserRepository(db)
-    users = await repo.list_users(skip=skip, limit=limit, role=role)
+    users = await repo.list_users(skip=skip, limit=limit, role=role, q=q)
     return [UserResponse.model_validate(u) for u in users]
 
 

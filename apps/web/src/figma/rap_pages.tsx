@@ -663,7 +663,8 @@ export function ContractSign() {
         )}
         <div className="mt-5 flex items-center gap-2 rounded-lg bg-[#E8F0FC] p-3 text-sm text-[#0552CC]">
           <Ic n="shieldcheck" s={18} />
-          The client approves each milestone. Payment is made directly between you, outside the platform — approval does not move money.
+          The client approves each milestone. Payment is made directly between you, outside the platform — approval does
+          not move money.
         </div>
         {!ended && (
           <div className="mt-5 flex justify-end gap-2">

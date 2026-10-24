@@ -55,3 +55,12 @@ async def test_revoke_sessions(client: AsyncClient, db: AsyncSession):
     # Ordinary users cannot call it.
     _, uh = await _user(client, db)
     assert (await client.post(f"/api/v1/admin/users/{target}/revoke-sessions", json={"reason": "x" * 5}, headers=uh)).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_user_search(client: AsyncClient, db: AsyncSession):
+    _, ah = await _user(client, db, admin=True)
+    target, _ = await _user(client, db)
+    email = (await db.get(User, target)).email
+    res = await client.get("/api/v1/admin/users", params={"q": email[:10].upper()}, headers=ah)
+    assert [u["email"] for u in res.json()] == [email]
