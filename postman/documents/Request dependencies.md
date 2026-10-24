@@ -8,6 +8,7 @@ already does — folders and requests are ordered so producers come first).
 | --- | --- | --- |
 | `{{action_id}}` | *(set it in your environment)* | Assistant › Confirm Action<br>Assistant › Cancel Action |
 | `{{application_id}}` | *(set it in your environment)* | Applications › Withdraw Application<br>Applications › Respond To Invitation<br>Applications › Update Application Status |
+| `{{channel_id}}` | Channels › Create Channel<br>Channels › My Channels | Channels › Post Message<br>Channels › Mark Read<br>Channels › Set Mute<br>Channels › Add Member<br>Channels › History<br>Channels › Remove Member |
 | `{{comment_id}}` | Social Feed › Add a comment to a post<br>Social Feed › List post comments | Social Feed › Delete a comment |
 | `{{company_id}}` | Job Posts › List Company Jobs | Job Posts › List Public Company Jobs<br>Company Profiles › Get Company By Id |
 | `{{connection_id}}` | *(set it in your environment)* | Network › Update Connection<br>Network › Remove Connection |
@@ -31,7 +32,7 @@ already does — folders and requests are ordered so producers come first).
 | `{{submission_id}}` | *(set it in your environment)* | Projects › Ai Review Submission<br>Projects › Review Task Submission |
 | `{{task_id}}` | *(set it in your environment)* | Projects › Record Work Ledger Entry<br>Projects › Create Task Offer<br>Projects › Submit Task Work<br>Projects › Watch Task<br>Projects › Add Task Dependency<br>Projects › Add Task Comment<br>Projects › List Task Submissions<br>Projects › Update Task<br>Projects › Unwatch Task |
 | `{{ticket_id}}` | Support › Open Ticket<br>Support › My Tickets<br>Admin support › Queue | Admin support › Staff Reply<br>Admin support › Staff Ticket<br>Admin support › Staff Update<br>Support › Reply<br>Support › Close Own<br>Support › My Ticket |
-| `{{user_id}}` | Admin Operations › List All Users<br>Trust & Reputation › Submit project review<br>Trust & Reputation › Add verification badge<br>Trust & Reputation › Admin verification queue<br>groups › List Members | groups › Update Member Role<br>Trust & Reputation › Get explainable trust score<br>Trust & Reputation › List user reviews<br>Trust & Reputation › List user verifications<br>Admin Operations › Revoke User Sessions<br>Admin Operations › Update User Status<br>Admin Operations › Update User Role<br>Admin Operations › Delete User<br>Projects › Get Reputation<br>Network › Unblock User |
+| `{{user_id}}` | Admin Operations › List All Users<br>Trust & Reputation › Submit project review<br>Trust & Reputation › Add verification badge<br>Trust & Reputation › Admin verification queue<br>groups › List Members | groups › Update Member Role<br>Trust & Reputation › Get explainable trust score<br>Trust & Reputation › List user reviews<br>Trust & Reputation › List user verifications<br>Admin Operations › Revoke User Sessions<br>Admin Operations › Update User Status<br>Admin Operations › Update User Role<br>Admin Operations › Delete User<br>Projects › Get Reputation<br>Network › Unblock User<br>Channels › Remove Member |
 | `{{verification_id}}` | Trust & Reputation › Add verification badge<br>Trust & Reputation › Admin verification queue | Trust & Reputation › Admin: verify or reject a submitted credential |
 
 ## Session

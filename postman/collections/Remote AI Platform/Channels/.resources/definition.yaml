@@ -1,0 +1,4 @@
+$kind: collection
+id: f6cc272f-a5ba-5b29-b77d-c428721a4599
+description: Requests for **Channels**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 24000

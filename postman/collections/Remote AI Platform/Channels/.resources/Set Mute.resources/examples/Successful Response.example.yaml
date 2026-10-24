@@ -1,0 +1,42 @@
+$kind: http-example
+id: 298f50d0-622c-555f-bcb4-6ada79aaae42
+request:
+  url: "{{base_url}}/api/v1/channels/:channel_id/mute"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: channel_id
+      value: f973d771-eb8e-600f-8b99-02afe501b937
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "muted": false
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "1ce6b97a-1a97-fcbc-169e-480d0a80c0e9",
+        "kind": "string",
+        "name": "string",
+        "topic": "string",
+        "project_id": "7aefc131-a6de-ef83-085f-b7f971d833ef",
+        "owner_id": "5a8e69ec-2b4f-9d41-069d-d4373ef262d7",
+        "muted": false,
+        "unread": 7539
+      }
+order: 1000

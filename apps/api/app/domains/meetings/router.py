@@ -53,7 +53,7 @@ def _utc(dt: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
-async def _may_invite(db: AsyncSession, organizer: uuid.UUID, invitee: uuid.UUID, contract: Contract | None) -> bool:
+async def may_invite(db: AsyncSession, organizer: uuid.UUID, invitee: uuid.UUID, contract: Contract | None) -> bool:
     blocked = await db.scalar(
         select(UserBlock.id).where(
             or_(
@@ -129,7 +129,7 @@ async def schedule_meeting(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Invite at least one other person")
     for uid in invitees:
         user = await db.get(User, uid)
-        if user is None or not user.is_active or not await _may_invite(db, current_user.id, uid, contract):
+        if user is None or not user.is_active or not await may_invite(db, current_user.id, uid, contract):
             # Same answer for unknown, inactive, unconnected and blocked users.
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_CONTENT,

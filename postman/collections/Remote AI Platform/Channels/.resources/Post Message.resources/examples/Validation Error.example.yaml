@@ -1,0 +1,62 @@
+$kind: http-example
+id: 7d6ac51e-32c9-5896-bd47-5ad597e747d6
+request:
+  url: "{{base_url}}/api/v1/channels/:channel_id/messages"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: channel_id
+      value: f973d771-eb8e-600f-8b99-02afe501b937
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "body": "string",
+        "parent_id": "8249d35e-87e0-8e44-d0ec-274e30dde0e8",
+        "mentions": [
+          "a7f6f00e-08de-9d6e-c65a-cac1be5643ff",
+          "dae97ed2-7c75-c91f-5d51-5627d851a002"
+        ],
+        "client_token": "stringstring"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

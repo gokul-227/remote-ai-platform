@@ -1,0 +1,73 @@
+$kind: http-example
+id: fb021dcc-5cb6-500f-a897-666f2b27351c
+request:
+  url: "{{base_url}}/api/v1/channels/:channel_id/messages"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: after
+      value: 1957-08-20T18:09:04.444Z
+      disabled: true
+      description: Only messages newer than this (polling)
+    - key: before
+      value: 1957-08-20T18:09:04.444Z
+      disabled: true
+      description: Only messages older than this (scroll back)
+    - key: thread
+      value: a465afbe-c517-2e42-de25-2dc7515b8b49
+      disabled: true
+      description: Replies to this root message
+    - key: limit
+      value: "50"
+      disabled: true
+  pathVariables:
+    - key: channel_id
+      value: f973d771-eb8e-600f-8b99-02afe501b937
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "5952090b-6902-6dd9-6ab4-1bbc03e55238",
+          "channel_id": "ff3cc143-7761-8ee6-8b0c-d9f1df12d9c9",
+          "author_id": "5c7b9d93-ed94-8862-5aa7-8ccd3918a446",
+          "author_name": "string",
+          "parent_id": "bce5563b-adac-b71d-b6c4-58d01a0e1993",
+          "body": "string",
+          "mentions": [
+            "string",
+            "string"
+          ],
+          "created_at": "1962-07-28T08:33:46.441Z",
+          "reply_count": 0
+        },
+        {
+          "id": "8814a852-b896-8146-2591-a80ba3a9f593",
+          "channel_id": "ae8f9dbc-10cb-3b60-f41c-3cb962336579",
+          "author_id": "211d2ed7-02a9-7f5d-b9ab-1e7cba032922",
+          "author_name": "string",
+          "parent_id": "5d487c94-cd43-9c84-2d99-3f0d93aece0a",
+          "body": "string",
+          "mentions": [
+            "string",
+            "string"
+          ],
+          "created_at": "1950-12-30T12:34:28.951Z",
+          "reply_count": 0
+        }
+      ]
+order: 1000

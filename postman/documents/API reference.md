@@ -315,6 +315,19 @@ Every request in the collection, in run order.
 | Cancel Action | `POST /api/v1/assistant/actions/{action_id}/cancel` | Bearer | `{{action_id}}` |  |
 | List Tools | `GET /api/v1/assistant/tools` | Bearer |  |  |
 
+## Channels
+
+| Request | Method & path | Auth | Needs | Sets |
+| --- | --- | --- | --- | --- |
+| Create Channel | `POST /api/v1/channels` | Bearer |  | `{{channel_id}}` |
+| Post Message | `POST /api/v1/channels/{channel_id}/messages` | Bearer | `{{channel_id}}` |  |
+| Mark Read | `POST /api/v1/channels/{channel_id}/read` | Bearer | `{{channel_id}}` |  |
+| Set Mute | `POST /api/v1/channels/{channel_id}/mute` | Bearer | `{{channel_id}}` |  |
+| Add Member | `POST /api/v1/channels/{channel_id}/members` | Bearer | `{{channel_id}}` |  |
+| My Channels | `GET /api/v1/channels` | Bearer |  | `{{channel_id}}` |
+| History | `GET /api/v1/channels/{channel_id}/messages` | Bearer | `{{channel_id}}` |  |
+| Remove Member | `DELETE /api/v1/channels/{channel_id}/members/{user_id}` | Bearer | `{{channel_id}}`, `{{user_id}}` |  |
+
 ## Payments & Financial Ledger
 
 | Request | Method & path | Auth | Needs | Sets |

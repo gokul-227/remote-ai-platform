@@ -192,6 +192,8 @@ features:
     prefix: /api/v1/notifications
   - domain: meetings
     prefix: /api/v1/meetings
+  - domain: channels
+    prefix: /api/v1/channels
   uses:
   - id: resend
     name: Resend
@@ -403,6 +405,8 @@ api:
     prefix: /assistant
   - domain: auth
     prefix: /auth
+  - domain: channels
+    prefix: /channels
   - domain: companies
     prefix: /companies
   - domain: contracts

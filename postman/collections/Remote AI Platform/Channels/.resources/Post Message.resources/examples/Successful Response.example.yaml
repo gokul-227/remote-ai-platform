@@ -1,0 +1,52 @@
+$kind: http-example
+id: 095c109c-c70c-5bfe-8872-af63ade8f85b
+request:
+  url: "{{base_url}}/api/v1/channels/:channel_id/messages"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: channel_id
+      value: f973d771-eb8e-600f-8b99-02afe501b937
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "body": "string",
+        "parent_id": "8249d35e-87e0-8e44-d0ec-274e30dde0e8",
+        "mentions": [
+          "a7f6f00e-08de-9d6e-c65a-cac1be5643ff",
+          "dae97ed2-7c75-c91f-5d51-5627d851a002"
+        ],
+        "client_token": "stringstring"
+      }
+response:
+  statusCode: 201
+  statusText: Created
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "5aa16594-72dc-5a0e-b70d-5569b4e96fc2",
+        "channel_id": "36d16c59-af9e-de51-95e8-b3f2ec5ba1b8",
+        "author_id": "f8a73bf9-caf3-692b-299a-d0e6617e073b",
+        "author_name": "string",
+        "parent_id": "d5173764-1b1c-b786-a85d-6ae67de13c4c",
+        "body": "string",
+        "mentions": [
+          "string",
+          "string"
+        ],
+        "created_at": "1972-01-14T06:11:40.654Z",
+        "reply_count": 0
+      }
+order: 1000

@@ -8,6 +8,10 @@ values:
     value: ""
     enabled: true
     type: default
+  - key: channel_id
+    value: ""
+    enabled: true
+    type: default
   - key: comment_id
     value: ""
     enabled: true

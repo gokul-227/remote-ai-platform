@@ -1,0 +1,36 @@
+$kind: http-example
+id: c28f1706-7af6-5e3c-9bb3-bb6e4de91f2d
+request:
+  url: "{{base_url}}/api/v1/channels/:channel_id/members/:user_id"
+  method: DELETE
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: channel_id
+      value: f973d771-eb8e-600f-8b99-02afe501b937
+      description: "(Required) "
+    - key: user_id
+      value: 9050d15c-9de0-098d-0765-c23c06d133d2
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "key_0": 6427,
+        "key_1": 6245,
+        "key_2": 3989,
+        "key_3": "string"
+      }
+order: 1000

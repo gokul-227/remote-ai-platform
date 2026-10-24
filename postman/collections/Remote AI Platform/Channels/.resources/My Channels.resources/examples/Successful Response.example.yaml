@@ -1,0 +1,49 @@
+$kind: http-example
+id: 6769bee6-225a-5399-9c87-d47c70ae5f37
+request:
+  url: "{{base_url}}/api/v1/channels"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: project_id
+      value: a465afbe-c517-2e42-de25-2dc7515b8b49
+      disabled: true
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      [
+        {
+          "id": "d5e9977b-7001-6a84-4580-0bbc8ed62770",
+          "kind": "string",
+          "name": "string",
+          "topic": "string",
+          "project_id": "33576c8e-8ca9-0068-db23-c232d01e498e",
+          "owner_id": "2382b168-6f8e-6615-c35d-6119dd7cca1f",
+          "muted": false,
+          "unread": 9581
+        },
+        {
+          "id": "2e3717a7-88bc-4a2c-6257-5342b8042c3d",
+          "kind": "string",
+          "name": "string",
+          "topic": "string",
+          "project_id": "42d9f816-b40b-864a-8ece-6630f1bcdd10",
+          "owner_id": "aaf97b03-9959-49bd-0909-89aa5cc24ea4",
+          "muted": true,
+          "unread": 8979
+        }
+      ]
+order: 1000

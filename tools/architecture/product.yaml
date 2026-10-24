@@ -72,7 +72,7 @@ features:
     step: 6
     personas: [professional, organisation]
     screens: [network, messenger, meetings, notifications]
-    api: [network, notifications, meetings]
+    api: [network, notifications, meetings, channels]
     uses: [resend]
   - id: community
     icon: concepts/users

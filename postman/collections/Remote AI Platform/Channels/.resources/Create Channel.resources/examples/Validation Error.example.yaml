@@ -1,0 +1,59 @@
+$kind: http-example
+id: 907debcf-0615-53d2-865d-b3888ef2197a
+request:
+  url: "{{base_url}}/api/v1/channels"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "kind": "PROJECT",
+        "name": "string",
+        "topic": "string",
+        "project_id": "7045ee92-3512-af60-d3ac-2d78423847d3",
+        "member_ids": [
+          "e433a7c1-dc9e-0552-aae6-19ef2c1b2482",
+          "12721a67-df93-82c2-cd71-ebe6151f8740"
+        ]
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000
