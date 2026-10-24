@@ -77,6 +77,7 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "minioadmin_dev_password"
     MINIO_BUCKET_RESUMES: str = "remote-ai-platform-resumes"
     MINIO_BUCKET_ASSETS: str = "remote-ai-platform-assets"
+    MINIO_BUCKET_DELIVERABLES: str = "remote-ai-platform-deliverables"
     MINIO_SECURE: bool = False
 
     # ── Supabase Auth (the only identity provider) ──────────────────────────────
