@@ -181,6 +181,8 @@ features:
     label: People
   - route: messenger
     label: Messages
+  - route: channels
+    label: Channels
   - route: meetings
     label: Meetings
   - route: notifications
@@ -386,7 +388,7 @@ features:
 web:
   technology: Next.js 16 · OpenNext
   provider: Cloudflare Workers
-  screens: 58
+  screens: 59
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service

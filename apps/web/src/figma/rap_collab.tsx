@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Ic, Btn, Card, Tag, Modal, Field, inputCls, Notice } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -1022,6 +1022,293 @@ function SubmitDeliverable({
             Cancel
           </Btn>
           <Btn onClick={submit}>Submit</Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/* ---------------- Channels ---------------- */
+
+interface ChannelRow {
+  id: string;
+  kind: "PROJECT" | "GROUP";
+  name: string;
+  topic: string | null;
+  owner_id: string;
+  muted: boolean;
+  unread: number;
+}
+interface ChannelMsg {
+  id: string;
+  author_id: string | null;
+  author_name: string | null;
+  parent_id: string | null;
+  body: string;
+  reply_count: number;
+  created_at: string;
+}
+
+const token = () =>
+  (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`).replace(/-/g, "").slice(0, 32);
+
+export function Channels() {
+  const { user } = useAuth();
+  const list = useApi<ChannelRow[]>(user ? "/channels" : null);
+  const [sel, setSel] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  if (!user)
+    return (
+      <Page title="Channels" sub="Sign in to use channels.">
+        <Empty icon="chat" title="Sign in first" text="Channels are for people who work together." />
+      </Page>
+    );
+  const rows = list.data ?? [];
+  const current = rows.find((c) => c.id === sel) ?? null;
+  return (
+    <Page
+      title="Channels"
+      sub="Group conversations with threads. Project channels include everyone on the project."
+      action={
+        <Btn icon="plus" onClick={() => setCreating(true)}>
+          New channel
+        </Btn>
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+        <nav aria-label="Channels" className="grid content-start gap-1">
+          {!!list.error && !list.data && <Failed retry={list.reload} />}
+          {list.data && rows.length === 0 && <p className="text-sm text-slate-500">No channels yet.</p>}
+          {rows.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSel(c.id)}
+              className={`flex items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${sel === c.id ? "bg-[#E8F0FC] font-semibold" : "hover:bg-slate-100"}`}
+            >
+              <span>
+                # {c.name} {c.muted && <span className="text-xs text-slate-400">(muted)</span>}
+              </span>
+              {c.unread > 0 && !c.muted && <Tag t="blue">{c.unread}</Tag>}
+            </button>
+          ))}
+        </nav>
+        {current ? (
+          <ChannelView key={current.id} channel={current} onRead={list.reload} />
+        ) : (
+          <Card c="text-sm text-slate-500">Pick a channel.</Card>
+        )}
+      </div>
+      {creating && (
+        <NewChannel
+          onClose={() => setCreating(false)}
+          onDone={(id) => {
+            setCreating(false);
+            setSel(id);
+            list.reload();
+          }}
+        />
+      )}
+    </Page>
+  );
+}
+
+function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => void }) {
+  const { user } = useAuth();
+  const [thread, setThread] = useState<ChannelMsg | null>(null);
+  const q = useApi<ChannelMsg[]>(`/channels/${channel.id}/messages`, thread ? { thread: thread.id } : undefined);
+  const [body, setBody] = useState("");
+  const [err, setErr] = useState("");
+  const { reload } = q;
+  // Poll every 15 s while the tab is visible; nothing while hidden.
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      if (document.visibilityState === "visible") reload();
+    }, 15000);
+    return () => window.clearInterval(t);
+  }, [reload]);
+  useEffect(() => {
+    api
+      .post(`/channels/${channel.id}/read`)
+      .then(onRead)
+      .catch(() => undefined);
+  }, [channel.id, q.data?.length, onRead]);
+  const send = async () => {
+    const text = body.trim();
+    if (!text) return;
+    try {
+      await api.post(`/channels/${channel.id}/messages`, {
+        body: text,
+        parent_id: thread?.id ?? null,
+        client_token: token(),
+      });
+      setBody("");
+      setErr("");
+      q.reload();
+    } catch (e) {
+      setErr(extractErrorMessage(e, "Message not sent. Try again."));
+    }
+  };
+  const mute = async () => {
+    await api.post(`/channels/${channel.id}/mute`, { muted: !channel.muted }).catch(() => undefined);
+    onRead();
+  };
+  return (
+    <Card>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div>
+          <h3 className="font-bold">
+            # {channel.name} {thread && <span className="font-normal text-slate-500">› thread</span>}
+          </h3>
+          {channel.topic && <p className="text-xs text-slate-500">{channel.topic}</p>}
+        </div>
+        <div className="flex gap-2">
+          {thread && (
+            <Btn sm v="ghost" onClick={() => setThread(null)}>
+              Back to channel
+            </Btn>
+          )}
+          <Btn sm v="ghost" onClick={mute}>
+            {channel.muted ? "Unmute" : "Mute"}
+          </Btn>
+        </div>
+      </div>
+      {thread && (
+        <div className="mb-2 rounded-lg bg-slate-50 p-2 text-sm">
+          <b>{thread.author_name || "Member"}</b>: {thread.body}
+        </div>
+      )}
+      {!!q.error && !q.data && <Failed retry={q.reload} />}
+      <ol className="grid max-h-[50vh] gap-2 overflow-y-auto" aria-live="polite">
+        {(q.data ?? []).map((m) => (
+          <li
+            key={m.id}
+            className={`rounded-lg p-2 text-sm ${m.author_id === user?.id ? "bg-[#E8F0FC]" : "bg-slate-50"}`}
+          >
+            <p className="text-xs text-slate-500">
+              <b className="text-slate-700">{m.author_name || "Former member"}</b> · {timeAgo(m.created_at)}
+            </p>
+            <p className="whitespace-pre-line">{m.body}</p>
+            {!thread && (
+              <button className="mt-1 text-xs text-[#0552CC] underline" onClick={() => setThread(m)}>
+                {m.reply_count ? `${m.reply_count} repl${m.reply_count === 1 ? "y" : "ies"}` : "Reply in thread"}
+              </button>
+            )}
+          </li>
+        ))}
+        {q.data?.length === 0 && <li className="text-sm text-slate-500">No messages yet.</li>}
+      </ol>
+      <form
+        className="mt-3 flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send();
+        }}
+      >
+        <label htmlFor="channel-input" className="sr-only">
+          Message
+        </label>
+        <input
+          id="channel-input"
+          className={inputCls}
+          value={body}
+          maxLength={10000}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={thread ? "Reply in thread…" : `Message #${channel.name}`}
+        />
+        <Btn>Send</Btn>
+      </form>
+      {err && (
+        <p role="alert" className="mt-1 text-sm text-red-600">
+          {err}
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function NewChannel({ onClose, onDone }: { onClose: () => void; onDone: (id: string) => void }) {
+  const { user } = useAuth();
+  const projects = useApi<any[]>("/projects");
+  const conns = useApi<any[]>("/connections", { status: "ACCEPTED", limit: 200 });
+  const [kind, setKind] = useState<"GROUP" | "PROJECT">("GROUP");
+  const [name, setName] = useState("");
+  const [topic, setTopic] = useState("");
+  const [project, setProject] = useState("");
+  const [picked, setPicked] = useState<string[]>([]);
+  const [err, setErr] = useState("");
+  const people = (conns.data ?? []).map((c) => (c.sender_id === user?.id ? c.receiver : c.sender)).filter(Boolean);
+  const submit = async () => {
+    try {
+      const r = await api.post<ChannelRow>("/channels", {
+        kind,
+        name,
+        topic: topic || null,
+        project_id: kind === "PROJECT" ? project : null,
+        member_ids: kind === "GROUP" ? picked : [],
+      });
+      onDone(r.data.id);
+    } catch (e) {
+      setErr(extractErrorMessage(e, "Couldn’t create the channel."));
+    }
+  };
+  return (
+    <Modal open onClose={onClose} title="New channel">
+      <div className="grid gap-3">
+        <Field label="Type">
+          <select className={inputCls} value={kind} onChange={(e) => setKind(e.target.value as "GROUP" | "PROJECT")}>
+            <option value="GROUP">Group — people you choose</option>
+            <option value="PROJECT">Project — everyone on a project</option>
+          </select>
+        </Field>
+        <Field label="Name">
+          <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
+        </Field>
+        <Field label="Topic (optional)">
+          <input className={inputCls} value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={255} />
+        </Field>
+        {kind === "PROJECT" ? (
+          <Field label="Project">
+            <select className={inputCls} value={project} onChange={(e) => setProject(e.target.value)}>
+              <option value="">Choose…</option>
+              {(projects.data ?? []).map((p: any) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : (
+          <Field label="Members">
+            {people.length === 0 ? (
+              <p className="text-sm text-slate-500">Connect with people to add them.</p>
+            ) : (
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 p-2">
+                {people.map((p: any) => (
+                  <label key={p.id} className="flex items-center gap-2 py-1 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={picked.includes(p.id)}
+                      onChange={(e) =>
+                        setPicked((x) => (e.target.checked ? [...x, p.id] : x.filter((i) => i !== p.id)))
+                      }
+                    />
+                    {p.full_name || "Member"}
+                  </label>
+                ))}
+              </div>
+            )}
+          </Field>
+        )}
+        {err && (
+          <p role="alert" className="text-sm text-red-600">
+            {err}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Btn v="ghost" onClick={onClose}>
+            Cancel
+          </Btn>
+          <Btn onClick={submit}>Create</Btn>
         </div>
       </div>
     </Modal>

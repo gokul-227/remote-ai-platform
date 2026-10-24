@@ -9,6 +9,7 @@ const sections: Record<string, string[][]> = {
     ["network", "My network", "users"],
     ["groups", "Groups", "users"],
     ["messenger", "Messages", "chat"],
+    ["channels", "Channels", "users"],
     ["meetings", "Meetings", "video"],
     ["notifications", "Notifications", "bell"],
     ["profile", "My profile", "user"],

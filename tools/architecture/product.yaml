@@ -71,7 +71,7 @@ features:
     name: Network & messaging
     step: 6
     personas: [professional, organisation]
-    screens: [network, messenger, meetings, notifications]
+    screens: [network, messenger, channels, meetings, notifications]
     api: [network, notifications, meetings, channels]
     uses: [resend]
   - id: community
