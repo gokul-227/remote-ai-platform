@@ -55,6 +55,7 @@ SOURCES: tuple[Source, ...] = (
     Source("job_matches", ("engineer_id",), scope="engineer_profile"),
     Source("ai_usage_logs", ("user_id",)),
     Source("ai_reports", ("user_id",)),
+    Source("assistant_actions", ("user_id",)),
     Source("posts", ("author_id",)),
     Source("post_comments", ("author_id",)),
     Source("post_likes", ("user_id",)),
