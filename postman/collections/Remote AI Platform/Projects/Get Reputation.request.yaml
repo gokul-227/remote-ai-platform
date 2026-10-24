@@ -82,4 +82,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Get Reputation.resources/examples
-order: 29000
+order: 30000

@@ -19,7 +19,8 @@ request:
     type: json
     content: |-
       {
-        "is_active": true
+        "is_active": true,
+        "reason": "string"
       }
 response:
   statusCode: 422

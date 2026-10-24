@@ -97,4 +97,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Add Task Dependency.resources/examples
-order: 10000
+order: 11000

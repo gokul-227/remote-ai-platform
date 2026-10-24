@@ -15,7 +15,7 @@ request:
     type: json
     content: |-
       {
-        "project_id": "0aca5410-8412-81a7-e5b4-dbb34fe37121",
+        "project_id": "dfa75b81-7617-e650-cada-1616e97e8322",
         "title": "string",
         "description": "string",
         "milestone": "string",
@@ -23,10 +23,15 @@ request:
           "string",
           "string"
         ],
-        "assigned_user_id": "ddd33f4e-9a41-052d-c316-a94237ed1cfb",
+        "assigned_user_id": "1ec4cbcc-52ba-d642-f080-284d18d2a4a8",
         "priority": "MEDIUM",
-        "deadline": "2005-09-17T11:16:46.956Z",
-        "estimated_hours": 8626.693275291473
+        "item_type": "TASK",
+        "labels": [
+          "string",
+          "string"
+        ],
+        "deadline": "2016-10-22T11:28:44.464Z",
+        "estimated_hours": 7020.907974801958
       }
 response:
   statusCode: 201

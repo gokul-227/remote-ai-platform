@@ -1,0 +1,121 @@
+$kind: http-request
+id: 333e69cb-501d-59dc-833e-9ffde386a7d6
+description: |-
+  `POST /api/v1/contracts/{contract_id}/deliverables/document`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{contract_id}}` | string (uuid) | "Contracts › Create contract" |  |
+
+  **Request body (multipart/form-data, Body_submit_document_api_v1_contracts__contract_id__deliverables_document_post)**
+
+  | Field | Type | Required | Description |
+  | --- | --- | --- | --- |
+  | `milestone_id` | string (uuid) | yes |  |
+  | `title` | string | yes |  |
+  | `notes` | string \\\| null | no |  |
+  | `supersedes_id` | string (uuid) \\\| null | no |  |
+  | `file` | string | yes |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 201 | Successful Response | DeliverableResponse |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{contract_id}}` — "Contracts › Create contract"
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 201
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/contracts/:contract_id/deliverables/document"
+method: POST
+headers:
+  Content-Type: multipart/form-data
+  Accept: application/json
+pathVariables:
+  - key: contract_id
+    value: "{{contract_id}}"
+    description: "(Required) "
+body:
+  type: formdata
+  content:
+    - type: text
+      key: milestone_id
+      value: 0d1b1ad2-92e8-f758-922e-d889c3c3e2af
+      description: "(Required) "
+    - type: text
+      key: title
+      value: string
+      description: "(Required) "
+    - type: text
+      key: file
+      value: string
+      description: "(Required) "
+    - type: text
+      key: notes
+      value: string
+      description: ""
+    - type: text
+      key: supersedes_id
+      value: 00832b20-82d8-1540-e48e-c5abe970a742
+      description: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/contracts/{contract_id}/deliverables/document) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+      if (!pm.variables.get("contract_id")) {
+        console.log("Skipped: {{contract_id}} is not set -- run \"Contracts › Create contract\" first.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/contracts/{contract_id}/deliverables/document) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (201)", () => {
+          pm.expect([201]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/DeliverableResponse","definitions":{"DeliverableResponse":{"properties":{"id":{"type":"string"},"contract_id":{"type":"string"},"milestone_id":{"type":"string"},"submitted_by_id":{"type":"string"},"supersedes_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"kind":{"type":"string"},"title":{"type":"string"},"notes":{"anyOf":[{"type":"string"},{"type":"null"}]},"version":{"type":"integer"},"status":{"type":"string"},"review_note":{"anyOf":[{"type":"string"},{"type":"null"}]},"reviewed_at":{"anyOf":[{"type":"string"},{"type":"null"}]},"repo_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"branch":{"anyOf":[{"type":"string"},{"type":"null"}]},"commit_sha":{"anyOf":[{"type":"string"},{"type":"null"}]},"file_name":{"anyOf":[{"type":"string"},{"type":"null"}]},"file_mime":{"anyOf":[{"type":"string"},{"type":"null"}]},"file_size":{"anyOf":[{"type":"integer"},{"type":"null"}]},"demo_url":{"anyOf":[{"type":"string"},{"type":"null"}]},"environment":{"anyOf":[{"type":"string"},{"type":"null"}]},"created_at":{"type":"string"}},"type":"object","required":["id","contract_id","milestone_id","submitted_by_id","supersedes_id","kind","title","notes","version","status","review_note","reviewed_at","repo_url","branch","commit_sha","file_name","file_mime","file_size","demo_url","environment","created_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Submit Document.resources/examples
+order: 3000

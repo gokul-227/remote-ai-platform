@@ -1,0 +1,4 @@
+$kind: collection
+id: 23d7c70f-311e-5e50-bce2-a310684c46aa
+description: Requests for **Assistant**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 23000

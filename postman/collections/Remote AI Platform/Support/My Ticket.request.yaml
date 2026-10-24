@@ -1,0 +1,85 @@
+$kind: http-request
+id: 48f5de1b-b7c9-5a58-ab32-4ccc2f9d752a
+description: |-
+  `GET /api/v1/support/tickets/{ticket_id}`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{ticket_id}}` | string (uuid) | "Support › Open Ticket" or "Support › My Tickets" or "Admin support › Queue" |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | TicketDetail |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{ticket_id}}` — "Support › Open Ticket" or "Support › My Tickets" or "Admin support › Queue"
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/support/tickets/:ticket_id"
+method: GET
+headers:
+  Accept: application/json
+pathVariables:
+  - key: ticket_id
+    value: "{{ticket_id}}"
+    description: "(Required) "
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/support/tickets/{ticket_id}) -- edit the API or postman/overrides/, not this script.
+      if (!pm.variables.get("ticket_id")) {
+        console.log("Skipped: {{ticket_id}} is not set -- run \"Support › Open Ticket\" or \"Support › My Tickets\" or \"Admin support › Queue\" first.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (GET /api/v1/support/tickets/{ticket_id}) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/TicketDetail","definitions":{"MessageOut":{"properties":{"id":{"type":"string"},"author_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"body":{"type":"string"},"internal":{"type":"boolean"},"from_staff":{"type":"boolean"},"created_at":{"type":"string"}},"type":"object","required":["id","author_id","body","internal","created_at"]},"TicketDetail":{"properties":{"ticket":{"$ref":"#/definitions/TicketOut"},"messages":{"items":{"$ref":"#/definitions/MessageOut"},"type":"array"}},"type":"object","required":["ticket","messages"]},"TicketOut":{"properties":{"id":{"type":"string"},"requester_id":{"type":"string"},"subject":{"type":"string"},"category":{"type":"string"},"severity":{"type":"string"},"status":{"type":"string"},"sla_due_at":{"type":"string"},"first_response_at":{"anyOf":[{"type":"string"},{"type":"null"}]},"resolved_at":{"anyOf":[{"type":"string"},{"type":"null"}]},"created_at":{"type":"string"},"updated_at":{"type":"string"}},"type":"object","required":["id","requester_id","subject","category","severity","status","sla_due_at","first_response_at","resolved_at","created_at","updated_at"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/My Ticket.resources/examples
+order: 5000

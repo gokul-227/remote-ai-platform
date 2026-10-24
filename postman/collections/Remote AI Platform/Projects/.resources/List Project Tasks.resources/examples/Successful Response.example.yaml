@@ -9,6 +9,32 @@ request:
     - key: Authorization
       value: Bearer <token>
       description: "Added as a part of security scheme: bearer"
+  queryParams:
+    - key: status
+      value: string
+      disabled: true
+    - key: assignee
+      value: string
+      disabled: true
+      description: "'me', 'none' or a user id"
+    - key: priority
+      value: string
+      disabled: true
+    - key: item_type
+      value: string
+      disabled: true
+    - key: label
+      value: string
+      disabled: true
+    - key: q
+      value: string
+      disabled: true
+    - key: skip
+      value: "0"
+      disabled: true
+    - key: limit
+      value: "500"
+      disabled: true
   pathVariables:
     - key: project_id
       value: 76e3fc79-a326-0b17-8d51-bb165405198f

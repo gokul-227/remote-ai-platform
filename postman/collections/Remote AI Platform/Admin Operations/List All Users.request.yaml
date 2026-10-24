@@ -14,6 +14,7 @@ description: |-
   | `skip` | integer | no | `0` |  |
   | `limit` | integer | no | `50` |  |
   | `role` | UserRole \\\| null | no |  |  |
+  | `q` | string \\\| null | no |  | Search email or name |
 
   **Responses**
 
@@ -48,6 +49,10 @@ queryParams:
     value: ADMIN
     disabled: true
     description: " (This can only be one of ENGINEER,COMPANY,ADMIN)"
+  - key: q
+    value: string
+    disabled: true
+    description: Search email or name
 body:
   type: text
   content: ""
@@ -87,4 +92,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/List All Users.resources/examples
-order: 7000
+order: 8000

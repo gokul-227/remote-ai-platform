@@ -82,4 +82,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Project Detail.resources/examples
-order: 30000
+order: 31000

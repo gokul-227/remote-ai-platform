@@ -1,0 +1,4 @@
+$kind: collection
+id: 033e4b5a-9a06-57db-afe0-10c18afdcf12
+description: Requests for **Support**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 22000

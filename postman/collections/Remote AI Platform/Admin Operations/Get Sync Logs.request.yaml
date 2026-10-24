@@ -71,4 +71,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Get Sync Logs.resources/examples
-order: 5000
+order: 6000

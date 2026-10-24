@@ -9,8 +9,8 @@ overwritten by the next mirror.
 
 | | |
 | --- | --- |
-| Requests | 181 (162 need a signed-in user) in the collection **Remote AI Platform** |
-| Captured variables | 10 ids passed from one request to the next (see *Request dependencies*) |
+| Requests | 210 (191 need a signed-in user) in the collection **Remote AI Platform** |
+| Captured variables | 13 ids passed from one request to the next (see *Request dependencies*) |
 | Environments | `local`, `dev`, `prod` |
 | Spec | `postman/specs/` — the OpenAPI document the collection is generated from |
 | Mock | `postman/mocks/` — run with `postman mock run postman/mocks/<name>/config.yaml` (port 4500) |

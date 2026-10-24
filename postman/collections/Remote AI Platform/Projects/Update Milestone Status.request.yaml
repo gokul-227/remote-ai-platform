@@ -97,4 +97,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Update Milestone Status.resources/examples
-order: 32000
+order: 33000

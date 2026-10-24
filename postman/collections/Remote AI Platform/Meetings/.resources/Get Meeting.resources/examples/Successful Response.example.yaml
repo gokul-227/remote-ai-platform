@@ -1,0 +1,52 @@
+$kind: http-example
+id: ac300559-9ade-5c29-8b7a-aa36695e31b2
+request:
+  url: "{{base_url}}/api/v1/meetings/:meeting_id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: meeting_id
+      value: 4d10f841-4065-40bf-e70d-b0b28025330c
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "c89ab641-ebfd-b6e7-28af-b66e42a1e54f",
+        "organizer_id": "1dc1a450-1db6-7c84-caa5-7721a41f3ec1",
+        "contract_id": "db7fc180-a4f8-5e5b-50a4-479b7fcee42d",
+        "title": "string",
+        "agenda": "string",
+        "starts_at": "1966-09-19T22:41:27.133Z",
+        "ends_at": "1970-02-20T23:12:49.257Z",
+        "provider": "string",
+        "status": "string",
+        "participants": [
+          {
+            "user_id": "b48fbb28-f56e-9fe5-6ff2-1ff886436f82",
+            "response": "string",
+            "full_name": "string"
+          },
+          {
+            "user_id": "0816187f-ca8e-3552-a786-7cdca1b0c1d5",
+            "response": "string",
+            "full_name": "string"
+          }
+        ],
+        "phase": "string",
+        "created_at": "2006-05-16T16:51:32.287Z"
+      }
+order: 1000

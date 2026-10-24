@@ -65,4 +65,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Get Feature Flags.resources/examples
-order: 10000
+order: 11000

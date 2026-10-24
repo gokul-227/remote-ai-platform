@@ -82,4 +82,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/List Ai Reports.resources/examples
-order: 27000
+order: 28000

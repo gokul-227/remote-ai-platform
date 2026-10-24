@@ -71,8 +71,8 @@ features:
     name: Network & messaging
     step: 6
     personas: [professional, organisation]
-    screens: [network, messenger, notifications]
-    api: [network, notifications]
+    screens: [network, messenger, meetings, notifications]
+    api: [network, notifications, meetings]
     uses: [resend]
   - id: community
     icon: concepts/users
@@ -87,8 +87,8 @@ features:
     step: 7
     personas: [professional, organisation]
     screens: [contracts, contractsign, earnings, copayments]
-    api: [contracts, payments]
-    uses: [stripe]
+    api: [contracts, payments, deliverables]
+    uses: [stripe, storage]
   - id: delivery
     icon: concepts/kanban
     name: Projects & delivery
@@ -105,6 +105,13 @@ features:
     screens: [reviews, quality]
     api: [trust, quality]
     uses: [ai-providers]
+  - id: assistant
+    icon: concepts/bot
+    name: AI assistant
+    personas: [professional, organisation]
+    screens: [assistant]
+    api: [assistant]
+    uses: [ai-providers]
   - id: admin
     icon: concepts/shield-check
     name: Administration & moderation
@@ -116,9 +123,9 @@ features:
     icon: concepts/life-buoy
     name: Help & legal
     personas: [visitor, professional, organisation]
-    screens: [help, terms, privacy, impressum]
-    api: []
-    uses: []
+    screens: [help, support, terms, privacy, impressum]
+    api: [support]
+    uses: [resend]
 
 # Labels for screens that are not in the navigation (detail pages and legal).
 screen_labels:

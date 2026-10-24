@@ -1,0 +1,102 @@
+$kind: http-request
+id: 5ffb611b-991e-552b-bdd4-f7b2407016e2
+description: |-
+  `POST /api/v1/admin/support/tickets/{ticket_id}/messages`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{ticket_id}}` | string (uuid) | "Support › Open Ticket" or "Support › My Tickets" or "Admin support › Queue" |  |
+
+  **Request body (application/json, StaffMessageCreate)**
+
+  | Field | Type | Required | Description |
+  | --- | --- | --- | --- |
+  | `body` | string | yes |  |
+  | `internal` | boolean | no |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | StaffTicketDetail |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{ticket_id}}` — "Support › Open Ticket" or "Support › My Tickets" or "Admin support › Queue"
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/admin/support/tickets/:ticket_id/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Accept: application/json
+pathVariables:
+  - key: ticket_id
+    value: "{{ticket_id}}"
+    description: "(Required) "
+body:
+  type: json
+  content: |-
+    {
+      "body": "string",
+      "internal": false
+    }
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/admin/support/tickets/{ticket_id}/messages) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+      if (!pm.variables.get("ticket_id")) {
+        console.log("Skipped: {{ticket_id}} is not set -- run \"Support › Open Ticket\" or \"Support › My Tickets\" or \"Admin support › Queue\" first.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/admin/support/tickets/{ticket_id}/messages) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/StaffTicketDetail","definitions":{"MessageOut":{"properties":{"id":{"type":"string"},"author_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"body":{"type":"string"},"internal":{"type":"boolean"},"from_staff":{"type":"boolean"},"created_at":{"type":"string"}},"type":"object","required":["id","author_id","body","internal","created_at"]},"StaffTicketDetail":{"properties":{"ticket":{"$ref":"#/definitions/StaffTicketOut"},"messages":{"items":{"$ref":"#/definitions/MessageOut"},"type":"array"}},"type":"object","required":["ticket","messages"]},"StaffTicketOut":{"properties":{"id":{"type":"string"},"requester_id":{"type":"string"},"subject":{"type":"string"},"category":{"type":"string"},"severity":{"type":"string"},"status":{"type":"string"},"sla_due_at":{"type":"string"},"first_response_at":{"anyOf":[{"type":"string"},{"type":"null"}]},"resolved_at":{"anyOf":[{"type":"string"},{"type":"null"}]},"created_at":{"type":"string"},"updated_at":{"type":"string"},"assignee_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"version":{"type":"integer"},"overdue":{"type":"boolean"},"requester_email":{"anyOf":[{"type":"string"},{"type":"null"}]}},"type":"object","required":["id","requester_id","subject","category","severity","status","sla_due_at","first_response_at","resolved_at","created_at","updated_at","assignee_id","version"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Staff Reply.resources/examples
+order: 1000

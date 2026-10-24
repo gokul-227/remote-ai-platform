@@ -1,0 +1,4 @@
+$kind: collection
+id: 99abbc4b-d029-5591-a405-87a2f01ca5fb
+description: Requests for **Meetings**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
+order: 20000

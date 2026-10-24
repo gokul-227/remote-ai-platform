@@ -11,7 +11,7 @@ description: |-
   | --- | --- | --- | --- |
   | `{{conversation_id}}` | string (uuid) | set it in your environment |  |
 
-  **Request body (application/json, MessageCreate)**
+  **Request body (application/json, app__domains__network__router__MessageCreate)**
 
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |

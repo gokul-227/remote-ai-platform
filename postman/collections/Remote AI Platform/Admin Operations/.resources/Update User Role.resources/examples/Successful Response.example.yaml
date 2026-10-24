@@ -19,7 +19,8 @@ request:
     type: json
     content: |-
       {
-        "role": "COMPANY"
+        "role": "ENGINEER",
+        "reason": "string"
       }
 response:
   statusCode: 200

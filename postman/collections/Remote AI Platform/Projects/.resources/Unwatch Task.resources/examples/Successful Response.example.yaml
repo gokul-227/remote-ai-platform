@@ -1,0 +1,27 @@
+$kind: http-example
+id: de192dfd-d5a5-5e16-aee3-e8d464863fc6
+request:
+  url: "{{base_url}}/api/v1/projects/tasks/:task_id/watch"
+  method: DELETE
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: task_id
+      value: bb63861d-4f8c-8f12-91a7-457a5ef998cc
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: ""
+order: 1000

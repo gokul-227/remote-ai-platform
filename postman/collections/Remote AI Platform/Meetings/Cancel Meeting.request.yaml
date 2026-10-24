@@ -1,0 +1,90 @@
+$kind: http-request
+id: fbc25285-5f60-5bb6-9a42-9c96a25ee354
+description: |-
+  `POST /api/v1/meetings/{meeting_id}/cancel`
+
+  **Authorization:** Bearer `{{access_token}}` (Supabase session). Run *Sign in* first, or let the collection sign in for you where `auto_sign_in` is on.
+
+  **Path variables**
+
+  | Variable | Type | Set by | Description |
+  | --- | --- | --- | --- |
+  | `{{meeting_id}}` | string (uuid) | "Meetings › Schedule Meeting" or "Meetings › List My Meetings" |  |
+
+  **Responses**
+
+  | Status | Meaning | Body |
+  | --- | --- | --- |
+  | 200 | Successful Response | MeetingResponse |
+  | 422 | Validation Error | HTTPValidationError |
+
+  **Depends on**
+
+  - `{{meeting_id}}` — "Meetings › Schedule Meeting" or "Meetings › List My Meetings"
+
+  **Tests**
+
+  - No server error (5xx), except a 503 that explains itself (AI or payments switched off)
+  - Responds within `max_response_ms`
+  - On success: status is 200
+  - On success: JSON body matches the OpenAPI response schema
+  - On failure: the error body says why (`error` or `detail`)
+
+  **Skipped when**
+
+  - the environment is read-only (`allow_writes` is not `true`)
+  - a variable it depends on is not set yet
+url: "{{base_url}}/api/v1/meetings/:meeting_id/cancel"
+method: POST
+headers:
+  Accept: application/json
+pathVariables:
+  - key: meeting_id
+    value: "{{meeting_id}}"
+    description: "(Required) "
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+scripts:
+  - type: beforeRequest
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/meetings/{meeting_id}/cancel) -- edit the API or postman/overrides/, not this script.
+      if (pm.environment.get("allow_writes") !== "true") {
+        console.log("Skipped: this environment is read-only (allow_writes is not \"true\").");
+        pm.execution.skipRequest();
+      }
+      if (!pm.variables.get("meeting_id")) {
+        console.log("Skipped: {{meeting_id}} is not set -- run \"Meetings › Schedule Meeting\" or \"Meetings › List My Meetings\" first.");
+        pm.execution.skipRequest();
+      }
+    language: text/javascript
+  - type: afterResponse
+    code: |-
+      // Generated from OpenAPI (POST /api/v1/meetings/{meeting_id}/cancel) -- edit the API or postman/overrides/, not this script.
+      const maxMs = Number(pm.variables.get("max_response_ms") || 5000);
+      // A 503 that explains itself is deliberate (AI not configured, payments switched off).
+      const explained = (() => { try { const b = pm.response.json(); return Boolean(b.error ?? b.detail); } catch (e) { return false; } })();
+      pm.test("No server error (5xx), except an explained 503", () => {
+        pm.expect(pm.response.code < 500 || (pm.response.code === 503 && explained), `status ${pm.response.code}`).to.be.true;
+      });
+      pm.test(`Responds within ${maxMs} ms`, () => pm.expect(pm.response.responseTime).to.be.below(maxMs));
+      if (pm.response.code >= 200 && pm.response.code < 300) {
+        pm.test("Status is the documented success code (200)", () => {
+          pm.expect([200]).to.include(pm.response.code);
+        });
+        pm.test("Responds with JSON", () => pm.expect(pm.response.headers.get("Content-Type")).to.match(/application\/json/));
+        const schema = {"$ref":"#/definitions/MeetingResponse","definitions":{"MeetingResponse":{"properties":{"id":{"type":"string"},"organizer_id":{"type":"string"},"contract_id":{"anyOf":[{"type":"string"},{"type":"null"}]},"title":{"type":"string"},"agenda":{"anyOf":[{"type":"string"},{"type":"null"}]},"starts_at":{"type":"string"},"ends_at":{"type":"string"},"provider":{"type":"string"},"status":{"type":"string"},"participants":{"items":{"$ref":"#/definitions/ParticipantOut"},"type":"array"},"phase":{"type":"string"},"created_at":{"type":"string"}},"type":"object","required":["id","organizer_id","contract_id","title","agenda","starts_at","ends_at","provider","status","participants","phase","created_at"]},"ParticipantOut":{"properties":{"user_id":{"type":"string"},"full_name":{"anyOf":[{"type":"string"},{"type":"null"}]},"response":{"type":"string"}},"type":"object","required":["user_id","response"]}}};
+        pm.test("Body matches the OpenAPI response schema", () => pm.response.to.have.jsonSchema(schema));
+      } else {
+        pm.test("Error response explains the failure (error or detail)", () => {
+          const body = pm.response.json();
+          pm.expect(body.error ?? body.detail, "error/detail").to.exist;
+        });
+      }
+    language: text/javascript
+examples: ./.resources/Cancel Meeting.resources/examples
+order: 3000

@@ -1,0 +1,57 @@
+$kind: http-example
+id: 07d42e41-b03f-5f09-91cd-7909a828f002
+request:
+  url: "{{base_url}}/api/v1/admin/support/tickets/:ticket_id/messages"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: ticket_id
+      value: 9c5cc350-baab-ebbf-5f88-de82f4c6a789
+      description: "(Required) "
+  body:
+    type: json
+    content: |-
+      {
+        "body": "string",
+        "internal": false
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

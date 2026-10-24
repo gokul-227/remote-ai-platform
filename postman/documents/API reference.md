@@ -132,6 +132,7 @@ Every request in the collection, in run order.
 
 | Request | Method & path | Auth | Needs | Sets |
 | --- | --- | --- | --- | --- |
+| Revoke User Sessions | `POST /api/v1/admin/users/{user_id}/revoke-sessions` | Bearer | `{{user_id}}` |  |
 | Retry Identity Erasures | `POST /api/v1/admin/erasures/retry` | Bearer |  |  |
 | Reclean Job Text | `POST /api/v1/admin/jobs/reclean-text` | Bearer |  |  |
 | Get Admin Dashboard | `GET /api/v1/admin/dashboard` | Bearer |  |  |
@@ -204,6 +205,7 @@ Every request in the collection, in run order.
 | Create Task Offer | `POST /api/v1/projects/tasks/{task_id}/offers` | Bearer | `{{task_id}}` |  |
 | Submit Task Work | `POST /api/v1/projects/tasks/{task_id}/submissions` | Bearer | `{{task_id}}` |  |
 | Ai Review Submission | `POST /api/v1/projects/submissions/{submission_id}/ai-review` | Bearer | `{{submission_id}}` |  |
+| Watch Task | `POST /api/v1/projects/tasks/{task_id}/watch` | Bearer | `{{task_id}}` |  |
 | Add Task Dependency | `POST /api/v1/projects/tasks/{task_id}/dependencies` | Bearer | `{{task_id}}` |  |
 | Add Task Comment | `POST /api/v1/projects/tasks/{task_id}/comments` | Bearer | `{{task_id}}` |  |
 | Generate Project Plan | `POST /api/v1/projects/{project_id}/plan` | Bearer | `{{project_id}}` |  |
@@ -234,6 +236,7 @@ Every request in the collection, in run order.
 | Cancel Task Offer | `PATCH /api/v1/projects/task-offers/{offer_id}/cancel` | Bearer | `{{offer_id}}` |  |
 | Review Task Submission | `PATCH /api/v1/projects/submissions/{submission_id}/review` | Bearer | `{{submission_id}}` |  |
 | Update Task | `PATCH /api/v1/projects/tasks/{task_id}` | Bearer | `{{task_id}}` |  |
+| Unwatch Task | `DELETE /api/v1/projects/tasks/{task_id}/watch` | Bearer | `{{task_id}}` |  |
 
 ## Notifications
 
@@ -260,6 +263,57 @@ Every request in the collection, in run order.
 | Update Connection | `PATCH /api/v1/connections/{connection_id}` | Bearer | `{{connection_id}}` |  |
 | Unblock User | `DELETE /api/v1/blocks/{user_id}` | Bearer | `{{user_id}}` |  |
 | Remove Connection | `DELETE /api/v1/connections/{connection_id}` | Bearer | `{{connection_id}}` |  |
+
+## Deliverables
+
+| Request | Method & path | Auth | Needs | Sets |
+| --- | --- | --- | --- | --- |
+| Submit Code | `POST /api/v1/contracts/{contract_id}/deliverables/code` | Bearer | `{{contract_id}}` |  |
+| Submit Demo | `POST /api/v1/contracts/{contract_id}/deliverables/demo` | Bearer | `{{contract_id}}` |  |
+| Submit Document | `POST /api/v1/contracts/{contract_id}/deliverables/document` | Bearer | `{{contract_id}}` |  |
+| Review Deliverable | `POST /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/review` | Bearer | `{{contract_id}}`, `{{deliverable_id}}` |  |
+| Withdraw Deliverable | `POST /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/withdraw` | Bearer | `{{contract_id}}`, `{{deliverable_id}}` |  |
+| List Deliverables | `GET /api/v1/contracts/{contract_id}/deliverables` | Bearer | `{{contract_id}}` | `{{deliverable_id}}` |
+| Download Document | `GET /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/download` | Bearer | `{{contract_id}}`, `{{deliverable_id}}` |  |
+
+## Meetings
+
+| Request | Method & path | Auth | Needs | Sets |
+| --- | --- | --- | --- | --- |
+| Schedule Meeting | `POST /api/v1/meetings` | Bearer |  | `{{meeting_id}}` |
+| Respond To Meeting | `POST /api/v1/meetings/{meeting_id}/respond` | Bearer | `{{meeting_id}}` |  |
+| Cancel Meeting | `POST /api/v1/meetings/{meeting_id}/cancel` | Bearer | `{{meeting_id}}` |  |
+| List My Meetings | `GET /api/v1/meetings` | Bearer |  | `{{meeting_id}}` |
+| Join Meeting | `GET /api/v1/meetings/{meeting_id}/join` | Bearer | `{{meeting_id}}` |  |
+| Get Meeting | `GET /api/v1/meetings/{meeting_id}` | Bearer | `{{meeting_id}}` |  |
+
+## Admin support
+
+| Request | Method & path | Auth | Needs | Sets |
+| --- | --- | --- | --- | --- |
+| Staff Reply | `POST /api/v1/admin/support/tickets/{ticket_id}/messages` | Bearer | `{{ticket_id}}` |  |
+| Queue | `GET /api/v1/admin/support/tickets` | Bearer |  | `{{ticket_id}}` |
+| Staff Ticket | `GET /api/v1/admin/support/tickets/{ticket_id}` | Bearer | `{{ticket_id}}` |  |
+| Staff Update | `PATCH /api/v1/admin/support/tickets/{ticket_id}` | Bearer | `{{ticket_id}}` |  |
+
+## Support
+
+| Request | Method & path | Auth | Needs | Sets |
+| --- | --- | --- | --- | --- |
+| Open Ticket | `POST /api/v1/support/tickets` | Bearer |  | `{{ticket_id}}` |
+| Reply | `POST /api/v1/support/tickets/{ticket_id}/messages` | Bearer | `{{ticket_id}}` |  |
+| Close Own | `POST /api/v1/support/tickets/{ticket_id}/close` | Bearer | `{{ticket_id}}` |  |
+| My Tickets | `GET /api/v1/support/tickets` | Bearer |  | `{{ticket_id}}` |
+| My Ticket | `GET /api/v1/support/tickets/{ticket_id}` | Bearer | `{{ticket_id}}` |  |
+
+## Assistant
+
+| Request | Method & path | Auth | Needs | Sets |
+| --- | --- | --- | --- | --- |
+| Chat | `POST /api/v1/assistant/chat` | Bearer |  |  |
+| Confirm Action | `POST /api/v1/assistant/actions/{action_id}/confirm` | Bearer | `{{action_id}}` |  |
+| Cancel Action | `POST /api/v1/assistant/actions/{action_id}/cancel` | Bearer | `{{action_id}}` |  |
+| List Tools | `GET /api/v1/assistant/tools` | Bearer |  |  |
 
 ## Payments & Financial Ledger
 

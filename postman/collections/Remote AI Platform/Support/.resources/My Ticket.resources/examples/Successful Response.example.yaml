@@ -1,0 +1,60 @@
+$kind: http-example
+id: 42d28a35-2da6-5ca1-905f-267d476cd362
+request:
+  url: "{{base_url}}/api/v1/support/tickets/:ticket_id"
+  method: GET
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: ticket_id
+      value: 9c5cc350-baab-ebbf-5f88-de82f4c6a789
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "ticket": {
+          "id": "879fe936-e21d-bd9f-aeb1-9cfffab5cb53",
+          "requester_id": "8236c02b-8a22-4e59-f06f-fca2c0206cdb",
+          "subject": "string",
+          "category": "string",
+          "severity": "string",
+          "status": "string",
+          "sla_due_at": "1972-12-25T10:21:21.060Z",
+          "first_response_at": "1947-02-02T17:56:26.840Z",
+          "resolved_at": "1964-11-12T20:03:05.549Z",
+          "created_at": "2011-07-12T23:10:56.231Z",
+          "updated_at": "1968-09-04T16:08:22.408Z"
+        },
+        "messages": [
+          {
+            "id": "f25f38a3-4924-41ae-c5f6-6b90b043d581",
+            "author_id": "dc87f57a-0050-8143-d948-f1a097eaf0bc",
+            "body": "string",
+            "internal": true,
+            "created_at": "1983-05-15T06:27:59.114Z",
+            "from_staff": false
+          },
+          {
+            "id": "f620caf0-44ff-726f-436a-a442ea84f591",
+            "author_id": "6f265d55-1df6-e0e5-0505-407bb8c0f05e",
+            "body": "string",
+            "internal": true,
+            "created_at": "1975-01-19T01:56:15.037Z",
+            "from_staff": false
+          }
+        ]
+      }
+order: 1000

@@ -11,6 +11,19 @@ description: |-
   | --- | --- | --- | --- |
   | `{{project_id}}` | string (uuid) | set it in your environment |  |
 
+  **Query parameters (optional ones are disabled until you enable them)**
+
+  | Name | Type | Required | Default | Description |
+  | --- | --- | --- | --- | --- |
+  | `status` | string \\\| null | no |  |  |
+  | `assignee` | string \\\| null | no |  | 'me', 'none' or a user id |
+  | `priority` | string \\\| null | no |  |  |
+  | `item_type` | string \\\| null | no |  |  |
+  | `label` | string \\\| null | no |  |  |
+  | `q` | string \\\| null | no |  |  |
+  | `skip` | integer | no | `0` |  |
+  | `limit` | integer | no | `500` |  |
+
   **Responses**
 
   | Status | Meaning | Body |
@@ -37,6 +50,32 @@ url: "{{base_url}}/api/v1/projects/:project_id/tasks"
 method: GET
 headers:
   Accept: application/json
+queryParams:
+  - key: status
+    value: string
+    disabled: true
+  - key: assignee
+    value: string
+    disabled: true
+    description: "'me', 'none' or a user id"
+  - key: priority
+    value: string
+    disabled: true
+  - key: item_type
+    value: string
+    disabled: true
+  - key: label
+    value: string
+    disabled: true
+  - key: q
+    value: string
+    disabled: true
+  - key: skip
+    value: "0"
+    disabled: true
+  - key: limit
+    value: "500"
+    disabled: true
 pathVariables:
   - key: project_id
     value: "{{project_id}}"
@@ -82,4 +121,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/List Project Tasks.resources/examples
-order: 22000
+order: 23000

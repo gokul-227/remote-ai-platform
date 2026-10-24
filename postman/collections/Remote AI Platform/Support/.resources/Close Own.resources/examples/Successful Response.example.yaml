@@ -1,0 +1,40 @@
+$kind: http-example
+id: b36291dc-a548-5ec4-8dff-e27b11087270
+request:
+  url: "{{base_url}}/api/v1/support/tickets/:ticket_id/close"
+  method: POST
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: ticket_id
+      value: 9c5cc350-baab-ebbf-5f88-de82f4c6a789
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "id": "ad41649d-2e41-d709-98c8-0aa7f690c2f8",
+        "requester_id": "7bd95251-86a3-c46a-5ceb-1eed7a412a20",
+        "subject": "string",
+        "category": "string",
+        "severity": "string",
+        "status": "string",
+        "sla_due_at": "2015-02-08T16:39:40.425Z",
+        "first_response_at": "1990-02-02T11:25:34.260Z",
+        "resolved_at": "1971-12-11T05:20:01.343Z",
+        "created_at": "2007-11-16T09:04:50.133Z",
+        "updated_at": "1980-04-23T07:27:31.499Z"
+      }
+order: 1000

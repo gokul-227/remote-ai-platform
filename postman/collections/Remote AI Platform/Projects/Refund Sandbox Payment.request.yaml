@@ -87,4 +87,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Refund Sandbox Payment.resources/examples
-order: 35000
+order: 36000

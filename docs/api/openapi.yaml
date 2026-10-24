@@ -1596,6 +1596,17 @@ paths:
           - $ref: '#/components/schemas/UserRole'
           - type: 'null'
           title: Role
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          description: Search email or name
+          title: Q
+        description: Search email or name
       responses:
         '200':
           description: Successful Response
@@ -1734,6 +1745,42 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UserRoleUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/users/{user_id}/revoke-sessions:
+    post:
+      tags:
+      - Admin Operations
+      summary: Revoke User Sessions
+      description: 'Sign a user out everywhere: tokens issued before now stop working.'
+      operationId: revoke_user_sessions_api_v1_admin_users__user_id__revoke_sessions_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRevoke'
       responses:
         '200':
           description: Successful Response
@@ -2764,6 +2811,74 @@ paths:
           type: string
           format: uuid
           title: Project Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: assignee
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: '''me'', ''none'' or a user id'
+          title: Assignee
+        description: '''me'', ''none'' or a user id'
+      - name: priority
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Priority
+      - name: item_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Item Type
+      - name: label
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Label
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      - name: skip
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Skip
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 500
+          title: Limit
       responses:
         '200':
           description: Successful Response
@@ -3292,6 +3407,61 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/tasks/{task_id}/watch:
+    post:
+      tags:
+      - Projects
+      summary: Watch Task
+      operationId: watch_task_api_v1_projects_tasks__task_id__watch_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Projects
+      summary: Unwatch Task
+      operationId: unwatch_task_api_v1_projects_tasks__task_id__watch_delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Task Id
       responses:
         '200':
           description: Successful Response
@@ -4017,7 +4187,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MessageCreate'
+              $ref: '#/components/schemas/app__domains__network__router__MessageCreate'
       responses:
         '201':
           description: Successful Response
@@ -4641,6 +4811,877 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContractMilestoneResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables:
+    get:
+      tags:
+      - Deliverables
+      summary: List Deliverables
+      operationId: list_deliverables_api_v1_contracts__contract_id__deliverables_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      - name: milestone_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Milestone Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliverableResponse'
+                title: Response List Deliverables Api V1 Contracts  Contract Id  Deliverables Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables/code:
+    post:
+      tags:
+      - Deliverables
+      summary: Submit Code
+      operationId: submit_code_api_v1_contracts__contract_id__deliverables_code_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodeDeliverableCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables/demo:
+    post:
+      tags:
+      - Deliverables
+      summary: Submit Demo
+      operationId: submit_demo_api_v1_contracts__contract_id__deliverables_demo_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoDeliverableCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables/document:
+    post:
+      tags:
+      - Deliverables
+      summary: Submit Document
+      operationId: submit_document_api_v1_contracts__contract_id__deliverables_document_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_submit_document_api_v1_contracts__contract_id__deliverables_document_post'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/download:
+    get:
+      tags:
+      - Deliverables
+      summary: Download Document
+      operationId: download_document_api_v1_contracts__contract_id__deliverables__deliverable_id__download_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      - name: deliverable_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Deliverable Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadLink'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/review:
+    post:
+      tags:
+      - Deliverables
+      summary: Review Deliverable
+      operationId: review_deliverable_api_v1_contracts__contract_id__deliverables__deliverable_id__review_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      - name: deliverable_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Deliverable Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverableReview'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/withdraw:
+    post:
+      tags:
+      - Deliverables
+      summary: Withdraw Deliverable
+      operationId: withdraw_deliverable_api_v1_contracts__contract_id__deliverables__deliverable_id__withdraw_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      - name: deliverable_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Deliverable Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings:
+    post:
+      tags:
+      - Meetings
+      summary: Schedule Meeting
+      operationId: schedule_meeting_api_v1_meetings_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Meetings
+      summary: List My Meetings
+      operationId: list_my_meetings_api_v1_meetings_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: include_past
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Include Past
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeetingResponse'
+                title: Response List My Meetings Api V1 Meetings Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}:
+    get:
+      tags:
+      - Meetings
+      summary: Get Meeting
+      operationId: get_meeting_api_v1_meetings__meeting_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/respond:
+    post:
+      tags:
+      - Meetings
+      summary: Respond To Meeting
+      operationId: respond_to_meeting_api_v1_meetings__meeting_id__respond_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingRespond'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/cancel:
+    post:
+      tags:
+      - Meetings
+      summary: Cancel Meeting
+      operationId: cancel_meeting_api_v1_meetings__meeting_id__cancel_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/join:
+    get:
+      tags:
+      - Meetings
+      summary: Join Meeting
+      operationId: join_meeting_api_v1_meetings__meeting_id__join_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinLink'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/support/tickets:
+    get:
+      tags:
+      - Support
+      summary: My Tickets
+      operationId: my_tickets_api_v1_support_tickets_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/TicketOut'
+                type: array
+                title: Response My Tickets Api V1 Support Tickets Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Support
+      summary: Open Ticket
+      operationId: open_ticket_api_v1_support_tickets_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/support/tickets/{ticket_id}:
+    get:
+      tags:
+      - Support
+      summary: My Ticket
+      operationId: my_ticket_api_v1_support_tickets__ticket_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ticket Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/support/tickets/{ticket_id}/messages:
+    post:
+      tags:
+      - Support
+      summary: Reply
+      operationId: reply_api_v1_support_tickets__ticket_id__messages_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ticket Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/app__domains__support__schemas__MessageCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/support/tickets/{ticket_id}/close:
+    post:
+      tags:
+      - Support
+      summary: Close Own
+      operationId: close_own_api_v1_support_tickets__ticket_id__close_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ticket Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/support/tickets:
+    get:
+      tags:
+      - Admin support
+      summary: Queue
+      operationId: queue_api_v1_admin_support_tickets_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: severity
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Severity
+      - name: assignee
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: '''me'', ''none'' or a user id'
+          title: Assignee
+        description: '''me'', ''none'' or a user id'
+      - name: overdue
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Overdue
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffTicketOut'
+                title: Response Queue Api V1 Admin Support Tickets Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/support/tickets/{ticket_id}:
+    get:
+      tags:
+      - Admin support
+      summary: Staff Ticket
+      operationId: staff_ticket_api_v1_admin_support_tickets__ticket_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ticket Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTicketDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Admin support
+      summary: Staff Update
+      operationId: staff_update_api_v1_admin_support_tickets__ticket_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ticket Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffTicketUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTicketDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/support/tickets/{ticket_id}/messages:
+    post:
+      tags:
+      - Admin support
+      summary: Staff Reply
+      operationId: staff_reply_api_v1_admin_support_tickets__ticket_id__messages_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: ticket_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Ticket Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffMessageCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffTicketDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/assistant/tools:
+    get:
+      tags:
+      - Assistant
+      summary: List Tools
+      operationId: list_tools_api_v1_assistant_tools_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Tools Api V1 Assistant Tools Get
+      security:
+      - HTTPBearer: []
+  /api/v1/assistant/chat:
+    post:
+      tags:
+      - Assistant
+      summary: Chat
+      operationId: chat_api_v1_assistant_chat_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/assistant/actions/{action_id}/confirm:
+    post:
+      tags:
+      - Assistant
+      summary: Confirm Action
+      operationId: confirm_action_api_v1_assistant_actions__action_id__confirm_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Action Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/assistant/actions/{action_id}/cancel:
+    post:
+      tags:
+      - Assistant
+      summary: Cancel Action
+      operationId: cancel_action_api_v1_assistant_actions__action_id__cancel_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Action Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionOut'
         '422':
           description: Validation Error
           content:
@@ -5787,6 +6828,31 @@ components:
       - model_breakdown
       - feature_breakdown
       title: AIUsageStatsResponse
+    ActionOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        tool:
+          type: string
+          title: Tool
+        status:
+          type: string
+          title: Status
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+      type: object
+      required:
+      - id
+      - tool
+      - status
+      - result
+      title: ActionOut
     ActivityLogResponse:
       properties:
         id:
@@ -6073,6 +7139,39 @@ components:
       required:
       - confirm
       title: Body_delete_my_account_api_v1_auth_me_delete
+    Body_submit_document_api_v1_contracts__contract_id__deliverables_document_post:
+      properties:
+        milestone_id:
+          type: string
+          format: uuid
+          title: Milestone Id
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Title
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+          title: Notes
+        supersedes_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Supersedes Id
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - milestone_id
+      - title
+      - file
+      title: Body_submit_document_api_v1_contracts__contract_id__deliverables_document_post
     Body_update_me_api_v1_auth_me_patch:
       properties:
         full_name:
@@ -6185,6 +7284,87 @@ components:
       - updated_at
       title: CandidateMatchResponse
       description: 'A match shown to a company: the engineer appears only as their public profile.'
+    ChatIn:
+      properties:
+        message:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          title: Message
+      type: object
+      required:
+      - message
+      title: ChatIn
+    ChatOut:
+      properties:
+        reply:
+          type: string
+          title: Reply
+        tool:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Tool
+        kind:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Kind
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+        pending_action:
+          anyOf:
+          - $ref: '#/components/schemas/PendingAction'
+          - type: 'null'
+      type: object
+      required:
+      - reply
+      title: ChatOut
+    CodeDeliverableCreate:
+      properties:
+        milestone_id:
+          type: string
+          format: uuid
+          title: Milestone Id
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Title
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+          title: Notes
+        repo_url:
+          type: string
+          title: Repo Url
+        branch:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Branch
+        commit_sha:
+          type: string
+          title: Commit Sha
+        supersedes_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Supersedes Id
+      type: object
+      required:
+      - milestone_id
+      - title
+      - repo_url
+      - commit_sha
+      title: CodeDeliverableCreate
     CodeReviewReport:
       properties:
         overall_score:
@@ -6827,6 +8007,182 @@ components:
       - total_spent
       - total_released
       title: CurrencyBalance
+    DeliverableResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        contract_id:
+          type: string
+          format: uuid
+          title: Contract Id
+        milestone_id:
+          type: string
+          format: uuid
+          title: Milestone Id
+        submitted_by_id:
+          type: string
+          format: uuid
+          title: Submitted By Id
+        supersedes_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Supersedes Id
+        kind:
+          type: string
+          title: Kind
+        title:
+          type: string
+          title: Title
+        notes:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Notes
+        version:
+          type: integer
+          title: Version
+        status:
+          type: string
+          title: Status
+        review_note:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Review Note
+        reviewed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Reviewed At
+        repo_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Repo Url
+        branch:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Branch
+        commit_sha:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Commit Sha
+        file_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: File Name
+        file_mime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: File Mime
+        file_size:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: File Size
+        demo_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Demo Url
+        environment:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Environment
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - contract_id
+      - milestone_id
+      - submitted_by_id
+      - supersedes_id
+      - kind
+      - title
+      - notes
+      - version
+      - status
+      - review_note
+      - reviewed_at
+      - repo_url
+      - branch
+      - commit_sha
+      - file_name
+      - file_mime
+      - file_size
+      - demo_url
+      - environment
+      - created_at
+      title: DeliverableResponse
+    DeliverableReview:
+      properties:
+        decision:
+          type: string
+          enum:
+          - ACCEPTED
+          - CHANGES_REQUESTED
+          title: Decision
+        note:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+          title: Note
+      type: object
+      required:
+      - decision
+      title: DeliverableReview
+    DemoDeliverableCreate:
+      properties:
+        milestone_id:
+          type: string
+          format: uuid
+          title: Milestone Id
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Title
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+          title: Notes
+        demo_url:
+          type: string
+          title: Demo Url
+        environment:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Environment
+        supersedes_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Supersedes Id
+      type: object
+      required:
+      - milestone_id
+      - title
+      - demo_url
+      title: DemoDeliverableCreate
     DirectEscrowCreate:
       properties:
         project_id:
@@ -6858,6 +8214,23 @@ components:
       - payee_id
       - amount
       title: DirectEscrowCreate
+    DownloadLink:
+      properties:
+        url:
+          type: string
+          title: Url
+        expires_in_seconds:
+          type: integer
+          title: Expires In Seconds
+        file_name:
+          type: string
+          title: File Name
+      type: object
+      required:
+      - url
+      - expires_in_seconds
+      - file_name
+      title: DownloadLink
     EducationItem:
       properties:
         institution:
@@ -8602,6 +9975,19 @@ components:
       required:
       - is_active
       title: JobStatusUpdate
+    JoinLink:
+      properties:
+        url:
+          type: string
+          title: Url
+        provider:
+          type: string
+          title: Provider
+      type: object
+      required:
+      - url
+      - provider
+      title: JoinLink
     MatchStatusUpdate:
       properties:
         status:
@@ -8611,6 +9997,130 @@ components:
       required:
       - status
       title: MatchStatusUpdate
+    MeetingCreate:
+      properties:
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Title
+        agenda:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+          title: Agenda
+        starts_at:
+          type: string
+          format: date-time
+          title: Starts At
+        ends_at:
+          type: string
+          format: date-time
+          title: Ends At
+        participant_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 25
+          minItems: 1
+          title: Participant Ids
+        contract_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contract Id
+        external_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: External Url
+      type: object
+      required:
+      - title
+      - starts_at
+      - ends_at
+      - participant_ids
+      title: MeetingCreate
+    MeetingRespond:
+      properties:
+        response:
+          type: string
+          enum:
+          - ACCEPTED
+          - DECLINED
+          title: Response
+      type: object
+      required:
+      - response
+      title: MeetingRespond
+    MeetingResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        organizer_id:
+          type: string
+          format: uuid
+          title: Organizer Id
+        contract_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contract Id
+        title:
+          type: string
+          title: Title
+        agenda:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Agenda
+        starts_at:
+          type: string
+          format: date-time
+          title: Starts At
+        ends_at:
+          type: string
+          format: date-time
+          title: Ends At
+        provider:
+          type: string
+          title: Provider
+        status:
+          type: string
+          title: Status
+        participants:
+          items:
+            $ref: '#/components/schemas/ParticipantOut'
+          type: array
+          title: Participants
+        phase:
+          type: string
+          title: Phase
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - organizer_id
+      - contract_id
+      - title
+      - agenda
+      - starts_at
+      - ends_at
+      - provider
+      - status
+      - participants
+      - phase
+      - created_at
+      title: MeetingResponse
     MemberRoleUpdate:
       properties:
         role:
@@ -8660,17 +10170,40 @@ components:
       - status
       - joined_at
       title: MembershipResponse
-    MessageCreate:
+    MessageOut:
       properties:
-        content:
+        id:
           type: string
-          maxLength: 10000
-          minLength: 1
-          title: Content
+          format: uuid
+          title: Id
+        author_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Author Id
+        body:
+          type: string
+          title: Body
+        internal:
+          type: boolean
+          title: Internal
+        from_staff:
+          type: boolean
+          title: From Staff
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
       type: object
       required:
-      - content
-      title: MessageCreate
+      - id
+      - author_id
+      - body
+      - internal
+      - created_at
+      title: MessageOut
     MilestoneCreate:
       properties:
         project_id:
@@ -8767,6 +10300,25 @@ components:
       - target_id
       - reason
       title: ModerationReportCreate
+    ParticipantOut:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        full_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Full Name
+        response:
+          type: string
+          title: Response
+      type: object
+      required:
+      - user_id
+      - response
+      title: ParticipantOut
     PaymentPartySummary:
       properties:
         id:
@@ -8864,6 +10416,34 @@ components:
       - provider_reference
       - created_at
       title: PaymentTransactionResponse
+    PendingAction:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        tool:
+          type: string
+          title: Tool
+        summary:
+          type: string
+          title: Summary
+        args:
+          additionalProperties: true
+          type: object
+          title: Args
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+      type: object
+      required:
+      - id
+      - tool
+      - summary
+      - args
+      - expires_at
+      title: PendingAction
     PlatformStatsResponse:
       properties:
         total_users:
@@ -9326,6 +10906,172 @@ components:
       - service
       - status
       title: ServiceHealthStatus
+    SessionRevoke:
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+      type: object
+      required:
+      - reason
+      title: SessionRevoke
+    StaffMessageCreate:
+      properties:
+        body:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Body
+        internal:
+          type: boolean
+          title: Internal
+          default: false
+      type: object
+      required:
+      - body
+      title: StaffMessageCreate
+    StaffTicketDetail:
+      properties:
+        ticket:
+          $ref: '#/components/schemas/StaffTicketOut'
+        messages:
+          items:
+            $ref: '#/components/schemas/MessageOut'
+          type: array
+          title: Messages
+      type: object
+      required:
+      - ticket
+      - messages
+      title: StaffTicketDetail
+    StaffTicketOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        requester_id:
+          type: string
+          format: uuid
+          title: Requester Id
+        subject:
+          type: string
+          title: Subject
+        category:
+          type: string
+          title: Category
+        severity:
+          type: string
+          title: Severity
+        status:
+          type: string
+          title: Status
+        sla_due_at:
+          type: string
+          format: date-time
+          title: Sla Due At
+        first_response_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: First Response At
+        resolved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Resolved At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        assignee_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Assignee Id
+        version:
+          type: integer
+          title: Version
+        overdue:
+          type: boolean
+          title: Overdue
+          default: false
+        requester_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Requester Email
+      type: object
+      required:
+      - id
+      - requester_id
+      - subject
+      - category
+      - severity
+      - status
+      - sla_due_at
+      - first_response_at
+      - resolved_at
+      - created_at
+      - updated_at
+      - assignee_id
+      - version
+      title: StaffTicketOut
+    StaffTicketUpdate:
+      properties:
+        expected_version:
+          type: integer
+          title: Expected Version
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+        status:
+          anyOf:
+          - type: string
+            enum:
+            - OPEN
+            - IN_PROGRESS
+            - WAITING_ON_USER
+            - RESOLVED
+            - CLOSED
+          - type: 'null'
+          title: Status
+        severity:
+          anyOf:
+          - type: string
+            enum:
+            - LOW
+            - NORMAL
+            - HIGH
+            - URGENT
+          - type: 'null'
+          title: Severity
+        assignee_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Assignee Id
+        unassign:
+          type: boolean
+          title: Unassign
+          default: false
+      type: object
+      required:
+      - expected_version
+      - reason
+      title: StaffTicketUpdate
     SubmissionEvaluationRequest:
       properties:
         task_title:
@@ -9462,8 +11208,28 @@ components:
           title: Assigned User Id
         priority:
           type: string
+          enum:
+          - LOW
+          - MEDIUM
+          - HIGH
+          - URGENT
+          - CRITICAL
           title: Priority
           default: MEDIUM
+        item_type:
+          type: string
+          enum:
+          - TASK
+          - BUG
+          - STORY
+          - EPIC
+          title: Item Type
+          default: TASK
+        labels:
+          items:
+            type: string
+          type: array
+          title: Labels
         deadline:
           anyOf:
           - type: string
@@ -9512,6 +11278,23 @@ components:
       title: TaskOfferResponse
     TaskUpdate:
       properties:
+        expected_version:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Expected Version
+        title:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
         status:
           anyOf:
           - type: string
@@ -9526,8 +11309,31 @@ components:
         priority:
           anyOf:
           - type: string
+            enum:
+            - LOW
+            - MEDIUM
+            - HIGH
+            - URGENT
+            - CRITICAL
           - type: 'null'
           title: Priority
+        item_type:
+          anyOf:
+          - type: string
+            enum:
+            - TASK
+            - BUG
+            - STORY
+            - EPIC
+          - type: 'null'
+          title: Item Type
+        labels:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Labels
         deadline:
           anyOf:
           - type: string
@@ -9536,6 +11342,107 @@ components:
           title: Deadline
       type: object
       title: TaskUpdate
+    TicketCreate:
+      properties:
+        subject:
+          type: string
+          maxLength: 255
+          minLength: 3
+          title: Subject
+        category:
+          type: string
+          enum:
+          - ACCOUNT
+          - BUG
+          - CONTRACT
+          - SAFETY
+          - OTHER
+          title: Category
+        body:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Body
+      type: object
+      required:
+      - subject
+      - category
+      - body
+      title: TicketCreate
+    TicketDetail:
+      properties:
+        ticket:
+          $ref: '#/components/schemas/TicketOut'
+        messages:
+          items:
+            $ref: '#/components/schemas/MessageOut'
+          type: array
+          title: Messages
+      type: object
+      required:
+      - ticket
+      - messages
+      title: TicketDetail
+    TicketOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        requester_id:
+          type: string
+          format: uuid
+          title: Requester Id
+        subject:
+          type: string
+          title: Subject
+        category:
+          type: string
+          title: Category
+        severity:
+          type: string
+          title: Severity
+        status:
+          type: string
+          title: Status
+        sla_due_at:
+          type: string
+          format: date-time
+          title: Sla Due At
+        first_response_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: First Response At
+        resolved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Resolved At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - requester_id
+      - subject
+      - category
+      - severity
+      - status
+      - sla_due_at
+      - first_response_at
+      - resolved_at
+      - created_at
+      - updated_at
+      title: TicketOut
     TrustScoreResponse:
       properties:
         user_id:
@@ -9665,6 +11572,12 @@ components:
       properties:
         role:
           $ref: '#/components/schemas/UserRole'
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Reason
       type: object
       required:
       - role
@@ -9674,6 +11587,12 @@ components:
         is_active:
           type: boolean
           title: Is Active
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+          title: Reason
       type: object
       required:
       - is_active
@@ -9920,6 +11839,17 @@ components:
       required:
       - status
       title: WorkSubmissionReview
+    app__domains__network__router__MessageCreate:
+      properties:
+        content:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Content
+      type: object
+      required:
+      - content
+      title: MessageCreate
     app__domains__projects__router__CommentCreate:
       properties:
         content:
@@ -9942,6 +11872,17 @@ components:
       required:
       - content
       title: CommentCreate
+    app__domains__support__schemas__MessageCreate:
+      properties:
+        body:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Body
+      type: object
+      required:
+      - body
+      title: MessageCreate
   securitySchemes:
     HTTPBearer:
       type: http

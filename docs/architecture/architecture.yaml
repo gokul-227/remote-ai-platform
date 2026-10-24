@@ -93,13 +93,16 @@ components:
     - admin
     - analytics
     - applications
+    - assistant
     - auth
     - companies
     - contracts
+    - deliverables
     - engineers
     - groups
     - jobs
     - matching
+    - meetings
     - network
     - notifications
     - payments
@@ -108,6 +111,7 @@ components:
     - saved_jobs
     - search
     - social
+    - support
     - trust
 - id: auth
   name: Supabase Auth

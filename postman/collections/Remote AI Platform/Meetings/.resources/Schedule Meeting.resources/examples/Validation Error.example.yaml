@@ -1,0 +1,60 @@
+$kind: http-example
+id: 1bd6b984-defb-5091-829a-8f48ff7b7e21
+request:
+  url: "{{base_url}}/api/v1/meetings"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "title": "string",
+        "starts_at": "1990-03-06T13:43:53.592Z",
+        "ends_at": "2024-01-06T05:50:00.230Z",
+        "participant_ids": [
+          "b2c287b6-4eb4-8bb7-a4e0-dd4d98ebff56"
+        ],
+        "agenda": "string",
+        "contract_id": "fd328e9b-b7a4-ec44-0114-df8405c688cd",
+        "external_url": "string"
+      }
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

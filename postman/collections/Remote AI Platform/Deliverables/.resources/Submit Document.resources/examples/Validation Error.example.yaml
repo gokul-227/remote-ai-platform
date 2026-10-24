@@ -1,0 +1,73 @@
+$kind: http-example
+id: 6ba01b64-9a91-502a-bf86-eb5a188efbe6
+request:
+  url: "{{base_url}}/api/v1/contracts/:contract_id/deliverables/document"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: multipart/form-data
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: contract_id
+      value: 90f2315c-4678-1f4b-54bd-bddb59d3ecec
+      description: "(Required) "
+  body:
+    type: formdata
+    content:
+      - type: text
+        key: milestone_id
+        value: 0d1b1ad2-92e8-f758-922e-d889c3c3e2af
+        description: "(Required) "
+      - type: text
+        key: title
+        value: string
+        description: "(Required) "
+      - type: text
+        key: file
+        value: string
+        description: "(Required) "
+      - type: text
+        key: notes
+        value: string
+        description: ""
+      - type: text
+        key: supersedes_id
+        value: 00832b20-82d8-1540-e48e-c5abe970a742
+        description: ""
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

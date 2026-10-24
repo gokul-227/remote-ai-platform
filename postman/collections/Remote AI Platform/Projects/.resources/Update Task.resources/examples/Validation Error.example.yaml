@@ -19,10 +19,18 @@ request:
     type: json
     content: |-
       {
+        "expected_version": 4751,
+        "title": "string",
+        "description": "string",
         "status": "string",
-        "assigned_user_id": "9fb9e32a-f46e-e274-893b-8e0c95e2d25e",
-        "priority": "string",
-        "deadline": "1991-12-08T08:06:14.155Z"
+        "assigned_user_id": "f5de647c-575e-ad0c-3841-c00987cbfb31",
+        "priority": "LOW",
+        "item_type": "STORY",
+        "labels": [
+          "string",
+          "string"
+        ],
+        "deadline": "1960-10-28T20:38:37.162Z"
       }
 response:
   statusCode: 422

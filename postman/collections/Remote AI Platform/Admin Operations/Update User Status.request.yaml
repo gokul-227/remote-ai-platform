@@ -18,6 +18,7 @@ description: |-
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `is_active` | boolean | yes |  |
+  | `reason` | string \\\| null | no |  |
 
   **Responses**
 
@@ -55,7 +56,8 @@ body:
   type: json
   content: |-
     {
-      "is_active": true
+      "is_active": true,
+      "reason": "string"
     }
 auth:
   type: bearer
@@ -99,4 +101,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Update User Status.resources/examples
-order: 13000
+order: 14000

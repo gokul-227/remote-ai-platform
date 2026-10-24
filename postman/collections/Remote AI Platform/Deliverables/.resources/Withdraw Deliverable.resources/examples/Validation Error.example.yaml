@@ -1,0 +1,54 @@
+$kind: http-example
+id: 8216e73d-6aa9-55c3-ba01-c194b2adacf4
+request:
+  url: "{{base_url}}/api/v1/contracts/:contract_id/deliverables/:deliverable_id/withdraw"
+  method: POST
+  headers:
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  pathVariables:
+    - key: contract_id
+      value: 90f2315c-4678-1f4b-54bd-bddb59d3ecec
+      description: "(Required) "
+    - key: deliverable_id
+      value: 4580483d-7055-5f28-8fcc-c7975af33b6f
+      description: "(Required) "
+  body:
+    type: text
+    content: ""
+response:
+  statusCode: 422
+  statusText: Unprocessable Entity (WebDAV) (RFC 4918)
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "detail": [
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          },
+          {
+            "loc": [
+              "string",
+              "string"
+            ],
+            "msg": "string",
+            "type": "string",
+            "input": "",
+            "ctx": {}
+          }
+        ]
+      }
+order: 2000

@@ -21,6 +21,7 @@ description: |-
   | Field | Type | Required | Description |
   | --- | --- | --- | --- |
   | `role` | UserRole | yes |  |
+  | `reason` | string \\\| null | no |  |
 
   **Responses**
 
@@ -58,7 +59,8 @@ body:
   type: json
   content: |-
     {
-      "role": "COMPANY"
+      "role": "ENGINEER",
+      "reason": "string"
     }
 auth:
   type: bearer
@@ -102,4 +104,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Update User Role.resources/examples
-order: 14000
+order: 15000

@@ -11,7 +11,7 @@ const server = http.createServer((req, res) => {
   // @endpoint GET /health
   if (req.method === 'GET' && pathname === '/health') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":true,"key_1":1921}));
+    return res.end(JSON.stringify({"key_0":"string","key_1":"string"}));
   }
 
   // @endpoint GET /health/version
@@ -29,25 +29,25 @@ const server = http.createServer((req, res) => {
   // @endpoint GET /health/ready
   if (req.method === 'GET' && pathname === '/health/ready') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":3576.2322787195444,"checked_at":"string","details":{"key_0":"string","key_1":false,"key_2":true,"key_3":false,"key_4":false},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":5652.673419099301,"checked_at":"string","details":{"key_0":"string"},"error":"string"}}}));
+    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":6792.21001220867,"checked_at":"string","details":{"key_0":6020},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":9687.043204903603,"checked_at":"string","details":{"key_0":"string","key_1":true},"error":"string"}}}));
   }
 
   // @endpoint GET /health/dependencies
   if (req.method === 'GET' && pathname === '/health/dependencies') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":3576.2322787195444,"checked_at":"string","details":{"key_0":"string","key_1":false,"key_2":true,"key_3":false,"key_4":false},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":5652.673419099301,"checked_at":"string","details":{"key_0":"string"},"error":"string"}}}));
+    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":6792.21001220867,"checked_at":"string","details":{"key_0":6020},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":9687.043204903603,"checked_at":"string","details":{"key_0":"string","key_1":true},"error":"string"}}}));
   }
 
   // @endpoint GET /health/ingestion
   if (req.method === 'GET' && pathname === '/health/ingestion') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":false}));
+    return res.end(JSON.stringify({"key_0":"string","key_1":443,"key_2":true}));
   }
 
   // @endpoint GET /api/v1/health
   if (req.method === 'GET' && pathname === '/api/v1/health') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":"string","key_1":false}));
+    return res.end(JSON.stringify({"key_0":false}));
   }
 
   // @endpoint GET /api/v1/health/version
@@ -65,31 +65,31 @@ const server = http.createServer((req, res) => {
   // @endpoint GET /api/v1/health/ready
   if (req.method === 'GET' && pathname === '/api/v1/health/ready') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":3576.2322787195444,"checked_at":"string","details":{"key_0":"string","key_1":false,"key_2":true,"key_3":false,"key_4":false},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":5652.673419099301,"checked_at":"string","details":{"key_0":"string"},"error":"string"}}}));
+    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":6792.21001220867,"checked_at":"string","details":{"key_0":6020},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":9687.043204903603,"checked_at":"string","details":{"key_0":"string","key_1":true},"error":"string"}}}));
   }
 
   // @endpoint GET /api/v1/health/dependencies
   if (req.method === 'GET' && pathname === '/api/v1/health/dependencies') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":3576.2322787195444,"checked_at":"string","details":{"key_0":"string","key_1":false,"key_2":true,"key_3":false,"key_4":false},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":5652.673419099301,"checked_at":"string","details":{"key_0":"string"},"error":"string"}}}));
+    return res.end(JSON.stringify({"status":"string","version":"string","environment":"string","timestamp":"string","services":{"key_0":{"service":"string","status":"string","latency_ms":6792.21001220867,"checked_at":"string","details":{"key_0":6020},"error":"string"},"key_1":{"service":"string","status":"string","latency_ms":9687.043204903603,"checked_at":"string","details":{"key_0":"string","key_1":true},"error":"string"}}}));
   }
 
   // @endpoint GET /api/v1/health/ingestion
   if (req.method === 'GET' && pathname === '/api/v1/health/ingestion') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":true,"key_1":"string"}));
+    return res.end(JSON.stringify({"key_0":"string"}));
   }
 
   // @endpoint POST /api/v1/auth/logout-all
   if (req.method === 'POST' && pathname === '/api/v1/auth/logout-all') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":"string","key_1":"string"}));
+    return res.end(JSON.stringify({"key_0":"string"}));
   }
 
   // @endpoint GET /api/v1/auth/me
   if (req.method === 'GET' && pathname === '/api/v1/auth/me') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"email":"lpjRgAF3obV@yoKqHySpPrxYcLnrbyRybbhTeWPVCRVA.gm","full_name":"string","id":"782dd147-5cd3-d7a3-4a7e-ae0afd7e16d3","is_active":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
+    return res.end(JSON.stringify({"email":"aWLzxtjN8DL@txhQ.vohp","full_name":"string","id":"0847543c-1ac1-9b2e-6f33-e1a400106ad4","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
   }
 
   // @endpoint DELETE /api/v1/auth/me
@@ -119,13 +119,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"email":"lpjRgAF3obV@yoKqHySpPrxYcLnrbyRybbhTeWPVCRVA.gm","full_name":"string","id":"782dd147-5cd3-d7a3-4a7e-ae0afd7e16d3","is_active":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
+    return res.end(JSON.stringify({"email":"aWLzxtjN8DL@txhQ.vohp","full_name":"string","id":"0847543c-1ac1-9b2e-6f33-e1a400106ad4","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
   }
 
   // @endpoint GET /api/v1/auth/me/ai-usage
   if (req.method === 'GET' && pathname === '/api/v1/auth/me/ai-usage') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":5930}));
+    return res.end(JSON.stringify({"key_0":4342,"key_1":1776,"key_2":6293}));
   }
 
   // @endpoint GET /api/v1/auth/me/export
@@ -152,7 +152,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"email":"lpjRgAF3obV@yoKqHySpPrxYcLnrbyRybbhTeWPVCRVA.gm","full_name":"string","id":"782dd147-5cd3-d7a3-4a7e-ae0afd7e16d3","is_active":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
+    return res.end(JSON.stringify({"email":"aWLzxtjN8DL@txhQ.vohp","full_name":"string","id":"0847543c-1ac1-9b2e-6f33-e1a400106ad4","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
   }
 
   // @endpoint GET /api/v1/engineers
@@ -167,13 +167,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"b4d022c5-6dd2-797c-285f-772770216cab","user_id":"7d6891eb-ff1d-69a1-2dcd-acbc7fe7c758","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":127,"hourly_rate":2260.3720566257834,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"},{"id":"bac0ae87-0cd1-6ea7-ef11-f1167b5db406","user_id":"a0abd548-cbf6-c82d-39f4-f853212fa350","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":27,"hourly_rate":5897.660425398499,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}]));
+    return res.end(JSON.stringify([{"id":"6a4ba7ac-fb53-b5fa-ec23-b1e7aae91cdd","user_id":"a2317a82-95b0-df5f-c973-bf171b331616","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":116,"hourly_rate":4058.9325432665646,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"},{"id":"e8b3136d-5adb-1bcb-1f11-7bd77f6da4de","user_id":"cbd80b31-11d8-6efe-7636-59168e624546","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":156,"hourly_rate":7275.956701487303,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}]));
   }
 
   // @endpoint GET /api/v1/engineers/me
   if (req.method === 'GET' && pathname === '/api/v1/engineers/me') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"8716c943-96b6-0247-c188-edb524efd494","user_id":"986fcf5f-fc2b-0c0e-c03b-e4b0827366ac","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":164,"hourly_rate":7081.30388520658,"desired_salary_min":3791.5869033895433,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":true},"ai_summary":"string","profile_score":8320.388661231846}));
+    return res.end(JSON.stringify({"id":"c4ba1cd6-f920-c1d7-6330-279d2391a4f1","user_id":"08fa285e-a212-76cc-a9f2-6cbe8325e114","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":151,"hourly_rate":7214.740093331784,"desired_salary_min":9240.917307324708,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":"string"},"ai_summary":"string","profile_score":4003.804454114288}));
   }
 
   // @endpoint PUT /api/v1/engineers/me
@@ -188,7 +188,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"8716c943-96b6-0247-c188-edb524efd494","user_id":"986fcf5f-fc2b-0c0e-c03b-e4b0827366ac","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":164,"hourly_rate":7081.30388520658,"desired_salary_min":3791.5869033895433,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":true},"ai_summary":"string","profile_score":8320.388661231846}));
+    return res.end(JSON.stringify({"id":"c4ba1cd6-f920-c1d7-6330-279d2391a4f1","user_id":"08fa285e-a212-76cc-a9f2-6cbe8325e114","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":151,"hourly_rate":7214.740093331784,"desired_salary_min":9240.917307324708,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":"string"},"ai_summary":"string","profile_score":4003.804454114288}));
   }
 
   // @endpoint POST /api/v1/engineers/me
@@ -203,13 +203,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"8716c943-96b6-0247-c188-edb524efd494","user_id":"986fcf5f-fc2b-0c0e-c03b-e4b0827366ac","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":164,"hourly_rate":7081.30388520658,"desired_salary_min":3791.5869033895433,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":true},"ai_summary":"string","profile_score":8320.388661231846}));
+    return res.end(JSON.stringify({"id":"c4ba1cd6-f920-c1d7-6330-279d2391a4f1","user_id":"08fa285e-a212-76cc-a9f2-6cbe8325e114","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":151,"hourly_rate":7214.740093331784,"desired_salary_min":9240.917307324708,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":"string"},"ai_summary":"string","profile_score":4003.804454114288}));
   }
 
   // @endpoint POST /api/v1/engineers/me/ai-enhance
   if (req.method === 'POST' && pathname === '/api/v1/engineers/me/ai-enhance') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"8716c943-96b6-0247-c188-edb524efd494","user_id":"986fcf5f-fc2b-0c0e-c03b-e4b0827366ac","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":164,"hourly_rate":7081.30388520658,"desired_salary_min":3791.5869033895433,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":true},"ai_summary":"string","profile_score":8320.388661231846}));
+    return res.end(JSON.stringify({"id":"c4ba1cd6-f920-c1d7-6330-279d2391a4f1","user_id":"08fa285e-a212-76cc-a9f2-6cbe8325e114","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":151,"hourly_rate":7214.740093331784,"desired_salary_min":9240.917307324708,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":"string"},"ai_summary":"string","profile_score":4003.804454114288}));
   }
 
   // @endpoint POST /api/v1/engineers/me/resume
@@ -239,7 +239,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"46b2bbfa-b8c3-12bf-f34d-b9698552fbad","user_id":"0c144ea2-036c-0346-047f-6fa4194bdf0f","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":142,"hourly_rate":2722.166497260332,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"},{"id":"a58a1b04-9656-5eb5-5ba7-84ce90358fb5","user_id":"71a36051-08ed-4be1-0232-69484024e121","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":144,"hourly_rate":6305.209144484252,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}]));
+    return res.end(JSON.stringify([{"id":"01ed9177-077a-1218-bf92-7b6e6ceb32d4","user_id":"ec877113-f3a8-fc8d-3f36-a09f895e95ba","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":54,"hourly_rate":4578.911091666669,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"},{"id":"0b6377d6-ee5d-4eea-e55d-bc4dcf89cef6","user_id":"2048237b-64d6-b681-6998-31439dc754dd","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":148,"hourly_rate":2432.466458994895,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}]));
   }
 
   // @endpoint GET /api/v1/engineers/:profile_id
@@ -254,13 +254,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"8716c943-96b6-0247-c188-edb524efd494","user_id":"986fcf5f-fc2b-0c0e-c03b-e4b0827366ac","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":164,"hourly_rate":7081.30388520658,"desired_salary_min":3791.5869033895433,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":true},"ai_summary":"string","profile_score":8320.388661231846}));
+    return res.end(JSON.stringify({"id":"c4ba1cd6-f920-c1d7-6330-279d2391a4f1","user_id":"08fa285e-a212-76cc-a9f2-6cbe8325e114","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":151,"hourly_rate":7214.740093331784,"desired_salary_min":9240.917307324708,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":"string"},"ai_summary":"string","profile_score":4003.804454114288}));
   }
 
   // @endpoint GET /api/v1/companies/me
   if (req.method === 'GET' && pathname === '/api/v1/companies/me') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"name":"string","id":"761d25ef-7707-6ac8-0c11-36f639ee7212","user_id":"40d9576d-5f79-cd7c-105a-12dc91c134c4","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
+    return res.end(JSON.stringify({"name":"string","id":"a6ad131f-dee4-375a-1efb-f927060c2971","user_id":"8972058d-202f-5788-d2f5-8191c16b2756","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
   }
 
   // @endpoint PUT /api/v1/companies/me
@@ -275,7 +275,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"name":"string","id":"761d25ef-7707-6ac8-0c11-36f639ee7212","user_id":"40d9576d-5f79-cd7c-105a-12dc91c134c4","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
+    return res.end(JSON.stringify({"name":"string","id":"a6ad131f-dee4-375a-1efb-f927060c2971","user_id":"8972058d-202f-5788-d2f5-8191c16b2756","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
   }
 
   // @endpoint POST /api/v1/companies/me
@@ -290,7 +290,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"name":"string","id":"761d25ef-7707-6ac8-0c11-36f639ee7212","user_id":"40d9576d-5f79-cd7c-105a-12dc91c134c4","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
+    return res.end(JSON.stringify({"name":"string","id":"a6ad131f-dee4-375a-1efb-f927060c2971","user_id":"8972058d-202f-5788-d2f5-8191c16b2756","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
   }
 
   // @endpoint GET /api/v1/companies/public
@@ -305,7 +305,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"name":"string","id":"537dcdf6-943c-4ca3-80f8-32998aca4be7","user_id":"ced6b8af-b1c3-07f7-e36e-e6ca125dd09d","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"},{"name":"string","id":"f1d86ade-86a2-5004-283e-8e24a241bd83","user_id":"05fa3ea4-592b-e271-36b8-d695a09b3867","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}]));
+    return res.end(JSON.stringify([{"name":"string","id":"ff2777b1-d965-b422-918d-78c6e9be4566","user_id":"c1a4c4a0-a4bf-8082-8a48-3641133feeef","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"},{"name":"string","id":"485dd7cf-d751-6728-a9de-c3333dad504d","user_id":"5a529e11-957c-ded3-77a7-2dc589419af9","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}]));
   }
 
   // @endpoint GET /api/v1/companies/:company_id
@@ -320,7 +320,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"name":"string","id":"761d25ef-7707-6ac8-0c11-36f639ee7212","user_id":"40d9576d-5f79-cd7c-105a-12dc91c134c4","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
+    return res.end(JSON.stringify({"name":"string","id":"a6ad131f-dee4-375a-1efb-f927060c2971","user_id":"8972058d-202f-5788-d2f5-8191c16b2756","is_verified":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","website":"string","logo_url":"string","description":"string","industry":"string","company_size":"string","location":"string","country":"string","hiring_status":"string"}));
   }
 
   // @endpoint GET /api/v1/jobs
@@ -335,7 +335,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"title":"string","description":"string","id":"21b45b1d-cc5f-6a3a-a95f-6edbb2479595","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":8291.431637480855,"budget_max":7012.386582791805,"timeline":"string","remote_preference":"string","salary_min":3161.232036072761,"salary_max":1389.435410965234,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":6107,"key_1":true,"key_2":false,"key_3":7754},"company_id":"70fef1a3-2dcb-86ca-24a8-6551b1f1f685","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"1c8b8176-7232-066d-2dce-87832d0708a2","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1070.0270510278642,"budget_max":7753.627835772932,"timeline":"string","remote_preference":"string","salary_min":2220.5739025957882,"salary_max":1031.3715040683746,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":5370.261508505791,"key_1":false,"key_2":"string"},"company_id":"701372cc-95f6-11b1-ab8a-d67b93799418","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}]));
+    return res.end(JSON.stringify([{"title":"string","description":"string","id":"4de9bd35-5c5c-0a2e-fab5-9bb0a0fafd5e","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":6769.880116917193,"budget_max":3776.495235506445,"timeline":"string","remote_preference":"string","salary_min":8533.027456142008,"salary_max":5937.386599835008,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string"},"company_id":"c28772a7-7160-24fb-cc55-b4b1c1a68cfd","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"de8fc1f6-7755-954c-0594-ef9cfa312e81","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":8052.872801199555,"budget_max":7478.050873614848,"timeline":"string","remote_preference":"string","salary_min":8454.752473626286,"salary_max":4097.680142149329,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string"},"company_id":"99a199b6-5ac0-db95-777c-02559670ec3d","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}]));
   }
 
   // @endpoint POST /api/v1/jobs
@@ -350,7 +350,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"title":"string","description":"string","id":"7809253a-5bc7-018e-6a72-afa6887d9e7b","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":9703.823782037944,"budget_max":5132.288502063602,"timeline":"string","remote_preference":"string","salary_min":260.9681384637952,"salary_max":7705.4245583713055,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":7071.783265564591,"key_1":"string","key_2":4113},"company_id":"08070466-2215-a022-4dda-9236cdc0d661","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}));
+    return res.end(JSON.stringify({"title":"string","description":"string","id":"8afb44cd-4f1a-c9ff-bcd5-b1c5a104bff2","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1761.273625306785,"budget_max":3423.2057933695614,"timeline":"string","remote_preference":"string","salary_min":9058.02263179794,"salary_max":5188.273463863879,"salary_period":"hour","currency":"USD","external_url":"string","ai_analysis":{"key_0":false,"key_1":8488,"key_2":"string"},"company_id":"6cd133ed-9cf8-5ef1-ead1-b3014720d820","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}));
   }
 
   // @endpoint GET /api/v1/jobs/sitemap-entries
@@ -365,7 +365,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"09de3523-beb1-e764-b1bd-212155954618","posted_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"},{"id":"b81ffb1f-f775-2d2b-336b-a2b2a53c6cf9","posted_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"}]));
+    return res.end(JSON.stringify([{"id":"a374d2d0-2c41-f66e-e46a-6dc0c484d327","posted_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"},{"id":"48ed0640-85e9-01a4-31fa-f5a0a28f4f31","posted_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"}]));
   }
 
   // @endpoint GET /api/v1/jobs/company
@@ -380,7 +380,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"title":"string","description":"string","id":"f8cd37e8-2722-f8f3-53c2-cc34024c0fd4","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":6513.183566275984,"budget_max":509.52755380421877,"timeline":"string","remote_preference":"string","salary_min":293.9167385920882,"salary_max":2650.6417873315513,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":true},"company_id":"71827fb9-081a-b2f6-a876-0577de4e7588","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"ba791db5-dae3-c7b0-c3b4-ba9acba019c9","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":8218.227317556739,"budget_max":121.53999414294958,"timeline":"string","remote_preference":"string","salary_min":9708.94014229998,"salary_max":2407.962039578706,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":842.9789380170405},"company_id":"9716a079-3ed9-65d5-1c50-eeb553e2b3b9","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}]));
+    return res.end(JSON.stringify([{"title":"string","description":"string","id":"7c7d3a31-df48-9ee5-6ed0-7dc24a935725","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":5454.926362726837,"budget_max":3772.380247246474,"timeline":"string","remote_preference":"string","salary_min":9947.10482424125,"salary_max":2288.0765702575445,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":7377,"key_1":false,"key_2":false},"company_id":"aec74f4d-4545-fca1-97c9-155ab0961b6c","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"39257567-fa8f-8f73-f032-0922bfc287e2","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":663.6666762642562,"budget_max":878.7781395949423,"timeline":"string","remote_preference":"string","salary_min":582.3588347993791,"salary_max":1310.2660630829632,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":true},"company_id":"09eb5d4b-470a-40c7-233c-aedc873e6899","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}]));
   }
 
   // @endpoint GET /api/v1/jobs/company/:company_id
@@ -395,7 +395,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"title":"string","description":"string","id":"a11fe8cc-4b54-1bfc-14fd-435213f55542","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":6534.957601688802,"budget_max":7627.820274792612,"timeline":"string","remote_preference":"string","salary_min":5533.062973991036,"salary_max":3218.573755584657,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":2052.109173964709,"key_1":true,"key_2":2911.1469234339893},"company_id":"2bad5e2e-2908-c950-549e-b4deb7be1de5","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"425b9106-f1b1-7ec5-2325-e9b38419fe13","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":7432.770330924541,"budget_max":2409.0027762576938,"timeline":"string","remote_preference":"string","salary_min":7662.909964565188,"salary_max":4035.8086791820824,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":true,"key_1":689,"key_2":4410.020685754716,"key_3":6356.028572190553,"key_4":"string"},"company_id":"fbfedbb9-1788-002b-ea8c-4062e569ca82","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}]));
+    return res.end(JSON.stringify([{"title":"string","description":"string","id":"7d8a81ee-cc36-7def-abac-15cb32b6fb80","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":5135.37225080654,"budget_max":46.954385470598936,"timeline":"string","remote_preference":"string","salary_min":5048.096780665219,"salary_max":7529.675376135856,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":false,"key_1":5829.438101500273},"company_id":"1b4f6efa-f395-d7db-d59d-bd2f6b6e5941","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"8be7282c-0a5c-01dc-9832-25351b220815","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":6414.320636540651,"budget_max":9946.572030894458,"timeline":"string","remote_preference":"string","salary_min":1229.8874789848924,"salary_max":7805.9139009565115,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":6354},"company_id":"dab1608a-42e2-c347-d387-745af30d6a55","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}]));
   }
 
   // @endpoint GET /api/v1/jobs/:job_id
@@ -410,7 +410,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"title":"string","description":"string","id":"7809253a-5bc7-018e-6a72-afa6887d9e7b","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":9703.823782037944,"budget_max":5132.288502063602,"timeline":"string","remote_preference":"string","salary_min":260.9681384637952,"salary_max":7705.4245583713055,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":7071.783265564591,"key_1":"string","key_2":4113},"company_id":"08070466-2215-a022-4dda-9236cdc0d661","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}));
+    return res.end(JSON.stringify({"title":"string","description":"string","id":"8afb44cd-4f1a-c9ff-bcd5-b1c5a104bff2","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1761.273625306785,"budget_max":3423.2057933695614,"timeline":"string","remote_preference":"string","salary_min":9058.02263179794,"salary_max":5188.273463863879,"salary_period":"hour","currency":"USD","external_url":"string","ai_analysis":{"key_0":false,"key_1":8488,"key_2":"string"},"company_id":"6cd133ed-9cf8-5ef1-ead1-b3014720d820","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}));
   }
 
   // @endpoint PATCH /api/v1/jobs/:job_id
@@ -425,7 +425,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"title":"string","description":"string","id":"7809253a-5bc7-018e-6a72-afa6887d9e7b","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":9703.823782037944,"budget_max":5132.288502063602,"timeline":"string","remote_preference":"string","salary_min":260.9681384637952,"salary_max":7705.4245583713055,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":7071.783265564591,"key_1":"string","key_2":4113},"company_id":"08070466-2215-a022-4dda-9236cdc0d661","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}));
+    return res.end(JSON.stringify({"title":"string","description":"string","id":"8afb44cd-4f1a-c9ff-bcd5-b1c5a104bff2","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1761.273625306785,"budget_max":3423.2057933695614,"timeline":"string","remote_preference":"string","salary_min":9058.02263179794,"salary_max":5188.273463863879,"salary_period":"hour","currency":"USD","external_url":"string","ai_analysis":{"key_0":false,"key_1":8488,"key_2":"string"},"company_id":"6cd133ed-9cf8-5ef1-ead1-b3014720d820","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}));
   }
 
   // @endpoint POST /api/v1/jobs/sync
@@ -440,7 +440,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":1623,"key_1":6820,"key_2":8289}));
+    return res.end(JSON.stringify({"key_0":6748}));
   }
 
   // @endpoint GET /api/v1/search
@@ -455,7 +455,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"query":"string","total_jobs":5040,"total_engineers":8921,"jobs":[{"title":"string","description":"string","id":"d30186f3-5b53-e572-62ef-9e892a995039","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":3044.3445104174316,"budget_max":548.4518548473716,"timeline":"string","remote_preference":"string","salary_min":4920.128723606467,"salary_max":5198.5315745696425,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":2768,"key_1":2198,"key_2":true},"company_id":"4f69dee5-97af-064f-a40d-9cdcc7081e4c","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"565e46cd-d5de-52d0-e8d8-c6724e9c2989","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":8178.589241579175,"budget_max":7252.520029433072,"timeline":"string","remote_preference":"string","salary_min":1872.2802982665598,"salary_max":69.7286706417799,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":4530,"key_1":8090},"company_id":"89618f53-beb8-50f4-9c84-6bc31d54087a","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}],"engineers":[{"id":"cf6e48a4-595a-c2a5-572d-23a1d25800ad","user_id":"6fdd927e-f6db-2758-577d-0f4aca007e72","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":7,"hourly_rate":5066.798385232687,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"},{"id":"8a5f3324-0862-51b2-1ff2-71649924dcd7","user_id":"68af7e9f-813c-9b62-ad68-b229be509e43","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":105,"hourly_rate":5757.835961412638,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}],"total_companies":0}));
+    return res.end(JSON.stringify({"query":"string","total_jobs":6790,"total_engineers":7129,"jobs":[{"title":"string","description":"string","id":"74589832-fb95-fe82-9df8-41367805fac2","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":3236.404932104051,"budget_max":4850.687766447663,"timeline":"string","remote_preference":"string","salary_min":6415.676434990019,"salary_max":9467.202026862651,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":7364.352471195161},"company_id":"c8e58aa5-4401-f4d2-92b5-d5dc9d84e407","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},{"title":"string","description":"string","id":"c934b42d-6948-e4a3-846c-e5d3a2fca5af","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":842.4738165922463,"budget_max":711.6363593377173,"timeline":"string","remote_preference":"string","salary_min":7435.1487890817225,"salary_max":1092.5498558208346,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":4589.797330554575,"key_1":false},"company_id":"7efb7b6b-6ec1-2744-92bd-833de67a24a9","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"}],"engineers":[{"id":"6ac4956b-ccf5-8567-0f4b-7653e675d864","user_id":"7f874d83-f6e1-df9f-dd64-8a23380cc7fa","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":44,"hourly_rate":7733.428610954434,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"},{"id":"3e34ae58-6e86-e23f-6e59-8c00a6f05d93","user_id":"39e25cbb-8ba9-5daa-ad7f-455ae7d91f82","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":27,"hourly_rate":8446.589601226151,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}],"total_companies":0}));
   }
 
   // @endpoint GET /api/v1/matching/recommendations
@@ -470,7 +470,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"544f8240-3260-4bf5-30b7-63a01e51f236","engineer_id":"05d12331-517b-576e-35b2-318c5d889c76","job_id":"65701627-3e22-c8c3-6748-adc0f37459a7","overall_score":7448.452769313008,"skill_score":9424.659367650747,"experience_score":2250.032101292163,"role_score":9679.250444751233,"timezone_score":5616.837160196155,"availability_score":4404.43426836282,"compensation_score":9835.874165873975,"remote_score":1014.038969296962,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"5e22bee8-d55c-668b-8c3b-cd91545f263d","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":4332.340422552079,"budget_max":381.3886339776218,"timeline":"string","remote_preference":"string","salary_min":5502.2156634368,"salary_max":2141.3207706063986,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string"},"company_id":"582f48ed-62b7-dae6-81b0-ee81aceba00b","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"1a7df617-64c1-477b-9201-b8a8381fc699","user_id":"b058a041-4c8a-6368-fb57-d2976ebc81d3","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":107,"hourly_rate":9675.316552165896,"desired_salary_min":732.8145275823772,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":9426,"key_1":"string","key_2":true,"key_3":4158,"key_4":"string"},"ai_summary":"string","profile_score":5764.7740840911865}},{"id":"9277b9a0-c687-1a77-b0ee-1d43cf7eedf4","engineer_id":"59e11872-cb8b-3678-817c-2ae502df9f43","job_id":"5a308ddc-0c53-ab90-8324-3780c9b0b2ef","overall_score":7602.032604627311,"skill_score":7250.083840917796,"experience_score":1696.8031064607203,"role_score":9312.108396552503,"timezone_score":9336.345344781876,"availability_score":5206.305882893503,"compensation_score":6686.724293977022,"remote_score":6251.738700084388,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"0c129434-8d07-2edf-b2a0-45b48ffdb671","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":7749.000370968133,"budget_max":930.0515661016107,"timeline":"string","remote_preference":"string","salary_min":9450.89655695483,"salary_max":7435.556843411177,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string","key_1":"string","key_2":4253.702443093061},"company_id":"8934fdf4-b185-381d-a7d1-65a48711c552","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"dcbb3884-3da9-276e-8d10-7132568a57a7","user_id":"97bb7d7e-daec-6e62-dd38-f0f5717438cd","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":97,"hourly_rate":4650.29829647392,"desired_salary_min":9628.339535556734,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":true,"key_1":2715.6824595294893},"ai_summary":"string","profile_score":2066.1893114447594}}]));
+    return res.end(JSON.stringify([{"id":"29d93e80-cc8e-f9e1-6fe5-76bf7f91aa97","engineer_id":"97e61381-99b8-9df7-a537-103a3e810ece","job_id":"7fad56b7-d932-c305-49e0-3c1bccacf25f","overall_score":7160.933243576437,"skill_score":343.9256898127496,"experience_score":5508.332650642842,"role_score":9923.397353850305,"timezone_score":2801.6530559398234,"availability_score":6733.53754915297,"compensation_score":78.82309146225452,"remote_score":1339.2890221439302,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"e960df39-146d-39c3-70b0-de423e71aac6","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":8774.489236529917,"budget_max":155.84502136334777,"timeline":"string","remote_preference":"string","salary_min":4518.495423253626,"salary_max":1666.4028423838317,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":1837,"key_1":6409.776385407895,"key_2":4866.021876223385},"company_id":"6c35a09a-b4d2-f145-d869-2a55b7e83b99","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"b5ad2d54-af72-89b7-8e50-dd9e2a372bc1","user_id":"5fe55eb1-0178-13ed-a7a6-22bb07c61dbb","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":88,"hourly_rate":5642.541577108204,"desired_salary_min":8198.315571062267,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":true,"key_1":"string","key_2":"string","key_3":4827.961239498109},"ai_summary":"string","profile_score":590.1630432344973}},{"id":"f06d000e-3e48-2236-4b57-18176e89f3f1","engineer_id":"e4e286f6-b2c0-3d18-463c-d0f90e05186b","job_id":"2ea3582b-6318-9499-554d-d427f168edc4","overall_score":2735.967782791704,"skill_score":2942.8087593987584,"experience_score":7149.03284329921,"role_score":7123.425153549761,"timezone_score":2420.5821263603866,"availability_score":7250.044180545956,"compensation_score":8094.858769327402,"remote_score":6834.039820823818,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"e1d3d9e0-e0c4-688e-76a3-dd8736812899","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":4023.8160314038396,"budget_max":9701.500001829118,"timeline":"string","remote_preference":"string","salary_min":7588.310909923166,"salary_max":4281.55796835199,"salary_period":"month","currency":"USD","external_url":"string","ai_analysis":{"key_0":7401.059854310006,"key_1":"string"},"company_id":"3624fac8-1699-4628-3491-acdb58732172","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"45e88aa5-550e-09c1-f3b3-f0c29c009c2b","user_id":"d59c4e95-f8c0-8a09-51d3-b541b32a1396","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":141,"hourly_rate":3555.670576170087,"desired_salary_min":3103.1525670550764,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":959},"ai_summary":"string","profile_score":9304.806769359857}}]));
   }
 
   // @endpoint GET /api/v1/matching/jobs/:job_id
@@ -485,7 +485,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"df0352b7-a214-1b7d-b94e-8eef25170f4b","engineer_id":"f2b2971e-03a5-c0e5-7ea5-363c3cde3adb","job_id":"68f84b0a-58c6-8886-0036-3d752fab73a2","overall_score":6972.068184986711,"skill_score":901.9119781441987,"experience_score":9352.535426151007,"role_score":7921.146715525538,"timezone_score":1889.0246283262968,"availability_score":5105.752439703792,"compensation_score":4997.183931991458,"remote_score":5982.208990026265,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"bfc4c4c8-e3ce-fba1-be8a-31a5b161ffac","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1223.832042887807,"budget_max":9400.393019896,"timeline":"string","remote_preference":"string","salary_min":3037.2672737576067,"salary_max":4700.104673393071,"salary_period":"hour","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string"},"company_id":"3560de2f-9544-9d8f-0405-9c204bee16fd","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"0c2f8aa6-a777-53a6-405d-1a4089aac957","user_id":"42e9f56d-52d5-8ade-fd4b-387b2c0eaf9b","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":60,"hourly_rate":2949.540193658322,"desired_salary_min":6984.029279556125,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":false,"key_1":false},"ai_summary":"string","profile_score":4066.1115827970207}}));
+    return res.end(JSON.stringify({"id":"5445369a-58f5-1c85-6d67-46d0012fddd8","engineer_id":"fb552a9a-05a7-de21-ebdd-f1ace83f6b4a","job_id":"0d3ad14c-e129-8988-f548-831a2351bf66","overall_score":8720.572497695684,"skill_score":7462.292104028165,"experience_score":695.1124593615532,"role_score":8099.30290794,"timezone_score":6688.908550422639,"availability_score":5126.925059594214,"compensation_score":3550.0343516469,"remote_score":381.24159444123507,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"9a47f6ab-7e91-4838-5775-aa00fdf21c99","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1933.0122112296522,"budget_max":4014.7017571143806,"timeline":"string","remote_preference":"string","salary_min":3712.992323562503,"salary_max":4511.041874065995,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":748.3747904188931,"key_1":9096},"company_id":"8079e476-a7fd-373c-35f9-d6ce76e30079","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"4429df3f-eab8-d22e-8261-b171621b18b5","user_id":"732b5c5e-690d-dd90-3dbd-31df051479bb","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":124,"hourly_rate":6703.323335386813,"desired_salary_min":6455.56190982461,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":66},"ai_summary":"string","profile_score":4585.066151339561}}));
   }
 
   // @endpoint GET /api/v1/matching/candidates/:job_id
@@ -500,7 +500,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"bcdafd8c-c997-1dd7-8dd5-0fa6e237bd8f","engineer_id":"ca1a55ef-28f1-e98d-e3a0-ab2cc8447b7c","job_id":"0ebbb86e-052b-51aa-c47d-35c7357bf4a0","overall_score":9392.717985901982,"skill_score":3055.950226262212,"experience_score":2511.8354451842606,"role_score":192.09408201277256,"timezone_score":9212.301874067634,"availability_score":4343.811001162976,"compensation_score":7065.223730169237,"remote_score":1433.9246577583253,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"bb4ee40e-7e20-b577-7180-197a84114b7e","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":6598.5234174877405,"budget_max":8329.248719383031,"timeline":"string","remote_preference":"string","salary_min":788.7907279655337,"salary_max":4132.364522665739,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":2697.6171624846756,"key_1":true,"key_2":false,"key_3":"string"},"company_id":"0271fb94-1652-209b-8b56-aa54dd2322c5","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"74b7c445-f54e-c1bb-41ce-7b8314fee49e","user_id":"1850efb9-1be7-323e-3fe5-7da342dd9a20","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":108,"hourly_rate":5704.306045081466,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}},{"id":"82c07c3d-222e-a066-e099-23c459c947b3","engineer_id":"ce44b925-5031-dce8-e833-bae514032ba2","job_id":"bf41cb55-2ba0-8978-c52f-ad4896605e7d","overall_score":8499.165209941566,"skill_score":1265.099614392966,"experience_score":7448.864213656634,"role_score":502.97466572374105,"timezone_score":7561.271369922906,"availability_score":2120.934759732336,"compensation_score":1408.5162826813757,"remote_score":58.39265417307615,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"e0e0d03d-3985-b53b-d442-e211e0032684","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":7082.317539025098,"budget_max":9579.695058055222,"timeline":"string","remote_preference":"string","salary_min":2480.325100477785,"salary_max":6189.281928818673,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string","key_1":"string","key_2":8389},"company_id":"5b3671e1-773b-8e9e-7224-7516c9697c27","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"caab5fb5-2bd5-e690-8e5c-7b037df4fbaf","user_id":"0e661789-641c-de73-832a-1b95889f7f9a","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":150,"hourly_rate":1592.4974018707871,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}}]));
+    return res.end(JSON.stringify([{"id":"99e50e82-8479-8789-f442-df910b8aaaf4","engineer_id":"ae73308c-8a37-f990-c2bb-7facdf0e34df","job_id":"e159a005-bf28-b182-8945-e533e1a277c7","overall_score":5188.8234773650765,"skill_score":6035.466680768877,"experience_score":8319.020008202642,"role_score":3620.165344327688,"timezone_score":8791.635402012616,"availability_score":5674.393696244806,"compensation_score":3010.6219789013267,"remote_score":5190.228170249611,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"2ab36b4c-8f82-c2d1-3eff-d950e4bc7d3a","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":2525.7870997302234,"budget_max":7908.785794861615,"timeline":"string","remote_preference":"string","salary_min":8744.949100073427,"salary_max":7105.571958236396,"salary_period":"project","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string"},"company_id":"b4b478ee-8d8a-c996-7bb3-e3105000da29","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"6421c90b-a285-423c-ace3-a6039a1483f3","user_id":"62f4f40e-ba40-c8de-10be-6d12c09451fa","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":136,"hourly_rate":2796.608752105385,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}},{"id":"26c750b5-2a70-76d0-3d42-9c087a8624eb","engineer_id":"459ec3c6-a06a-29ec-8981-c32c5ce827e4","job_id":"7541134c-7960-f948-a371-1dc83edd1b87","overall_score":97.18860499560833,"skill_score":6897.730107884854,"experience_score":2386.9431228376925,"role_score":3487.5258430838585,"timezone_score":9917.701669037342,"availability_score":7560.978273395449,"compensation_score":1645.3942703083158,"remote_score":2729.6929922886193,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"555649e8-4c6d-eec9-9a64-d4007f604c9d","slug":"string","source":"string","is_active":true,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":7565.240184776485,"budget_max":2496.1926066316664,"timeline":"string","remote_preference":"string","salary_min":4976.192372851074,"salary_max":3173.8033588044345,"salary_period":"hour","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string","key_1":"string"},"company_id":"c269e82b-12b7-7d80-25bd-d8b0e7d3ef92","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"0914e953-7207-5471-883e-eebca5a39a56","user_id":"3169fc7e-2ed4-e9d1-728e-e4e2b65e8373","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":109,"hourly_rate":7286.274710204452,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string"}}]));
   }
 
   // @endpoint PATCH /api/v1/matching/:match_id/status
@@ -515,7 +515,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"df0352b7-a214-1b7d-b94e-8eef25170f4b","engineer_id":"f2b2971e-03a5-c0e5-7ea5-363c3cde3adb","job_id":"68f84b0a-58c6-8886-0036-3d752fab73a2","overall_score":6972.068184986711,"skill_score":901.9119781441987,"experience_score":9352.535426151007,"role_score":7921.146715525538,"timezone_score":1889.0246283262968,"availability_score":5105.752439703792,"compensation_score":4997.183931991458,"remote_score":5982.208990026265,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"bfc4c4c8-e3ce-fba1-be8a-31a5b161ffac","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1223.832042887807,"budget_max":9400.393019896,"timeline":"string","remote_preference":"string","salary_min":3037.2672737576067,"salary_max":4700.104673393071,"salary_period":"hour","currency":"USD","external_url":"string","ai_analysis":{"key_0":"string"},"company_id":"3560de2f-9544-9d8f-0405-9c204bee16fd","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"0c2f8aa6-a777-53a6-405d-1a4089aac957","user_id":"42e9f56d-52d5-8ade-fd4b-387b2c0eaf9b","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":60,"hourly_rate":2949.540193658322,"desired_salary_min":6984.029279556125,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":false,"key_1":false},"ai_summary":"string","profile_score":4066.1115827970207}}));
+    return res.end(JSON.stringify({"id":"5445369a-58f5-1c85-6d67-46d0012fddd8","engineer_id":"fb552a9a-05a7-de21-ebdd-f1ace83f6b4a","job_id":"0d3ad14c-e129-8988-f548-831a2351bf66","overall_score":8720.572497695684,"skill_score":7462.292104028165,"experience_score":695.1124593615532,"role_score":8099.30290794,"timezone_score":6688.908550422639,"availability_score":5126.925059594214,"compensation_score":3550.0343516469,"remote_score":381.24159444123507,"reasoning":"string","matching_skills":["string","string"],"missing_skills":["string","string"],"status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","job":{"title":"string","description":"string","id":"9a47f6ab-7e91-4838-5775-aa00fdf21c99","slug":"string","source":"string","is_active":false,"posted_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","company_name":"string","company_logo":"string","location":"string","is_remote":true,"job_type":"unspecified","experience_level":"string","budget_min":1933.0122112296522,"budget_max":4014.7017571143806,"timeline":"string","remote_preference":"string","salary_min":3712.992323562503,"salary_max":4511.041874065995,"salary_period":"year","currency":"USD","external_url":"string","ai_analysis":{"key_0":748.3747904188931,"key_1":9096},"company_id":"8079e476-a7fd-373c-35f9-d6ce76e30079","external_id":"string","expired_at":"2026-01-01T00:00:00.000Z"},"engineer":{"id":"4429df3f-eab8-d22e-8261-b171621b18b5","user_id":"732b5c5e-690d-dd90-3dbd-31df051479bb","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","country":"string","profile_image_url":"string","headline":"string","bio":"string","location":"string","timezone":"string","availability":"string","remote_preference":"string","years_of_experience":0,"primary_role":"string","employment_type":"string","available_hours":124,"hourly_rate":6703.323335386813,"desired_salary_min":6455.56190982461,"github_url":"string","linkedin_url":"string","portfolio_url":"string","is_public":true,"is_open_to_work":true,"full_name":"string","resume_url":"string","parsed_resume_data":{"key_0":66},"ai_summary":"string","profile_score":4585.066151339561}}));
   }
 
   // @endpoint GET /api/v1/admin/dashboard
@@ -527,7 +527,7 @@ const server = http.createServer((req, res) => {
   // @endpoint GET /api/v1/admin/stats
   if (req.method === 'GET' && pathname === '/api/v1/admin/stats') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"total_users":6094,"total_engineers":255,"total_companies":500,"total_jobs":7747,"total_active_jobs":8527,"total_matches":952,"job_sources_breakdown":{"key_0":2102},"system_health":"HEALTHY"}));
+    return res.end(JSON.stringify({"total_users":661,"total_engineers":6393,"total_companies":3307,"total_jobs":4259,"total_active_jobs":5844,"total_matches":8610,"job_sources_breakdown":{"key_0":2653,"key_1":9384,"key_2":9950},"system_health":"HEALTHY"}));
   }
 
   // @endpoint GET /api/v1/admin/sync-logs
@@ -542,7 +542,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"52ab4bab-2e01-5ddf-c3da-d452b40c4866","source":"string","jobs_fetched":5829,"jobs_inserted":632,"jobs_updated":5324,"status":"string","duration_ms":8752,"created_at":"2026-01-01T00:00:00.000Z","error_message":"string"},{"id":"98f5197a-1d06-ff21-947e-87642c558610","source":"string","jobs_fetched":9213,"jobs_inserted":1379,"jobs_updated":9045,"status":"string","duration_ms":4744,"created_at":"2026-01-01T00:00:00.000Z","error_message":"string"}]));
+    return res.end(JSON.stringify([{"id":"ffeb6ca7-1e98-000c-33ce-e2242914df49","source":"string","jobs_fetched":7935,"jobs_inserted":6579,"jobs_updated":5713,"status":"string","duration_ms":7261,"created_at":"2026-01-01T00:00:00.000Z","error_message":"string"},{"id":"4f2e90a7-5a0f-1fca-cc0f-57b8ecedc44a","source":"string","jobs_fetched":2827,"jobs_inserted":6879,"jobs_updated":5805,"status":"string","duration_ms":4687,"created_at":"2026-01-01T00:00:00.000Z","error_message":"string"}]));
   }
 
   // @endpoint GET /api/v1/admin/activity-logs
@@ -557,7 +557,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"6f25a534-6134-c062-fc97-11f89276bb24","action":"string","details":{"key_0":false,"key_1":1899,"key_2":3742},"created_at":"2026-01-01T00:00:00.000Z","user_id":"0fcc5e7f-6966-596e-df59-6b2909813fc3","entity_type":"string","entity_id":"string"},{"id":"aedb5042-3343-15ff-3f2b-abea668697c3","action":"string","details":{"key_0":467.1040899120271,"key_1":59,"key_2":false},"created_at":"2026-01-01T00:00:00.000Z","user_id":"c4a33c63-ea0d-889e-101a-0230204eaed8","entity_type":"string","entity_id":"string"}]));
+    return res.end(JSON.stringify([{"id":"d2e43964-3627-cefe-6fcd-cfa1c2bf3e94","action":"string","details":{"key_0":true},"created_at":"2026-01-01T00:00:00.000Z","user_id":"31b2159a-a224-8a6a-acd5-be1f510fd0dc","entity_type":"string","entity_id":"string"},{"id":"0a4b5c00-7c84-7e40-ab64-a72197463ff0","action":"string","details":{"key_0":true},"created_at":"2026-01-01T00:00:00.000Z","user_id":"a98db503-994d-d45e-fbf1-cc4eb1cb7e88","entity_type":"string","entity_id":"string"}]));
   }
 
   // @endpoint GET /api/v1/admin/users
@@ -572,7 +572,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"email":"6rvMm@RUjuFqe.pgmi","full_name":"string","id":"6c14550f-5ab4-1018-db29-7d38f3da5cc2","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"},{"email":"TO7GUrW@jTUqt.ennu","full_name":"string","id":"1abb2f51-f17a-1be5-36fe-83071af9c45a","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}]));
+    return res.end(JSON.stringify([{"email":"SgF-N2eB1KwV@reHrdbu.wlj","full_name":"string","id":"4328a1ab-06b9-f4a1-64f1-b6ec6140a6c8","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"},{"email":"vhbL8@ZgwkseOeOdmtlvifoe.eb","full_name":"string","id":"252a4c05-8a7d-7411-e5de-d97c104aca3d","is_active":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}]));
   }
 
   // @endpoint DELETE /api/v1/admin/users/:user_id
@@ -602,7 +602,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"email":"lpjRgAF3obV@yoKqHySpPrxYcLnrbyRybbhTeWPVCRVA.gm","full_name":"string","id":"782dd147-5cd3-d7a3-4a7e-ae0afd7e16d3","is_active":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
+    return res.end(JSON.stringify({"email":"aWLzxtjN8DL@txhQ.vohp","full_name":"string","id":"0847543c-1ac1-9b2e-6f33-e1a400106ad4","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
   }
 
   // @endpoint PATCH /api/v1/admin/users/:user_id/role
@@ -617,7 +617,22 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"email":"lpjRgAF3obV@yoKqHySpPrxYcLnrbyRybbhTeWPVCRVA.gm","full_name":"string","id":"782dd147-5cd3-d7a3-4a7e-ae0afd7e16d3","is_active":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
+    return res.end(JSON.stringify({"email":"aWLzxtjN8DL@txhQ.vohp","full_name":"string","id":"0847543c-1ac1-9b2e-6f33-e1a400106ad4","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
+  }
+
+  // @endpoint POST /api/v1/admin/users/:user_id/revoke-sessions
+  if (req.method === 'POST' && /^\/api\/v1\/admin\/users\/([^/]+)\/revoke-sessions$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"email":"aWLzxtjN8DL@txhQ.vohp","full_name":"string","id":"0847543c-1ac1-9b2e-6f33-e1a400106ad4","is_active":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","role":"ENGINEER","avatar_url":"string"}));
   }
 
   // @endpoint GET /api/v1/admin/audit-events
@@ -632,13 +647,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"8cbd20b9-f6fb-95ff-6dcd-7f0168862106","action":"string","resource_type":"string","payload":{"key_0":2758.996542543173,"key_1":true},"created_at":"2026-01-01T00:00:00.000Z","actor_id":"933eabd4-24e0-d0b7-cf83-373e8ee6a056","actor_role":"string","resource_id":"string","ip_address":"string","user_agent":"string"},{"id":"7707629b-8fe4-4c7b-5ca7-ef3f19f5752a","action":"string","resource_type":"string","payload":{"key_0":"string","key_1":false,"key_2":8909},"created_at":"2026-01-01T00:00:00.000Z","actor_id":"5f302fee-bf9f-63f3-eb97-072f8d099f26","actor_role":"string","resource_id":"string","ip_address":"string","user_agent":"string"}]));
+    return res.end(JSON.stringify([{"id":"3bb325a5-a78c-5730-f71a-1e08c5937580","action":"string","resource_type":"string","payload":{"key_0":6915},"created_at":"2026-01-01T00:00:00.000Z","actor_id":"9a17de4d-18b1-7084-2b39-ae91cda69dec","actor_role":"string","resource_id":"string","ip_address":"string","user_agent":"string"},{"id":"3c633bad-59b3-b813-8663-de3d1b936b93","action":"string","resource_type":"string","payload":{"key_0":2928,"key_1":true},"created_at":"2026-01-01T00:00:00.000Z","actor_id":"01c59b58-a4d3-92ab-76b7-b68e7c584579","actor_role":"string","resource_id":"string","ip_address":"string","user_agent":"string"}]));
   }
 
   // @endpoint POST /api/v1/admin/erasures/retry
   if (req.method === 'POST' && pathname === '/api/v1/admin/erasures/retry') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":4728}));
+    return res.end(JSON.stringify({"key_0":7562}));
   }
 
   // @endpoint GET /api/v1/admin/jobs
@@ -689,25 +704,85 @@ const server = http.createServer((req, res) => {
   // @endpoint POST /api/v1/admin/jobs/reclean-text
   if (req.method === 'POST' && pathname === '/api/v1/admin/jobs/reclean-text') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":4213,"key_1":6147,"key_2":true,"key_3":true,"key_4":7413.715177681297}));
+    return res.end(JSON.stringify({"key_0":5522,"key_1":7924}));
   }
 
   // @endpoint GET /api/v1/admin/feature-flags
   if (req.method === 'GET' && pathname === '/api/v1/admin/feature-flags') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"flags":{"key_0":false,"key_1":false}}));
+    return res.end(JSON.stringify({"flags":{"key_0":true,"key_1":false,"key_2":false,"key_3":false}}));
   }
 
   // @endpoint GET /api/v1/admin/ai-usage
   if (req.method === 'GET' && pathname === '/api/v1/admin/ai-usage') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"total_calls":6433,"total_prompt_tokens":1008,"total_completion_tokens":8692,"total_tokens":3574,"estimated_cost_usd":8676.51464883238,"model_breakdown":{"key_0":2312,"key_1":5322},"feature_breakdown":{"key_0":9700,"key_1":9268}}));
+    return res.end(JSON.stringify({"total_calls":3743,"total_prompt_tokens":5548,"total_completion_tokens":733,"total_tokens":3096,"estimated_cost_usd":5635.19342103973,"model_breakdown":{"key_0":3457,"key_1":2728},"feature_breakdown":{"key_0":1220,"key_1":7891}}));
   }
 
   // @endpoint GET /api/v1/admin/health/details
   if (req.method === 'GET' && pathname === '/api/v1/admin/health/details') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"overall_status":"string","services":[{"service":"string","status":"string","latency_ms":7039.265437051654,"details":"string"},{"service":"string","status":"string","latency_ms":2471.0257560946047,"details":"string"}],"timestamp":"2026-01-01T00:00:00.000Z"}));
+    return res.end(JSON.stringify({"overall_status":"string","services":[{"service":"string","status":"string","latency_ms":572.3864352330565,"details":"string"},{"service":"string","status":"string","latency_ms":6981.3260599039495,"details":"string"}],"timestamp":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint GET /api/v1/admin/support/tickets
+  if (req.method === 'GET' && pathname === '/api/v1/admin/support/tickets') {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify([{"id":"1b5afabf-1cb8-f399-7e23-f702147cc2de","requester_id":"3858a60f-b798-1e33-046d-458b10005b21","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","assignee_id":"0d1feb94-2fd0-b3c5-bf72-498c9cc1127d","version":3857,"overdue":false,"requester_email":"string"},{"id":"50f47e51-1ee2-d0dc-4042-4a4ec5bd2dca","requester_id":"a013c4a6-bb7c-2c0a-8ef3-316e27b3ae7b","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","assignee_id":"fae33004-4483-b8ae-031b-bf55a9a5a9f8","version":8550,"overdue":false,"requester_email":"string"}]));
+  }
+
+  // @endpoint GET /api/v1/admin/support/tickets/:ticket_id
+  if (req.method === 'GET' && /^\/api\/v1\/admin\/support\/tickets\/([^/]+)$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"ticket":{"id":"022cff2d-a9fe-0442-b5ed-8871fdabff0a","requester_id":"5de39d3e-9c59-628e-43fa-9905bfe4a1bb","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","assignee_id":"392290d3-53a7-f0f2-f480-d7ac891f8032","version":4813,"overdue":false,"requester_email":"string"},"messages":[{"id":"227ad500-b4e5-93fc-7ed3-7075a6123843","author_id":"aa5fa69e-ffc9-156c-b704-fe9c3d87d683","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false},{"id":"ceb08cdf-27d1-52c7-432b-bb2072f30dd4","author_id":"68270aa5-4338-b39f-5353-0d48bef6fa9e","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false}]}));
+  }
+
+  // @endpoint PATCH /api/v1/admin/support/tickets/:ticket_id
+  if (req.method === 'PATCH' && /^\/api\/v1\/admin\/support\/tickets\/([^/]+)$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"ticket":{"id":"022cff2d-a9fe-0442-b5ed-8871fdabff0a","requester_id":"5de39d3e-9c59-628e-43fa-9905bfe4a1bb","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","assignee_id":"392290d3-53a7-f0f2-f480-d7ac891f8032","version":4813,"overdue":false,"requester_email":"string"},"messages":[{"id":"227ad500-b4e5-93fc-7ed3-7075a6123843","author_id":"aa5fa69e-ffc9-156c-b704-fe9c3d87d683","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false},{"id":"ceb08cdf-27d1-52c7-432b-bb2072f30dd4","author_id":"68270aa5-4338-b39f-5353-0d48bef6fa9e","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false}]}));
+  }
+
+  // @endpoint POST /api/v1/admin/support/tickets/:ticket_id/messages
+  if (req.method === 'POST' && /^\/api\/v1\/admin\/support\/tickets\/([^/]+)\/messages$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"ticket":{"id":"022cff2d-a9fe-0442-b5ed-8871fdabff0a","requester_id":"5de39d3e-9c59-628e-43fa-9905bfe4a1bb","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","assignee_id":"392290d3-53a7-f0f2-f480-d7ac891f8032","version":4813,"overdue":false,"requester_email":"string"},"messages":[{"id":"227ad500-b4e5-93fc-7ed3-7075a6123843","author_id":"aa5fa69e-ffc9-156c-b704-fe9c3d87d683","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false},{"id":"ceb08cdf-27d1-52c7-432b-bb2072f30dd4","author_id":"68270aa5-4338-b39f-5353-0d48bef6fa9e","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false}]}));
   }
 
   // @endpoint GET /api/v1/moderation/reports
@@ -1349,6 +1424,36 @@ const server = http.createServer((req, res) => {
     return res.end(JSON.stringify({}));
   }
 
+  // @endpoint POST /api/v1/projects/tasks/:task_id/watch
+  if (req.method === 'POST' && /^\/api\/v1\/projects\/tasks\/([^/]+)\/watch$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({}));
+  }
+
+  // @endpoint DELETE /api/v1/projects/tasks/:task_id/watch
+  if (req.method === 'DELETE' && /^\/api\/v1\/projects\/tasks\/([^/]+)\/watch$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({}));
+  }
+
   // @endpoint POST /api/v1/projects/tasks/:task_id/dependencies
   if (req.method === 'POST' && /^\/api\/v1\/projects\/tasks\/([^/]+)\/dependencies$/.test(pathname)) {
     const requestedStatusCode = req.headers['x-mock-response-code'];
@@ -1466,13 +1571,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"key_0":"string"},{"key_0":6498,"key_1":true,"key_2":"string"}]));
+    return res.end(JSON.stringify([{"key_0":9783},{"key_0":true,"key_1":3025,"key_2":4310.330469161272,"key_3":true}]));
   }
 
   // @endpoint GET /api/v1/notifications/unread-count
   if (req.method === 'GET' && pathname === '/api/v1/notifications/unread-count') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":8056.365610100329}));
+    return res.end(JSON.stringify({"key_0":"string","key_1":false,"key_2":false,"key_3":9267.24618067965,"key_4":4146.1243107914925}));
   }
 
   // @endpoint PATCH /api/v1/notifications/:notification_id/read
@@ -1670,7 +1775,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"posts":[{"id":"83248e20-f81b-114c-cc95-ad227a61a711","author_id":"2c606962-b844-5636-d6ae-65906c25a9a0","content":"string","visibility":"string","like_count":8582,"comment_count":3452,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"b47bc588-0c14-a618-3ce7-a8516cf676d9","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false},{"id":"dfa06a83-3ee5-6341-8b61-fc49f2d6e0b2","author_id":"8b7d8dbe-dc07-2147-f9e8-e6e7e1ef18ba","content":"string","visibility":"string","like_count":3907,"comment_count":2010,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"f9fd50c5-f5c0-5357-2969-1be53fb6c142","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}],"total":2047,"page":5980,"page_size":1291,"has_more":false}));
+    return res.end(JSON.stringify({"posts":[{"id":"4774bf9b-3e16-a964-cf34-42ac1fd03e66","author_id":"79dff5a0-3662-4140-1ee3-fd8b7966257b","content":"string","visibility":"string","like_count":6222,"comment_count":8338,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"9e3f3fe0-87d1-30ea-e2d8-971db4d2767c","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false},{"id":"7e7262ba-36c9-62c1-b7db-ff88264a6c7d","author_id":"bffbcc59-57e7-ae4f-0cb8-d37e5174047a","content":"string","visibility":"string","like_count":6949,"comment_count":6387,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"d64fb2eb-a1d2-93ab-5e73-2882879253ed","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}],"total":5467,"page":1784,"page_size":6216,"has_more":false}));
   }
 
   // @endpoint POST /api/v1/social/posts
@@ -1685,7 +1790,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"edee067f-fd31-d42a-3f58-78d3279e0410","author_id":"918489ee-89b6-2398-777d-8a0ee9e55a53","content":"string","visibility":"string","like_count":2279,"comment_count":163,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"1217791f-eeac-3cfd-72be-90697de93560","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}));
+    return res.end(JSON.stringify({"id":"778c03d7-84fb-ce0a-9a0d-9d35eb44d22d","author_id":"0b6f6c70-52d6-cfbc-0d6e-d2aa7d739fbb","content":"string","visibility":"string","like_count":2880,"comment_count":256,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"ea328522-958d-df19-2f3d-120ff2370eb1","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}));
   }
 
   // @endpoint GET /api/v1/social/posts/public
@@ -1700,7 +1805,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"posts":[{"id":"83248e20-f81b-114c-cc95-ad227a61a711","author_id":"2c606962-b844-5636-d6ae-65906c25a9a0","content":"string","visibility":"string","like_count":8582,"comment_count":3452,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"b47bc588-0c14-a618-3ce7-a8516cf676d9","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false},{"id":"dfa06a83-3ee5-6341-8b61-fc49f2d6e0b2","author_id":"8b7d8dbe-dc07-2147-f9e8-e6e7e1ef18ba","content":"string","visibility":"string","like_count":3907,"comment_count":2010,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"f9fd50c5-f5c0-5357-2969-1be53fb6c142","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}],"total":2047,"page":5980,"page_size":1291,"has_more":false}));
+    return res.end(JSON.stringify({"posts":[{"id":"4774bf9b-3e16-a964-cf34-42ac1fd03e66","author_id":"79dff5a0-3662-4140-1ee3-fd8b7966257b","content":"string","visibility":"string","like_count":6222,"comment_count":8338,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"9e3f3fe0-87d1-30ea-e2d8-971db4d2767c","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false},{"id":"7e7262ba-36c9-62c1-b7db-ff88264a6c7d","author_id":"bffbcc59-57e7-ae4f-0cb8-d37e5174047a","content":"string","visibility":"string","like_count":6949,"comment_count":6387,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"d64fb2eb-a1d2-93ab-5e73-2882879253ed","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}],"total":5467,"page":1784,"page_size":6216,"has_more":false}));
   }
 
   // @endpoint GET /api/v1/social/posts/:post_id
@@ -1715,7 +1820,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"edee067f-fd31-d42a-3f58-78d3279e0410","author_id":"918489ee-89b6-2398-777d-8a0ee9e55a53","content":"string","visibility":"string","like_count":2279,"comment_count":163,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"1217791f-eeac-3cfd-72be-90697de93560","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}));
+    return res.end(JSON.stringify({"id":"778c03d7-84fb-ce0a-9a0d-9d35eb44d22d","author_id":"0b6f6c70-52d6-cfbc-0d6e-d2aa7d739fbb","content":"string","visibility":"string","like_count":2880,"comment_count":256,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"ea328522-958d-df19-2f3d-120ff2370eb1","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}));
   }
 
   // @endpoint PATCH /api/v1/social/posts/:post_id
@@ -1730,7 +1835,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"edee067f-fd31-d42a-3f58-78d3279e0410","author_id":"918489ee-89b6-2398-777d-8a0ee9e55a53","content":"string","visibility":"string","like_count":2279,"comment_count":163,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"1217791f-eeac-3cfd-72be-90697de93560","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}));
+    return res.end(JSON.stringify({"id":"778c03d7-84fb-ce0a-9a0d-9d35eb44d22d","author_id":"0b6f6c70-52d6-cfbc-0d6e-d2aa7d739fbb","content":"string","visibility":"string","like_count":2880,"comment_count":256,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"id":"ea328522-958d-df19-2f3d-120ff2370eb1","full_name":"string","role":"string","avatar_url":"string"},"image_url":"string","link_url":"string","link_preview_title":"string","liked_by_me":false}));
   }
 
   // @endpoint DELETE /api/v1/social/posts/:post_id
@@ -1760,7 +1865,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"key_0":"string"}));
+    return res.end(JSON.stringify({"key_0":"string","key_1":8841.034972574562}));
   }
 
   // @endpoint GET /api/v1/social/posts/:post_id/comments
@@ -1775,7 +1880,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"09582234-f2c7-3f1a-e391-7355d9189a64","post_id":"59849197-ef3f-c5ca-5270-b16fb1552699","author_id":"3ef474ba-b9d2-f97b-7661-ffaa22c75c4e","content":"string","created_at":"2026-01-01T00:00:00.000Z","author":{"id":"6e2745fe-472b-9fc3-91c9-52da4922b1ad","full_name":"string","role":"string","avatar_url":"string"}},{"id":"224cdf19-8ca2-2258-cd95-00892ab56c79","post_id":"59401945-86a8-44a3-84cd-59b22de7e960","author_id":"c7a57a7f-e868-7fd0-6e6c-84a5eefcf7f5","content":"string","created_at":"2026-01-01T00:00:00.000Z","author":{"id":"cfcbfd59-272e-20bd-d443-6b3ce0117f6f","full_name":"string","role":"string","avatar_url":"string"}}]));
+    return res.end(JSON.stringify([{"id":"c02d5b00-b93e-0e69-bcb1-867f5d962ebb","post_id":"c34f79ef-9387-8b91-f525-b6b9ce4e51a4","author_id":"4fb50dda-771d-5f8f-e782-e64374fe66c3","content":"string","created_at":"2026-01-01T00:00:00.000Z","author":{"id":"e9a3fd18-87d9-95a3-00d6-a3f31b157d17","full_name":"string","role":"string","avatar_url":"string"}},{"id":"92a58621-2322-1d17-0658-29837d3fbc5c","post_id":"1f15c3d6-1291-68df-7757-d63cadd14ead","author_id":"dddefe38-7536-334e-415b-91a65fdc23d2","content":"string","created_at":"2026-01-01T00:00:00.000Z","author":{"id":"153d8cc3-c2c7-7748-1c52-e21412e506f7","full_name":"string","role":"string","avatar_url":"string"}}]));
   }
 
   // @endpoint POST /api/v1/social/posts/:post_id/comments
@@ -1790,7 +1895,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"31b1e295-dd7b-fb37-dbaa-e2fed8dc2b51","post_id":"93a46cbb-8808-e859-9579-8fdc7d09f505","author_id":"24d0dc36-9fe9-25ec-8ef4-deefddb08461","content":"string","created_at":"2026-01-01T00:00:00.000Z","author":{"id":"09d33ee7-eb57-833e-5c02-f72a72c1b263","full_name":"string","role":"string","avatar_url":"string"}}));
+    return res.end(JSON.stringify({"id":"c9349ef4-e251-ae98-62c2-b0082461b779","post_id":"a0b97c6c-9875-ff8e-9cb9-2d810d313e2a","author_id":"441b2bbd-9a8b-e08a-380e-1e1cef0ebd17","content":"string","created_at":"2026-01-01T00:00:00.000Z","author":{"id":"e1a3fa98-37ca-2da5-fd93-de47e262bb32","full_name":"string","role":"string","avatar_url":"string"}}));
   }
 
   // @endpoint DELETE /api/v1/social/posts/:post_id/comments/:comment_id
@@ -1820,7 +1925,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"c919b3ee-623c-9fc5-ef07-eb77c803c9c8","client_id":"ebc6469b-f332-fc49-0ae6-c55e4ae688a6","worker_id":"eb504e50-8b6b-de49-9bcf-05a38ce392b2","title":"string","scope_description":"string","rate_type":"string","rate_amount":8842.117958702147,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"375365f3-cac0-10b4-5bd3-4dcac3c498e0","client":{"id":"0e5b1bd6-9ac1-89c3-56bd-b66a6d0e342d","full_name":"string","email":"string","role":"string"},"worker":{"id":"963c41bb-b90b-172b-7d68-c28e067e7eaf","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"5d594712-c49d-2feb-ec0c-a8ca1378de91","contract_id":"e6eab0a0-5531-78b7-215e-5c5f2bd991b2","title":"string","amount":5353.65441814065,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"790b007f-28bc-75c8-9058-1f501f6cf2a0","contract_id":"85544e37-31b8-c232-7c8a-03a4cd5c9050","title":"string","amount":9535.73562670499,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
+    return res.end(JSON.stringify({"id":"30c0b7cd-3fff-4573-ef3b-061f06406c08","client_id":"3ba423c7-cc84-a430-f338-94fba2ed527a","worker_id":"a1c6b252-fdbd-c78b-ee09-c2ea92fb1fd3","title":"string","scope_description":"string","rate_type":"string","rate_amount":7413.244196213782,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"284a63cb-feb8-8674-7ffe-2feb55bb5385","client":{"id":"fb617e9d-8475-a0a3-2506-614a00e012fd","full_name":"string","email":"string","role":"string"},"worker":{"id":"63ba00b7-c4d2-467b-0473-fd6c45fe36e6","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"f864bb07-6d64-08fd-98dd-8b59e6a513a1","contract_id":"c870c938-31fa-378c-8df5-bb9de9e2b249","title":"string","amount":3515.535108745098,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"6a0db4f7-d0c4-ed8b-c152-af44e7533bb7","contract_id":"27f9f1b4-6930-ccb4-0ec5-6060eb1aaacc","title":"string","amount":2721.5625741519034,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
   }
 
   // @endpoint GET /api/v1/contracts/me
@@ -1835,7 +1940,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"f6ef897f-9c97-e308-e96d-322405412780","client_id":"9a278848-15fc-881f-1db6-c21b0c8d0a57","worker_id":"b80a340c-aab2-2ef8-6fad-887c0b421064","title":"string","scope_description":"string","rate_type":"string","rate_amount":8632.249902002513,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"acfc510b-679d-6375-653f-d9e1f3079f8c","client":{"id":"0d99ce8b-87dc-b5d4-8831-43cda3392a27","full_name":"string","email":"string","role":"string"},"worker":{"id":"f2986868-8709-384f-6ecc-7499a9cdd123","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"65cef260-ce72-39af-bcc0-a7e7f4e3e4d9","contract_id":"8b557a00-fe69-9c5f-4805-82875a3dbaac","title":"string","amount":4024.3538469076157,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"e17c07f5-0bc1-22ec-5ee5-d3f83c99629e","contract_id":"ebb607ba-1c25-a00e-3d74-8a944bf31aef","title":"string","amount":8814.164609648287,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]},{"id":"8adc6f08-1cda-e0d2-3d4f-b782a38e46e6","client_id":"99d2332b-1018-4e68-2f04-e844f70aec45","worker_id":"b3f1aee2-fb0b-7ddc-3776-7cbc26d12b92","title":"string","scope_description":"string","rate_type":"string","rate_amount":9154.361612163484,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"31f588c1-77e2-d219-e017-3bfa66fe5c71","client":{"id":"28c42b48-dbce-09b9-19bd-ed6a1393ac5d","full_name":"string","email":"string","role":"string"},"worker":{"id":"1dd027df-8afa-2429-e9d1-ef983c365dc7","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"f0b5b73b-e88c-91af-17b7-93d01300eea4","contract_id":"067403eb-3a9c-c8af-4bca-9cce72494c14","title":"string","amount":4710.2810721844435,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"6dba6131-07bf-aaf6-aa25-3208c0a289e5","contract_id":"e2d9d67b-cbbd-fe7e-901f-c7b33d041983","title":"string","amount":5784.827754832804,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}]));
+    return res.end(JSON.stringify([{"id":"442c34eb-0d0d-d9e8-eb20-56e066f75069","client_id":"b05845ba-5a3c-5e98-bf63-7b75a1c5905a","worker_id":"4130b839-1447-4259-3209-54194dd82513","title":"string","scope_description":"string","rate_type":"string","rate_amount":25.481763295829296,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"60bc120a-acb6-a283-b55f-813c3abd06d1","client":{"id":"4d7f9a6c-9f1a-c7b9-e72e-13597304213c","full_name":"string","email":"string","role":"string"},"worker":{"id":"96db3395-978d-d1aa-129e-10103fd42e8e","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"6d16db7a-2496-2e44-2987-35edcadbffe3","contract_id":"ad92d732-f7df-42b4-d031-42994f709587","title":"string","amount":926.998860668391,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"045b59a7-3207-f735-4ad2-1406dc659840","contract_id":"2a51e543-0b00-861c-03e7-957ba307d364","title":"string","amount":4227.241720072925,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]},{"id":"cd25b323-ad62-8603-1327-f9161d09b047","client_id":"f764f9da-090e-5366-4656-97ab16e021e4","worker_id":"b473f8e3-5c8f-9d39-7b67-9641734bff6d","title":"string","scope_description":"string","rate_type":"string","rate_amount":3232.489265501499,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"753d776c-e172-5ac3-f153-71234b198ab3","client":{"id":"f1e59c01-4ef5-f333-b102-dc5c9c537fdc","full_name":"string","email":"string","role":"string"},"worker":{"id":"66bb370f-0156-5d1d-0c81-fa418261cd8d","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"4afd20b6-83ec-45c4-0a78-cf6c9de71411","contract_id":"87578181-996d-a96b-12d1-4a52ab8147a6","title":"string","amount":5835.530832409859,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"1e3e5ba9-bb92-fe55-7c01-054f51d5d7fd","contract_id":"dceb247f-1478-6843-280b-1cebfec18441","title":"string","amount":3546.188378240913,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}]));
   }
 
   // @endpoint GET /api/v1/contracts/:contract_id
@@ -1850,7 +1955,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"c919b3ee-623c-9fc5-ef07-eb77c803c9c8","client_id":"ebc6469b-f332-fc49-0ae6-c55e4ae688a6","worker_id":"eb504e50-8b6b-de49-9bcf-05a38ce392b2","title":"string","scope_description":"string","rate_type":"string","rate_amount":8842.117958702147,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"375365f3-cac0-10b4-5bd3-4dcac3c498e0","client":{"id":"0e5b1bd6-9ac1-89c3-56bd-b66a6d0e342d","full_name":"string","email":"string","role":"string"},"worker":{"id":"963c41bb-b90b-172b-7d68-c28e067e7eaf","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"5d594712-c49d-2feb-ec0c-a8ca1378de91","contract_id":"e6eab0a0-5531-78b7-215e-5c5f2bd991b2","title":"string","amount":5353.65441814065,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"790b007f-28bc-75c8-9058-1f501f6cf2a0","contract_id":"85544e37-31b8-c232-7c8a-03a4cd5c9050","title":"string","amount":9535.73562670499,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
+    return res.end(JSON.stringify({"id":"30c0b7cd-3fff-4573-ef3b-061f06406c08","client_id":"3ba423c7-cc84-a430-f338-94fba2ed527a","worker_id":"a1c6b252-fdbd-c78b-ee09-c2ea92fb1fd3","title":"string","scope_description":"string","rate_type":"string","rate_amount":7413.244196213782,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"284a63cb-feb8-8674-7ffe-2feb55bb5385","client":{"id":"fb617e9d-8475-a0a3-2506-614a00e012fd","full_name":"string","email":"string","role":"string"},"worker":{"id":"63ba00b7-c4d2-467b-0473-fd6c45fe36e6","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"f864bb07-6d64-08fd-98dd-8b59e6a513a1","contract_id":"c870c938-31fa-378c-8df5-bb9de9e2b249","title":"string","amount":3515.535108745098,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"6a0db4f7-d0c4-ed8b-c152-af44e7533bb7","contract_id":"27f9f1b4-6930-ccb4-0ec5-6060eb1aaacc","title":"string","amount":2721.5625741519034,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
   }
 
   // @endpoint PATCH /api/v1/contracts/:contract_id
@@ -1865,7 +1970,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"c919b3ee-623c-9fc5-ef07-eb77c803c9c8","client_id":"ebc6469b-f332-fc49-0ae6-c55e4ae688a6","worker_id":"eb504e50-8b6b-de49-9bcf-05a38ce392b2","title":"string","scope_description":"string","rate_type":"string","rate_amount":8842.117958702147,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"375365f3-cac0-10b4-5bd3-4dcac3c498e0","client":{"id":"0e5b1bd6-9ac1-89c3-56bd-b66a6d0e342d","full_name":"string","email":"string","role":"string"},"worker":{"id":"963c41bb-b90b-172b-7d68-c28e067e7eaf","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"5d594712-c49d-2feb-ec0c-a8ca1378de91","contract_id":"e6eab0a0-5531-78b7-215e-5c5f2bd991b2","title":"string","amount":5353.65441814065,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"790b007f-28bc-75c8-9058-1f501f6cf2a0","contract_id":"85544e37-31b8-c232-7c8a-03a4cd5c9050","title":"string","amount":9535.73562670499,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
+    return res.end(JSON.stringify({"id":"30c0b7cd-3fff-4573-ef3b-061f06406c08","client_id":"3ba423c7-cc84-a430-f338-94fba2ed527a","worker_id":"a1c6b252-fdbd-c78b-ee09-c2ea92fb1fd3","title":"string","scope_description":"string","rate_type":"string","rate_amount":7413.244196213782,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"284a63cb-feb8-8674-7ffe-2feb55bb5385","client":{"id":"fb617e9d-8475-a0a3-2506-614a00e012fd","full_name":"string","email":"string","role":"string"},"worker":{"id":"63ba00b7-c4d2-467b-0473-fd6c45fe36e6","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"f864bb07-6d64-08fd-98dd-8b59e6a513a1","contract_id":"c870c938-31fa-378c-8df5-bb9de9e2b249","title":"string","amount":3515.535108745098,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"6a0db4f7-d0c4-ed8b-c152-af44e7533bb7","contract_id":"27f9f1b4-6930-ccb4-0ec5-6060eb1aaacc","title":"string","amount":2721.5625741519034,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
   }
 
   // @endpoint POST /api/v1/contracts/:contract_id/sign
@@ -1880,7 +1985,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"c919b3ee-623c-9fc5-ef07-eb77c803c9c8","client_id":"ebc6469b-f332-fc49-0ae6-c55e4ae688a6","worker_id":"eb504e50-8b6b-de49-9bcf-05a38ce392b2","title":"string","scope_description":"string","rate_type":"string","rate_amount":8842.117958702147,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"375365f3-cac0-10b4-5bd3-4dcac3c498e0","client":{"id":"0e5b1bd6-9ac1-89c3-56bd-b66a6d0e342d","full_name":"string","email":"string","role":"string"},"worker":{"id":"963c41bb-b90b-172b-7d68-c28e067e7eaf","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"5d594712-c49d-2feb-ec0c-a8ca1378de91","contract_id":"e6eab0a0-5531-78b7-215e-5c5f2bd991b2","title":"string","amount":5353.65441814065,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"790b007f-28bc-75c8-9058-1f501f6cf2a0","contract_id":"85544e37-31b8-c232-7c8a-03a4cd5c9050","title":"string","amount":9535.73562670499,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
+    return res.end(JSON.stringify({"id":"30c0b7cd-3fff-4573-ef3b-061f06406c08","client_id":"3ba423c7-cc84-a430-f338-94fba2ed527a","worker_id":"a1c6b252-fdbd-c78b-ee09-c2ea92fb1fd3","title":"string","scope_description":"string","rate_type":"string","rate_amount":7413.244196213782,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"284a63cb-feb8-8674-7ffe-2feb55bb5385","client":{"id":"fb617e9d-8475-a0a3-2506-614a00e012fd","full_name":"string","email":"string","role":"string"},"worker":{"id":"63ba00b7-c4d2-467b-0473-fd6c45fe36e6","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"f864bb07-6d64-08fd-98dd-8b59e6a513a1","contract_id":"c870c938-31fa-378c-8df5-bb9de9e2b249","title":"string","amount":3515.535108745098,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"6a0db4f7-d0c4-ed8b-c152-af44e7533bb7","contract_id":"27f9f1b4-6930-ccb4-0ec5-6060eb1aaacc","title":"string","amount":2721.5625741519034,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
   }
 
   // @endpoint POST /api/v1/contracts/:contract_id/terminate
@@ -1895,7 +2000,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"c919b3ee-623c-9fc5-ef07-eb77c803c9c8","client_id":"ebc6469b-f332-fc49-0ae6-c55e4ae688a6","worker_id":"eb504e50-8b6b-de49-9bcf-05a38ce392b2","title":"string","scope_description":"string","rate_type":"string","rate_amount":8842.117958702147,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"375365f3-cac0-10b4-5bd3-4dcac3c498e0","client":{"id":"0e5b1bd6-9ac1-89c3-56bd-b66a6d0e342d","full_name":"string","email":"string","role":"string"},"worker":{"id":"963c41bb-b90b-172b-7d68-c28e067e7eaf","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"5d594712-c49d-2feb-ec0c-a8ca1378de91","contract_id":"e6eab0a0-5531-78b7-215e-5c5f2bd991b2","title":"string","amount":5353.65441814065,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"790b007f-28bc-75c8-9058-1f501f6cf2a0","contract_id":"85544e37-31b8-c232-7c8a-03a4cd5c9050","title":"string","amount":9535.73562670499,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
+    return res.end(JSON.stringify({"id":"30c0b7cd-3fff-4573-ef3b-061f06406c08","client_id":"3ba423c7-cc84-a430-f338-94fba2ed527a","worker_id":"a1c6b252-fdbd-c78b-ee09-c2ea92fb1fd3","title":"string","scope_description":"string","rate_type":"string","rate_amount":7413.244196213782,"currency":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","project_id":"284a63cb-feb8-8674-7ffe-2feb55bb5385","client":{"id":"fb617e9d-8475-a0a3-2506-614a00e012fd","full_name":"string","email":"string","role":"string"},"worker":{"id":"63ba00b7-c4d2-467b-0473-fd6c45fe36e6","full_name":"string","email":"string","role":"string"},"terms":"string","client_signed_at":"2026-01-01T00:00:00.000Z","worker_signed_at":"2026-01-01T00:00:00.000Z","start_date":"2026-01-01T00:00:00.000Z","end_date":"2026-01-01T00:00:00.000Z","milestones":[{"id":"f864bb07-6d64-08fd-98dd-8b59e6a513a1","contract_id":"c870c938-31fa-378c-8df5-bb9de9e2b249","title":"string","amount":3515.535108745098,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"},{"id":"6a0db4f7-d0c4-ed8b-c152-af44e7533bb7","contract_id":"27f9f1b4-6930-ccb4-0ec5-6060eb1aaacc","title":"string","amount":2721.5625741519034,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}]}));
   }
 
   // @endpoint POST /api/v1/contracts/:contract_id/milestones
@@ -1910,7 +2015,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"5d46274e-7962-e269-c2af-2e1e3d511d6d","contract_id":"e8d014bd-c78e-e0b6-ae53-513bad0d486d","title":"string","amount":3050.3763491287827,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}));
+    return res.end(JSON.stringify({"id":"d1075025-9a90-cfbd-a9f6-3e641c54ce4d","contract_id":"406e3280-ea6c-3d21-c34b-9a5003fdeadc","title":"string","amount":117.3343975096941,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}));
   }
 
   // @endpoint PATCH /api/v1/contracts/:contract_id/milestones/:milestone_id/status
@@ -1925,7 +2030,319 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"5d46274e-7962-e269-c2af-2e1e3d511d6d","contract_id":"e8d014bd-c78e-e0b6-ae53-513bad0d486d","title":"string","amount":3050.3763491287827,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}));
+    return res.end(JSON.stringify({"id":"d1075025-9a90-cfbd-a9f6-3e641c54ce4d","contract_id":"406e3280-ea6c-3d21-c34b-9a5003fdeadc","title":"string","amount":117.3343975096941,"status":"string","created_at":"2026-01-01T00:00:00.000Z","due_date":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint GET /api/v1/contracts/:contract_id/deliverables
+  if (req.method === 'GET' && /^\/api\/v1\/contracts\/([^/]+)\/deliverables$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify([{"id":"abe6ff16-092d-d844-9b9a-0280ccc8b33f","contract_id":"901a4dd4-7c04-0855-e35c-26c3521e404a","milestone_id":"dcd7e1be-4c9a-e1dd-f3dd-c1a10f02e1b1","submitted_by_id":"0bac45bb-cf8d-4755-e86a-5412068d399d","supersedes_id":"e9a45821-c984-88bb-b451-f092b6db783e","kind":"string","title":"string","notes":"string","version":5639,"status":"string","review_note":"string","reviewed_at":"2026-01-01T00:00:00.000Z","repo_url":"string","branch":"string","commit_sha":"string","file_name":"string","file_mime":"string","file_size":3399,"demo_url":"string","environment":"string","created_at":"2026-01-01T00:00:00.000Z"},{"id":"78d09170-8d1f-086f-1a68-f58b88c84872","contract_id":"7fa8006f-a719-cafa-a71b-922e09012b76","milestone_id":"efbac817-7924-21bf-ae81-bba4b52daf54","submitted_by_id":"5af35919-878e-5c79-3f53-c0538cc61d8e","supersedes_id":"54d14ca2-b7c9-0435-fc47-e16cb2126bfd","kind":"string","title":"string","notes":"string","version":2001,"status":"string","review_note":"string","reviewed_at":"2026-01-01T00:00:00.000Z","repo_url":"string","branch":"string","commit_sha":"string","file_name":"string","file_mime":"string","file_size":3495,"demo_url":"string","environment":"string","created_at":"2026-01-01T00:00:00.000Z"}]));
+  }
+
+  // @endpoint POST /api/v1/contracts/:contract_id/deliverables/code
+  if (req.method === 'POST' && /^\/api\/v1\/contracts\/([^/]+)\/deliverables\/code$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(201, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"bb422351-477f-41ee-b0aa-c4feae701b83","contract_id":"1e288408-34d3-8db2-8c57-59d071919144","milestone_id":"f9bc2ac3-2b8e-aaed-f4fc-2ae4928b1e05","submitted_by_id":"80116bec-2621-d5d7-8105-243ec7bd0044","supersedes_id":"d891d8f7-ee38-3d23-ed8f-19f0c01eee18","kind":"string","title":"string","notes":"string","version":2039,"status":"string","review_note":"string","reviewed_at":"2026-01-01T00:00:00.000Z","repo_url":"string","branch":"string","commit_sha":"string","file_name":"string","file_mime":"string","file_size":7640,"demo_url":"string","environment":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint POST /api/v1/contracts/:contract_id/deliverables/demo
+  if (req.method === 'POST' && /^\/api\/v1\/contracts\/([^/]+)\/deliverables\/demo$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(201, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"bb422351-477f-41ee-b0aa-c4feae701b83","contract_id":"1e288408-34d3-8db2-8c57-59d071919144","milestone_id":"f9bc2ac3-2b8e-aaed-f4fc-2ae4928b1e05","submitted_by_id":"80116bec-2621-d5d7-8105-243ec7bd0044","supersedes_id":"d891d8f7-ee38-3d23-ed8f-19f0c01eee18","kind":"string","title":"string","notes":"string","version":2039,"status":"string","review_note":"string","reviewed_at":"2026-01-01T00:00:00.000Z","repo_url":"string","branch":"string","commit_sha":"string","file_name":"string","file_mime":"string","file_size":7640,"demo_url":"string","environment":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint POST /api/v1/contracts/:contract_id/deliverables/document
+  if (req.method === 'POST' && /^\/api\/v1\/contracts\/([^/]+)\/deliverables\/document$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(201, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"bb422351-477f-41ee-b0aa-c4feae701b83","contract_id":"1e288408-34d3-8db2-8c57-59d071919144","milestone_id":"f9bc2ac3-2b8e-aaed-f4fc-2ae4928b1e05","submitted_by_id":"80116bec-2621-d5d7-8105-243ec7bd0044","supersedes_id":"d891d8f7-ee38-3d23-ed8f-19f0c01eee18","kind":"string","title":"string","notes":"string","version":2039,"status":"string","review_note":"string","reviewed_at":"2026-01-01T00:00:00.000Z","repo_url":"string","branch":"string","commit_sha":"string","file_name":"string","file_mime":"string","file_size":7640,"demo_url":"string","environment":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint GET /api/v1/contracts/:contract_id/deliverables/:deliverable_id/download
+  if (req.method === 'GET' && /^\/api\/v1\/contracts\/([^/]+)\/deliverables\/([^/]+)\/download$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"url":"string","expires_in_seconds":5206,"file_name":"string"}));
+  }
+
+  // @endpoint POST /api/v1/contracts/:contract_id/deliverables/:deliverable_id/review
+  if (req.method === 'POST' && /^\/api\/v1\/contracts\/([^/]+)\/deliverables\/([^/]+)\/review$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"bb422351-477f-41ee-b0aa-c4feae701b83","contract_id":"1e288408-34d3-8db2-8c57-59d071919144","milestone_id":"f9bc2ac3-2b8e-aaed-f4fc-2ae4928b1e05","submitted_by_id":"80116bec-2621-d5d7-8105-243ec7bd0044","supersedes_id":"d891d8f7-ee38-3d23-ed8f-19f0c01eee18","kind":"string","title":"string","notes":"string","version":2039,"status":"string","review_note":"string","reviewed_at":"2026-01-01T00:00:00.000Z","repo_url":"string","branch":"string","commit_sha":"string","file_name":"string","file_mime":"string","file_size":7640,"demo_url":"string","environment":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint POST /api/v1/contracts/:contract_id/deliverables/:deliverable_id/withdraw
+  if (req.method === 'POST' && /^\/api\/v1\/contracts\/([^/]+)\/deliverables\/([^/]+)\/withdraw$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"bb422351-477f-41ee-b0aa-c4feae701b83","contract_id":"1e288408-34d3-8db2-8c57-59d071919144","milestone_id":"f9bc2ac3-2b8e-aaed-f4fc-2ae4928b1e05","submitted_by_id":"80116bec-2621-d5d7-8105-243ec7bd0044","supersedes_id":"d891d8f7-ee38-3d23-ed8f-19f0c01eee18","kind":"string","title":"string","notes":"string","version":2039,"status":"string","review_note":"string","reviewed_at":"2026-01-01T00:00:00.000Z","repo_url":"string","branch":"string","commit_sha":"string","file_name":"string","file_mime":"string","file_size":7640,"demo_url":"string","environment":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint POST /api/v1/meetings
+  if (req.method === 'POST' && pathname === '/api/v1/meetings') {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(201, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"97741c9d-c723-cd73-3c98-439f9c76b629","organizer_id":"70d77171-228a-c229-0967-b838185b2e52","contract_id":"3b483352-a082-f38e-dd31-a4bfd1ed181e","title":"string","agenda":"string","starts_at":"2026-01-01T00:00:00.000Z","ends_at":"2026-01-01T00:00:00.000Z","provider":"string","status":"string","participants":[{"user_id":"6e5aff53-9a14-0915-f76a-802572a3e5f2","response":"string","full_name":"string"},{"user_id":"005e096e-f35f-3dc3-f1bb-8eeeb1d0396f","response":"string","full_name":"string"}],"phase":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint GET /api/v1/meetings
+  if (req.method === 'GET' && pathname === '/api/v1/meetings') {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify([{"id":"7bc036a9-b9c8-2dbd-56ae-ab4a4bc5dc69","organizer_id":"d348ed19-9599-b4d7-2360-3811e06b6597","contract_id":"ecc1f989-52be-89d9-6fbc-ade51cb4fe57","title":"string","agenda":"string","starts_at":"2026-01-01T00:00:00.000Z","ends_at":"2026-01-01T00:00:00.000Z","provider":"string","status":"string","participants":[{"user_id":"fb11eaec-ae0e-a9dc-86aa-2762270d9ffe","response":"string","full_name":"string"},{"user_id":"190029bd-82ce-21e3-944f-67cb4120d740","response":"string","full_name":"string"}],"phase":"string","created_at":"2026-01-01T00:00:00.000Z"},{"id":"738ea11f-27ff-b141-193c-4f376bb61b18","organizer_id":"9153b4d3-3e3f-d855-0368-738e3e0f1465","contract_id":"2630fcfd-34e9-c81f-cd42-1489c1d38d33","title":"string","agenda":"string","starts_at":"2026-01-01T00:00:00.000Z","ends_at":"2026-01-01T00:00:00.000Z","provider":"string","status":"string","participants":[{"user_id":"b19fb5ea-abac-b819-2e61-cf1c2153af54","response":"string","full_name":"string"},{"user_id":"c3c065cf-029c-9b86-f436-38d292006566","response":"string","full_name":"string"}],"phase":"string","created_at":"2026-01-01T00:00:00.000Z"}]));
+  }
+
+  // @endpoint GET /api/v1/meetings/:meeting_id
+  if (req.method === 'GET' && /^\/api\/v1\/meetings\/([^/]+)$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"97741c9d-c723-cd73-3c98-439f9c76b629","organizer_id":"70d77171-228a-c229-0967-b838185b2e52","contract_id":"3b483352-a082-f38e-dd31-a4bfd1ed181e","title":"string","agenda":"string","starts_at":"2026-01-01T00:00:00.000Z","ends_at":"2026-01-01T00:00:00.000Z","provider":"string","status":"string","participants":[{"user_id":"6e5aff53-9a14-0915-f76a-802572a3e5f2","response":"string","full_name":"string"},{"user_id":"005e096e-f35f-3dc3-f1bb-8eeeb1d0396f","response":"string","full_name":"string"}],"phase":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint POST /api/v1/meetings/:meeting_id/respond
+  if (req.method === 'POST' && /^\/api\/v1\/meetings\/([^/]+)\/respond$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"97741c9d-c723-cd73-3c98-439f9c76b629","organizer_id":"70d77171-228a-c229-0967-b838185b2e52","contract_id":"3b483352-a082-f38e-dd31-a4bfd1ed181e","title":"string","agenda":"string","starts_at":"2026-01-01T00:00:00.000Z","ends_at":"2026-01-01T00:00:00.000Z","provider":"string","status":"string","participants":[{"user_id":"6e5aff53-9a14-0915-f76a-802572a3e5f2","response":"string","full_name":"string"},{"user_id":"005e096e-f35f-3dc3-f1bb-8eeeb1d0396f","response":"string","full_name":"string"}],"phase":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint POST /api/v1/meetings/:meeting_id/cancel
+  if (req.method === 'POST' && /^\/api\/v1\/meetings\/([^/]+)\/cancel$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"97741c9d-c723-cd73-3c98-439f9c76b629","organizer_id":"70d77171-228a-c229-0967-b838185b2e52","contract_id":"3b483352-a082-f38e-dd31-a4bfd1ed181e","title":"string","agenda":"string","starts_at":"2026-01-01T00:00:00.000Z","ends_at":"2026-01-01T00:00:00.000Z","provider":"string","status":"string","participants":[{"user_id":"6e5aff53-9a14-0915-f76a-802572a3e5f2","response":"string","full_name":"string"},{"user_id":"005e096e-f35f-3dc3-f1bb-8eeeb1d0396f","response":"string","full_name":"string"}],"phase":"string","created_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint GET /api/v1/meetings/:meeting_id/join
+  if (req.method === 'GET' && /^\/api\/v1\/meetings\/([^/]+)\/join$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"url":"string","provider":"string"}));
+  }
+
+  // @endpoint GET /api/v1/support/tickets
+  if (req.method === 'GET' && pathname === '/api/v1/support/tickets') {
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify([{"id":"05fe1dfe-2a98-ed64-fc88-2a4ff2b8631f","requester_id":"99d81b5c-8146-4991-4c8f-0ba4c495ebdb","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"},{"id":"a5039407-7c83-bd36-861c-fc0903ddb814","requester_id":"4b7c524d-4795-091e-9754-df29891c7f7e","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"}]));
+  }
+
+  // @endpoint POST /api/v1/support/tickets
+  if (req.method === 'POST' && pathname === '/api/v1/support/tickets') {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(201, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"ticket":{"id":"065d8486-0ec9-aa3b-a14b-b7ffba0c50a9","requester_id":"47f99a90-f52b-edc8-db5c-ad6c4e578547","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"},"messages":[{"id":"92073e1f-3e7d-16b9-5259-096f5b9c770b","author_id":"5cb09b63-fc23-7969-5546-7855cd12f734","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false},{"id":"67c357be-ad9d-424d-3025-f593f90bb1e2","author_id":"06cea762-64a0-d167-4a29-4d4167188c80","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false}]}));
+  }
+
+  // @endpoint GET /api/v1/support/tickets/:ticket_id
+  if (req.method === 'GET' && /^\/api\/v1\/support\/tickets\/([^/]+)$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"ticket":{"id":"065d8486-0ec9-aa3b-a14b-b7ffba0c50a9","requester_id":"47f99a90-f52b-edc8-db5c-ad6c4e578547","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"},"messages":[{"id":"92073e1f-3e7d-16b9-5259-096f5b9c770b","author_id":"5cb09b63-fc23-7969-5546-7855cd12f734","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false},{"id":"67c357be-ad9d-424d-3025-f593f90bb1e2","author_id":"06cea762-64a0-d167-4a29-4d4167188c80","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false}]}));
+  }
+
+  // @endpoint POST /api/v1/support/tickets/:ticket_id/messages
+  if (req.method === 'POST' && /^\/api\/v1\/support\/tickets\/([^/]+)\/messages$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"ticket":{"id":"065d8486-0ec9-aa3b-a14b-b7ffba0c50a9","requester_id":"47f99a90-f52b-edc8-db5c-ad6c4e578547","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"},"messages":[{"id":"92073e1f-3e7d-16b9-5259-096f5b9c770b","author_id":"5cb09b63-fc23-7969-5546-7855cd12f734","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false},{"id":"67c357be-ad9d-424d-3025-f593f90bb1e2","author_id":"06cea762-64a0-d167-4a29-4d4167188c80","body":"string","internal":true,"created_at":"2026-01-01T00:00:00.000Z","from_staff":false}]}));
+  }
+
+  // @endpoint POST /api/v1/support/tickets/:ticket_id/close
+  if (req.method === 'POST' && /^\/api\/v1\/support\/tickets\/([^/]+)\/close$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"a0b3e2d5-160a-c1f5-3d30-d23f4bcdcc85","requester_id":"de3046c1-f8fd-dfc2-545c-7d49af474ae0","subject":"string","category":"string","severity":"string","status":"string","sla_due_at":"2026-01-01T00:00:00.000Z","first_response_at":"2026-01-01T00:00:00.000Z","resolved_at":"2026-01-01T00:00:00.000Z","created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z"}));
+  }
+
+  // @endpoint GET /api/v1/assistant/tools
+  if (req.method === 'GET' && pathname === '/api/v1/assistant/tools') {
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify([{"key_0":3128},{"key_0":"string","key_1":false}]));
+  }
+
+  // @endpoint POST /api/v1/assistant/chat
+  if (req.method === 'POST' && pathname === '/api/v1/assistant/chat') {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"reply":"string","tool":"string","kind":"string","result":{"key_0":"string"},"pending_action":{"id":"545dbdfa-c4f5-3725-cf6e-ad8551632fdd","tool":"string","summary":"string","args":{"key_0":"string"},"expires_at":"2026-01-01T00:00:00.000Z"}}));
+  }
+
+  // @endpoint POST /api/v1/assistant/actions/:action_id/confirm
+  if (req.method === 'POST' && /^\/api\/v1\/assistant\/actions\/([^/]+)\/confirm$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"f83951ba-2e19-1218-2e17-02daf4fbc491","tool":"string","status":"string","result":{"key_0":"string","key_1":"string"}}));
+  }
+
+  // @endpoint POST /api/v1/assistant/actions/:action_id/cancel
+  if (req.method === 'POST' && /^\/api\/v1\/assistant\/actions\/([^/]+)\/cancel$/.test(pathname)) {
+    const requestedStatusCode = req.headers['x-mock-response-code'];
+
+    // "Validation Error" — when x-mock-response-code: 422
+    if (requestedStatusCode === '422') {
+      res.writeHead(422, {"Content-Type":"application/json"});
+      return res.end(JSON.stringify({"detail":[{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}},{"loc":["string","string"],"msg":"string","type":"string","input":{},"ctx":{}}]}));
+    }
+
+    // "Successful Response" — default
+    res.writeHead(200, {"Content-Type":"application/json"});
+    return res.end(JSON.stringify({"id":"f83951ba-2e19-1218-2e17-02daf4fbc491","tool":"string","status":"string","result":{"key_0":"string","key_1":"string"}}));
   }
 
   // @endpoint GET /api/v1/trust/scores/:user_id
@@ -1940,7 +2357,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"user_id":"2f198d87-c073-58da-e101-068867ea9d45","overall_score":18.41283191461116,"completion_rate":44.03038292657584,"on_time_rate":91.40576152130961,"rating_avg":4.875711956992745,"review_count":9919,"verified_skills_count":5363,"updated_at":"2026-01-01T00:00:00.000Z","score_breakdown":{"key_0":true}}));
+    return res.end(JSON.stringify({"user_id":"b71b4f0f-56b4-2965-fb53-732bf6a8c7b6","overall_score":51.89296626485884,"completion_rate":58.68591305334121,"on_time_rate":88.22075817734003,"rating_avg":1.846946213627234,"review_count":9054,"verified_skills_count":2519,"updated_at":"2026-01-01T00:00:00.000Z","score_breakdown":{"key_0":"string","key_1":2169.4945474155247}}));
   }
 
   // @endpoint POST /api/v1/trust/reviews
@@ -1955,7 +2372,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"accdb95b-511b-942f-6ad7-be5bcede7db2","project_id":"43f086e5-d0b4-2b2f-3f19-789b7fe76494","reviewer_id":"d446409a-6d24-f923-fa0b-539bfb2460e0","reviewee_id":"b0070289-813b-1843-4a3a-1bf37ced6494","rating":8975,"comment":"string","created_at":"2026-01-01T00:00:00.000Z","reviewer":{"id":"99f7fe52-1d9e-89a4-9606-e437c7441e33","full_name":"string","role":"string"}}));
+    return res.end(JSON.stringify({"id":"d406feab-3e78-74f8-86b7-8444b4d8b086","project_id":"98568b62-13c3-be8f-ab4e-d83857a2e6b5","reviewer_id":"92d05699-c907-63a7-f532-c38461a054ec","reviewee_id":"aaf50705-7f3f-805f-8483-f1a660d97456","rating":7173,"comment":"string","created_at":"2026-01-01T00:00:00.000Z","reviewer":{"id":"a4545de6-91d3-3d86-6e36-c10966865ccc","full_name":"string","role":"string"}}));
   }
 
   // @endpoint GET /api/v1/trust/reviews/:user_id
@@ -1970,7 +2387,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"3b28f320-ca67-47b4-1ba6-d085f7b7a34f","project_id":"178cd563-43a8-b231-81e1-8a68c9b3cf7c","reviewer_id":"689e85f2-9099-96c2-fd0d-0c5554e4c111","reviewee_id":"ddcda8b8-f197-889e-7d31-2fe8079127e1","rating":3673,"comment":"string","created_at":"2026-01-01T00:00:00.000Z","reviewer":{"id":"3c487918-670d-e60c-b376-2a0df5bdce2c","full_name":"string","role":"string"}},{"id":"67321147-36dc-2365-1297-bc0752f4d8a9","project_id":"c9669001-2028-2d1d-2a6b-06087ed2e7b9","reviewer_id":"d26c4788-a934-4150-a587-4d479178230f","reviewee_id":"eb97819c-bd19-a035-2e0d-40ca0af01df8","rating":5188,"comment":"string","created_at":"2026-01-01T00:00:00.000Z","reviewer":{"id":"a3c145bc-7c8d-903e-5658-f9d08ff3918b","full_name":"string","role":"string"}}]));
+    return res.end(JSON.stringify([{"id":"9437bfd0-192d-3611-21a4-ef559db29913","project_id":"53e24806-f138-593f-3ff2-eb1b00d292aa","reviewer_id":"1190cae0-8130-d8ae-b2cd-5509748d1518","reviewee_id":"ef20d85b-e78a-fd6d-4104-2bcb4730be8b","rating":8397,"comment":"string","created_at":"2026-01-01T00:00:00.000Z","reviewer":{"id":"409b4a4a-9d59-0d5c-aae2-b17121b50a8f","full_name":"string","role":"string"}},{"id":"701c95f9-712f-9b22-9940-732f5649265a","project_id":"50b61d1d-a04d-fa5d-5dbc-dc00e27473b8","reviewer_id":"8684bb0a-073b-ff59-6d29-b7cb75d138f6","reviewee_id":"0e818f8f-0e04-8609-f205-d0f966637d5b","rating":2538,"comment":"string","created_at":"2026-01-01T00:00:00.000Z","reviewer":{"id":"29d7a65b-646a-681a-c1e1-7384dbb4b3a2","full_name":"string","role":"string"}}]));
   }
 
   // @endpoint GET /api/v1/trust/verifications
@@ -1985,7 +2402,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"64d2c06e-d135-fdbe-8b28-09e6c801bd7a","user_id":"f14dda15-053c-e0eb-daa5-f9a0824984d1","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"69584baa-d0f8-4afe-392c-c7105f941907"},{"id":"15894be7-ac92-3f0f-81c2-e99f9ddc05a6","user_id":"2af7ee0b-1a7a-6c6a-13e3-c5f272c00a3e","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"bfa74293-397d-ab02-c225-eeaefc0578b2"}]));
+    return res.end(JSON.stringify([{"id":"899eeda8-f312-6cd2-b7dd-6ed2a020cdca","user_id":"e1c537f3-5464-3713-289d-56f1813b7cdd","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"c89d4b3d-e16e-c0d6-42ab-fcb3e64e5c0c"},{"id":"943d9e05-a697-c389-d50e-bbf5eca2cb2b","user_id":"257a757e-2b72-d3a1-840e-a27ffca90ec6","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"d24da344-f50d-627f-8943-0aa17099f5e1"}]));
   }
 
   // @endpoint POST /api/v1/trust/verifications
@@ -2000,7 +2417,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"6dd83450-aa49-3d0c-6229-fe68bfdf48c5","user_id":"3a3eee6f-6d7b-b38d-7f25-b67a49d752f4","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"24894b15-9c61-1521-cf5d-47394ab135de"}));
+    return res.end(JSON.stringify({"id":"8846fedd-1a1b-e649-95c5-ff7c893d9656","user_id":"b0dec3ab-0506-efcd-e7e6-261c8b7b51bb","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"71e7aaea-2695-2718-77a0-89b7f7e0ba1c"}));
   }
 
   // @endpoint GET /api/v1/trust/verifications/:user_id
@@ -2015,7 +2432,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"072b600e-a8f1-4dbb-ccf8-f8f6ea114fe9","user_id":"2fc6cbfd-2cd8-85f4-b943-ff287c238f69","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"b40b2ec1-33b2-4af5-f456-739dbedb913b"},{"id":"eca5778b-8535-b9be-9261-6f55b217309f","user_id":"a02f7310-c2bb-3bac-294b-90a787e7d0d1","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"1a822b19-6cd1-057f-c398-4819ab451246"}]));
+    return res.end(JSON.stringify([{"id":"41576565-3c0c-c590-e627-672750be420f","user_id":"20f489bc-a513-1d63-6c28-767ba2eb5af0","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"7f5c64a6-8c94-ca83-c8c0-1e1f968cccd1"},{"id":"d9a03bbb-112e-eb86-495f-602d95fb8827","user_id":"54664644-d933-56f4-50fa-36527dda8197","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"9d27fa23-3892-65ab-762c-2b8481ebb353"}]));
   }
 
   // @endpoint PATCH /api/v1/trust/verifications/:verification_id/review
@@ -2030,13 +2447,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"6dd83450-aa49-3d0c-6229-fe68bfdf48c5","user_id":"3a3eee6f-6d7b-b38d-7f25-b67a49d752f4","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"24894b15-9c61-1521-cf5d-47394ab135de"}));
+    return res.end(JSON.stringify({"id":"8846fedd-1a1b-e649-95c5-ff7c893d9656","user_id":"b0dec3ab-0506-efcd-e7e6-261c8b7b51bb","verification_type":"string","status":"string","created_at":"2026-01-01T00:00:00.000Z","verifier_notes":"string","verified_at":"2026-01-01T00:00:00.000Z","reviewed_by_id":"71e7aaea-2695-2718-77a0-89b7f7e0ba1c"}));
   }
 
   // @endpoint GET /api/v1/payments/wallet
   if (req.method === 'GET' && pathname === '/api/v1/payments/wallet') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"user_id":"03de5493-a36e-8b54-d2ca-83d48f26f0d9","escrow_held":2126.2083179317415,"total_earned":6659.266848582774,"total_spent":8160.3300967253745,"total_released":5560.743890237063,"currency":"string","payments_enabled":false}));
+    return res.end(JSON.stringify({"user_id":"ec81f285-8852-5e68-f9d0-d46d8d8cc3ba","escrow_held":7655.266292858869,"total_earned":114.13725093007088,"total_spent":7041.237966623157,"total_released":1962.9170605912805,"currency":"string","payments_enabled":false}));
   }
 
   // @endpoint GET /api/v1/payments/transactions
@@ -2051,7 +2468,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"40dd721e-e539-ff80-53a3-0ad77de26b1b","project_id":"01fa0590-971f-3d3c-1a19-374ddbf5bcad","payer_id":"0946045f-540f-cee4-5f4d-b2d2b1f33b5d","payee_id":"e4f95dfa-c698-6081-1fdc-1fbcf7ca547e","amount":7062.424959149212,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"188ff70c-b7ba-2016-ef29-70e571caf005","payer":{"id":"792f1d03-d422-9754-1ebb-98e856143928","full_name":"string","email":"string","role":"string"},"payee":{"id":"9393faa3-3083-b9cb-25db-55347d92b18c","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"},{"id":"697e34d4-d19d-6d6c-5636-a72c8c630bb2","project_id":"4a2e7c3e-1d72-97ee-b821-297f89177a4a","payer_id":"4453a12e-0963-4918-7837-04fbf8086cad","payee_id":"99335927-a3c3-2b7d-fd38-2fde3d457d2a","amount":7925.776413176209,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"12e491ad-76fa-e8fd-490f-61318ef69dda","payer":{"id":"a4db1bb8-eb80-b16e-ca48-1966b3b40134","full_name":"string","email":"string","role":"string"},"payee":{"id":"cd9dd6c6-a57a-0c19-8694-9184c81b9c08","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}]));
+    return res.end(JSON.stringify([{"id":"0fc8840d-6ca0-9bdb-17ae-1aaa06642bac","project_id":"70f9d8be-d0e2-5f72-d331-dac2b7f7b8f3","payer_id":"7d7ef95b-3010-dc41-67d1-ec3124fd8eef","payee_id":"4c9bfff4-6247-12a3-f181-14fadd3c41b2","amount":8992.50865681097,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"7e3fa152-7e2c-7a6b-4415-5f8991523c11","payer":{"id":"8c528489-bf31-8012-3e3e-4e3faaa93e83","full_name":"string","email":"string","role":"string"},"payee":{"id":"069caa4f-fed6-5672-d0b7-397e1492d4e6","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"},{"id":"5a24ad9f-dcf8-aa10-2188-292908b17019","project_id":"b74c955b-a85f-3ac6-cfb6-eed7c9a24aa2","payer_id":"6d3abc93-2218-cd16-47c1-4ca4db59a0a0","payee_id":"bdfc4601-2e01-35f6-9b98-87b1c8dc50d7","amount":3782.892981544137,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"4c0e639e-e432-56e0-771c-79d19497bbf8","payer":{"id":"bb7db796-d678-925f-7fb2-efc22c5c9622","full_name":"string","email":"string","role":"string"},"payee":{"id":"c3d2baf4-d671-0c5f-2460-0a673d953f17","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}]));
   }
 
   // @endpoint POST /api/v1/payments/escrow
@@ -2066,7 +2483,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"b0cdc11b-86a0-4784-92eb-b6760b4b1e0e","project_id":"a2773ca7-8473-cbe0-fef3-226c80ac0096","payer_id":"ef6312c5-f25b-c936-8444-0c12279dc999","payee_id":"a998ba08-f874-a6d1-63b3-66e5995dab98","amount":8526.66825056076,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"ed0fd669-c2b1-a4eb-48ef-7031563e4cd3","payer":{"id":"c05857ff-9f4f-4e24-7926-9869d16c254f","full_name":"string","email":"string","role":"string"},"payee":{"id":"30f64f1b-2806-2b61-d44c-29c822bd5d86","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}));
+    return res.end(JSON.stringify({"id":"29066d81-aaa1-5fef-77ca-f5bc026b2543","project_id":"4b117b22-5beb-4dd8-089a-a8840b0d829c","payer_id":"a5a5db1d-b707-823b-5b14-e83c32bcc9a9","payee_id":"0fe028c3-4610-2b17-80af-eca320e951a5","amount":883.0140857025981,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"4ef25b75-4517-c977-5d3d-9000cc1e0ab8","payer":{"id":"7d685bcc-e03d-bc5a-f6bd-abc5cf555476","full_name":"string","email":"string","role":"string"},"payee":{"id":"75580e82-e594-5dcf-4e3a-0d2777945f79","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}));
   }
 
   // @endpoint POST /api/v1/payments/:payment_id/release
@@ -2081,7 +2498,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"b0cdc11b-86a0-4784-92eb-b6760b4b1e0e","project_id":"a2773ca7-8473-cbe0-fef3-226c80ac0096","payer_id":"ef6312c5-f25b-c936-8444-0c12279dc999","payee_id":"a998ba08-f874-a6d1-63b3-66e5995dab98","amount":8526.66825056076,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"ed0fd669-c2b1-a4eb-48ef-7031563e4cd3","payer":{"id":"c05857ff-9f4f-4e24-7926-9869d16c254f","full_name":"string","email":"string","role":"string"},"payee":{"id":"30f64f1b-2806-2b61-d44c-29c822bd5d86","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}));
+    return res.end(JSON.stringify({"id":"29066d81-aaa1-5fef-77ca-f5bc026b2543","project_id":"4b117b22-5beb-4dd8-089a-a8840b0d829c","payer_id":"a5a5db1d-b707-823b-5b14-e83c32bcc9a9","payee_id":"0fe028c3-4610-2b17-80af-eca320e951a5","amount":883.0140857025981,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"4ef25b75-4517-c977-5d3d-9000cc1e0ab8","payer":{"id":"7d685bcc-e03d-bc5a-f6bd-abc5cf555476","full_name":"string","email":"string","role":"string"},"payee":{"id":"75580e82-e594-5dcf-4e3a-0d2777945f79","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}));
   }
 
   // @endpoint POST /api/v1/payments/:payment_id/refund
@@ -2096,7 +2513,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"b0cdc11b-86a0-4784-92eb-b6760b4b1e0e","project_id":"a2773ca7-8473-cbe0-fef3-226c80ac0096","payer_id":"ef6312c5-f25b-c936-8444-0c12279dc999","payee_id":"a998ba08-f874-a6d1-63b3-66e5995dab98","amount":8526.66825056076,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"ed0fd669-c2b1-a4eb-48ef-7031563e4cd3","payer":{"id":"c05857ff-9f4f-4e24-7926-9869d16c254f","full_name":"string","email":"string","role":"string"},"payee":{"id":"30f64f1b-2806-2b61-d44c-29c822bd5d86","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}));
+    return res.end(JSON.stringify({"id":"29066d81-aaa1-5fef-77ca-f5bc026b2543","project_id":"4b117b22-5beb-4dd8-089a-a8840b0d829c","payer_id":"a5a5db1d-b707-823b-5b14-e83c32bcc9a9","payee_id":"0fe028c3-4610-2b17-80af-eca320e951a5","amount":883.0140857025981,"currency":"string","status":"string","provider":"string","provider_reference":"string","created_at":"2026-01-01T00:00:00.000Z","task_id":"4ef25b75-4517-c977-5d3d-9000cc1e0ab8","payer":{"id":"7d685bcc-e03d-bc5a-f6bd-abc5cf555476","full_name":"string","email":"string","role":"string"},"payee":{"id":"75580e82-e594-5dcf-4e3a-0d2777945f79","full_name":"string","email":"string","role":"string"},"released_at":"2026-01-01T00:00:00.000Z","client_secret":"string"}));
   }
 
   // @endpoint GET /api/v1/groups
@@ -2111,7 +2528,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"groups":[{"id":"47e2b1b0-d839-6e32-2858-014c38b8fd04","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":true,"member_count":4015,"post_count":2894,"owner_id":"f35711d8-7464-9535-9543-54eee652f55b","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"},{"id":"a6743d83-aea5-47b1-4ac4-fc54a4337f9d","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":true,"member_count":9378,"post_count":5084,"owner_id":"ef0a69e4-d1ca-c283-d292-878954a34283","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}],"total":9377,"page":6040,"page_size":8759}));
+    return res.end(JSON.stringify({"groups":[{"id":"d8b2ba08-1ed1-5f96-57fd-88e7a33033a0","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":true,"is_verified":false,"member_count":734,"post_count":3826,"owner_id":"1668d59b-5961-bfae-0899-fa6e00685ffc","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"},{"id":"a84d65c1-cb7c-c652-3f9d-051b967699aa","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":false,"member_count":3419,"post_count":4824,"owner_id":"7a796abb-56f4-a003-0186-ae46c6b3b11d","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}],"total":736,"page":9616,"page_size":5038}));
   }
 
   // @endpoint POST /api/v1/groups
@@ -2126,7 +2543,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"e5c7c515-b717-7c1b-a4d4-75d8f88b33ed","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":false,"member_count":3835,"post_count":3286,"owner_id":"fa565bd8-c2a7-49cf-ac40-eda1b38faaa6","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}));
+    return res.end(JSON.stringify({"id":"5c9772a0-2d22-77a4-51e8-681b19bb23ff","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":true,"is_verified":true,"member_count":4148,"post_count":6458,"owner_id":"2f5fa4be-9a71-78d0-eaf8-4ba748f9a975","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}));
   }
 
   // @endpoint GET /api/v1/groups/:group_id
@@ -2141,7 +2558,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"e5c7c515-b717-7c1b-a4d4-75d8f88b33ed","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":false,"member_count":3835,"post_count":3286,"owner_id":"fa565bd8-c2a7-49cf-ac40-eda1b38faaa6","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}));
+    return res.end(JSON.stringify({"id":"5c9772a0-2d22-77a4-51e8-681b19bb23ff","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":true,"is_verified":true,"member_count":4148,"post_count":6458,"owner_id":"2f5fa4be-9a71-78d0-eaf8-4ba748f9a975","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}));
   }
 
   // @endpoint PATCH /api/v1/groups/:group_id
@@ -2156,7 +2573,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"e5c7c515-b717-7c1b-a4d4-75d8f88b33ed","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":false,"member_count":3835,"post_count":3286,"owner_id":"fa565bd8-c2a7-49cf-ac40-eda1b38faaa6","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}));
+    return res.end(JSON.stringify({"id":"5c9772a0-2d22-77a4-51e8-681b19bb23ff","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":true,"is_verified":true,"member_count":4148,"post_count":6458,"owner_id":"2f5fa4be-9a71-78d0-eaf8-4ba748f9a975","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}));
   }
 
   // @endpoint DELETE /api/v1/groups/:group_id
@@ -2186,7 +2603,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"20d86c4a-3fcb-6e26-7164-1b825c367f73","group_id":"c87a11aa-a00c-807d-6093-d29e65c8175b","user_id":"7f5f835a-fc36-dba2-eb8c-4ba1ce63c39f","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":true}}));
+    return res.end(JSON.stringify({"id":"28433f41-5ce5-7607-0831-0dac155b23ec","group_id":"caeac719-9909-f63c-473a-e0d979406d10","user_id":"dcdb9a8d-b4ac-2d5b-34a3-fe64cb29a757","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":"string","key_1":19.163815304636955}}));
   }
 
   // @endpoint POST /api/v1/groups/:group_id/leave
@@ -2216,7 +2633,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":"891486b4-ed1d-4d6c-7018-e7a59d663db1","group_id":"c7740b91-b5a4-58bd-798d-82e35990c725","user_id":"837562d5-bcdd-fd1f-2a5f-46a1eedd2d87","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":274.9542216770351,"key_1":false}},{"id":"1039fb57-5c45-ffc9-580d-ca56c4eb56f2","group_id":"bec5f18a-039d-12ee-3097-7ef72121ce0b","user_id":"6643c15e-162c-cbfc-f22b-82158fca740c","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":2589.013995602727,"key_1":"string"}}]));
+    return res.end(JSON.stringify([{"id":"92633019-0d9b-b3ea-c5ba-e06d601a27a9","group_id":"da58202e-a281-2b4c-ca2a-85ca6e341ea2","user_id":"c32318b2-2587-e75a-943f-a23fab9631cf","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":true,"key_1":"string"}},{"id":"37f7e2af-8cdc-a85c-5633-60ed14a18821","group_id":"aad1c22c-e432-69db-8b9c-31d82a934287","user_id":"99420bb3-a5d3-f6e9-283f-134cad93bcb9","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":923.2255863025784,"key_1":964.8559242486954}}]));
   }
 
   // @endpoint PATCH /api/v1/groups/:group_id/members/:user_id/role
@@ -2231,7 +2648,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"20d86c4a-3fcb-6e26-7164-1b825c367f73","group_id":"c87a11aa-a00c-807d-6093-d29e65c8175b","user_id":"7f5f835a-fc36-dba2-eb8c-4ba1ce63c39f","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":true}}));
+    return res.end(JSON.stringify({"id":"28433f41-5ce5-7607-0831-0dac155b23ec","group_id":"caeac719-9909-f63c-473a-e0d979406d10","user_id":"dcdb9a8d-b4ac-2d5b-34a3-fe64cb29a757","role":"string","status":"string","joined_at":"2026-01-01T00:00:00.000Z","member":{"key_0":"string","key_1":19.163815304636955}}));
   }
 
   // @endpoint GET /api/v1/groups/:group_id/posts
@@ -2246,7 +2663,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"posts":[{"id":"dd1b6001-4729-987a-fe4c-64532f4ce5b7","group_id":"97ef0ca3-bf1f-eb5d-691a-6af310016339","author_id":"12313a7d-fe4a-972c-4f81-eb5c1810c426","content":"string","media_urls":["string","string"],"like_count":5633,"comment_count":925,"is_pinned":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"key_0":8803,"key_1":85.70258971303701}},{"id":"2cecb8fc-5d06-f86a-c753-8bad915ed3da","group_id":"ccb3f3d8-8075-86eb-b9ba-fe7db316e179","author_id":"3c2fb022-a661-bf57-a782-810ae2a78f41","content":"string","media_urls":["string","string"],"like_count":5898,"comment_count":6566,"is_pinned":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"key_0":1007}}],"total":9947,"page":6611,"page_size":1245}));
+    return res.end(JSON.stringify({"posts":[{"id":"abb69ab3-864e-8dcb-613d-05ac69e9e072","group_id":"46fb950c-a27f-a592-cffc-496e29fd0302","author_id":"6f8f040b-8487-7673-5427-ee7cc7e87704","content":"string","media_urls":["string","string"],"like_count":2745,"comment_count":1196,"is_pinned":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"key_0":false,"key_1":2475.2741493284702,"key_2":7051.983564160764,"key_3":true,"key_4":6433}},{"id":"bdfd4bc3-8dbf-eec7-bf43-6a80da11cb5f","group_id":"1cbcd5e9-0afd-cb6e-e12a-b78c3d0d1832","author_id":"f07279ad-e60f-8f24-04aa-7bab193c64b2","content":"string","media_urls":["string","string"],"like_count":9358,"comment_count":7559,"is_pinned":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"key_0":2195.8870231173933}}],"total":2286,"page":5779,"page_size":4527}));
   }
 
   // @endpoint POST /api/v1/groups/:group_id/posts
@@ -2261,7 +2678,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"ae4ad5b7-82dc-ba86-49c3-8f0229a515d5","group_id":"14563fd6-422f-b427-d40e-b6a4537ab499","author_id":"9bdc0e7c-a464-5faa-8a23-a689f223d001","content":"string","media_urls":["string","string"],"like_count":1721,"comment_count":8022,"is_pinned":false,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"key_0":3631}}));
+    return res.end(JSON.stringify({"id":"7df92e03-5954-c344-ee5c-e82ad14e8a74","group_id":"0d26159c-ac13-0657-7205-61bf77d0d69c","author_id":"f5511854-7004-9231-b1f4-57c35e1ba3c1","content":"string","media_urls":["string","string"],"like_count":9492,"comment_count":5070,"is_pinned":true,"created_at":"2026-01-01T00:00:00.000Z","updated_at":"2026-01-01T00:00:00.000Z","author":{"key_0":false,"key_1":"string"}}));
   }
 
   // @endpoint DELETE /api/v1/groups/:group_id/posts/:post_id
@@ -2291,7 +2708,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"groups":[{"id":"47e2b1b0-d839-6e32-2858-014c38b8fd04","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":true,"member_count":4015,"post_count":2894,"owner_id":"f35711d8-7464-9535-9543-54eee652f55b","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"},{"id":"a6743d83-aea5-47b1-4ac4-fc54a4337f9d","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":true,"member_count":9378,"post_count":5084,"owner_id":"ef0a69e4-d1ca-c283-d292-878954a34283","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}],"total":9377,"page":6040,"page_size":8759}));
+    return res.end(JSON.stringify({"groups":[{"id":"d8b2ba08-1ed1-5f96-57fd-88e7a33033a0","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":true,"is_verified":false,"member_count":734,"post_count":3826,"owner_id":"1668d59b-5961-bfae-0899-fa6e00685ffc","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"},{"id":"a84d65c1-cb7c-c652-3f9d-051b967699aa","name":"string","slug":"string","description":"string","category":"string","tags":["string","string"],"avatar_url":"string","banner_url":"string","is_private":false,"is_verified":false,"member_count":3419,"post_count":4824,"owner_id":"7a796abb-56f4-a003-0186-ae46c6b3b11d","created_at":"2026-01-01T00:00:00.000Z","is_member":false,"my_role":"string"}],"total":736,"page":9616,"page_size":5038}));
   }
 
   // @endpoint POST /api/v1/quality/evaluate
@@ -2306,7 +2723,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"overall_score":8140,"grade":"string","verdict":"string","summary":"string","dimensions":{"key_0":false,"key_1":5436.371762771159,"key_2":6429.242433514446},"issues":[{"severity":"string","category":"string","description":"string"},{"severity":"string","category":"string","description":"string"}],"strengths":["string","string"],"recommended_actions":["string","string"],"requires_revision":false,"revision_notes":"string"}));
+    return res.end(JSON.stringify({"overall_score":6146,"grade":"string","verdict":"string","summary":"string","dimensions":{"key_0":1680},"issues":[{"severity":"string","category":"string","description":"string"},{"severity":"string","category":"string","description":"string"}],"strengths":["string","string"],"recommended_actions":["string","string"],"requires_revision":false,"revision_notes":"string"}));
   }
 
   // @endpoint POST /api/v1/quality/review-code
@@ -2321,7 +2738,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"overall_score":7311,"grade":"string","verdict":"string","summary":"string","line_comments":[{"key_0":true},{"key_0":6604.620416183025,"key_1":"string"}],"security_flags":["string","string"],"complexity_analysis":{"key_0":1385,"key_1":"string"},"suggestions":["string","string"],"requires_revision":false}));
+    return res.end(JSON.stringify({"overall_score":9292,"grade":"string","verdict":"string","summary":"string","line_comments":[{"key_0":"string","key_1":true,"key_2":1047},{"key_0":true,"key_1":"string","key_2":true}],"security_flags":["string","string"],"complexity_analysis":{"key_0":"string","key_1":"string"},"suggestions":["string","string"],"requires_revision":false}));
   }
 
   // @endpoint POST /api/v1/quality/batch-evaluate
@@ -2336,7 +2753,7 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"results":[{"overall_score":5709,"grade":"string","verdict":"string","summary":"string","dimensions":{"key_0":"string","key_1":5086.849466897547},"issues":[{"severity":"string","category":"string","description":"string"},{"severity":"string","category":"string","description":"string"}],"strengths":["string","string"],"recommended_actions":["string","string"],"requires_revision":true,"revision_notes":"string"},{"overall_score":3548,"grade":"string","verdict":"string","summary":"string","dimensions":{"key_0":2539,"key_1":5958.845580462366},"issues":[{"severity":"string","category":"string","description":"string"},{"severity":"string","category":"string","description":"string"}],"strengths":["string","string"],"recommended_actions":["string","string"],"requires_revision":true,"revision_notes":"string"}],"evaluated":2040,"avg_score":7990.72148045525}));
+    return res.end(JSON.stringify({"results":[{"overall_score":2187,"grade":"string","verdict":"string","summary":"string","dimensions":{"key_0":6755,"key_1":7489.996796939522,"key_2":"string"},"issues":[{"severity":"string","category":"string","description":"string"},{"severity":"string","category":"string","description":"string"}],"strengths":["string","string"],"recommended_actions":["string","string"],"requires_revision":true,"revision_notes":"string"},{"overall_score":735,"grade":"string","verdict":"string","summary":"string","dimensions":{"key_0":false},"issues":[{"severity":"string","category":"string","description":"string"},{"severity":"string","category":"string","description":"string"}],"strengths":["string","string"],"recommended_actions":["string","string"],"requires_revision":true,"revision_notes":"string"}],"evaluated":5130,"avg_score":4063.8414677232504}));
   }
 
   // @endpoint GET /api/v1/quality/dashboard
@@ -2363,13 +2780,13 @@ const server = http.createServer((req, res) => {
 
     // "Successful Response" — default
     res.writeHead(201, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":"06033c53-0e42-aa8b-116e-d251652d92b9","event_name":"string","user_id":"d9aada76-10d9-aca6-4cf8-016cb7c97b6b","properties":{"key_0":3320},"created_at":"2026-01-01T00:00:00.000Z"}));
+    return res.end(JSON.stringify({"id":"5593dc94-7e07-39b5-4632-5f74bd4186d5","event_name":"string","user_id":"2ca74149-700a-4e5e-6da6-2e36a1ff718e","properties":{"key_0":9662.241043988615},"created_at":"2026-01-01T00:00:00.000Z"}));
   }
 
   // @endpoint GET /api/v1/analytics/events/summary
   if (req.method === 'GET' && pathname === '/api/v1/analytics/events/summary') {
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"rows":[{"event_name":"string","day":"string","count":1278},{"event_name":"string","day":"string","count":7737}]}));
+    return res.end(JSON.stringify({"rows":[{"event_name":"string","day":"string","count":576},{"event_name":"string","day":"string","count":8280}]}));
   }
 
   res.writeHead(404, { 'Content-Type': 'application/json' });

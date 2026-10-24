@@ -20,6 +20,10 @@ request:
       value: ADMIN
       disabled: true
       description: " (This can only be one of ENGINEER,COMPANY,ADMIN)"
+    - key: q
+      value: string
+      disabled: true
+      description: Search email or name
   body:
     type: text
     content: ""

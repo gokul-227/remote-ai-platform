@@ -70,4 +70,4 @@ scripts:
       }
     language: text/javascript
 examples: ./.resources/Retry Identity Erasures.resources/examples
-order: 1000
+order: 2000

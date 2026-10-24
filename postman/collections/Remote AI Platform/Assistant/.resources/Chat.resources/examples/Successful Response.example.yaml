@@ -1,0 +1,50 @@
+$kind: http-example
+id: 5714f57e-71cf-5d2b-a929-6d06f500efe9
+request:
+  url: "{{base_url}}/api/v1/assistant/chat"
+  method: POST
+  headers:
+    - key: Content-Type
+      value: application/json
+    - key: Accept
+      value: application/json
+    - key: Authorization
+      value: Bearer <token>
+      description: "Added as a part of security scheme: bearer"
+  body:
+    type: json
+    content: |-
+      {
+        "message": "string"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    Content-Type: application/json
+  body:
+    type: json
+    content: |-
+      {
+        "reply": "string",
+        "tool": "string",
+        "kind": "string",
+        "result": {
+          "key_0": true,
+          "key_1": 7204.878148622811,
+          "key_2": true,
+          "key_3": "string",
+          "key_4": true
+        },
+        "pending_action": {
+          "id": "a28f6978-c934-2d26-43be-d6a1e67f18a5",
+          "tool": "string",
+          "summary": "string",
+          "args": {
+            "key_0": "string",
+            "key_1": "string"
+          },
+          "expires_at": "2023-05-20T19:16:27.581Z"
+        }
+      }
+order: 1000
