@@ -8,11 +8,12 @@ import uuid
 from datetime import UTC, datetime
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from redis.asyncio import Redis
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.audit import record_audit_event
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.feature_flags import get_all_flags
@@ -27,6 +28,7 @@ from app.domains.admin.schemas import (
     JobStatusUpdate,
     PlatformStatsResponse,
     ServiceHealthStatus,
+    SessionRevoke,
     SystemHealthDetailResponse,
     UserRoleUpdate,
     UserStatusUpdate,
@@ -131,17 +133,27 @@ async def list_audit_events(
 async def update_user_status(
     user_id: uuid.UUID,
     body: UserStatusUpdate,
+    request: Request,
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> UserResponse:
     """Toggle user active / suspended status (Admin only)."""
+    if user_id == current_user.id and not body.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot suspend your own account")
     repo = UserRepository(db)
     user = await repo.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     user.is_active = body.is_active
+    if not body.is_active:
+        # Suspension also ends every existing session immediately.
+        user.sessions_revoked_at = datetime.now(UTC)
     await AdminRepository(db).log_activity(
         current_user.id, "USER_STATUS_UPDATED", "USER", str(user.id), {"is_active": body.is_active}
+    )
+    await record_audit_event(
+        db, "admin.user.status", "user", str(user.id), current_user.id, current_user.role.value,
+        {"is_active": body.is_active, "reason": body.reason}, request,
     )
     await db.commit()
     await db.refresh(user)
@@ -152,6 +164,7 @@ async def update_user_status(
 async def update_user_role(
     user_id: uuid.UUID,
     body: UserRoleUpdate,
+    request: Request,
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> UserResponse:
@@ -160,18 +173,49 @@ async def update_user_role(
     Distinct from PATCH /auth/role, which is self-service onboarding and
     explicitly forbids self-assigning ADMIN.
     """
+    if user_id == current_user.id and body.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot remove your own admin role")
     repo = UserRepository(db)
     user = await repo.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     previous_role = user.role
     user.role = body.role
+    if previous_role != body.role:
+        # A role change takes effect on the next sign-in, not with an old session.
+        user.sessions_revoked_at = datetime.now(UTC)
+    await record_audit_event(
+        db, "admin.user.role", "user", str(user.id), current_user.id, current_user.role.value,
+        {"previous_role": previous_role.value, "new_role": body.role.value, "reason": body.reason}, request,
+    )
     await AdminRepository(db).log_activity(
         current_user.id,
         "USER_ROLE_UPDATED",
         "USER",
         str(user.id),
         {"previous_role": previous_role.value, "new_role": body.role.value},
+    )
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.model_validate(user)
+
+
+@router.post("/users/{user_id}/revoke-sessions", response_model=UserResponse)
+async def revoke_user_sessions(
+    user_id: uuid.UUID,
+    body: SessionRevoke,
+    request: Request,
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    """Sign a user out everywhere: tokens issued before now stop working."""
+    user = await UserRepository(db).get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.sessions_revoked_at = datetime.now(UTC)
+    await record_audit_event(
+        db, "admin.user.revoke_sessions", "user", str(user.id), current_user.id, current_user.role.value,
+        {"reason": body.reason}, request,
     )
     await db.commit()
     await db.refresh(user)

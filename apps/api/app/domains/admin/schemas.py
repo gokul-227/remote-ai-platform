@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domains.auth.models import UserRole
 
@@ -24,10 +24,17 @@ class PlatformStatsResponse(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     is_active: bool
+    # Why staff took the action; recorded in the audit trail. The admin app always sends it.
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class UserRoleUpdate(BaseModel):
     role: UserRole
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class SessionRevoke(BaseModel):
+    reason: str = Field(min_length=3, max_length=500)
 
 
 class JobStatusUpdate(BaseModel):

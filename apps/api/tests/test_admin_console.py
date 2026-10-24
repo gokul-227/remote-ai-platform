@@ -23,7 +23,15 @@ async def test_admin_console_exposes_metrics_and_audit_logs(client: AsyncClient)
     users = await client.get("/api/v1/admin/users", headers=headers)
     assert users.status_code == 200
     target = next(user for user in users.json() if user["email"] == "console-admin@example.com")
-    suspended = await client.patch(f"/api/v1/admin/users/{target['id']}/status", headers=headers, json={"is_active": False})
+    # Admins cannot suspend themselves (lockout guard); suspend another account instead.
+    own = await client.patch(f"/api/v1/admin/users/{target['id']}/status", headers=headers, json={"is_active": False})
+    assert own.status_code == 400
+    async with TestingSessionLocal() as db:
+        member = User(email="console-member@example.com", full_name="Member", role=UserRole.ENGINEER)
+        db.add(member)
+        await db.commit()
+        member_id = member.id
+    suspended = await client.patch(f"/api/v1/admin/users/{member_id}/status", headers=headers, json={"is_active": False})
     assert suspended.status_code == 200
     # The test admin is intentionally suspended last; use a fresh admin identity for the audit read.
     async with TestingSessionLocal() as db:
