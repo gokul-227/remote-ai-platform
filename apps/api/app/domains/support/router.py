@@ -97,7 +97,7 @@ async def open_ticket(
     )
     db.add(t)
     await db.flush()
-    db.add(SupportMessage(ticket_id=t.id, author_id=current_user.id, body=payload.body))
+    db.add(SupportMessage(ticket_id=t.id, author_id=current_user.id, body=payload.body, created_at=_now()))
     await db.flush()
     await db.refresh(t)
     return TicketDetail(ticket=TicketOut.model_validate(t), messages=await _messages(db, t, False))
@@ -129,7 +129,7 @@ async def reply(
     t = await _own_ticket(db, ticket_id, current_user)
     if t.status == "CLOSED":
         raise HTTPException(status.HTTP_409_CONFLICT, "This ticket is closed; open a new one")
-    db.add(SupportMessage(ticket_id=t.id, author_id=current_user.id, body=payload.body))
+    db.add(SupportMessage(ticket_id=t.id, author_id=current_user.id, body=payload.body, created_at=_now()))
     if t.status in {"WAITING_ON_USER", "RESOLVED"}:
         t.status = "OPEN"
         t.resolved_at = None
@@ -264,7 +264,7 @@ async def staff_reply(
     db: AsyncSession = Depends(get_db),
 ) -> StaffTicketDetail:
     t = await _staff_ticket(db, ticket_id)
-    db.add(SupportMessage(ticket_id=t.id, author_id=admin.id, body=payload.body, internal=payload.internal))
+    db.add(SupportMessage(ticket_id=t.id, author_id=admin.id, body=payload.body, internal=payload.internal, created_at=_now()))
     if not payload.internal:
         if t.first_response_at is None:
             t.first_response_at = _now()
