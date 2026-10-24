@@ -29,6 +29,7 @@ import app.domains.saved_jobs.models  # noqa: F401
 import app.domains.contracts.models  # noqa: F401
 import app.domains.deliverables.models  # noqa: F401
 import app.domains.meetings.models  # noqa: F401
+import app.domains.support.models  # noqa: F401
 import app.domains.social.models  # noqa: F401
 import app.domains.trust.models  # noqa: F401
 import app.domains.groups.models  # noqa: F401

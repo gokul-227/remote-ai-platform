@@ -69,6 +69,8 @@ SOURCES: tuple[Source, ...] = (
     Source("contracts", ("client_id", "worker_id")),
     Source("meetings", ("organizer_id",), drop=frozenset({"join_url"})),
     Source("meeting_participants", ("user_id",)),
+    Source("support_tickets", ("requester_id",), drop=frozenset({"assignee_id", "version"})),
+    Source("support_messages", ("author_id",)),
     Source("deliverables", ("submitted_by_id",), drop=frozenset({"file_key"})),
     Source("project_members", ("user_id",)),
     Source("project_tasks", ("assigned_user_id",)),
@@ -99,6 +101,7 @@ EXCLUDED: dict[tuple[str, str], str] = {
     ("recommendations", "engineer_id"): "already exported through user_id",
     ("messages", "sender_id"): "exported through the user's conversations, in both directions",
     ("user_blocks", "blocked_id"): "who blocked the user is never revealed",
+    ("support_tickets", "assignee_id"): "tickets the user handled as staff belong to the requester",
 }
 
 
