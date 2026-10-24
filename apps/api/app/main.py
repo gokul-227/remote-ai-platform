@@ -33,6 +33,7 @@ from app.domains.auth.router import router as auth_router
 from app.domains.companies.router import router as companies_router
 from app.domains.contracts.router import router as contracts_router
 from app.domains.deliverables.router import router as deliverables_router
+from app.domains.meetings.router import router as meetings_router
 from app.domains.engineers.router import router as engineers_router
 from app.domains.groups.router import router as groups_router
 from app.domains.jobs.router import router as jobs_router
@@ -293,6 +294,7 @@ def create_app() -> FastAPI:
     app.include_router(social_router, prefix=prefix)
     app.include_router(contracts_router, prefix=prefix)
     app.include_router(deliverables_router, prefix=prefix)
+    app.include_router(meetings_router, prefix=prefix)
     app.include_router(trust_router, prefix=prefix)
     app.include_router(payments_router, prefix=prefix)
     app.include_router(groups_router, prefix=prefix)

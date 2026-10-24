@@ -67,6 +67,8 @@ SOURCES: tuple[Source, ...] = (
     # Both directions of the user's own conversations.
     Source("messages", ("conversation_id",), scope="conversation"),
     Source("contracts", ("client_id", "worker_id")),
+    Source("meetings", ("organizer_id",), drop=frozenset({"join_url"})),
+    Source("meeting_participants", ("user_id",)),
     Source("deliverables", ("submitted_by_id",), drop=frozenset({"file_key"})),
     Source("project_members", ("user_id",)),
     Source("project_tasks", ("assigned_user_id",)),
