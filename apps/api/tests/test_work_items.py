@@ -105,3 +105,12 @@ async def test_watch_toggle(client: AsyncClient):
     t = await _task(client, h, pid)
     assert (await client.post(f"/api/v1/projects/tasks/{t['id']}/watch", headers=h)).json()["watching"] is True
     assert (await client.delete(f"/api/v1/projects/tasks/{t['id']}/watch", headers=h)).json()["watching"] is False
+
+
+@pytest.mark.asyncio
+async def test_board_priorities_still_accepted(client: AsyncClient):
+    h = await _company(client)
+    pid = await _project(client, h)
+    t = await _task(client, h, pid, priority="URGENT")
+    res = await client.patch(f"/api/v1/projects/tasks/{t['id']}", headers=h, json={"priority": "LOW"})
+    assert res.status_code == 200

@@ -76,7 +76,7 @@ class MilestoneStatusUpdate(BaseModel):
 
 
 ItemType = Literal["TASK", "BUG", "STORY", "EPIC"]
-Priority = Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+Priority = Literal["LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL"]
 
 
 def _clean_labels(labels: list[str] | None) -> list[str] | None:

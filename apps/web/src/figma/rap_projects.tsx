@@ -34,6 +34,8 @@ type Issue = {
   updated: string;
   created: string;
   deadline?: string;
+  labels: string[];
+  version?: number;
 };
 const COLS = [
   ["todo", "TO DO"],
@@ -160,7 +162,7 @@ export function Projects() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [create, setCreate] = useState(false);
   const [newProject, setNewProject] = useState(false);
-  const [nt, setNt] = useState({ title: "", desc: "", pri: "MEDIUM", ep: "" });
+  const [nt, setNt] = useState({ title: "", desc: "", pri: "MEDIUM", ep: "", type: "TASK", labels: "" });
   const [np, setNp] = useState({ title: "", desc: "" });
   const [q, setQ] = useState("");
   const [comment, setComment] = useState("");
@@ -174,7 +176,9 @@ export function Projects() {
     id: t.id,
     k: `T-${i + 1}`,
     t: t.title,
-    type: "task",
+    type: (t.item_type || "TASK").toLowerCase(),
+    labels: (t.labels as string[]) || [],
+    version: t.version as number | undefined,
     pri: PRI[(t.priority || "MEDIUM").toUpperCase()] || "medium",
     as: name(t.assigned_user_id),
     asId: t.assigned_user_id,
@@ -187,7 +191,7 @@ export function Projects() {
     created: t.created_at,
     deadline: t.deadline,
   }));
-  const shown = iss.filter((i) => (i.t + i.as + i.ep).toLowerCase().includes(q.toLowerCase()));
+  const shown = iss.filter((i) => (i.t + i.as + i.ep + i.type + i.labels.join(" ")).toLowerCase().includes(q.toLowerCase()));
   const open = iss.find((i) => i.id === openId) || null;
   const issueBox = useRef<HTMLDivElement>(null);
   useDialogFocus(issueBox, !!open, () => setOpenId(null));
@@ -202,7 +206,14 @@ export function Projects() {
       setNotice(extractErrorMessage(e, "That didn't work. Please try again."));
     }
   };
-  const patch = (id: string, body: any, ok?: string) => act(() => api.patch(`/projects/tasks/${id}`, body), ok);
+  // Edits carry the version they were made against; a 409 means someone else changed it first.
+  const patch = (id: string, body: any, ok?: string) =>
+    act(() => {
+      const v = iss.find((x) => x.id === id)?.version;
+      return api.patch(`/projects/tasks/${id}`, v ? { ...body, expected_version: v } : body);
+    }, ok);
+  const watch = (id: string, on: boolean) =>
+    act(() => (on ? api.post(`/projects/tasks/${id}/watch`) : api.delete(`/projects/tasks/${id}/watch`)), on ? "You’ll be notified about changes" : "Stopped watching");
   const move = (id: string, col: string) => {
     const i = iss.find((x) => x.id === id);
     if (i && i.st !== col) patch(id, { status: STATUS_OF[col] }, "Task moved");
@@ -215,9 +226,11 @@ export function Projects() {
         title: nt.title.trim(),
         description: nt.desc.trim() || undefined,
         priority: nt.pri,
+        item_type: nt.type,
+        labels: nt.labels.split(",").map((l) => l.trim()).filter(Boolean),
         milestone: nt.ep.trim() || undefined,
       });
-      setNt({ title: "", desc: "", pri: "MEDIUM", ep: "" });
+      setNt({ title: "", desc: "", pri: "MEDIUM", ep: "", type: "TASK", labels: "" });
       setCreate(false);
     }, "Task created");
   };
@@ -846,6 +859,46 @@ export function Projects() {
                       ))}
                     </select>
                   </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 p-3">
+                    <span className="text-slate-500">Type</span>
+                    <select
+                      aria-label="Work item type"
+                      value={open.type.toUpperCase()}
+                      onChange={(e) => patch(open.id, { item_type: e.target.value })}
+                      className="rounded border border-slate-200 px-1 text-sm"
+                    >
+                      {["TASK", "BUG", "STORY", "EPIC"].map((t) => (
+                        <option key={t} value={t}>
+                          {t.charAt(0) + t.slice(1).toLowerCase()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 p-3">
+                    <span className="text-slate-500">Labels</span>
+                    <input
+                      aria-label="Labels, comma separated"
+                      key={`${open.id}-${open.version}`}
+                      defaultValue={open.labels.join(", ")}
+                      onBlur={(e) => {
+                        const next = e.target.value.split(",").map((l) => l.trim()).filter(Boolean);
+                        if (next.join(",") !== open.labels.join(",")) patch(open.id, { labels: next }, "Labels saved");
+                      }}
+                      className="w-40 rounded border border-slate-200 px-1 text-sm"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 p-3">
+                    <span className="text-slate-500">Notifications</span>
+                    <span className="flex gap-1">
+                      <button className="text-[#0552CC] underline" onClick={() => watch(open.id, true)}>
+                        Watch
+                      </button>
+                      <span className="text-slate-400">/</span>
+                      <button className="text-slate-600 underline" onClick={() => watch(open.id, false)}>
+                        Unwatch
+                      </button>
+                    </span>
+                  </div>
                   {[
                     ["Estimate", open.sp ? `${open.sp} hours` : "—"],
                     ["Due", open.deadline ? new Date(open.deadline).toLocaleDateString() : "—"],
@@ -889,6 +942,18 @@ export function Projects() {
                   </option>
                 ))}
               </select>
+            </Field>
+            <Field label="Type">
+              <select value={nt.type} onChange={(e) => setNt({ ...nt, type: e.target.value })} className={inputCls}>
+                {["TASK", "BUG", "STORY", "EPIC"].map((t) => (
+                  <option key={t} value={t}>
+                    {t.charAt(0) + t.slice(1).toLowerCase()}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Labels (comma separated)">
+              <input value={nt.labels} onChange={(e) => setNt({ ...nt, labels: e.target.value })} className={inputCls} />
             </Field>
             <Field label="Milestone / epic">
               <input
