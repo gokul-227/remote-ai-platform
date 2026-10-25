@@ -207,6 +207,15 @@ job_boards:
   REMOTIVE: {name: Remotive}
   USAJOBS: {name: USAJOBS}
   THEMUSE: {name: The Muse}
+  JOBICY: {name: Jobicy}
+  HIMALAYAS: {name: Himalayas}
+  WORKINGNOMADS: {name: Working Nomads}
+  GREENHOUSE: {name: Greenhouse boards}
+  LEVER: {name: Lever boards}
+  ASHBY: {name: Ashby boards}
+  SMARTRECRUITERS: {name: SmartRecruiters boards}
+  ADZUNA: {name: Adzuna}
+  JOOBLE: {name: Jooble}
 
 connections:
   - {from: users, to: web, label: HTTPS}
