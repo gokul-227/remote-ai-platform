@@ -217,6 +217,7 @@ class JobService:
 
         # Retention: keep roughly the last few months of imported jobs.
         removed, hidden = await self.repo.purge_old_imported_jobs(settings.JOB_RETENTION_DAYS)
+        removed += await self.repo.trim_to_size_budget(settings.DATABASE_SIZE_BUDGET_MB)
         await self.repo.db.commit()
         if removed or hidden:
             logger.info(

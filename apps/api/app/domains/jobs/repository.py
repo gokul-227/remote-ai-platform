@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Select, Text, cast, delete, func, or_, select, update
+from sqlalchemy import Select, Text, cast, delete, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -162,6 +162,53 @@ class JobRepository:
             .execution_options(synchronize_session=False)
         )
         return int(getattr(removed, "rowcount", 0) or 0), int(getattr(hidden, "rowcount", 0) or 0)
+
+    async def database_megabytes(self) -> float | None:
+        """Current database size (PostgreSQL only; None elsewhere)."""
+        if self.db.bind is None or self.db.bind.dialect.name != "postgresql":
+            return None
+        size = await self.db.scalar(text("select pg_database_size(current_database())"))
+        return float(size or 0) / 1024 / 1024
+
+    async def trim_to_size_budget(self, budget_mb: float) -> int:
+        """Keep the largest catalogue the database budget allows: from the average size
+        of a job row and the space everything else uses, work out how many jobs fit, and
+        delete only the oldest imported jobs beyond that (never posted jobs, never jobs
+        someone applied to). Deleted space is reused by PostgreSQL, so the database stops
+        growing at the budget. Returns how many jobs were deleted."""
+        if self.db.bind is None or self.db.bind.dialect.name != "postgresql":
+            return 0
+        row = (
+            await self.db.execute(
+                text(
+                    "select pg_database_size(current_database()), "
+                    "pg_total_relation_size('job_posts'), (select count(*) from job_posts)"
+                )
+            )
+        ).one()
+        db_bytes, job_bytes, jobs = int(row[0]), int(row[1]), int(row[2])
+        if not jobs:
+            return 0
+        per_job = job_bytes / jobs
+        room = budget_mb * 1024 * 1024 - (db_bytes - job_bytes)
+        fits = max(0, int(room / per_job))
+        excess = jobs - fits
+        if excess <= 0:
+            return 0
+        oldest = (
+            select(JobPost.id)
+            .where(
+                JobPost.company_id.is_(None),
+                JobPost.source != "DIRECT",
+                JobPost.id.not_in(select(JobApplication.job_id)),
+            )
+            .order_by(JobPost.posted_at.asc())
+            .limit(excess)
+        )
+        result = await self.db.execute(
+            delete(JobPost).where(JobPost.id.in_(oldest)).execution_options(synchronize_session=False)
+        )
+        return int(getattr(result, "rowcount", 0) or 0)
 
     async def sitemap_entries(
         self, skip: int, limit: int

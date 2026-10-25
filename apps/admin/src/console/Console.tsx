@@ -13,6 +13,7 @@ import {
   AiUsage,
   Contracts,
   Flags,
+  GoogleSearch,
   Integrations,
   JobSources,
   Jobs,
@@ -155,6 +156,7 @@ const SECTIONS: {
         items: [
           ["status", "System status", "zap"],
           ["usage", "Usage & limits", "chart"],
+          ["google", "Google search", "search"],
         ],
       },
     ],
@@ -282,6 +284,7 @@ export default function Console() {
     announcements: <Announcements writable={writable} />,
     status: <SystemStatus />,
     usage: <UsageLimits />,
+    google: <GoogleSearch />,
     audit: <Audit />,
     security: <Audit prefix="auth.,admin.user.,admin.bootstrap" title="Security events" />,
   };

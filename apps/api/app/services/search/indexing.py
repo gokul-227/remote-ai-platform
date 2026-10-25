@@ -39,7 +39,7 @@ def job_urls(job_ids: list[uuid.UUID]) -> list[str]:
     return [f"{_site()}/jobs/{i}" for i in job_ids]
 
 
-async def _google_token(client: httpx.AsyncClient) -> str | None:
+async def _google_token(client: httpx.AsyncClient, scope: str = GOOGLE_SCOPE) -> str | None:
     raw = settings.GOOGLE_INDEXING_CREDENTIALS_B64
     if not raw:
         return None
@@ -103,3 +103,69 @@ async def notify_new_jobs(job_ids: list[uuid.UUID]) -> dict[str, int]:
             except Exception as exc:
                 logger.warning("IndexNow notification failed", error=type(exc).__name__)
     return sent
+
+
+SEARCH_CONSOLE_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly"
+SEARCH_CONSOLE_SITE = "https://remoteaiplatform.com/"
+
+
+async def search_console_report(days: int = 28) -> dict:
+    """What Google shows for the site: sitemap and indexed counts, and the searches,
+    pages, clicks and average position over the last `days` days (Search Console API)."""
+    from datetime import UTC, datetime, timedelta
+    from urllib.parse import quote
+
+    site = quote(SEARCH_CONSOLE_SITE, safe="")
+    base = f"https://www.googleapis.com/webmasters/v3/sites/{site}"
+    end = datetime.now(UTC).date()
+    start = end - timedelta(days=days)
+    async with httpx.AsyncClient(timeout=30) as client:
+        token = await _google_token(client, SEARCH_CONSOLE_SCOPE)
+        if not token:
+            return {"configured": False}
+        h = {"Authorization": f"Bearer {token}"}
+
+        async def analytics(dimension: str | None, limit: int) -> dict:
+            body: dict = {"startDate": str(start), "endDate": str(end), "rowLimit": limit}
+            if dimension:
+                body["dimensions"] = [dimension]
+            r = await client.post(f"{base}/searchAnalytics/query", headers=h, json=body)
+            return r.json() if r.status_code == 200 else {}
+
+        sitemaps = (await client.get(f"{base}/sitemaps", headers=h)).json().get("sitemap", [])
+        totals = (await analytics(None, 1)).get("rows", [{}])
+        queries = (await analytics("query", 25)).get("rows", [])
+        pages = (await analytics("page", 25)).get("rows", [])
+
+    def rows(items: list[dict]) -> list[dict]:
+        return [
+            {
+                "key": r["keys"][0],
+                "clicks": r.get("clicks", 0),
+                "impressions": r.get("impressions", 0),
+                "position": round(r.get("position", 0), 1),
+            }
+            for r in items
+        ]
+
+    t = totals[0] if totals else {}
+    return {
+        "configured": True,
+        "site": SEARCH_CONSOLE_SITE,
+        "period_days": days,
+        "sitemaps": [
+            {
+                "path": m.get("path"),
+                "last_read": m.get("lastDownloaded"),
+                "errors": int(m.get("errors", 0)),
+                "submitted": sum(int(c.get("submitted", 0)) for c in m.get("contents", [])),
+                "indexed": sum(int(c.get("indexed", 0)) for c in m.get("contents", [])),
+            }
+            for m in sitemaps
+        ],
+        "clicks": t.get("clicks", 0),
+        "impressions": t.get("impressions", 0),
+        "average_position": round(t.get("position", 0), 1) if t else None,
+        "top_queries": rows(queries),
+        "top_pages": rows(pages),
+    }

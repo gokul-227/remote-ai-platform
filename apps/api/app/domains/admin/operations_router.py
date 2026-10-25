@@ -310,3 +310,14 @@ async def platform_usage(
         ],
         "dashboards": PROVIDER_DASHBOARDS,
     }
+
+
+@router.get("/admin/search-status")
+async def search_status(_admin: User = Depends(staff)) -> dict[str, Any]:
+    """Google Search Console summary for the staff console (staff only)."""
+    from app.services.search.indexing import search_console_report
+
+    try:
+        return await search_console_report()
+    except Exception as exc:  # report, don't fail the page
+        return {"configured": True, "error": type(exc).__name__}

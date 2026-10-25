@@ -242,6 +242,9 @@ class Settings(BaseSettings):
     GOOGLE_INDEXING_PER_RUN: int = 24  # 8 runs a day stays under Google's free 200/day
     # IndexNow key: public by design, served by the web app at /indexnow.txt.
     INDEXNOW_KEY: str = "bd088b5c4cf346dbf16c906aff9aeb97"
+    # Keep as many imported jobs as the free database allows: above this size the oldest
+    # imported jobs nobody applied to are removed after each import (Supabase Free = 500 MB).
+    DATABASE_SIZE_BUDGET_MB: int = 420
     # Imported jobs posted longer ago than this are removed (or, if someone applied, hidden).
     JOB_RETENTION_DAYS: int = 90
 

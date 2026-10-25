@@ -168,3 +168,9 @@ def test_board_groups_rotate_and_cover_every_company(monkeypatch):
     assert sorted(sum(seen, [])) == sorted(boards)  # four runs cover every board once
     assert all(len(g) <= 3 for g in seen)
     assert pb._shard(boards, datetime(2030, 1, 1, 12, tzinfo=UTC)) == seen[0]  # then it repeats
+
+
+@pytest.mark.asyncio
+async def test_size_budget_is_a_no_op_outside_postgres(db: AsyncSession):
+    # SQLite in tests: no database size to measure, so nothing is ever trimmed.
+    assert await JobRepository(db).trim_to_size_budget(1) == 0

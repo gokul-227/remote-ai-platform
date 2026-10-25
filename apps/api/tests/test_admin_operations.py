@@ -108,3 +108,14 @@ async def test_usage_page_reports_counts_and_limits_to_staff_only(client: AsyncC
     assert body["users_total"] >= 2
     assert isinstance(body["jobs_by_source"], dict)
     assert "Resend (all emails incl. sign-in codes)" in body["dashboards"]
+
+
+@pytest.mark.asyncio
+async def test_search_status_is_staff_only_and_reports_unconfigured(client: AsyncClient, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "GOOGLE_INDEXING_CREDENTIALS_B64", None)
+    admin = await _headers(UserRole.ADMIN)
+    member = await _headers(UserRole.ENGINEER)
+    assert (await client.get("/api/v1/admin/search-status", headers=member)).status_code == 403
+    assert (await client.get("/api/v1/admin/search-status", headers=admin)).json() == {"configured": False}

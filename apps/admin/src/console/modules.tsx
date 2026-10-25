@@ -1502,3 +1502,144 @@ export function UsageLimits() {
     </Section>
   );
 }
+
+/* ---------------- Platform configuration: Google search ---------------- */
+
+interface SearchRow {
+  key: string;
+  clicks: number;
+  impressions: number;
+  position: number;
+}
+interface SearchStatus {
+  configured: boolean;
+  error?: string;
+  period_days?: number;
+  sitemaps?: { path: string; last_read: string; submitted: number; indexed: number; errors: number }[];
+  clicks?: number;
+  impressions?: number;
+  average_position?: number | null;
+  top_queries?: SearchRow[];
+  top_pages?: SearchRow[];
+}
+
+function SearchTable({ title, rows, first }: { title: string; rows: SearchRow[]; first: string }) {
+  return (
+    <div className="card">
+      <h3 style={{ marginTop: 0 }}>{title}</h3>
+      {rows.length ? (
+        <table>
+          <thead>
+            <tr>
+              <th>{first}</th>
+              <th>Position</th>
+              <th>Impressions</th>
+              <th>Clicks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key}>
+                <td style={{ wordBreak: "break-all" }}>{r.key}</td>
+                <td>
+                  <span className={`pill ${r.position <= 10 ? "green" : r.position <= 30 ? "amber" : ""}`}>
+                    {r.position}
+                  </span>
+                </td>
+                <td>{r.impressions}</td>
+                <td>{r.clicks}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="muted">No search data yet. Google reports it a few days after pages are indexed.</p>
+      )}
+    </div>
+  );
+}
+
+export function GoogleSearch() {
+  const q = useLoad<SearchStatus>("/admin/search-status");
+  const s = q.data;
+  return (
+    <Section
+      title="Google search"
+      action={
+        <button className="btn" onClick={q.reload}>
+          Refresh
+        </button>
+      }
+    >
+      <p className="muted">
+        How remoteaiplatform.com appears in Google over the last {s?.period_days ?? 28} days, from Search Console.
+        Position 1–10 means the first page of results. Search “site:remoteaiplatform.com” on Google to see indexed
+        pages.
+      </p>
+      <State loading={q.loading && !q.data} error={q.error} retry={q.reload} />
+      {s && !s.configured && (
+        <div className="card">Search Console isn’t connected (GOOGLE_INDEXING_CREDENTIALS_B64).</div>
+      )}
+      {s?.error && <div className="card error">Search Console didn’t answer: {s.error}</div>}
+      {s?.configured && !s.error && (
+        <>
+          <div className="grid">
+            <div className="card metric">
+              <span>Searches that showed the site (impressions)</span>
+              <strong>{(s.impressions ?? 0).toLocaleString()}</strong>
+            </div>
+            <div className="card metric">
+              <span>Clicks from Google</span>
+              <strong>{(s.clicks ?? 0).toLocaleString()}</strong>
+            </div>
+            <div className="card metric">
+              <span>Average position</span>
+              <strong>{s.average_position || "—"}</strong>
+            </div>
+            {(s.sitemaps ?? []).map((m) => (
+              <div className="card metric" key={m.path}>
+                <span>Pages indexed / in sitemap</span>
+                <strong>
+                  {m.indexed.toLocaleString()} / {m.submitted.toLocaleString()}
+                </strong>
+              </div>
+            ))}
+          </div>
+          <SearchTable title="Top searches" rows={s.top_queries ?? []} first="Search" />
+          <SearchTable title="Top pages" rows={s.top_pages ?? []} first="Page" />
+          <div className="card">
+            <h3 style={{ marginTop: 0 }}>Check yourself</h3>
+            <ul>
+              <li>
+                <a
+                  href="https://www.google.com/search?q=site%3Aremoteaiplatform.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Google: site:remoteaiplatform.com
+                </a>{" "}
+                — every page Google has indexed
+              </li>
+              <li>
+                <a
+                  href="https://search.google.com/search-console/index?resource_id=sc-domain%3Aremoteaiplatform.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Search Console → Pages
+                </a>{" "}
+                — indexed count and reasons for anything not indexed
+              </li>
+              <li>
+                <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener noreferrer">
+                  Rich Results Test
+                </a>{" "}
+                — paste a job page: should say “Job posting: valid”
+              </li>
+            </ul>
+          </div>
+        </>
+      )}
+    </Section>
+  );
+}
