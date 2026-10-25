@@ -818,6 +818,7 @@ export function Settings({ initial }: { initial?: string } = {}) {
   const [name, setName] = useState(user?.full_name || "");
   const [open, setOpen] = useState<boolean | null>(null);
   const [pub, setPub] = useState<boolean | null>(null);
+  const [noProfile, setNoProfile] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
   const [delText, setDelText] = useState("");
   const [notice, setNotice] = useState("");
@@ -830,7 +831,8 @@ export function Settings({ initial }: { initial?: string } = {}) {
           setOpen(r.data.is_open_to_work !== false);
           setPub(r.data.is_public !== false);
         })
-        .catch(() => {});
+        // No professional profile yet: there is nothing to make public or private.
+        .catch(() => setNoProfile(true));
   }, [eng]);
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setNotice("");
@@ -928,7 +930,15 @@ export function Settings({ initial }: { initial?: string } = {}) {
                   </span>
                 </label>
               )}
-              {eng && (
+              {eng && noProfile && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4 text-sm">
+                  <p>Create your professional profile to choose whether it’s public and open to work.</p>
+                  <Btn sm c="mt-3" onClick={() => goRoute("onboarding")}>
+                    Create my profile
+                  </Btn>
+                </div>
+              )}
+              {eng && !noProfile && (
                 <Btn
                   c="mt-5"
                   onClick={() => {
