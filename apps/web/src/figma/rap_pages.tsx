@@ -705,7 +705,7 @@ export function Workspace() {
   const offersQ = useApi<any[]>(eng ? "/projects/my-offers" : null);
   const contractsQ = useApi<any[]>(user ? "/contracts/me" : null);
   const repQ = useApi<any>(eng ? `/projects/reputation/${user!.id}` : null);
-  const projectsQ = useApi<any[]>(!eng && user ? "/projects" : null);
+  const projectsQ = useApi<any[]>(user ? "/projects" : null);
   const [run, setRun] = useState(false);
   const [secs, setSecs] = useState(0);
   const [taskId, setTaskId] = useState("");
@@ -796,7 +796,7 @@ export function Workspace() {
       </div>
       <div className="grid gap-4 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-4">
-          {eng ? (
+          <>
             <Card c="rounded-xl" p="p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[17px] font-bold">My tasks</h2>
@@ -824,7 +824,7 @@ export function Workspace() {
                 </p>
               )}
             </Card>
-          ) : (
+          
             <Card c="rounded-xl" p="p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[17px] font-bold">Your projects</h2>
@@ -843,7 +843,7 @@ export function Workspace() {
                 <p className="border-t border-slate-100 pt-3 text-sm text-slate-500">No projects yet.</p>
               )}
             </Card>
-          )}
+          </>
           <Card c="rounded-xl" p="p-5">
             <h2 className="mb-3 text-[17px] font-bold">Active contracts</h2>
             {active.map((c: any) => {

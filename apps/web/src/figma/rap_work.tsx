@@ -1133,12 +1133,12 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
   // Live: engineers — /projects/my-offers, /my-tasks (+ submit work), submissions with AI review, /reputation;
   // companies — offers they sent (/projects/task-offers) with cancel.
   const { user } = useAuth();
-  const company = isMember(user);
-  const offersQ = useApi<any[]>(user && !company ? "/projects/my-offers" : null);
-  const tasksQ = useApi<any[]>(user && !company ? "/projects/my-tasks" : null);
-  const repQ = useApi<any>(user && !company ? `/projects/reputation/${user.id}` : null);
-  const sentQ = useApi<any[]>(company ? "/projects/task-offers" : null);
-  const [tab, setTab] = useState(company ? "sent" : initial || "offers");
+  // One account does both sides: offers received, work submitted and offers sent.
+  const offersQ = useApi<any[]>(user ? "/projects/my-offers" : null);
+  const tasksQ = useApi<any[]>(user ? "/projects/my-tasks" : null);
+  const repQ = useApi<any>(user ? `/projects/reputation/${user.id}` : null);
+  const sentQ = useApi<any[]>(user ? "/projects/task-offers" : null);
+  const [tab, setTab] = useState(initial || "offers");
   const [submit, setSubmit] = useState<any>(null);
   const [summary, setSummary] = useState("");
   const [links, setLinks] = useState("");
@@ -1162,23 +1162,20 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
     CHANGES_REQUESTED: "Changes requested",
     APPROVED: "Approved",
   };
-  const TABS: [string, string][] = company
-    ? [["sent", "Offers sent"]]
-    : [
-        ["offers", `Offers for you${pending.length ? ` (${pending.length})` : ""}`],
-        ["tasks", "My tasks"],
-        ["submissions", "Submissions"],
-        ["reviews", "Reputation"],
-      ];
+  const TABS: [string, string][] = [
+    ["offers", `Offers received${pending.length ? ` (${pending.length})` : ""}`],
+    ["sent", "Offers sent"],
+    ["tasks", "My tasks"],
+    ["submissions", "Submissions"],
+    ["reviews", "Reputation"],
+  ];
   return (
     <div className="bg-[#F1F2F4] py-6">
       <div className="mx-auto max-w-[1300px] px-4">
         <div className="mb-4">
-          <h1 className="text-3xl font-light">Task marketplace</h1>
+          <h1 className="text-3xl font-light">Proposals &amp; offers</h1>
           <p className="text-sm text-slate-500">
-            {company
-              ? "Track the tasks you’ve offered to professionals from your project boards."
-              : "Accept task offers from active projects, submit your work for review and build your reputation."}
+            Respond to task offers, track the offers you’ve sent, submit work for review and build your reputation.
           </p>
         </div>
         <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200">

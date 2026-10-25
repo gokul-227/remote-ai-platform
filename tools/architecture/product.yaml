@@ -13,8 +13,8 @@ subtitle: Every feature end to end — who uses it, its screens, the API behind 
 
 personas:
   - {id: visitor, name: Visitor, detail: "Browses public jobs and company pages", icon: concepts/globe}
-  - {id: professional, name: Professional, role: ENGINEER, detail: "Finds work, applies, delivers and gets paid", icon: concepts/user}
-  - {id: organisation, name: Organisation, role: COMPANY, detail: "Posts work, hires and runs contracts", icon: concepts/building-2}
+  - {id: professional, name: Member, role: ENGINEER, detail: "One account: finds work, hires, delivers and gets paid", icon: concepts/user}
+  - {id: organisation, name: Member (legacy company role), role: COMPANY, detail: "Older accounts; same features as every member", icon: concepts/building-2}
   - {id: admin, name: Admin, role: ADMIN, detail: "Moderates, verifies and operates the platform", icon: concepts/user-cog}
 
 # `step` places a feature on the end-to-end hiring journey.
@@ -24,7 +24,7 @@ features:
     name: Sign-in & onboarding
     step: 1
     personas: [professional, organisation]
-    screens: [onboarding, settings, security]
+    screens: [onboarding, settings, security, privacydata, apps]
     api: [auth]
     uses: [auth, resend]
   - id: profiles
@@ -71,7 +71,7 @@ features:
     name: Network & messaging
     step: 6
     personas: [professional, organisation]
-    screens: [network, messenger, channels, meetings, notifications]
+    screens: [network, invitations, suggestions, messenger, channels, meetings, calls, notifications]
     api: [network, notifications, meetings, channels]
     uses: [resend]
   - id: community
@@ -94,8 +94,8 @@ features:
     name: Projects & delivery
     step: 8
     personas: [professional, organisation]
-    screens: [workspace, projects, taskmarket, submissions, worklog, work, files, docs, sheets, slides]
-    api: [projects, documents, github]
+    screens: [workspace, projects, backlog, timeline, taskmarket, submissions, worklog, work, files, docs, sheets, slides, repos, browser]
+    api: [projects, documents, github, browser]
     uses: [storage]
   - id: trust
     icon: concepts/star
@@ -114,9 +114,9 @@ features:
     uses: [ai-providers]
   - id: admin
     icon: concepts/shield-check
-    name: Administration & moderation
+    name: Administration & moderation (staff console app)
     personas: [admin]
-    screens: [admin, adminusers, adminjobs, reports, verifications, audit, sync, aiusage, health, flags, orgs]
+    screens: [admin]
     api: [admin, admin.moderation, analytics, health]
     uses: [job-boards, ai-providers, sentry]
   - id: help
@@ -148,7 +148,6 @@ screen_labels:
   jobs: Jobs
   talent: Talent
   work: Work
-  orgs: Organisations
   terms: Terms
   privacy: Privacy
   impressum: Impressum

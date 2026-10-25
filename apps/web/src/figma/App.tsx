@@ -51,6 +51,8 @@ const Support = lazy(() => import("./rap_collab").then((m) => ({ default: m.Supp
 const Channels = lazy(() => import("./rap_collab").then((m) => ({ default: m.Channels })));
 const Assistant = lazy(() => import("./rap_collab").then((m) => ({ default: m.Assistant })));
 const Office = lazy(() => import("./rap_office").then((m) => ({ default: m.Office })));
+const Browser = lazy(() => import("./rap_collab").then((m) => ({ default: m.Browser })));
+const GithubConnect = lazy(() => import("./rap_collab").then((m) => ({ default: m.GithubConnect })));
 const HelpCenter = lazy(() => import("./rap_enterprise").then((m) => ({ default: m.HelpCenter })));
 
 /** Administration now lives in the separate staff console. */
@@ -84,16 +86,25 @@ export const REG: Record<string, any> = {
   docs: () => <Office initial="DOC" />,
   sheets: () => <Office initial="SHEET" />,
   slides: () => <Office initial="SLIDES" />,
-  adminusers: AdminMoved,
-  adminjobs: AdminMoved,
-  reports: AdminMoved,
-  verifications: AdminMoved,
-  audit: AdminMoved,
-  sync: AdminMoved,
-  aiusage: AdminMoved,
-  health: AdminMoved,
-  flags: AdminMoved,
-  orgs: AdminMoved,
+  invitations: () => <Network view="invitations" />,
+  suggestions: () => <Network view="suggestions" />,
+  calls: () => <Meetings calls />,
+  backlog: () => <Projects initial="backlog" />,
+  timeline: () => <Projects initial="timeline" />,
+  repos: () => (
+    <div className="v2-page">
+      <header className="v2-page-head">
+        <div>
+          <h1>Repositories</h1>
+          <p>Connect GitHub to reference repositories and commits in your deliverables and code reviews.</p>
+        </div>
+      </header>
+      <GithubConnect />
+    </div>
+  ),
+  privacydata: () => <Settings initial="Privacy" />,
+  apps: () => <Settings initial="Connected accounts" />,
+  browser: Browser,
   engineer: EngineerDetail,
   jobdetail: JobDetail,
   contractsign: ContractSign,

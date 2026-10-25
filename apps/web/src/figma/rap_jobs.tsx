@@ -924,7 +924,7 @@ export function Profile() {
   );
 }
 
-export function Network() {
+export function Network({ view = "connections" }: { view?: "connections" | "invitations" | "suggestions" } = {}) {
   // Live: real invitations, connections, suggestions (/connections, /engineers).
   const { user } = useAuth();
   const conns = useApi<any[]>(user ? "/connections" : null, { limit: 200 });
@@ -1000,6 +1000,7 @@ export function Network() {
           ))}
         </Card>
         <main className="min-w-0 space-y-3">
+          {view === "invitations" && (
           <Card c="rounded-lg" p={false}>
             <div className="flex items-center justify-between p-4">
               <p className="font-bold">Invitations ({inv.length})</p>
@@ -1028,7 +1029,16 @@ export function Network() {
               <p className="border-t border-slate-100 p-4 text-sm text-slate-500">No pending invitations.</p>
             )}
           </Card>
-          {accepted.length > 0 && (
+          )}
+          {view === "invitations" && pendingOut.size > 0 && (
+            <p className="text-sm text-slate-500">You have {pendingOut.size} sent invitation(s) awaiting a response.</p>
+          )}
+          {view === "connections" && !accepted.length && (
+            <Card c="rounded-lg">
+              <p className="text-sm text-slate-500">No connections yet. Explore Suggested Connections to grow your network.</p>
+            </Card>
+          )}
+          {view === "connections" && accepted.length > 0 && (
             <Card c="rounded-lg" p={false}>
               <p className="p-4 font-bold">Your connections ({accepted.length})</p>
               {accepted.map((p: any) => (
@@ -1055,8 +1065,9 @@ export function Network() {
               ))}
             </Card>
           )}
+          {view === "suggestions" && (
           <Card c="rounded-lg">
-            <p className="mb-3 font-bold">People you may know from Remote-AI-Platform</p>
+            <p className="mb-3 font-bold">Suggested connections</p>
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {suggest.map((p: any) => {
                 const name = p.full_name || "Professional";
@@ -1094,6 +1105,7 @@ export function Network() {
               <p className="text-sm text-slate-500">No new suggestions right now.</p>
             )}
           </Card>
+          )}
         </main>
         <aside className="self-start">
           <Card c="rounded-lg" p={false}>

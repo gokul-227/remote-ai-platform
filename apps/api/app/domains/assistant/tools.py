@@ -95,18 +95,30 @@ class CreateDocArgs(BaseModel):
 
 # Every screen the assistant can take you to (route -> what it is).
 SCREENS: dict[str, str] = {
-    "feed": "news feed", "notifications": "notifications", "network": "connections", "groups": "groups",
-    "engineers": "find professionals", "companies": "organisations", "profile": "my profile",
-    "messenger": "direct messages", "channels": "channels", "meetings": "meetings and video calls",
-    "jobs": "job search", "recs": "recommended jobs", "saved": "saved jobs", "applications": "my applications",
-    "dash": "career insights", "onboarding": "job preferences", "freelancework": "freelance work for you",
-    "taskmarket": "task offers", "contracts": "contracts", "submissions": "deliverables", "worklog": "work log",
-    "reviews": "reviews", "earnings": "payments", "codash": "hiring overview", "postjob": "post a job",
-    "cojobs": "my job postings", "candidates": "candidates", "ride": "match a professional",
-    "coprofile": "organisation profile", "workspace": "workspace", "projects": "boards and sprints",
-    "files": "all files", "docs": "documents", "sheets": "spreadsheets", "slides": "presentations",
-    "quality": "code review", "settings": "settings and connected apps", "security": "security",
-    "help": "help center", "support": "contact support", "assistant": "AI assistant",
+    # Home and top bar
+    "feed": "feed", "notifications": "notifications", "messenger": "chats", "search": "search",
+    "assistant": "AI assistant",
+    # Network
+    "profile": "my profile", "network": "connections", "invitations": "connection invitations",
+    "suggestions": "suggested connections", "engineers": "people directory", "companies": "company pages",
+    "coprofile": "my company page",
+    # Collaboration
+    "channels": "channels", "groups": "communities", "meetings": "meetings", "calls": "calls",
+    # Jobs
+    "jobs": "job search", "recs": "AI-matched jobs", "saved": "saved jobs", "applications": "applications",
+    "onboarding": "job preferences", "dash": "career insights", "postjob": "post a job",
+    "cojobs": "manage job postings", "candidates": "applicants", "ride": "talent matching",
+    # Freelancing
+    "work": "browse freelance projects", "freelancework": "AI-matched freelance work",
+    "taskmarket": "proposals and offers", "contracts": "contracts", "submissions": "deliverables",
+    "worklog": "time and activity", "earnings": "payments", "reviews": "reviews and ratings",
+    # Projects
+    "workspace": "workspace", "projects": "boards", "backlog": "backlog and sprints", "timeline": "timeline",
+    "docs": "documents", "sheets": "spreadsheets", "slides": "presentations", "files": "files",
+    "repos": "repositories", "quality": "code review", "browser": "web browser",
+    # Account
+    "settings": "account settings", "security": "security and verification", "privacydata": "privacy and data",
+    "apps": "connected apps", "help": "help center", "support": "support tickets",
 }
 
 

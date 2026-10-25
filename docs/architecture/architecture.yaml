@@ -95,6 +95,7 @@ components:
     - applications
     - assistant
     - auth
+    - browser
     - channels
     - companies
     - contracts

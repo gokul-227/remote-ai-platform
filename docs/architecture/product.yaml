@@ -9,14 +9,14 @@ personas:
   detail: Browses public jobs and company pages
   icon: concepts/globe
 - id: professional
-  name: Professional
+  name: Member
   role: ENGINEER
-  detail: Finds work, applies, delivers and gets paid
+  detail: 'One account: finds work, hires, delivers and gets paid'
   icon: concepts/user
 - id: organisation
-  name: Organisation
+  name: Member (legacy company role)
   role: COMPANY
-  detail: Posts work, hires and runs contracts
+  detail: Older accounts; same features as every member
   icon: concepts/building-2
 - id: admin
   name: Admin
@@ -35,9 +35,13 @@ features:
   - route: onboarding
     label: Job preferences
   - route: settings
-    label: Settings & privacy
+    label: Account settings
   - route: security
     label: Security & verification
+  - route: privacydata
+    label: Privacy & data
+  - route: apps
+    label: Connected apps
   api:
   - domain: auth
     prefix: /api/v1/auth
@@ -57,13 +61,13 @@ features:
   - organisation
   screens:
   - route: profile
-    label: View your profile
+    label: My profile
   - route: dash
-    label: My career
+    label: Career insights
   - route: engineer
     label: Professional detail
   - route: engineers
-    label: Discover professionals
+    label: People
   api:
   - domain: engineers
     prefix: /api/v1/engineers
@@ -93,7 +97,7 @@ features:
   - route: search
     label: Search
   - route: companies
-    label: Explore companies
+    label: Companies
   - route: company
     label: Company page
   api:
@@ -123,7 +127,7 @@ features:
   - route: ride
     label: Find a professional
   - route: freelancework
-    label: Freelance work for you
+    label: AI-matched work
   api:
   - domain: matching
     prefix: /api/v1/matching
@@ -138,17 +142,17 @@ features:
   - organisation
   screens:
   - route: codash
-    label: My hiring
+    label: codash
   - route: cojobs
-    label: Job postings
+    label: Manage postings
   - route: postjob
     label: Post a job
   - route: candidates
-    label: Candidates
+    label: Applicants
   - route: talent
     label: Talent
   - route: coprofile
-    label: Organisation profile
+    label: My company page
   api:
   - domain: companies
     prefix: /api/v1/companies
@@ -183,12 +187,18 @@ features:
   screens:
   - route: network
     label: People
+  - route: invitations
+    label: Invitations
+  - route: suggestions
+    label: Suggested connections
   - route: messenger
     label: Messages
   - route: channels
     label: Channels
   - route: meetings
     label: Schedule a meeting
+  - route: calls
+    label: Calls
   - route: notifications
     label: Notifications
   api:
@@ -262,25 +272,33 @@ features:
   - organisation
   screens:
   - route: workspace
-    label: My workspace
+    label: Projects
   - route: projects
-    label: Boards & sprints
+    label: Boards
+  - route: backlog
+    label: Backlog & sprints
+  - route: timeline
+    label: Timeline
   - route: taskmarket
-    label: Task offers
+    label: Proposals & offers
   - route: submissions
     label: Deliverables
   - route: worklog
-    label: Time & work log
+    label: Time & activity
   - route: work
     label: Work
   - route: files
-    label: All files
+    label: Files
   - route: docs
     label: New document
   - route: sheets
-    label: Sheets
+    label: Spreadsheets
   - route: slides
-    label: Slides
+    label: Presentations
+  - route: repos
+    label: Repositories
+  - route: browser
+    label: Web browser
   api:
   - domain: projects
     prefix: /api/v1/projects
@@ -288,6 +306,8 @@ features:
     prefix: /api/v1/documents
   - domain: github
     prefix: /api/v1/github
+  - domain: browser
+    prefix: /api/v1/browser
   uses:
   - id: storage
     name: Object storage
@@ -301,7 +321,7 @@ features:
   - organisation
   screens:
   - route: reviews
-    label: Reviews
+    label: Reviews & ratings
   - route: quality
     label: Code review
   api:
@@ -321,7 +341,7 @@ features:
   - organisation
   screens:
   - route: assistant
-    label: AI assistant
+    label: assistant
   api:
   - domain: assistant
     prefix: /api/v1/assistant
@@ -330,33 +350,13 @@ features:
     name: AI providers
     status: active
 - id: admin
-  name: Administration & moderation
+  name: Administration & moderation (staff console app)
   icon: concepts/shield-check
   personas:
   - admin
   screens:
   - route: admin
     label: admin
-  - route: adminusers
-    label: adminusers
-  - route: adminjobs
-    label: adminjobs
-  - route: reports
-    label: reports
-  - route: verifications
-    label: verifications
-  - route: audit
-    label: audit
-  - route: sync
-    label: sync
-  - route: aiusage
-    label: aiusage
-  - route: health
-    label: health
-  - route: flags
-    label: flags
-  - route: orgs
-    label: Organisations
   api:
   - domain: admin
     prefix: /api/v1/admin
@@ -385,9 +385,9 @@ features:
   - organisation
   screens:
   - route: help
-    label: Help & support
+    label: Help center
   - route: support
-    label: Ask support
+    label: Contact support
   - route: terms
     label: Terms
   - route: privacy
@@ -404,7 +404,7 @@ features:
 web:
   technology: Next.js 16 · OpenNext
   provider: Cloudflare Workers
-  screens: 64
+  screens: 63
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service
@@ -423,6 +423,8 @@ api:
     prefix: /assistant
   - domain: auth
     prefix: /auth
+  - domain: browser
+    prefix: /browser
   - domain: channels
     prefix: /channels
   - domain: companies

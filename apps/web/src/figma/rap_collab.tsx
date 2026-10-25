@@ -79,9 +79,9 @@ interface Meeting {
 
 const PHASE_TONE: Record<string, string> = { UPCOMING: "blue", JOINABLE: "green", ENDED: "gray", CANCELLED: "red" };
 
-export function Meetings() {
+export function Meetings({ calls = false }: { calls?: boolean } = {}) {
   const { user } = useAuth();
-  const [past, setPast] = useState(false);
+  const [past, setPast] = useState(calls);
   const q = useApi<Meeting[]>(user ? "/meetings" : null, { include_past: past });
   const [open, setOpen] = useState(false);
   const [msg, setMsg] = useState("");
@@ -109,11 +109,15 @@ export function Meetings() {
   const rows = q.data ?? [];
   return (
     <Page
-      title="Meetings"
-      sub="Schedule and hold video calls with your connections and contract partners, right here."
+      title={calls ? "Calls" : "Meetings"}
+      sub={
+        calls
+          ? "Start an audio or video call with your connections now, or rejoin a recent one."
+          : "Schedule and hold video calls with your connections and contract partners, right here."
+      }
       action={
-        <Btn icon="plus" onClick={() => setOpen(true)}>
-          Schedule meeting
+        <Btn icon={calls ? "video" : "plus"} onClick={() => setOpen(true)}>
+          {calls ? "Start a call" : "Schedule meeting"}
         </Btn>
       }
     >
@@ -227,18 +231,30 @@ export function Meetings() {
       {inCall && <CallRoom meeting={inCall} onLeave={() => setInCall(null)} />}
       <ScheduleMeeting
         open={open}
+        instant={calls}
         onClose={() => setOpen(false)}
-        onDone={() => {
+        onDone={(m) => {
           setOpen(false);
-          setMsg("Meeting scheduled and invitations sent.");
           q.reload();
+          if (calls && m) join(m);
+          else setMsg("Meeting scheduled and invitations sent.");
         }}
       />
     </Page>
   );
 }
 
-function ScheduleMeeting({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+function ScheduleMeeting({
+  open,
+  instant = false,
+  onClose,
+  onDone,
+}: {
+  open: boolean;
+  instant?: boolean;
+  onClose: () => void;
+  onDone: (m?: Meeting) => void;
+}) {
   const { user } = useAuth();
   const conns = useApi<any[]>(open && user ? "/connections" : null, { status: "ACCEPTED", limit: 200 });
   const [title, setTitle] = useState("");
@@ -251,15 +267,15 @@ function ScheduleMeeting({ open, onClose, onDone }: { open: boolean; onClose: ()
   const people = (conns.data ?? []).map((c) => (c.sender_id === user?.id ? c.receiver : c.sender)).filter(Boolean);
   const submit = async () => {
     setErr("");
-    if (!title.trim() || !when || picked.length === 0) {
-      setErr("Add a title, a start time and at least one person.");
+    if (instant ? picked.length === 0 : !title.trim() || !when || picked.length === 0) {
+      setErr(instant ? "Choose at least one person to call." : "Add a title, a start time and at least one person.");
       return;
     }
-    const start = new Date(when);
+    const start = instant ? new Date() : new Date(when);
     const end = new Date(start.getTime() + Number(mins) * 60000);
     try {
-      await api.post("/meetings", {
-        title,
+      const created = await api.post<Meeting>("/meetings", {
+        title: title.trim() || "Call",
         agenda: agenda || null,
         starts_at: start.toISOString(),
         ends_at: end.toISOString(),
@@ -271,18 +287,18 @@ function ScheduleMeeting({ open, onClose, onDone }: { open: boolean; onClose: ()
       setWhen("");
       setLink("");
       setPicked([]);
-      onDone();
+      onDone(created.data);
     } catch (e) {
       setErr(extractErrorMessage(e, "Couldn’t schedule the meeting."));
     }
   };
   return (
-    <Modal open={open} onClose={onClose} title="Schedule a meeting">
+    <Modal open={open} onClose={onClose} title={instant ? "Start a call" : "Schedule a meeting"}>
       <div className="grid gap-3">
-        <Field label="Title">
+        <Field label={instant ? "Topic (optional)" : "Title"}>
           <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={255} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className={cx("grid grid-cols-2 gap-3", instant && "hidden")}>
           <Field label="Starts (your local time)">
             <input type="datetime-local" className={inputCls} value={when} onChange={(e) => setWhen(e.target.value)} />
           </Field>
@@ -336,7 +352,7 @@ function ScheduleMeeting({ open, onClose, onDone }: { open: boolean; onClose: ()
           <Btn v="ghost" onClick={onClose}>
             Cancel
           </Btn>
-          <Btn onClick={submit}>Schedule</Btn>
+          <Btn onClick={submit}>{instant ? "Call now" : "Schedule"}</Btn>
         </div>
       </div>
     </Modal>
@@ -2119,5 +2135,122 @@ export function CallRoom({ meeting, onLeave }: { meeting: Meeting; onLeave: () =
         Audio and video go directly between browsers; nothing is recorded or stored.
       </p>
     </Modal>
+  );
+}
+
+/* ---------------- Web browser ---------------- */
+
+const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+
+export function Browser() {
+  const [address, setAddress] = useState("");
+  const [stack, setStack] = useState<string[]>([]);
+  const [pos, setPos] = useState(-1);
+  const [src, setSrc] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const frame = useRef<HTMLIFrameElement>(null);
+  const current = pos >= 0 ? stack[pos] : "";
+  const load = useCallback(async (raw: string, push = true) => {
+    setErr("");
+    setBusy(true);
+    try {
+      const r = await api.post<{ url: string; view_path: string }>("/browser/views", { url: raw });
+      setAddress(r.data.url);
+      setSrc(`${API_ORIGIN}${r.data.view_path}`);
+      if (push) {
+        setStack((s) => [...s.slice(0, pos + 1), r.data.url]);
+        setPos((p) => p + 1);
+      }
+    } catch (e) {
+      setErr(extractErrorMessage(e, "That page couldn’t be opened."));
+    } finally {
+      setBusy(false);
+    }
+  }, [pos]);
+  // Links clicked inside the sandboxed page come back here so browsing stays in the app.
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.source !== frame.current?.contentWindow) return;
+      const d = e.data as { type?: string; url?: string };
+      if (d?.type === "rap-browser-nav" && typeof d.url === "string" && /^https?:\/\//.test(d.url)) void load(d.url);
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, [load]);
+  const step = (d: number) => {
+    const n = pos + d;
+    if (n < 0 || n >= stack.length) return;
+    setPos(n);
+    void load(stack[n], false);
+  };
+  const tool = "grid h-9 w-9 place-items-center rounded-full text-slate-600 hover:bg-slate-100 disabled:opacity-40";
+  return (
+    <Page title="Web browser" sub="Open client demos, documentation and research without leaving the workspace.">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <form
+          className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 p-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (address.trim()) void load(address.trim());
+          }}
+        >
+          <button type="button" className={tool} aria-label="Back" disabled={pos <= 0} onClick={() => step(-1)}>
+            ‹
+          </button>
+          <button
+            type="button"
+            className={tool}
+            aria-label="Forward"
+            disabled={pos >= stack.length - 1}
+            onClick={() => step(1)}
+          >
+            ›
+          </button>
+          <button type="button" className={tool} aria-label="Reload" disabled={!current} onClick={() => load(current, false)}>
+            ↻
+          </button>
+          <input
+            aria-label="Address"
+            className={`${inputCls} flex-1 rounded-full`}
+            placeholder="Enter a web address, for example example.com"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={busy || !address.trim()}
+            className="rounded-lg bg-[#0552CC] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0443A8] disabled:opacity-50"
+          >
+            {busy ? "Loading…" : "Go"}
+          </button>
+          {current && (
+            <a className="px-2 text-sm font-semibold text-[#0552CC] hover:underline" href={current} target="_blank" rel="noopener noreferrer">
+              Open in new tab
+            </a>
+          )}
+        </form>
+        {err && <p className="border-b border-slate-200 bg-red-50 px-4 py-2 text-sm text-red-700">{err}</p>}
+        {src ? (
+          <iframe
+            ref={frame}
+            key={src}
+            title="Web page"
+            src={src}
+            sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            referrerPolicy="no-referrer"
+            className="h-[70vh] w-full bg-white"
+          />
+        ) : (
+          <div className="p-6">
+            <Empty
+              icon="globe"
+              title="Start browsing"
+              text="Type an address above. Pages open safely in an isolated sandbox. Sites that need their own sign-in (Google, Facebook, banks) work best in a new tab."
+            />
+          </div>
+        )}
+      </div>
+    </Page>
   );
 }

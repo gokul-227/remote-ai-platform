@@ -8491,6 +8491,33 @@ paths:
                 $ref: '#/components/schemas/AnalyticsSummaryResponse'
       security:
       - HTTPBearer: []
+  /api/v1/browser/views:
+    post:
+      tags:
+      - Browser
+      summary: Create View
+      operationId: create_view_api_v1_browser_views_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ViewRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViewToken'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
 components:
   schemas:
     AIUsageStatsResponse:
@@ -13921,6 +13948,34 @@ components:
       required:
       - status
       title: VerificationReviewUpdate
+    ViewRequest:
+      properties:
+        url:
+          type: string
+          maxLength: 2048
+          minLength: 1
+          title: Url
+      type: object
+      required:
+      - url
+      title: ViewRequest
+    ViewToken:
+      properties:
+        url:
+          type: string
+          title: Url
+        view_path:
+          type: string
+          title: View Path
+        expires_in:
+          type: integer
+          title: Expires In
+      type: object
+      required:
+      - url
+      - view_path
+      - expires_in
+      title: ViewToken
     WalletBalanceResponse:
       properties:
         user_id:

@@ -4,25 +4,35 @@ import { apiAs, signUp, unique } from "./support";
 /* Journeys for the platform features added in the expansion: navigation tree and
    launcher, Docs/Sheets/Slides, channels, meetings, support and the assistant. */
 
-test("the left navigation tree and the launcher reach every area", async ({ page }) => {
+test("the menu opens a section and the sidebar shows only that section", async ({ page }) => {
   await signUp(page, { as: "professional", name: "Nav Tree", email: unique("navtree") });
-  const tree = page.getByRole("navigation", { name: "All features" });
-  // Open another area from the tree and go to one of its screens.
-  await tree.getByRole("button", { name: /Projects/ }).click();
-  await tree.getByRole("button", { name: "Sheets" }).click();
-  await expect(page).toHaveURL(/#sheets$/);
-  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText("Projects");
-  // The filter finds features across areas.
-  await page.getByLabel("Find a feature").fill("channels");
-  await tree.getByRole("button", { name: "Channels", exact: true }).click();
-  await expect(page).toHaveURL(/#channels$/);
-  // The top-left launcher lists every area with its sub-categories.
-  await page.getByRole("button", { name: "Open the menu of all features" }).click();
+  await page.getByRole("button", { name: "Open the menu" }).click();
   const menu = page.getByRole("dialog", { name: "Product menu" });
-  for (const area of ["Home", "Network", "Messaging", "Careers", "Freelance", "Hiring", "Projects", "Account"])
+  for (const area of ["Home", "Network", "Collaboration", "Jobs", "Freelancing", "Projects", "Account"])
     await expect(menu.getByRole("heading", { name: area, exact: true })).toBeVisible();
-  await menu.getByRole("button", { name: "Meetings & calls" }).click();
-  await expect(page).toHaveURL(/#meetings$/);
+  await menu.getByRole("button", { name: "Spreadsheets", exact: true }).click();
+  await expect(page).toHaveURL(/#sheets$/);
+  const side = page.getByRole("navigation", { name: "Projects navigation" });
+  await expect(side.getByRole("button", { name: "Timeline", exact: true })).toBeVisible();
+  // Other sections stay out of the sidebar.
+  await expect(side.getByRole("button", { name: "Job search", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText("Projects");
+  await side.getByRole("button", { name: "Timeline", exact: true }).click();
+  await expect(page).toHaveURL(/#timeline$/);
+  // Messages and notifications open as panels from the top bar.
+  await page.getByRole("button", { name: "Notifications" }).click();
+  await expect(page.getByRole("dialog", { name: "Notifications" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Messages" }).click();
+  await expect(page.getByRole("dialog", { name: "Messages" }).getByRole("button", { name: "Open chats" })).toBeVisible();
+});
+
+test("the in-app browser refuses private addresses", async ({ page }) => {
+  await signUp(page, { as: "professional", name: "Surfer", email: unique("surf") });
+  await page.goto("/#browser");
+  await page.getByLabel("Address").fill("http://127.0.0.1:8000");
+  await page.getByRole("button", { name: "Go" }).click();
+  await expect(page.getByText("Only public websites can be opened")).toBeVisible();
 });
 
 test("a spreadsheet calculates, saves and keeps its history", async ({ page, request }) => {

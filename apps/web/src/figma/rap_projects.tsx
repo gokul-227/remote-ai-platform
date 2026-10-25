@@ -150,7 +150,7 @@ function Side({ page, setPage, projects, pid, setPid, risk, onRisk, busy }: any)
   );
 }
 
-export function Projects() {
+export function Projects({ initial = "board" }: { initial?: string } = {}) {
   const { user } = useAuth();
   const company = isMember(user);
   const list = useApi<any[]>(user ? "/projects" : null);
@@ -159,7 +159,7 @@ export function Projects() {
   const pid = pidSel || projects[0]?.id || null;
   const dq = useApi<any>(pid ? `/projects/${pid}` : null);
   const sprintsQ = useApi<any[]>(pid ? `/projects/${pid}/sprints` : null);
-  const [page, setPage] = useState("board");
+  const [page, setPage] = useState(initial);
   const [drag, setDrag] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);

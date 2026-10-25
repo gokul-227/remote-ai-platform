@@ -14,7 +14,7 @@ for (const route of ["#login", "#register", "#jobs", "#engineers", "#companies",
 
 test("the main menu is a keyboard-operable dialog", async ({ page }) => {
   await page.goto("/#jobs");
-  const trigger = page.getByRole("button", { name: "Open the menu of all features" });
+  const trigger = page.getByRole("button", { name: "Open the menu" });
   await trigger.focus();
   await page.keyboard.press("Enter");
   const menu = page.getByRole("dialog", { name: "Product menu" });

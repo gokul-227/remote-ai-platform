@@ -1,171 +1,156 @@
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { Suspense, lazy, useState, useEffect, useRef, type ReactNode } from "react";
 import { AssistantDock } from "./rap_collab";
 import { Ic, Av, Brand, cx, useDialogFocus } from "./rap_kit";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
-import { isMember, useApi } from "./live";
-// Enterprise navigation: each area has a purpose, an icon and named groups of
-// pages. The sidebar shows the current area's groups; the app launcher shows
-// every area at once. Admin lives in the separate staff console.
+import { isMember, timeAgo, useApi } from "./live";
+const NotificationsPanel = lazy(() => import("./rap_social").then((m) => ({ default: m.Notifications })));
+// Enterprise navigation: seven sections, each with named groups of screens.
+// The menu (top-left) lists every section; the sidebar shows only the section
+// in use. Notifications, messages and the assistant live in the top bar and the
+// floating dock, not in the menu. Staff tools live in the separate console.
 type NavItem = [route: string, label: string, icon: string];
 type Area = { icon: string; blurb: string; groups: { label: string; items: NavItem[] }[] };
 const catalog: Record<string, Area> = {
   Home: {
     icon: "home",
-    blurb: "Your feed, alerts and assistant",
-    groups: [
-      {
-        label: "Stay updated",
-        items: [
-          ["feed", "News feed", "home"],
-          ["notifications", "Notifications", "bell"],
-        ],
-      },
-      {
-        label: "Get help fast",
-        items: [
-          ["assistant", "AI assistant", "spark"],
-          ["search", "Search everything", "search"],
-        ],
-      },
-    ],
+    blurb: "Updates from your network",
+    groups: [{ label: "", items: [["feed", "Feed", "home"]] }],
   },
   Network: {
     icon: "users",
-    blurb: "People, groups and organisations",
+    blurb: "Profile, connections and companies",
     groups: [
       {
-        label: "Your network",
+        label: "My network",
         items: [
-          ["network", "Connections", "users"],
-          ["groups", "Groups", "globe"],
           ["profile", "My profile", "user"],
+          ["network", "Connections", "users"],
+          ["invitations", "Invitations", "inbox"],
+          ["suggestions", "Suggested connections", "plus"],
         ],
       },
       {
         label: "Discover",
         items: [
-          ["engineers", "Professionals", "search"],
-          ["companies", "Organisations", "building"],
+          ["engineers", "People directory", "search"],
+          ["companies", "Company pages", "building"],
+          ["coprofile", "My company page", "briefcase"],
         ],
       },
     ],
   },
-  Messaging: {
+  Collaboration: {
     icon: "chat",
-    blurb: "Chat, channels and video calls",
+    blurb: "Chats, channels, communities and meetings",
     groups: [
       {
-        label: "Conversations",
+        label: "Communicate",
         items: [
-          ["messenger", "Direct messages", "chat"],
+          ["messenger", "Chats", "chat"],
           ["channels", "Channels", "inbox"],
+          ["groups", "Communities", "globe"],
         ],
       },
-      { label: "Meet", items: [["meetings", "Meetings & calls", "video"]] },
+      {
+        label: "Meet",
+        items: [
+          ["meetings", "Meetings", "calendar"],
+          ["calls", "Calls", "video"],
+        ],
+      },
     ],
   },
-  Careers: {
+  Jobs: {
     icon: "briefcase",
-    blurb: "Find and apply to remote jobs",
+    blurb: "Find roles and hire talent",
     groups: [
       {
-        label: "Find work",
+        label: "Find jobs",
         items: [
-          ["jobs", "Search jobs", "briefcase"],
-          ["recs", "Recommended for you", "target"],
+          ["jobs", "Job search", "briefcase"],
+          ["recs", "AI-matched jobs", "target"],
           ["saved", "Saved jobs", "bookmark"],
         ],
       },
       {
-        label: "Track",
+        label: "My job search",
         items: [
-          ["applications", "My applications", "file"],
+          ["applications", "Applications", "file"],
+          ["onboarding", "Job preferences", "settings"],
           ["dash", "Career insights", "chart"],
         ],
       },
-      { label: "Preferences", items: [["onboarding", "Job preferences", "settings"]] },
+      {
+        label: "Hiring",
+        items: [
+          ["postjob", "Post a job", "plus"],
+          ["cojobs", "Manage postings", "layers"],
+          ["candidates", "Applicants", "users"],
+          ["ride", "Talent matching", "zap"],
+        ],
+      },
     ],
   },
-  Freelance: {
+  Freelancing: {
     icon: "zap",
-    blurb: "Gigs, contracts and deliverables",
+    blurb: "Find work, deliver and get paid",
     groups: [
       {
         label: "Find work",
         items: [
-          ["freelancework", "Freelance work for you", "target"],
-          ["taskmarket", "Task offers", "zap"],
-        ],
-      },
-      {
-        label: "Deliver",
-        items: [
-          ["contracts", "Contracts", "file"],
-          ["submissions", "Deliverables", "inbox"],
-          ["worklog", "Time & work log", "clock"],
-        ],
-      },
-      {
-        label: "Reputation & pay",
-        items: [
-          ["reviews", "Reviews", "star"],
-          ["earnings", "Payments", "wallet"],
-        ],
-      },
-    ],
-  },
-  Hiring: {
-    icon: "building",
-    blurb: "Post jobs, find talent, contract",
-    groups: [
-      { label: "Overview", items: [["codash", "Hiring overview", "chart"]] },
-      {
-        label: "Jobs",
-        items: [
-          ["postjob", "Post a job", "plus"],
-          ["cojobs", "Job postings", "briefcase"],
-          ["candidates", "Candidates", "users"],
-        ],
-      },
-      {
-        label: "Talent",
-        items: [
-          ["ride", "Match a professional", "zap"],
-          ["engineers", "Talent search", "search"],
+          ["work", "Browse projects", "search"],
+          ["freelancework", "AI-matched work", "target"],
         ],
       },
       {
         label: "Engagements",
         items: [
+          ["taskmarket", "Proposals & offers", "inbox"],
           ["contracts", "Contracts", "file"],
-          ["copayments", "Payments", "wallet"],
-          ["coprofile", "Organisation profile", "building"],
+          ["submissions", "Deliverables", "check"],
+          ["worklog", "Time & activity", "clock"],
+        ],
+      },
+      {
+        label: "Earnings",
+        items: [
+          ["earnings", "Payments", "wallet"],
+          ["reviews", "Reviews & ratings", "star"],
         ],
       },
     ],
   },
   Projects: {
     icon: "board",
-    blurb: "Boards, sprints, docs and code",
+    blurb: "Plan, document and ship work",
     groups: [
+      { label: "Overview", items: [["workspace", "Workspace", "layers"]] },
       {
         label: "Plan & track",
         items: [
-          ["workspace", "Workspace overview", "layers"],
-          ["projects", "Boards & sprints", "board"],
+          ["projects", "Boards", "board"],
+          ["backlog", "Backlog & sprints", "list"],
+          ["timeline", "Timeline", "calendar"],
         ],
       },
       {
-        label: "Docs & files",
+        label: "Documents",
         items: [
-          ["files", "All files", "file"],
-          ["docs", "Docs", "file"],
-          ["sheets", "Sheets", "grid"],
-          ["slides", "Slides", "layers"],
+          ["docs", "Documents", "file"],
+          ["sheets", "Spreadsheets", "grid"],
+          ["slides", "Presentations", "layers"],
+          ["files", "Files", "inbox"],
         ],
       },
-      { label: "Code", items: [["quality", "Code review", "code"]] },
+      {
+        label: "Development",
+        items: [
+          ["repos", "Repositories", "code"],
+          ["quality", "Code review", "check"],
+        ],
+      },
+      { label: "Tools", items: [["browser", "Web browser", "globe"]] },
     ],
   },
   Account: {
@@ -173,17 +158,19 @@ const catalog: Record<string, Area> = {
     blurb: "Settings, security and support",
     groups: [
       {
-        label: "Your account",
+        label: "Settings",
         items: [
-          ["settings", "Settings & connected apps", "settings"],
+          ["settings", "Account settings", "settings"],
           ["security", "Security & verification", "shield"],
+          ["privacydata", "Privacy & data", "lock"],
+          ["apps", "Connected apps", "link"],
         ],
       },
       {
         label: "Support",
         items: [
           ["help", "Help center", "question"],
-          ["support", "Contact support", "chat"],
+          ["support", "Support tickets", "chat"],
         ],
       },
     ],
@@ -192,27 +179,34 @@ const catalog: Record<string, Area> = {
 const sections: Record<string, string[][]> = Object.fromEntries(
   Object.entries(catalog).map(([name, a]) => [name, a.groups.flatMap((g) => g.items)]),
 );
-// Quick actions shown in the app launcher.
-const CREATE: Record<string, NavItem[]> = {
-  MEMBER: [
-    ["feed", "Write a post", "plus"],
-    ["postjob", "Post a job", "briefcase"],
-    ["meetings", "Schedule a meeting", "video"],
-    ["docs", "New document", "file"],
-    ["ride", "Find a professional", "zap"],
-  ],
-  ENGINEER: [
-    ["feed", "Write a post", "plus"],
-    ["meetings", "Schedule a meeting", "video"],
-    ["docs", "New document", "file"],
-    ["support", "Ask support", "question"],
-  ],
-  COMPANY: [
-    ["postjob", "Post a job", "plus"],
-    ["ride", "Find a professional", "zap"],
-    ["meetings", "Schedule a meeting", "video"],
-    ["docs", "New document", "file"],
-  ],
+// Screens reached from inside another screen belong to that screen's section.
+const HOME_OF: Record<string, string> = {
+  jobdetail: "Jobs",
+  talent: "Jobs",
+  codash: "Jobs",
+  engineer: "Network",
+  company: "Network",
+  group: "Collaboration",
+  contractsign: "Freelancing",
+  copayments: "Freelancing",
+  notifications: "Home",
+  search: "Home",
+  assistant: "Home",
+};
+// Quick actions shown in the menu.
+const CREATE: NavItem[] = [
+  ["feed", "Write a post", "plus"],
+  ["postjob", "Post a job", "briefcase"],
+  ["meetings", "Schedule a meeting", "calendar"],
+  ["docs", "New document", "file"],
+  ["ride", "Find a professional", "zap"],
+  ["support", "Contact support", "question"],
+];
+const MENU_TITLES: Record<string, string> = {
+  pages: "Menu",
+  account: "Your account",
+  messages: "Messages",
+  notifications: "Notifications",
 };
 type ShellPerson = { id: string; full_name?: string };
 type ShellConnection = { sender_id: string; sender?: ShellPerson; receiver?: ShellPerson };
@@ -221,7 +215,7 @@ type ShellRecommendation = {
 };
 
 export function AppShell({ r, go, children }: { r: string; go: (route: string) => void; children: ReactNode }) {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout } = useAuth();
   const unreadN = useApi<{ count: number }>(user ? "/notifications/unread-count" : null);
   const unreadM = useApi<{ count: number }>(user ? "/conversations/unread-count" : null);
   const conns = useApi<ShellConnection[]>(user && r === "feed" ? "/connections" : null, { status: "ACCEPTED" });
@@ -240,7 +234,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
     return () => clearInterval(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const badges: Record<string, number> = {
-    messenger: unreadM.data?.count || 0,
+    messages: unreadM.data?.count || 0,
     notifications: unreadN.data?.count || 0,
   };
   const contacts = (conns.data ?? [])
@@ -261,8 +255,32 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   useDialogFocus(menuBox, !!menu, () => setMenu(""));
   const [q, setQ] = useState("");
   const [menuQ, setMenuQ] = useState("");
-  const [sideQ, setSideQ] = useState("");
-  const [openAreas, setOpenAreas] = useState<string[]>([]);
+  // The section picked in the menu; the sidebar shows only this section.
+  const [chosen, setChosen] = useState(() => {
+    try {
+      return sessionStorage.getItem("rap-section") || "";
+    } catch {
+      return "";
+    }
+  });
+  const choose = (name: string) => {
+    setChosen(name);
+    try {
+      sessionStorage.setItem("rap-section", name);
+    } catch {}
+  };
+  const convs = useApi<
+    {
+      id: string;
+      participant_one_id: string;
+      participant_two_id: string;
+      unread_count?: number;
+      other_participant?: { full_name?: string };
+      last_message?: { content?: string; created_at?: string } | null;
+    }[]
+  >(
+    user && menu === "messages" ? "/conversations" : null,
+  );
   useEffect(() => {
     setMenu("");
   }, [r]);
@@ -280,15 +298,12 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           ],
         }
       : sections;
-  let section = Object.keys(visible).find((s) => visible[s].some((x) => x[0] === r)) || Object.keys(visible)[0];
-  const prefer = (name: string) => {
-    if (visible[name]) section = name;
-  };
-  if (["jobdetail", "work"].includes(r)) prefer("Careers");
-  if (["company", "engineer"].includes(r)) prefer("Network");
-  if (r === "talent") prefer("Hiring");
-  if (["contractsign"].includes(r)) prefer("Freelance");
-  if (r === "group") prefer("Network");
+  const owner = (route: string) =>
+    HOME_OF[route] && visible[HOME_OF[route]]
+      ? HOME_OF[route]
+      : Object.keys(visible).find((name) => visible[name].some((x) => x[0] === route));
+  const section =
+    chosen && visible[chosen]?.some((x) => x[0] === r) ? chosen : owner(r) || Object.keys(visible)[0];
   const crumb = (() => {
     const area = catalog[section];
     if (!area) return null;
@@ -298,11 +313,14 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
     }
     return null;
   })();
-  const nav = (rows: string[][]) =>
+  const nav = (rows: string[][], before?: () => void) =>
     rows.map(([path, label, icon]) => (
       <button
         key={path}
-        onClick={() => go(path)}
+        onClick={() => {
+          before?.();
+          go(path);
+        }}
         className={cx("rap-nav", r === path && "selected")}
         aria-current={r === path ? "page" : undefined}
       >
@@ -312,21 +330,19 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
         <span>{label}</span>
       </button>
     ));
-  const primary =
+  // Phone bottom bar: the most used sections plus the full menu.
+  const mobile =
     role === "GUEST"
       ? [
-          ["jobs", "Jobs", "briefcase", "Explore"],
-          ["engineers", "Professionals", "users", "Explore"],
-          ["companies", "Companies", "building", "Explore"],
+          ["jobs", "Jobs", "briefcase"],
+          ["engineers", "People", "users"],
+          ["companies", "Companies", "building"],
         ]
       : [
-          ["feed", "Home", "home", "Home"],
-          ["network", "Network", "users", "Network"],
-          ["messenger", "Messaging", "chat", "Messaging"],
-          ["jobs", "Careers", "briefcase", "Careers"],
-          ["freelancework", "Freelance", "zap", "Freelance"],
-          ["codash", "Hiring", "building", "Hiring"],
-          ["workspace", "Projects", "board", "Projects"],
+          ["feed", "Home", "home"],
+          ["network", "Network", "users"],
+          ["jobs", "Jobs", "briefcase"],
+          ["workspace", "Projects", "board"],
         ];
   return (
     <div className="rap-app">
@@ -334,9 +350,9 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
         <div className="rap-brand-search">
           <button
             className="rap-launcher-btn"
-            aria-label="Open the menu of all features"
+            aria-label="Open the menu"
             aria-expanded={menu === "pages"}
-            title="All features"
+            title="Menu"
             onClick={() => setMenu(menu === "pages" ? "" : "pages")}
           >
             <Ic n="waffle" s={22} />
@@ -361,19 +377,6 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             />
           </form>
         </div>
-        <nav className="rap-primary" aria-label="Main navigation">
-          {primary.map(([p, l, i, s]) => (
-            <button
-              key={p}
-              title={l}
-              onClick={() => go(p)}
-              className={r === p || (section === s && r !== "network") ? "active" : ""}
-            >
-              <Ic n={i} s={26} />
-              <span>{l}</span>
-            </button>
-          ))}
-        </nav>
         <div className="rap-tools">
           {!user && (
             <>
@@ -387,7 +390,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           )}
           {(user
             ? [
-                ["chat", "Messages", "messenger"],
+                ["chat", "Messages", "messages"],
                 ["bell", "Notifications", "notifications"],
               ]
             : []
@@ -396,7 +399,8 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
               key={p}
               aria-label={l}
               title={l}
-              onClick={() => (p === "pages" ? setMenu(menu ? "" : "pages") : go(p))}
+              aria-expanded={menu === p}
+              onClick={() => setMenu(menu === p ? "" : p)}
               style={{ position: "relative" }}
             >
               <Ic n={i} s={21} />
@@ -431,104 +435,34 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
         </div>
       </header>
       <aside className="rap-sidebar">
-        <div className="rap-side-title">
-          {section === "Home" && user ? (
-            <button className="rap-person" onClick={() => go("profile")}>
-              <Av name={me} s={38} />
-              <b>{me}</b>
-            </button>
-          ) : (
-            <>
-              <h1>{section}</h1>
-              <button title="Settings" aria-label="Section settings" onClick={() => go("settings")}>
-                <Ic n="settings" />
-              </button>
-            </>
-          )}
+        <div className="rap-section-head">
+          <span className="rap-area-icon">
+            <Ic n={catalog[section]?.icon ?? "layers"} s={20} />
+          </span>
+          <div>
+            <h1>{section}</h1>
+            {catalog[section] && <p>{catalog[section].blurb}</p>}
+          </div>
         </div>
-        {/* Full navigation tree: every area, its sub-categories and every screen. */}
-        <label className="sr-only" htmlFor="side-filter">
-          Find a feature
-        </label>
-        <input
-          id="side-filter"
-          className="rap-side-filter"
-          placeholder="Find a feature…"
-          value={sideQ}
-          onChange={(e) => setSideQ(e.target.value)}
-        />
-        <nav aria-label="All features" className="rap-tree">
-          {Object.entries(visible).map(([title, rows]) => {
-            const area = catalog[title];
-            const ql = sideQ.trim().toLowerCase();
-            const groups = (area ? area.groups : [{ label: "", items: rows as NavItem[] }])
-              .map((g) => ({
-                ...g,
-                items: g.items.filter((i) => !ql || `${title} ${g.label} ${i[1]}`.toLowerCase().includes(ql)),
-              }))
-              .filter((g) => g.items.length);
-            if (!groups.length) return null;
-            const isOpen = !!ql || title === section || openAreas.includes(title);
-            return (
-              <section key={title} className={cx("rap-tree-area", title === section && "current")}>
-                <button
-                  className="rap-tree-head"
-                  aria-expanded={isOpen}
-                  onClick={() =>
-                    setOpenAreas((o) => (o.includes(title) ? o.filter((x) => x !== title) : [...o, title]))
-                  }
-                >
-                  <span className="rap-area-icon">
-                    <Ic n={area?.icon ?? "layers"} s={18} />
-                  </span>
-                  <span className="flex-1 text-left">
-                    <b>{title}</b>
-                    {area && <small>{area.blurb}</small>}
-                  </span>
-                  <span className={cx("rap-tree-caret", isOpen && "open")} aria-hidden="true">
-                    ›
-                  </span>
-                </button>
-                {isOpen &&
-                  groups.map((g) => (
-                    <div key={g.label || title} className="rap-tree-group">
-                      {g.label && <h4>{g.label}</h4>}
-                      {nav(g.items)}
-                    </div>
-                  ))}
-              </section>
-            );
-          })}
+        <button className="rap-all-sections" onClick={() => setMenu("pages")}>
+          <Ic n="waffle" s={16} />
+          All sections
+        </button>
+        <nav aria-label={`${section} navigation`} className="rap-section-nav">
+          {(catalog[section]?.groups ?? [{ label: "", items: (visible[section] ?? []) as NavItem[] }]).map((g) => (
+            <div key={g.label || section} className="rap-tree-group">
+              {g.label && <h4>{g.label}</h4>}
+              {nav(g.items)}
+            </div>
+          ))}
         </nav>
-        {user ? (
-          <>
-            <div className="rap-divider" />
-            <h3 className="rap-side-label">Your shortcuts</h3>
-            {nav(
-              section === "Home"
-                ? [
-                    ["dash", "My career", "briefcase"],
-                    ["codash", "My hiring", "building"],
-                    ["workspace", "My workspace", "board"],
-                  ]
-                : [
-                    ["feed", "Community home", "home"],
-                    ["network", "My network", "users"],
-                    ["groups", "My groups", "users"],
-                  ],
-            )}
-          </>
-        ) : (
+        {!user && (
           <div className="rap-guest-cta">
             <p>Join to apply, message and hire.</p>
             <button onClick={() => go("register")}>Create a free account</button>
             <button onClick={() => go("login")}>Sign in</button>
           </div>
         )}
-        <button className="rap-more" onClick={() => setMenu("pages")}>
-          <Ic n="waffle" s={18} />
-          Explore all pages
-        </button>
         <footer>
           <button onClick={() => go("privacy")}>Privacy</button> · <button onClick={() => go("terms")}>Terms</button> ·{" "}
           <button onClick={() => go("help")}>Help</button>
@@ -596,12 +530,16 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
         </aside>
       )}
       <nav className="rap-mobile">
-        {primary.map(([p, l, i]) => (
+        {mobile.map(([p, l, i]) => (
           <button key={p} onClick={() => go(p)}>
             <Ic n={i} />
             <span>{l}</span>
           </button>
         ))}
+        <button onClick={() => setMenu("pages")}>
+          <Ic n="waffle" />
+          <span>Menu</span>
+        </button>
       </nav>
       {menu && (
         <div className="rap-overlay" onClick={() => setMenu("")}>
@@ -610,17 +548,53 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             tabIndex={-1}
             role="dialog"
             aria-modal="true"
-            aria-label={menu === "pages" ? "Product menu" : "Your account"}
-            className={cx("rap-menu", menu === "pages" && "wide")}
+            aria-label={menu === "pages" ? "Product menu" : MENU_TITLES[menu]}
+            className={cx("rap-menu", menu === "pages" && "wide", menu === "notifications" && "tall")}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="rap-menu-head">
-              <h2>{menu === "pages" ? "Menu" : "Your account"}</h2>
+              <h2>{MENU_TITLES[menu]}</h2>
               <button aria-label="Close menu" onClick={() => setMenu("")}>
                 <Ic n="x" />
               </button>
             </div>
-            {menu === "pages" ? (
+            {menu === "notifications" ? (
+              <Suspense fallback={<p className="text-sm text-slate-500">Loading…</p>}>
+                <div className="rap-panel-embed">
+                  <NotificationsPanel />
+                </div>
+              </Suspense>
+            ) : menu === "messages" ? (
+              <div className="grid gap-1">
+                {convs.loading && !convs.data && <p className="text-sm text-slate-500">Loading…</p>}
+                {(convs.data ?? []).slice(0, 8).map((c) => (
+                  <button
+                    key={c.id}
+                    className="rap-contact"
+                    onClick={() => {
+                      const other = c.participant_one_id === user?.id ? c.participant_two_id : c.participant_one_id;
+                      sessionStorage.setItem("rap-contact-id", other);
+                      go("messenger");
+                    }}
+                  >
+                    <Av name={c.other_participant?.full_name || "Member"} s={44} />
+                    <span className="min-w-0 flex-1">
+                      <b className="block truncate">{c.other_participant?.full_name || "Member"}</b>
+                      <small className="block truncate text-slate-500">
+                        {c.last_message?.content || "No messages yet"}
+                        {c.last_message?.created_at ? ` · ${timeAgo(c.last_message.created_at)}` : ""}
+                      </small>
+                    </span>
+                  </button>
+                ))}
+                {!convs.loading && !(convs.data ?? []).length && (
+                  <p className="px-2 py-4 text-sm text-slate-500">No conversations yet.</p>
+                )}
+                <button className="rap-button mt-2" onClick={() => go("messenger")}>
+                  Open chats
+                </button>
+              </div>
+            ) : menu === "pages" ? (
               <>
                 <label className="sr-only" htmlFor="menu-search">
                   Search the menu
@@ -664,7 +638,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                           {shown.map((g) => (
                             <div key={g.label || title}>
                               {g.label && <h4 className="rap-area-group">{g.label}</h4>}
-                              {nav(g.items)}
+                              {nav(g.items, () => choose(title))}
                             </div>
                           ))}
                         </section>
@@ -680,10 +654,10 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                       </section>
                     )}
                   </div>
-                  {user && CREATE[role] && (
+                  {user && (
                     <aside className="rap-create">
                       <h3>Create</h3>
-                      {nav(CREATE[role])}
+                      {nav(CREATE)}
                     </aside>
                   )}
                 </div>
@@ -696,40 +670,10 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                 </button>
                 <div className="rap-divider" />
                 {nav([
-                  ["profile", "View your profile", "user"],
-                  ["settings", "Settings & privacy", "settings"],
-                  ["security", "Security & verification", "shield"],
-                  ["help", "Help & support", "question"],
+                  ["profile", "My profile", "user"],
+                  ["settings", "Account settings", "settings"],
+                  ["help", "Help center", "question"],
                 ])}
-                {user && user.role !== "ADMIN" && (
-                  <>
-                    <p className="rap-side-label">Workspace</p>
-                    {[
-                      ["ENGINEER", "Professional", "dash"],
-                      ["COMPANY", "Company", "codash"],
-                    ].map(([r, l, home]) => (
-                      <button
-                        key={r}
-                        className="rap-nav"
-                        onClick={async () => {
-                          if (user.role === r) {
-                            go(home);
-                            return;
-                          }
-                          try {
-                            await api.patch("/auth/role", null, { params: { role: r } });
-                            updateUser({ role: r as "ENGINEER" | "COMPANY" });
-                            setMenu("");
-                            go(home);
-                          } catch {}
-                        }}
-                      >
-                        {l}
-                        {user.role === r && <Ic n="check" s={18} />}
-                      </button>
-                    ))}
-                  </>
-                )}
                 {user ? (
                   <button className="rap-nav" onClick={signOut}>
                     <span className="rap-nav-icon">
