@@ -214,3 +214,14 @@ export const statusOf = (e: unknown) => (e as { response?: { status?: number } }
 // separate staff console.
 export const isMember = (user: { role?: string } | null | undefined): boolean =>
   !!user && (user.role === "ENGINEER" || user.role === "COMPANY" || user.role === "ADMIN");
+
+/** Skills without blanks or repeats (case-insensitive), first spelling kept. */
+export const uniqueSkills = (skills: string[] | null | undefined): string[] => {
+  const seen = new Set<string>();
+  return (skills ?? []).filter((s) => {
+    const k = s?.trim().toLowerCase();
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+};

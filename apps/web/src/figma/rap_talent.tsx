@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Av, Btn, Card, Tag, Notice, inputCls } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { goRoute, useApi } from "./live";
+import { goRoute, useApi, uniqueSkills } from "./live";
 
 /* Talent matching: rank professionals against one of your job postings.
    Scores come from the matching engine (/matching/candidates/{job}); each
@@ -164,16 +164,20 @@ export function TalentMatching() {
                       </p>
                       {!!c.matching_skills.length && (
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {c.matching_skills.slice(0, 8).map((s) => (
-                            <Tag key={s} t="green">
-                              {s}
-                            </Tag>
-                          ))}
-                          {c.missing_skills.slice(0, 4).map((s) => (
-                            <Tag key={s} t="gray">
-                              Missing: {s}
-                            </Tag>
-                          ))}
+                          {uniqueSkills(c.matching_skills)
+                            .slice(0, 8)
+                            .map((s) => (
+                              <Tag key={s} t="green">
+                                {s}
+                              </Tag>
+                            ))}
+                          {uniqueSkills(c.missing_skills)
+                            .slice(0, 4)
+                            .map((s) => (
+                              <Tag key={s} t="gray">
+                                Missing: {s}
+                              </Tag>
+                            ))}
                         </div>
                       )}
                       {expanded && (

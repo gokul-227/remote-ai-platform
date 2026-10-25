@@ -92,3 +92,18 @@ def _http_url(value: object) -> str | None:
 # For request (input) schemas only: response schemas must not re-validate
 # stored data, or one legacy value would make reading the record fail.
 HttpUrlIn = Annotated[str | None, BeforeValidator(_http_url)]
+
+
+def unique_skills(values: list[str] | None) -> list[str] | None:
+    """Drop blank and repeated skills (case-insensitive), keeping the first spelling and order."""
+    if values is None:
+        return None
+    seen: set[str] = set()
+    out: list[str] = []
+    for v in values:
+        s = v.strip() if isinstance(v, str) else v
+        if not s or s.lower() in seen:
+            continue
+        seen.add(s.lower())
+        out.append(s)
+    return out

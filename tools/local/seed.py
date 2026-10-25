@@ -15,7 +15,19 @@ AUTH = "http://localhost:9999/auth/v1"
 CODE = "123456"
 
 PEOPLE = {
-    "admin": ("admin@example.com", "Avery Admin", None),
+    "admin": (
+        "admin@example.com",
+        "Avery Admin",
+        {
+            "headline": "Platform operations lead",
+            "primary_role": "Operations Manager",
+            "location": "Dublin, Ireland",
+            "timezone": "Europe/Dublin",
+            "years_of_experience": 9,
+            "skills": ["Operations", "Trust & Safety", "SQL", "Python"],
+            "bio": "I keep the platform safe and running smoothly.",
+        },
+    ),
     "alice": (
         "alice@example.com",
         "Alice Martin",

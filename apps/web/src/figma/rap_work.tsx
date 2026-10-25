@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, goRoute, safeHref, isMember } from "./live";
+import { useApi, toFigmaJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import {
   Ic,
   Av,
@@ -167,7 +167,7 @@ export function Work() {
                 <p className="mt-1 text-xs text-slate-500">{[w.kind, w.lvl, w.est].filter(Boolean).join(" - ")}</p>
                 <p className="mt-2 line-clamp-2 text-[15px] leading-6 text-slate-700">{w.d}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {w.sk.map((s: string) => (
+                  {uniqueSkills(w.sk).map((s: string) => (
                     <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                       {s}
                     </span>
@@ -307,7 +307,7 @@ export function Work() {
                   <>
                     <p className="mt-4 font-semibold">Skills and expertise</p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {sel.sk.map((s: string) => (
+                      {uniqueSkills(sel.sk).map((s: string) => (
                         <span key={s} className="rounded-full bg-slate-100 px-3 py-1 text-sm">
                           {s}
                         </span>
@@ -487,14 +487,16 @@ export function Talent() {
                   </p>
                   {p.bio && <p className="mt-2 line-clamp-2 text-sm text-slate-600">{p.bio}</p>}
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {(p.skills || []).slice(0, 8).map((s: string) => (
-                      <span
-                        key={s}
-                        className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
-                      >
-                        {s}
-                      </span>
-                    ))}
+                    {uniqueSkills(p.skills)
+                      .slice(0, 8)
+                      .map((s: string) => (
+                        <span
+                          key={s}
+                          className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700"
+                        >
+                          {s}
+                        </span>
+                      ))}
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">

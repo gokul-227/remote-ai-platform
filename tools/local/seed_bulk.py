@@ -250,5 +250,74 @@ async def main() -> None:
     print("Done:", ", ".join(f"{v} {k}" for k, v in stats.items()))
 
 
+async def top_up_jobs(target: int = 540) -> None:
+    """Add jobs and freelance projects for existing company owners until each passes `target`."""
+    global sem
+    sem = asyncio.Semaphore(6)  # job creation runs an AI step; keep the local API responsive
+
+    async def owner(i: int) -> dict | None:
+        email = f"user{i:04d}@example.com"
+        async with httpx.AsyncClient(timeout=30) as a:
+            await a.post(f"{AUTH}/otp", json={"email": email, "create_user": False})
+            r = await a.post(f"{AUTH}/verify", json={"email": email, "token": CODE, "type": "email"})
+        if r.status_code != 200:
+            return None
+        c = httpx.AsyncClient(base_url=API, timeout=240, headers={"Authorization": f"Bearer {r.json()['access_token']}"})
+        return {"c": c, "id": "", "name": email, "role": rnd.choice(list(ROLES)), "skills": []}
+
+    owners = [o for o in await asyncio.gather(*(owner(i) for i in range(COMPANIES))) if o]
+    rounds = 0
+    while rounds < 3:
+        rounds += 1
+        await asyncio.gather(*(company_and_jobs_existing(o) for o in owners))
+        if await counts_reached(target):
+            break
+    for o in owners:
+        await o["c"].aclose()
+    print("Added:", ", ".join(f"{v} {k}" for k, v in stats.items()))
+
+
+async def counts_reached(target: int) -> bool:
+    """True once the local database holds `target` jobs and `target` freelance projects."""
+    import subprocess
+
+    def n(where: str) -> int:
+        out = subprocess.run(
+            ["docker", "exec", "remote-ai-platform-postgres", "psql", "-U", "remote_ai_platform", "-d",
+             "remote_ai_platform", "-tAc", f"select count(*) from job_posts where {where}"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        return int(out or 0)
+
+    return n("job_type <> 'FREELANCE'") >= target and n("job_type = 'FREELANCE'") >= target
+
+
+async def company_and_jobs_existing(u: dict) -> None:
+    co = await call(u["c"], "GET", "/companies/me")
+    if not co:
+        return
+    name = co.get("name") or "Company"
+    role = rnd.choice(list(ROLES))
+    skills = rnd.sample(ROLES[role], k=min(4, len(ROLES[role])))
+    lvl = rnd.choice(LEVELS)
+    if await call(u["c"], "POST", "/jobs", json={
+        "title": f"{lvl.title()} {role}", "company_name": name, "is_remote": True, "location": "Remote",
+        "job_type": rnd.choice(["FULL_TIME", "FULL_TIME", "PART_TIME", "CONTRACT"]), "experience_level": lvl,
+        "skills": skills, "budget_min": rnd.choice([40, 55, 70, 90]) * 1000, "budget_max": rnd.choice([100, 120, 150]) * 1000,
+        "description": f"{name} is hiring a {lvl.lower()} {role.lower()} to work with {', '.join(skills)}. "
+                       "Fully remote, flexible hours, async-first culture, learning budget and equipment provided.",
+    }):
+        count("jobs")
+    sk = rnd.choice(sum(ROLES.values(), []))
+    if await call(u["c"], "POST", "/jobs", json={
+        "title": rnd.choice(FREELANCE_TITLES).format(s=sk), "company_name": name, "is_remote": True, "location": "Remote",
+        "job_type": "FREELANCE", "experience_level": rnd.choice(LEVELS), "skills": [sk],
+        "budget_min": rnd.choice([1, 2, 3, 5]) * 1000, "budget_max": rnd.choice([6, 8, 12, 20]) * 1000,
+        "timeline": rnd.choice(["2 weeks", "1 month", "6 weeks", "3 months"]),
+        "description": f"Freelance project for {name}: {sk} expertise needed. Clear scope, milestones and fast feedback.",
+    }):
+        count("freelance projects")
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(top_up_jobs() if "--more-jobs" in sys.argv else main())

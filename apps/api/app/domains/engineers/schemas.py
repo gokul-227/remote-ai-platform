@@ -7,9 +7,9 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.core.schemas import HttpUrlIn
+from app.core.schemas import HttpUrlIn, unique_skills
 
 
 class ExperienceItem(BaseModel):
@@ -82,6 +82,8 @@ SkillName = Annotated[str, Field(max_length=100)]
 class EngineerProfileCreate(EngineerProfileBase):
     bio: str | None = Field(None, max_length=10_000)
     skills: list[SkillName] = Field(default_factory=list, max_length=100)
+
+    _unique_skills = field_validator("skills")(classmethod(lambda cls, v: unique_skills(v)))
     profile_image_url: HttpUrlIn = None
     github_url: HttpUrlIn = None
     linkedin_url: HttpUrlIn = None
@@ -112,6 +114,8 @@ class EngineerProfileUpdate(BaseModel):
     linkedin_url: HttpUrlIn = None
     portfolio_url: HttpUrlIn = None
     skills: list[SkillName] | None = Field(None, max_length=100)
+
+    _unique_skills = field_validator("skills")(classmethod(lambda cls, v: unique_skills(v)))
     experience: list[ExperienceItem] | None = None
     projects: list[ProjectItemIn] | None = None
     education: list[EducationItem] | None = None

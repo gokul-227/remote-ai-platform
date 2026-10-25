@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, goRoute, safeHref, isMember } from "./live";
+import { useApi, toFigmaJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Groups } from "./rap_social";
 import { Deliverables, Endorsements } from "./rap_collab";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
@@ -171,7 +171,7 @@ export function EngineerDetail() {
               <p className="mt-2 whitespace-pre-line text-slate-700">{p0.bio || "No summary yet."}</p>
               <h3 className="mt-5">Skills</h3>
               <div className="mt-2 flex flex-wrap gap-2">
-                {p.skills.map((s: string) => (
+                {uniqueSkills(p.skills).map((s: string) => (
                   <Tag key={s} t="blue">
                     {s}
                   </Tag>

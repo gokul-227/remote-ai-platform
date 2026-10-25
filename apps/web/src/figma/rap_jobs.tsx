@@ -1,24 +1,8 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember } from "./live";
-import {
-  Ic,
-  Av,
-  Lg,
-  Btn,
-  Card,
-  Tag,
-  Tabs,
-  Modal,
-  Bar,
-  Stars,
-  cx,
-  Field,
-  inputCls,
-  RichText,
-  Notice,
-} from "./rap_kit";
+import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
+import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
 const BL = "#0552CC";
 export function Jobs() {
@@ -814,7 +798,7 @@ export function Profile() {
           )}
           <Card c="rounded-lg">
             <p className="text-xl font-bold">Skills</p>
-            {(p.skills || []).map((s: string) => (
+            {uniqueSkills(p.skills).map((s: string) => (
               <div key={s} className="mt-3 border-b border-slate-100 pb-3">
                 <p className="font-bold">{s}</p>
               </div>

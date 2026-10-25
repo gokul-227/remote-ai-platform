@@ -6,7 +6,9 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.core.schemas import unique_skills
 
 
 class JobPostBase(BaseModel):
@@ -36,6 +38,8 @@ class JobPostBase(BaseModel):
     external_url: str | None = None
     ai_analysis: dict[str, Any] | None = None
 
+    _unique_skills = field_validator("skills")(classmethod(lambda cls, v: unique_skills(v)))
+
 
 class JobPostCreate(JobPostBase):
     company_id: uuid.UUID | None = None
@@ -63,6 +67,8 @@ class JobPostUpdate(BaseModel):
     skills: list[str] | None = None
     external_url: str | None = None
     is_active: bool | None = None
+
+    _unique_skills = field_validator("skills")(classmethod(lambda cls, v: unique_skills(v)))
 
 
 class JobPostResponse(JobPostBase):
