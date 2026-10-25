@@ -85,3 +85,14 @@ async def test_users_can_be_filtered_to_suspended_accounts(client: AsyncClient):
     rows = (await client.get("/api/v1/admin/users?is_active=false&limit=100", headers=admin)).json()
     assert rows
     assert all(not u["is_active"] for u in rows)
+
+
+@pytest.mark.asyncio
+async def test_audit_events_filter_on_several_prefixes(client: AsyncClient):
+    admin = await _headers(UserRole.ADMIN)
+    await client.post("/api/v1/admin/announcements", json={"title": "T", "body": "B"}, headers=admin)
+    both = await client.get("/api/v1/admin/audit-events?action_prefix=admin.user.,admin.announcement", headers=admin)
+    assert both.status_code == 200
+    assert {e["action"] for e in both.json()} >= {"admin.announcement.create"}
+    none = await client.get("/api/v1/admin/audit-events?action_prefix=nothing.here", headers=admin)
+    assert none.json() == []

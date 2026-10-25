@@ -45,8 +45,17 @@ export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=local-publishable-key
 echo "Waiting for the API…"
 for _ in $(seq 1 90); do curl -sf http://localhost:18000/health/ready >/dev/null && break; sleep 2; done
 
-# 5. Test data.
+# 5. Test data (local only): demo accounts, then production-scale volume, then
+#    activity everywhere, then a busy admin account. Takes ~30 min on first run;
+#    set QUICK=1 for the small demo set only.
 "$PY" tools/local/seed.py
+if [ "${QUICK:-0}" != "1" ]; then
+  "$PY" tools/local/seed_bulk.py
+  "$PY" tools/local/seed_bulk.py --more-jobs
+  "$PY" tools/local/seed_more.py
+  "$PY" tools/local/seed_more.py --finish
+  "$PY" tools/local/seed_more.py --showcase admin@example.com
+fi
 
 cat <<MSG
 

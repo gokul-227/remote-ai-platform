@@ -17,7 +17,10 @@ async def test_freelance_kind_only_returns_freelance_type_work(client: AsyncClie
     )
     h = {"Authorization": f"Bearer {res.json()['access_token']}"}
     await client.post("/api/v1/engineers/me", headers=h, json={"headline": "Python dev", "skills": ["Python", "FastAPI"], "years_experience": 5})
-    for title, jt in [("Python freelance API", "freelance"), ("Python contract", "contract"), ("Python staff role", "full-time")]:
+    # Posted jobs store FREELANCE/PART_TIME, imported ones freelance/part-time: both must match.
+    for title, jt in [("Python freelance API", "freelance"), ("Python contract", "contract"),
+                      ("Python posted gig", "FREELANCE"), ("Python part time", "PART_TIME"),
+                      ("Python staff role", "full-time")]:
         db.add(JobPost(title=title, slug=f"s-{uuid.uuid4().hex[:6]}", description="Python FastAPI", company_name="Co",
                        is_remote=True, skills=["Python", "FastAPI"], job_type=jt, source="DIRECT"))
     await db.commit()
@@ -25,7 +28,8 @@ async def test_freelance_kind_only_returns_freelance_type_work(client: AsyncClie
     free = await client.get("/api/v1/matching/recommendations", params={"kind": "freelance", "limit": 50}, headers=h)
     assert free.status_code == 200, free.text
     types = {m["job"]["job_type"] for m in free.json()}
-    assert types and types <= {"freelance", "contract", "part-time", "temporary"}
+    assert {"freelance", "contract", "FREELANCE", "PART_TIME"} <= types
+    assert "full-time" not in types
     everything = await client.get("/api/v1/matching/recommendations", params={"limit": 50}, headers=h)
     assert "full-time" in {m["job"]["job_type"] for m in everything.json()}
     assert (await client.get("/api/v1/matching/recommendations", params={"kind": "bogus"}, headers=h)).status_code == 422

@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from redis.asyncio import Redis
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit_event
@@ -115,7 +115,9 @@ async def list_audit_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     action: str | None = Query(None),
-    action_prefix: str | None = Query(None, max_length=60, description="e.g. 'auth.' or 'admin.'"),
+    action_prefix: str | None = Query(
+        None, max_length=200, description="One or more comma-separated prefixes, e.g. 'auth.,admin.user.'"
+    ),
     resource_type: str | None = Query(None),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
@@ -125,7 +127,8 @@ async def list_audit_events(
     if action:
         stmt = stmt.where(AuditEvent.action == action)
     if action_prefix:
-        stmt = stmt.where(AuditEvent.action.startswith(action_prefix, autoescape=True))
+        prefixes = [p.strip() for p in action_prefix.split(",") if p.strip()]
+        stmt = stmt.where(or_(*(AuditEvent.action.startswith(p, autoescape=True) for p in prefixes)))
     if resource_type:
         stmt = stmt.where(AuditEvent.resource_type == resource_type)
     stmt = stmt.offset(skip).limit(limit)

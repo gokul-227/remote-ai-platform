@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { api, publicGet, supabase } from "@/lib/client";
+import { ApiError, api, publicGet, supabase } from "@/lib/client";
 import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
 import { Ic } from "./icons";
@@ -234,7 +234,11 @@ export default function Console() {
     }
     api<Me>("/auth/me")
       .then((r) => setMe(r.data))
-      .catch((e) => setMeErr(errText(e)));
+      .catch((e) => {
+        // An expired or revoked session goes back to the sign-in screen.
+        if (e instanceof ApiError && e.status === 401) void supabase.auth.signOut();
+        else setMeErr(errText(e));
+      });
   }, [session]);
 
   const writable = envMatches(version?.environment);
@@ -271,7 +275,7 @@ export default function Console() {
     announcements: <Announcements writable={writable} />,
     status: <SystemStatus />,
     audit: <Audit />,
-    security: <Audit prefix="auth." title="Security events" />,
+    security: <Audit prefix="auth.,admin.user.,admin.bootstrap" title="Security events" />,
   };
 
   const first = (sec: (typeof SECTIONS)[number]) => sec.groups[0].items[0][0];
@@ -407,7 +411,9 @@ export default function Console() {
             {here.group && <span>{here.group}</span>}
             <b>{here.label}</b>
           </nav>
-          <div className="page">{view[screen]}</div>
+          <div className="page" key={screen}>
+            {view[screen]}
+          </div>
           <footer className="foot">
             {envLabel(CONSOLE_ENV)} · API {version?.version ?? "?"} ({version?.git_sha?.slice(0, 7) ?? "unknown"})
           </footer>

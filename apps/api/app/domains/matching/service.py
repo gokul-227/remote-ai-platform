@@ -7,7 +7,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
@@ -195,7 +195,7 @@ class MatchingService:
                 rows = await self.db.execute(
                     select(JobPost)
                     .where(
-                        JobPost.job_type.in_(job_types),
+                        func.upper(func.replace(JobPost.job_type, "-", "_")).in_(job_types),
                         JobPost.is_active.is_(True),
                         JobPost.is_deleted.is_(False),
                         JobPost.expired_at.is_(None),

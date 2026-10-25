@@ -5,7 +5,7 @@ Repository pattern for AI Job Matching domain.
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -26,7 +26,7 @@ class MatchingRepository:
     async def get_match(self, engineer_id: uuid.UUID, job_id: uuid.UUID) -> JobMatch | None:
         stmt = (
             select(JobMatch)
-            .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer))
+            .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer).selectinload(EngineerProfile.user))
             .where(JobMatch.engineer_id == engineer_id, JobMatch.job_id == job_id)
         )
         result = await self.db.execute(stmt)
@@ -95,7 +95,7 @@ class MatchingRepository:
     ) -> Sequence[JobMatch]:
         stmt = (
             select(JobMatch)
-            .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer))
+            .options(selectinload(JobMatch.job), selectinload(JobMatch.engineer).selectinload(EngineerProfile.user))
             .join(JobPost, JobPost.id == JobMatch.job_id)
             # A job hidden by moderation, closed, expired or removed after it was
             # scored must stop being recommended (MATCH-01).
@@ -106,7 +106,7 @@ class MatchingRepository:
                 JobPost.is_active.is_(True),
                 JobPost.is_deleted.is_(False),
                 JobPost.expired_at.is_(None),
-                *([JobPost.job_type.in_(job_types)] if job_types else []),
+                *([func.upper(func.replace(JobPost.job_type, "-", "_")).in_(job_types)] if job_types else []),
             )
             .order_by(JobMatch.overall_score.desc(), JobMatch.job_id)
             .offset(skip)
@@ -124,7 +124,7 @@ class MatchingRepository:
     ) -> Sequence[JobMatch]:
         stmt = (
             select(JobMatch)
-            .options(selectinload(JobMatch.engineer), selectinload(JobMatch.job))
+            .options(selectinload(JobMatch.engineer).selectinload(EngineerProfile.user), selectinload(JobMatch.job))
             .join(EngineerProfile, EngineerProfile.id == JobMatch.engineer_id)
             # A match computed while a profile was public must not keep
             # surfacing it to companies after the engineer hides it.

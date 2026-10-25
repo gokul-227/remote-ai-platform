@@ -177,6 +177,8 @@ async def test_candidate_matches_show_only_public_profiles(
     assert resp.status_code == 200
     assert [m["engineer_id"] for m in resp.json()] == [public_id]
     assert PRIVATE_FIELDS.isdisjoint(resp.json()[0]["engineer"])
+    # The candidate's name comes from the user row: it must be loaded with the match (async lazy loads fail).
+    assert "full_name" in resp.json()[0]["engineer"]
 
 
 @pytest.mark.asyncio

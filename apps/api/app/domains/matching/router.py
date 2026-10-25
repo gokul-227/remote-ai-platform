@@ -24,7 +24,9 @@ async def get_matching_service(db: AsyncSession = Depends(get_db)) -> MatchingSe
     return MatchingService(db)
 
 
-FREELANCE_TYPES = ("freelance", "contract", "part-time", "temporary")
+# Compared case- and separator-insensitively: posted jobs store FREELANCE/PART_TIME,
+# imported ones may store freelance/part-time.
+FREELANCE_TYPES = ("FREELANCE", "CONTRACT", "PART_TIME", "TEMPORARY")
 
 
 @router.get("/recommendations", response_model=list[JobMatchResponse])

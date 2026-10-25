@@ -1686,11 +1686,11 @@ paths:
         schema:
           anyOf:
           - type: string
-            maxLength: 60
+            maxLength: 200
           - type: 'null'
-          description: e.g. 'auth.' or 'admin.'
+          description: One or more comma-separated prefixes, e.g. 'auth.,admin.user.'
           title: Action Prefix
-        description: e.g. 'auth.' or 'admin.'
+        description: One or more comma-separated prefixes, e.g. 'auth.,admin.user.'
       - name: resource_type
         in: query
         required: false
