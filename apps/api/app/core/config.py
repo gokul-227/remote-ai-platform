@@ -194,10 +194,21 @@ class Settings(BaseSettings):
     # Public company career boards (comma-separated board names), verified live.
     GREENHOUSE_BOARDS: str = (
         "stripe,gitlab,cloudflare,datadog,figma,discord,duolingo,reddit,coinbase,robinhood,elastic,"
-        "mongodb,twilio,dropbox,asana,instacart,gusto,vercel,anthropic,databricks,samsara,okta,brex"
+        "mongodb,twilio,dropbox,asana,instacart,gusto,vercel,anthropic,databricks,samsara,okta,brex,"
+        "hellofresh,braze,toast,canonical,adyen,affirm,celonis,airbnb,lyft,fivetran,scaleai,pinterest,"
+        "klaviyo,doctolib,grafanalabs,mozilla,intercom,zoominfo,smartsheet,carta,getyourguide,chime,"
+        "monzo,faire,wrike,peloton,tailscale,sofi,newrelic,workato,fastly,pagerduty,mixpanel,n26,"
+        "salesloft,cultureamp,bitwarden,coursera,attentive,squarespace,algolia,gocardless,betterment,"
+        "honeycomb,contentful,bandwidth,vonage,wise,dialpad,cockroachlabs,trivago,wikimedia,yugabyte,"
+        "planetscale,typeform,calendly,lattice"
     )
-    LEVER_BOARDS: str = "spotify,outreach"
-    ASHBY_BOARDS: str = "openai,ramp,notion,linear,vanta,supabase,posthog,zapier,cursor"
+    LEVER_BOARDS: str = "spotify,outreach,gopuff,aircall,wealthfront,contentsquare,neon"
+    ASHBY_BOARDS: str = (
+        "openai,ramp,notion,linear,vanta,supabase,posthog,zapier,cursor,snowflake,clickhouse,doctolib,"
+        "plaid,perplexity,alan,cohere,1password,docker,mollie,clickup,writer,sentry,modal,qonto,"
+        "amplitude,n8n,render,snyk,backmarket,redis,strava,nerdwallet,oyster,miro,anyscale,gorgias,"
+        "astronomer,paddle,airbyte,iterable,deepl,prefect,helpscout,railway"
+    )
     SMARTRECRUITERS_COMPANIES: str = "ServiceNow,Canva"
     # Optional aggregators with free developer keys (Infisical); skipped when unset.
     ADZUNA_APP_ID: str | None = None
@@ -215,7 +226,7 @@ class Settings(BaseSettings):
     JOB_RETENTION_DAYS: int = 90
 
     JOB_SYNC_SCHEDULE: str = "17 */3 * * *"  # Every 3 hours (.github/workflows/scheduled-job-sync.yml)
-    JOB_SYNC_MAX_PER_SOURCE: int = 1000
+    JOB_SYNC_MAX_PER_SOURCE: int = 2500
     # Secret for the scheduled sync (POST /jobs/sync/scheduled). Grants that one
     # action only; empty disables the endpoint. At least 32 characters.
     JOB_SYNC_TOKEN: str = ""

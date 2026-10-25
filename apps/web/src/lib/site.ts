@@ -3,7 +3,7 @@
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "";
 // Server-side: API_INTERNAL_URL where the public address isn't reachable from
 // the server (containers); otherwise the public API URL.
-const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+export const API_URL = process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type PublicJob = {

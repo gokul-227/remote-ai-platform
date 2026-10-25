@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
 import { SITE_URL, fetchPublicJob, jobPostingJsonLd, summary } from "@/lib/site";
+import { topicsForJob } from "@/lib/seo";
 
 /**
  * Public, server-rendered job page: what crawlers and link previews see, and
@@ -43,7 +44,7 @@ export default async function JobPage({ params }: Props) {
           }}
         />
       )}
-      <Link href="/#jobs" className="text-sm font-semibold text-[#0552CC]">
+      <Link href="/remote-jobs" className="text-sm font-semibold text-[#0552CC]">
         ← All remote jobs
       </Link>
       <p className="mt-6 text-sm font-semibold text-slate-600">{job.company_name}</p>
@@ -70,6 +71,32 @@ export default async function JobPage({ params }: Props) {
         <h2 className="mb-3 text-xl font-bold">About the job</h2>
         <RichText text={job.description || "No description provided."} />
       </section>
+      {topicsForJob(job).length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-lg font-bold">More jobs like this</h2>
+          <div className="flex flex-wrap gap-2">
+            {topicsForJob(job).map((t) => (
+              <Link
+                key={t.slug}
+                href={`/remote-jobs/${t.slug}`}
+                className="rounded-full border border-slate-300 px-4 py-1.5 text-sm hover:border-[#0552CC] hover:text-[#0552CC]"
+              >
+                {t.jobType ? `${t.name} remote jobs` : `Remote ${t.name} jobs`}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+      <div className="mt-8 rounded-xl bg-[#0552CC] p-6 text-white">
+        <p className="text-lg font-bold">Get AI-matched to jobs like this</p>
+        <p className="mt-1 text-sm text-blue-100">Free profile, one-click applications, and alerts for new roles.</p>
+        <Link
+          href="/#register"
+          className="mt-4 inline-flex rounded-full bg-white px-5 py-2 font-semibold text-[#0552CC]"
+        >
+          Join free
+        </Link>
+      </div>
     </main>
   );
 }
