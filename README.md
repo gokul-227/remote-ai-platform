@@ -47,8 +47,13 @@ from the web app's routes, the API's routers and the user roles:
 - **apps/api** — FastAPI modular monolith (`app/domains/*`: auth, engineers, companies, jobs, applications,
   matching, network/messaging, social, groups, projects, contracts, payments, trust, moderation, admin …).
   Async SQLAlchemy 2 + Alembic.
-- **No background worker.** Resume parsing runs inline with a time budget; job sync is a scheduled workflow.
-  Imported jobs unseen by the sync for 30 days leave the public list. Messaging and notifications poll;
+- **No background worker.** Resume parsing runs inline with a time budget; job import is a scheduled workflow
+  (`.github/workflows/scheduled-job-sync.yml`, every 3 hours, production only). Sources without keys: RemoteOK,
+  Arbeitnow (paginated), Remotive, The Muse, Jobicy, Himalayas, Working Nomads, and public company boards on
+  Greenhouse, Lever, Ashby and SmartRecruiters (company lists in settings). With free keys in Infisical: Adzuna,
+  Jooble, USAJOBS. Every job links to its original posting. Imported jobs unseen for 30 days leave the public
+  list; imported jobs posted over 90 days ago are deleted (or hidden, if someone applied). Public job pages carry
+  schema.org JobPosting data for Google's job search; only production is indexable. Messaging and notifications poll;
   the WebSocket endpoints stay off (`FEATURE_REALTIME_WEBSOCKETS`).
 - **Secrets** live in Infisical and reach Render through an Infisical Secret Sync; never commit or paste them.
 - **Backups:** `ops/backup/` (encrypted dump + storage copy, self-verifying restore).

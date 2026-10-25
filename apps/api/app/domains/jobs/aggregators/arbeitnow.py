@@ -19,13 +19,24 @@ class ArbeitnowAggregator(BaseAggregator):
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         jobs: list[JobPostCreate] = []
         try:
+            raw_jobs: list = []
             async with httpx.AsyncClient(timeout=15.0) as client:
-                response = await client.get(settings.ARBEITNOW_API_URL)
-                if response.status_code != 200:
-                    raise SourceFetchError(f"HTTP {response.status_code}")
-
-                payload = response.json()
-                raw_jobs = require_list(payload, "data")
+                # 100 jobs per page; read pages until the limit, the last page, or the page cap.
+                for page in range(1, settings.ARBEITNOW_MAX_PAGES + 1):
+                    response = await client.get(settings.ARBEITNOW_API_URL, params={"page": page})
+                    if response.status_code != 200:
+                        if page == 1:
+                            raise SourceFetchError(f"HTTP {response.status_code}")
+                        break
+                    payload = response.json()
+                    batch = require_list(payload, "data")
+                    raw_jobs.extend(batch)
+                    if (
+                        len(raw_jobs) >= limit
+                        or not batch
+                        or not (payload.get("links") or {}).get("next")
+                    ):
+                        break
 
                 for item in raw_jobs[:limit]:
                     if not isinstance(item, dict) or not item.get("title"):

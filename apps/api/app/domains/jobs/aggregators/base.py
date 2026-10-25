@@ -6,8 +6,12 @@ from html.parser import HTMLParser
 
 from app.domains.jobs.schemas import JobPostCreate
 
-_MOJIBAKE_MARKER = re.compile("[ÃÂâ][\u0080-\u00bf\u0152\u0153\u0160\u0161\u0178\u017d\u017e\u0192\u02c6\u02dc\u2013-\u203a\u20ac\u2122]")
-_MOJIBAKE_RUN = re.compile("(?:[\u00c2-\u00f4][\u0080-\u00bf\u0152\u0153\u0160\u0161\u0178\u017d\u017e\u0192\u02c6\u02dc\u2013-\u203a\u20ac\u2122]+)+")
+_MOJIBAKE_MARKER = re.compile(
+    "[ÃÂâ][\u0080-\u00bf\u0152\u0153\u0160\u0161\u0178\u017d\u017e\u0192\u02c6\u02dc\u2013-\u203a\u20ac\u2122]"
+)
+_MOJIBAKE_RUN = re.compile(
+    "(?:[\u00c2-\u00f4][\u0080-\u00bf\u0152\u0153\u0160\u0161\u0178\u017d\u017e\u0192\u02c6\u02dc\u2013-\u203a\u20ac\u2122]+)+"
+)
 _JOB_TYPES = {
     "fulltime": "full-time",
     "parttime": "part-time",
@@ -20,8 +24,25 @@ _JOB_TYPES = {
 
 
 _BLOCK_TAGS = {
-    "p", "div", "section", "article", "header", "footer", "ul", "ol", "table", "tr",
-    "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "hr",
+    "p",
+    "div",
+    "section",
+    "article",
+    "header",
+    "footer",
+    "ul",
+    "ol",
+    "table",
+    "tr",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "blockquote",
+    "pre",
+    "hr",
 }
 _SKIP_TAGS = {"script", "style", "noscript", "template"}
 
@@ -57,7 +78,10 @@ class _TextWithStructure(HTMLParser):
 
 def _tidy_lines(text: str) -> str:
     """Collapse spaces within lines and blank-line runs; keep bullets together."""
-    lines = [" ".join(line.split()) for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    lines = [
+        " ".join(line.split())
+        for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    ]
     out: list[str] = []
     for line in lines:
         if line in {"-", ""}:
@@ -116,6 +140,7 @@ class BaseAggregator(ABC):
                 continue
             if len(_MOJIBAKE_MARKER.findall(repaired)) < len(_MOJIBAKE_MARKER.findall(text)):
                 return repaired
+
         # Mixed text: repair each garbled run on its own.
         def _run(m: re.Match[str]) -> str:
             chunk = m.group(0)

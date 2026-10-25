@@ -258,7 +258,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   };
   const contacts = (conns.data ?? [])
     .map((c) => (c.sender_id === user?.id ? c.receiver : c.sender))
-    .filter((p): p is ShellPerson => Boolean(p));
+    .filter((p, i, list): p is ShellPerson => Boolean(p) && list.findIndex((q) => q?.id === p?.id) === i);
   const opp = top.data?.[0]?.job;
   const me = user?.full_name || "Guest";
   const signOut = async () => {

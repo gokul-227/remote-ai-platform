@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
-import { fetchPublicJob, summary } from "@/lib/site";
+import { SITE_URL, fetchPublicJob, jobPostingJsonLd, summary } from "@/lib/site";
 
 /**
  * Public, server-rendered job page: what crawlers and link previews see, and
@@ -31,6 +31,18 @@ export default async function JobPage({ params }: Props) {
   const where = job.location || (job.is_remote ? "Remote" : "On-site");
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 text-[#1c1e21]">
+      {!job.expired_at && (
+        <script
+          type="application/ld+json"
+          // Escaped so text from a job description can never close the script tag.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(jobPostingJsonLd(job, SITE_URL || "https://remoteaiplatform.com")).replace(
+              /</g,
+              "\\u003c",
+            ),
+          }}
+        />
+      )}
       <Link href="/#jobs" className="text-sm font-semibold text-[#0552CC]">
         ← All remote jobs
       </Link>

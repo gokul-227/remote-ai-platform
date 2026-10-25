@@ -44,10 +44,14 @@ async def list_jobs(
     min_salary: float | None = Query(None, ge=0),
     max_salary: float | None = Query(None, ge=0),
     salary_currency: str | None = Query(
-        None, pattern="^[A-Za-z]{3}$", description="ISO currency of min/max_salary (required with them)"
+        None,
+        pattern="^[A-Za-z]{3}$",
+        description="ISO currency of min/max_salary (required with them)",
     ),
     salary_period: str | None = Query(
-        None, pattern="^(hour|day|week|month|year)$", description="Period of min/max_salary (required with them)"
+        None,
+        pattern="^(hour|day|week|month|year)$",
+        description="Period of min/max_salary (required with them)",
     ),
     skills: list[str] | None = Query(None, description="Match any of these skills"),
     source: str | None = Query(None, description="Filter by source (REMOTEOK, ARBEITNOW, etc.)"),
@@ -60,7 +64,9 @@ async def list_jobs(
 
     The total number of matches is returned in the X-Total-Count header.
     """
-    if (min_salary is not None or max_salary is not None) and not (salary_currency and salary_period):
+    if (min_salary is not None or max_salary is not None) and not (
+        salary_currency and salary_period
+    ):
         # Amounts without units cannot be compared across hourly/yearly or
         # USD/EUR postings; refuse rather than guess (SEARCH-01).
         raise HTTPException(
@@ -135,7 +141,11 @@ async def list_public_company_jobs(
     """Get public job listings for a specific company profile (no auth required)."""
     result = await service.repo.db.execute(
         select(JobPost)
-        .where(JobPost.company_id == company_id, JobPost.is_active.is_(True), JobPost.expired_at.is_(None))
+        .where(
+            JobPost.company_id == company_id,
+            JobPost.is_active.is_(True),
+            JobPost.expired_at.is_(None),
+        )
         .order_by(JobPost.posted_at.desc())
         .offset(skip)
         .limit(limit)
@@ -146,7 +156,9 @@ async def list_public_company_jobs(
 async def _owns_job(db: AsyncSession, job: JobPost, user: User | None) -> bool:
     if user is None or job.company_id is None:
         return False
-    owner = await db.scalar(select(CompanyProfile.user_id).where(CompanyProfile.id == job.company_id))
+    owner = await db.scalar(
+        select(CompanyProfile.user_id).where(CompanyProfile.id == job.company_id)
+    )
     return owner == user.id
 
 
@@ -241,9 +253,13 @@ async def scheduled_job_sync(
     expected = settings.JOB_SYNC_TOKEN
     if not expected:
         raise HTTPException(status_code=404, detail="Not found")
-    if not x_job_sync_token or not hmac.compare_digest(x_job_sync_token.encode(), expected.encode()):
+    if not x_job_sync_token or not hmac.compare_digest(
+        x_job_sync_token.encode(), expected.encode()
+    ):
         raise HTTPException(status_code=403, detail="Forbidden")
-    stats = await service.sync_all_job_sources(limit_per_source=30, admin_repo=AdminRepository(db))
+    stats = await service.sync_all_job_sources(
+        limit_per_source=settings.JOB_SYNC_MAX_PER_SOURCE, admin_repo=AdminRepository(db)
+    )
     await db.commit()
     # Same six-hourly tick: retry Supabase user erasures that failed at
     # account deletion (DATA-04). There is no hosted worker to do it.
@@ -254,7 +270,11 @@ async def scheduled_job_sync(
     from app.services.email.outbox import dispatch_due
 
     emails = await dispatch_due(db, limit=100)
-    return {**stats, "identity_erasures_pending": erasures["pending"], "emails_sent": emails["sent"]}
+    return {
+        **stats,
+        "identity_erasures_pending": erasures["pending"],
+        "emails_sent": emails["sent"],
+    }
 
 
 @router.post("/sync", response_model=dict[str, int])

@@ -914,7 +914,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
   const accepted = all
     .filter((c: any) => c.status === "ACCEPTED")
     .map((c: any) => (c.sender_id === user?.id ? c.receiver : c.sender))
-    .filter(Boolean);
+    .filter((p: any, i: number, list: any[]) => p && list.findIndex((q: any) => q?.id === p.id) === i);
   const pendingOut = new Set(
     all.filter((c: any) => c.status === "PENDING" && c.sender_id === user?.id).map((c: any) => c.receiver_id),
   );

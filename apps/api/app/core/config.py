@@ -189,9 +189,27 @@ class Settings(BaseSettings):
     USAJOBS_USER_AGENT: str = "RemoteAIPlatform/0.1 (contact@remoteaiplatform.com)"
     USAJOBS_AUTH_KEY: str | None = None
     THEMUSE_API_URL: str = "https://www.themuse.com/api/public/jobs"
+    # Arbeitnow serves 100 jobs per page; read this many pages per sync.
+    ARBEITNOW_MAX_PAGES: int = 5
+    # Public company career boards (comma-separated board names), verified live.
+    GREENHOUSE_BOARDS: str = (
+        "stripe,gitlab,cloudflare,datadog,figma,discord,duolingo,reddit,coinbase,robinhood,elastic,"
+        "mongodb,twilio,dropbox,asana,instacart,gusto,vercel,anthropic,databricks,samsara,okta,brex"
+    )
+    LEVER_BOARDS: str = "spotify,outreach"
+    ASHBY_BOARDS: str = "openai,ramp,notion,linear,vanta,supabase,posthog,zapier,cursor"
+    SMARTRECRUITERS_COMPANIES: str = "ServiceNow,Canva"
+    # Optional aggregators with free developer keys (Infisical); skipped when unset.
+    ADZUNA_APP_ID: str | None = None
+    ADZUNA_APP_KEY: str | None = None
+    ADZUNA_COUNTRIES: str = "gb,us,de,in,ca,au,nl,fr"
+    JOOBLE_API_KEY: str | None = None
+    JOOBLE_KEYWORDS: str = "remote"
+    # Imported jobs posted longer ago than this are removed (or, if someone applied, hidden).
+    JOB_RETENTION_DAYS: int = 90
 
-    JOB_SYNC_SCHEDULE: str = "0 */6 * * *"  # Every 6 hours
-    JOB_SYNC_MAX_PER_SOURCE: int = 500
+    JOB_SYNC_SCHEDULE: str = "17 */3 * * *"  # Every 3 hours (.github/workflows/scheduled-job-sync.yml)
+    JOB_SYNC_MAX_PER_SOURCE: int = 1000
     # Secret for the scheduled sync (POST /jobs/sync/scheduled). Grants that one
     # action only; empty disables the endpoint. At least 32 characters.
     JOB_SYNC_TOKEN: str = ""

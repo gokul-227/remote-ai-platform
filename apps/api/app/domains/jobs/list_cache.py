@@ -56,5 +56,7 @@ def _jobs_changed(session: Session, _ctx: object) -> None:
 @event.listens_for(Session, "do_orm_execute")
 def _bulk_job_change(state: ORMExecuteState) -> None:
     # Bulk UPDATE/DELETE statements (e.g. expiring unseen jobs) skip flush events.
-    if (state.is_update or state.is_delete) and any(m.class_.__name__ == "JobPost" for m in state.all_mappers):
+    if (state.is_update or state.is_delete) and any(
+        m.class_.__name__ == "JobPost" for m in state.all_mappers
+    ):
         clear()

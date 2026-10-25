@@ -8,10 +8,11 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Select, Text, cast, func, or_, select, update
+from sqlalchemy import Select, Text, cast, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.domains.applications.models import JobApplication
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate
 
@@ -141,7 +142,30 @@ class JobRepository:
         )
         return int(getattr(result, "rowcount", 0) or 0)  # CursorResult for UPDATE
 
-    async def sitemap_entries(self, skip: int, limit: int) -> list[tuple[uuid.UUID, datetime, datetime]]:
+    async def purge_old_imported_jobs(self, days: int) -> tuple[int, int]:
+        """Retention for imported jobs posted more than `days` ago: delete the ones
+        nobody applied to (saved entries and matches cascade), and only hide the
+        ones with applications so applicants keep their history. Posted jobs
+        (owned by a company on the platform) are never touched."""
+        cutoff = datetime.now(UTC) - timedelta(days=days)
+        old = (JobPost.company_id.is_(None), JobPost.source != "DIRECT", JobPost.posted_at < cutoff)
+        applied = select(JobApplication.job_id)
+        removed = await self.db.execute(
+            delete(JobPost)
+            .where(*old, JobPost.id.not_in(applied))
+            .execution_options(synchronize_session=False)
+        )
+        hidden = await self.db.execute(
+            update(JobPost)
+            .where(*old, JobPost.expired_at.is_(None))
+            .values(expired_at=datetime.now(UTC))
+            .execution_options(synchronize_session=False)
+        )
+        return int(getattr(removed, "rowcount", 0) or 0), int(getattr(hidden, "rowcount", 0) or 0)
+
+    async def sitemap_entries(
+        self, skip: int, limit: int
+    ) -> list[tuple[uuid.UUID, datetime, datetime]]:
         """id/posted/updated of every publicly listed job (any location), oldest
         first so pages stay stable while new jobs arrive."""
         stmt = self._filtered(select(JobPost.id, JobPost.posted_at, JobPost.updated_at))
@@ -256,10 +280,17 @@ class JobRepository:
     ) -> Sequence[JobPost]:
         stmt = self._filtered(
             select(JobPost),
-            query=query, skills=skills, is_remote=is_remote, job_type=job_type,
-            experience_level=experience_level, min_salary=min_salary, max_salary=max_salary,
-            salary_currency=salary_currency, salary_period=salary_period,
-            source=source, company_id=company_id,
+            query=query,
+            skills=skills,
+            is_remote=is_remote,
+            job_type=job_type,
+            experience_level=experience_level,
+            min_salary=min_salary,
+            max_salary=max_salary,
+            salary_currency=salary_currency,
+            salary_period=salary_period,
+            source=source,
+            company_id=company_id,
         )
         # id breaks ties so consecutive pages never overlap or skip rows.
         stmt = stmt.order_by(JobPost.posted_at.desc(), JobPost.id.desc()).offset(skip).limit(limit)

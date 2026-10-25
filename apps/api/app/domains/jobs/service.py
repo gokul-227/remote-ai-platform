@@ -9,12 +9,24 @@ from collections.abc import Sequence
 
 from app.agents.job_enricher import JobEnricherAgent
 from app.agents.llm_client import AIProviderError
+from app.core.config import settings
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
 from app.domains.admin.repository import AdminRepository
 from app.domains.jobs import list_cache
 from app.domains.jobs.aggregators.arbeitnow import ArbeitnowAggregator
 from app.domains.jobs.aggregators.base import SourceDisabledError, SourceFetchError
+from app.domains.jobs.aggregators.public_boards import (
+    AdzunaAggregator,
+    AshbyAggregator,
+    GreenhouseAggregator,
+    HimalayasAggregator,
+    JobicyAggregator,
+    JoobleAggregator,
+    LeverAggregator,
+    SmartRecruitersAggregator,
+    WorkingNomadsAggregator,
+)
 from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.remotive import RemotiveAggregator
 from app.domains.jobs.aggregators.themuse import TheMuseAggregator
@@ -34,6 +46,15 @@ AGGREGATORS = (
     RemotiveAggregator,
     TheMuseAggregator,
     USAJobsAggregator,
+    JobicyAggregator,
+    HimalayasAggregator,
+    WorkingNomadsAggregator,
+    GreenhouseAggregator,
+    LeverAggregator,
+    AshbyAggregator,
+    SmartRecruitersAggregator,
+    AdzunaAggregator,
+    JoobleAggregator,
 )
 
 
@@ -119,13 +140,13 @@ class JobService:
         source_name: str | None = None,
     ) -> dict[str, int]:
         """
-        Runs job aggregation across all 5 public APIs, saving/upserting jobs to DB.
+        Runs job aggregation across every configured source, saving/upserting jobs to DB.
         If `admin_repo` is given, records a per-source ApiSyncLog entry (fetched/inserted/
         updated/status/duration) so the admin status page reflects every sync run.
         If `source_name` is given, only that source is synced (case-insensitive match
         against each aggregator's `source_name`); an unknown name is a no-op.
         """
-        logger.info("Starting background job aggregation sync across 5 public APIs...")
+        logger.info(f"Starting job aggregation sync across {len(self.aggregators)} sources...")
         stats: dict[str, int] = {}
 
         aggregators = self.aggregators
@@ -146,14 +167,18 @@ class JobService:
                 # Only after a successful, non-empty fetch: an outage or a feed that
                 # suddenly answers with nothing must not expire a whole source (ING-01).
                 expired = (
-                    await self.repo.expire_unseen_jobs(aggregator.source_name) if fetched_jobs else 0
+                    await self.repo.expire_unseen_jobs(aggregator.source_name)
+                    if fetched_jobs
+                    else 0
                 )
                 await self.repo.db.commit()
                 stats[aggregator.source_name] = inserted + updated
                 if expired:
                     logger.info(f"Expired {expired} {aggregator.source_name} jobs no longer listed")
                 if not fetched_jobs:
-                    logger.warning(f"{aggregator.source_name} answered with no jobs; expiry skipped")
+                    logger.warning(
+                        f"{aggregator.source_name} answered with no jobs; expiry skipped"
+                    )
                 logger.info(
                     f"Aggregated {aggregator.source_name}: {inserted} new, {updated} updated"
                 )
@@ -187,4 +212,11 @@ class JobService:
                 # Per source, so a later source's rollback cannot drop this record.
                 await admin_repo.db.commit()
 
+        # Retention: keep roughly the last few months of imported jobs.
+        removed, hidden = await self.repo.purge_old_imported_jobs(settings.JOB_RETENTION_DAYS)
+        await self.repo.db.commit()
+        if removed or hidden:
+            logger.info(
+                f"Retention: removed {removed} old imported jobs, hid {hidden} with applications"
+            )
         return stats

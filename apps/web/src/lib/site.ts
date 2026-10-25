@@ -18,7 +18,68 @@ export type PublicJob = {
   external_url?: string | null;
   company_id?: string | null;
   skills?: string[];
+  job_type?: string | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  salary_period?: string | null;
+  currency?: string | null;
 };
+
+const EMPLOYMENT: Record<string, string> = {
+  fulltime: "FULL_TIME",
+  parttime: "PART_TIME",
+  contract: "CONTRACTOR",
+  contractor: "CONTRACTOR",
+  freelance: "CONTRACTOR",
+  temporary: "TEMPORARY",
+  internship: "INTERN",
+};
+
+/**
+ * schema.org JobPosting for Google's job search (structured data). Remote jobs
+ * use jobLocationType TELECOMMUTE; listings expire 90 days after posting, the
+ * same window the platform keeps imported jobs.
+ */
+export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string, unknown> {
+  const posted = job.posted_at ? new Date(job.posted_at) : new Date();
+  const until = new Date(posted.getTime() + 90 * 24 * 3600 * 1000);
+  const type = EMPLOYMENT[(job.job_type || "").toLowerCase().replace(/[\s_-]+/g, "")];
+  const unit = { year: "YEAR", month: "MONTH", hour: "HOUR" }[job.salary_period || "year"] ?? "YEAR";
+  const ld: Record<string, unknown> = {
+    "@context": "https://schema.org/",
+    "@type": "JobPosting",
+    title: job.title,
+    description: job.description || job.title,
+    identifier: { "@type": "PropertyValue", name: "Remote AI Platform", value: job.id },
+    datePosted: posted.toISOString(),
+    validThrough: until.toISOString(),
+    hiringOrganization: { "@type": "Organization", name: job.company_name },
+    url: `${siteUrl}/jobs/${job.id}`,
+    directApply: Boolean(job.company_id),
+  };
+  if (type) ld.employmentType = type;
+  if (job.is_remote) {
+    ld.jobLocationType = "TELECOMMUTE";
+    ld.applicantLocationRequirements = { "@type": "Country", name: "Worldwide" };
+  }
+  if (job.location && !/^remote$/i.test(job.location.trim())) {
+    ld.jobLocation = { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: job.location } };
+  }
+  if (job.salary_min || job.salary_max) {
+    ld.baseSalary = {
+      "@type": "MonetaryAmount",
+      currency: job.currency || "USD",
+      value: {
+        "@type": "QuantitativeValue",
+        ...(job.salary_min ? { minValue: job.salary_min } : {}),
+        ...(job.salary_max ? { maxValue: job.salary_max } : {}),
+        unitText: unit,
+      },
+    };
+  }
+  if (job.skills?.length) ld.skills = job.skills.join(", ");
+  return ld;
+}
 
 /** A public job, or null if it doesn't exist or isn't public (hidden/removed). */
 export async function fetchPublicJob(id: string): Promise<PublicJob | null> {
