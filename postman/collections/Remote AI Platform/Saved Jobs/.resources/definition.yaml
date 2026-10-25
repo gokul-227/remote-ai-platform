@@ -1,4 +1,0 @@
-$kind: collection
-id: ea3842ea-4113-5558-a85c-ceb5433e6ef2
-description: Requests for **Saved Jobs**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
-order: 13000

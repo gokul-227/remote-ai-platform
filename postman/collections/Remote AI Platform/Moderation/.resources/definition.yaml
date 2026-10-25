@@ -1,4 +1,0 @@
-$kind: collection
-id: 797aa21f-9d5d-5390-a8a1-fe1efc1b3871
-description: Requests for **Moderation**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
-order: 12000

@@ -1,4 +1,0 @@
-$kind: collection
-id: 1009d5ab-fcf2-5559-8618-fecd72226674
-description: Requests for **Authentication**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
-order: 2000

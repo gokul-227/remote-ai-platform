@@ -1,4 +1,0 @@
-$kind: collection
-id: 6f9efdf0-1c17-57f2-9e1f-bd1922b401a4
-description: Requests for **Admin support**, in dependency order (creates and lists first, deletes last). Each request documents what it needs and what it sets.
-order: 21000

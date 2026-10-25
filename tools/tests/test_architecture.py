@@ -226,7 +226,7 @@ def test_product_model_places_every_screen_and_api_domain() -> None:
     stack = {g["group"]: [i["name"] for i in g["items"]] for g in model["stack"]}
     assert "FastAPI" in stack["Backend (apps/api)"]
     assert "Next.js" in stack["Frontend (apps/web)"]
-    assert "Postman CLI" in stack["Quality"]
+    assert "Postman (OpenAPI converter)" in stack["Quality"]
     # Every infrastructure component is carried into the product diagram.
     assert len(model["infrastructure"]["components"]) == len(build_model(CATALOG, discover(REPO), REPO)["components"])
 

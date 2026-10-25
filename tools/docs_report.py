@@ -137,7 +137,7 @@ def architecture_report(base: str, head: str, repo: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-# --- API / Postman ------------------------------------------------------------
+# --- API -------------------------------------------------------------------
 
 
 def operations(spec: dict[str, Any]) -> dict[tuple[str, str], dict[str, Any]]:
@@ -206,25 +206,13 @@ def api_report(base: str, head: str, repo: str) -> str:
         + [f"`{s}` removed" for s in sorted(old_schemas.keys() - new_schemas.keys())]
         + [f"`{s}` changed" for s in sorted(old_schemas.keys() & new_schemas.keys()) if old_schemas[s] != new_schemas[s]]
     )
-    requests = [
-        (status, p)
-        for status, p in changed_paths(base, head, "postman/collections")
-        if p.endswith(".request.yaml")
-    ]
-    if not (added or removed or changed or schema_notes or requests):
+    if not (added or removed or changed or schema_notes):
         return ""
-
-    def request_name(p: str) -> str:
-        parts = p.split("/")[2:]  # drop postman/collections
-        return " › ".join(parts[1:-1] + [parts[-1].removesuffix(".request.yaml")])
-
-    def link(p: str, sha: str) -> str:
-        return f"[{request_name(p)}](https://github.com/{repo}/blob/{sha}/{p.replace(' ', '%20')})"
 
     def summary(op: dict[str, Any]) -> str:
         return f" — {op['summary']}" if op.get("summary") else ""
 
-    lines = [MARKERS["api"], "## API & Postman changes in this PR", ""]
+    lines = [MARKERS["api"], "## API changes in this PR", ""]
     if added or removed or changed:
         lines += ["| | Endpoint | What changed |", "|---|---|---|"]
         lines += [f"| ➕ | `{m} {p}` | new endpoint{summary(after[(m, p)])} |" for m, p in added]
@@ -233,16 +221,9 @@ def api_report(base: str, head: str, repo: str) -> str:
         lines.append("")
     if schema_notes:
         lines += [f"**Schemas:** {', '.join(schema_notes)}", ""]
-    if requests:
-        lines.append("**Postman collection (Collection v3):**")
-        labels = {"A": "added", "D": "removed", "M": "updated"}
-        for status, p in sorted(requests, key=lambda r: ("ADM".find(r[0]), r[1])):
-            target = link(p, base if status == "D" else head)
-            lines.append(f"- {labels.get(status, 'updated')}: {target}")
-        lines.append("")
     lines.append(
-        "_Generated from FastAPI → OpenAPI → Postman by the Postman sync workflow. "
-        "The Postman workspace is updated from `prod` after merge._"
+        "_Generated from FastAPI → OpenAPI by the Postman sync workflow. "
+        "The Postman cloud collection is updated from `prod` after merge._"
     )
     return "\n".join(lines) + "\n"
 
