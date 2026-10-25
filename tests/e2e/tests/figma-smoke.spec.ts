@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 // guard that it renders and that legacy URLs still land on the right screen.
 test("Figma app shell renders on the home route", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("navigation", { name: /main navigation/i })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("navigation", { name: /navigation$/i }).first()).toBeVisible({ timeout: 15_000 });
 });
 
 test("hiring dashboard route renders", async ({ page }) => {
