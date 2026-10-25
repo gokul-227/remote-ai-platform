@@ -14,7 +14,7 @@ test("the left navigation tree and the launcher reach every area", async ({ page
   await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText("Projects");
   // The filter finds features across areas.
   await page.getByLabel("Find a feature").fill("channels");
-  await tree.getByRole("button", { name: "Channels" }).click();
+  await tree.getByRole("button", { name: "Channels", exact: true }).click();
   await expect(page).toHaveURL(/#channels$/);
   // The top-left launcher lists every area with its sub-categories.
   await page.getByRole("button", { name: "Open the menu of all features" }).click();
@@ -83,7 +83,7 @@ test("the assistant chat is available everywhere and honest when AI is down", as
   await chat.getByLabel("Message the assistant").fill("What are my open tasks?");
   await chat.getByRole("button", { name: "Send" }).click();
   // The isolated E2E stack has no AI provider: the assistant says so instead of inventing an answer.
-  await expect(chat.getByText(/unavailable|allowance|tasks/i)).toBeVisible({ timeout: 20_000 });
+  await expect(chat.getByText(/assistant is unavailable right now|reached the AI allowance|task/i).last()).toBeVisible({ timeout: 20_000 });
 });
 
 test("meetings: scheduling needs a connection, and the page explains it", async ({ page }) => {
