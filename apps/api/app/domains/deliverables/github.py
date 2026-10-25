@@ -12,14 +12,15 @@ GITHUB_API = "https://api.github.com"
 TIMEOUT = httpx.Timeout(5.0)
 
 
-async def check_commit(repo_url: str, sha: str) -> str:
+async def check_commit(repo_url: str, sha: str, token: str | None = None) -> str:
     owner_repo = repo_url.removeprefix("https://github.com/").strip("/")
+    headers = {"Accept": "application/vnd.github+json", "User-Agent": "remote-ai-platform"}
+    if token:
+        # The submitter's own connection lets private-repo commits be confirmed too.
+        headers["Authorization"] = f"Bearer {token}"
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=False) as client:
-            res = await client.get(
-                f"{GITHUB_API}/repos/{owner_repo}/commits/{sha}",
-                headers={"Accept": "application/vnd.github+json", "User-Agent": "remote-ai-platform"},
-            )
+            res = await client.get(f"{GITHUB_API}/repos/{owner_repo}/commits/{sha}", headers=headers)
     except httpx.HTTPError:
         return "UNVERIFIED"
     if res.status_code == 200:

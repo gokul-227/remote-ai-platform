@@ -94,8 +94,8 @@ features:
     name: Projects & delivery
     step: 8
     personas: [professional, organisation]
-    screens: [workspace, projects, taskmarket, submissions, worklog, work]
-    api: [projects]
+    screens: [workspace, projects, taskmarket, submissions, worklog, work, files, docs, sheets, slides]
+    api: [projects, documents, github]
     uses: [storage]
   - id: trust
     icon: concepts/star

@@ -33,6 +33,7 @@ from app.domains.deliverables.schemas import (
     DownloadLink,
 )
 from app.domains.deliverables.validation import check_document, safe_file_name
+from app.domains.github.router import user_token
 from app.services.notifications import notify_user
 
 router = APIRouter(prefix="/contracts/{contract_id}/deliverables", tags=["Deliverables"])
@@ -136,7 +137,7 @@ async def submit_code(
         branch=payload.branch,
         commit_sha=payload.commit_sha,
         # Not blocking: private repos and GitHub outages still allow submission.
-        commit_check=await check_commit(payload.repo_url, payload.commit_sha),
+        commit_check=await check_commit(payload.repo_url, payload.commit_sha, await user_token(db, current_user.id)),
     )
     db.add(d)
     await db.flush()

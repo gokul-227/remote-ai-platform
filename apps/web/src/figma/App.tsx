@@ -12,7 +12,6 @@ const Feed = lazy(() => import("./rap_social").then((m) => ({ default: m.Feed })
 const Groups = lazy(() => import("./rap_social").then((m) => ({ default: m.Groups })));
 const Messenger = lazy(() => import("./rap_social").then((m) => ({ default: m.Messenger })));
 const Notifications = lazy(() => import("./rap_social").then((m) => ({ default: m.Notifications })));
-const Admin = lazy(() => import("./rap_admin").then((m) => ({ default: m.Admin })));
 const Dashboard = lazy(() => import("./rap_home").then((m) => ({ default: m.Dashboard })));
 const Recs = lazy(() => import("./rap_home").then((m) => ({ default: m.Recs })));
 const Applications = lazy(() => import("./rap_home").then((m) => ({ default: m.Applications })));
@@ -51,7 +50,25 @@ const Meetings = lazy(() => import("./rap_collab").then((m) => ({ default: m.Mee
 const Support = lazy(() => import("./rap_collab").then((m) => ({ default: m.Support })));
 const Channels = lazy(() => import("./rap_collab").then((m) => ({ default: m.Channels })));
 const Assistant = lazy(() => import("./rap_collab").then((m) => ({ default: m.Assistant })));
+const Office = lazy(() => import("./rap_office").then((m) => ({ default: m.Office })));
 const HelpCenter = lazy(() => import("./rap_enterprise").then((m) => ({ default: m.HelpCenter })));
+
+/** Administration now lives in the separate staff console. */
+function AdminMoved() {
+  const host = typeof window !== "undefined" ? window.location.hostname : "";
+  const url = host.startsWith("dev.") ? "https://dev.admin.remoteaiplatform.com" : "https://admin.remoteaiplatform.com";
+  return (
+    <div className="v2-page">
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <h1 className="text-xl font-bold">Administration has moved</h1>
+        <p className="mt-2 text-slate-600">Staff tools now live in the separate staff console.</p>
+        <a className="mt-4 inline-block rounded-lg bg-[#0552CC] px-4 py-2 font-semibold text-white" href={url}>
+          Open the staff console
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export const REG: Record<string, any> = {
   submissions: () => <TaskMarketplace initial="submissions" />,
@@ -62,16 +79,20 @@ export const REG: Record<string, any> = {
   support: Support,
   assistant: Assistant,
   channels: Channels,
-  adminusers: () => <Admin initial="adminusers" />,
-  adminjobs: () => <Admin initial="adminjobs" />,
-  reports: () => <Admin initial="reports" />,
-  verifications: () => <Admin initial="verifications" />,
-  audit: () => <Admin initial="audit" />,
-  sync: () => <Admin initial="sync" />,
-  aiusage: () => <Admin initial="aiusage" />,
-  health: () => <Admin initial="health" />,
-  flags: () => <Admin initial="flags" />,
-  orgs: () => <Admin initial="orgs" />,
+  files: Office,
+  docs: () => <Office initial="DOC" />,
+  sheets: () => <Office initial="SHEET" />,
+  slides: () => <Office initial="SLIDES" />,
+  adminusers: AdminMoved,
+  adminjobs: AdminMoved,
+  reports: AdminMoved,
+  verifications: AdminMoved,
+  audit: AdminMoved,
+  sync: AdminMoved,
+  aiusage: AdminMoved,
+  health: AdminMoved,
+  flags: AdminMoved,
+  orgs: AdminMoved,
   engineer: EngineerDetail,
   jobdetail: JobDetail,
   contractsign: ContractSign,
@@ -98,7 +119,7 @@ export const REG: Record<string, any> = {
   postjob: PostJob,
   candidates: Candidates,
   cojobs: CoJobs,
-  admin: Admin,
+  admin: AdminMoved,
   projects: Projects,
   ride: Ride,
   jobs: Jobs,

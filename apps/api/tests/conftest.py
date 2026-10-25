@@ -178,7 +178,7 @@ def marketplace_payments_enabled():
 def no_github_calls(monkeypatch):
     """Deliverable submissions check commits on GitHub; tests never reach the network."""
 
-    async def _unverified(repo_url: str, sha: str) -> str:
+    async def _unverified(repo_url: str, sha: str, token: str | None = None) -> str:
         return "UNVERIFIED"
 
     monkeypatch.setattr("app.domains.deliverables.router.check_commit", _unverified)

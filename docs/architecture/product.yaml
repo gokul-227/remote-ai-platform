@@ -33,7 +33,7 @@ features:
   - organisation
   screens:
   - route: onboarding
-    label: Career preferences
+    label: Job preferences
   - route: settings
     label: Settings & privacy
   - route: security
@@ -121,7 +121,7 @@ features:
   - route: recs
     label: Recommendations
   - route: ride
-    label: Hire a professional
+    label: Match a professional
   api:
   - domain: matching
     prefix: /api/v1/matching
@@ -146,7 +146,7 @@ features:
   - route: talent
     label: Talent
   - route: coprofile
-    label: Company profile
+    label: Organisation profile
   api:
   - domain: companies
     prefix: /api/v1/companies
@@ -186,7 +186,7 @@ features:
   - route: channels
     label: Channels
   - route: meetings
-    label: Meetings
+    label: Meetings & calls
   - route: notifications
     label: Notifications
   api:
@@ -262,18 +262,30 @@ features:
   - route: workspace
     label: My workspace
   - route: projects
-    label: Project board
+    label: Boards & sprints
   - route: taskmarket
-    label: Task offers
+    label: Find freelance work
   - route: submissions
-    label: Submissions
+    label: Deliverables
   - route: worklog
-    label: Work log
+    label: Time & work log
   - route: work
     label: Work
+  - route: files
+    label: All files
+  - route: docs
+    label: Docs
+  - route: sheets
+    label: Sheets
+  - route: slides
+    label: Slides
   api:
   - domain: projects
     prefix: /api/v1/projects
+  - domain: documents
+    prefix: /api/v1/documents
+  - domain: github
+    prefix: /api/v1/github
   uses:
   - id: storage
     name: Object storage
@@ -289,7 +301,7 @@ features:
   - route: reviews
     label: Reviews
   - route: quality
-    label: Quality review
+    label: Code review
   api:
   - domain: trust
     prefix: /api/v1/trust
@@ -322,25 +334,25 @@ features:
   - admin
   screens:
   - route: admin
-    label: Platform overview
+    label: admin
   - route: adminusers
-    label: People & access
+    label: adminusers
   - route: adminjobs
-    label: Job moderation
+    label: adminjobs
   - route: reports
-    label: Content reports
+    label: reports
   - route: verifications
-    label: Verification queue
+    label: verifications
   - route: audit
-    label: Audit trail
+    label: audit
   - route: sync
-    label: Job sources
+    label: sync
   - route: aiusage
-    label: AI usage
+    label: aiusage
   - route: health
-    label: System health
+    label: health
   - route: flags
-    label: Feature availability
+    label: flags
   - route: orgs
     label: Organisations
   api:
@@ -390,7 +402,7 @@ features:
 web:
   technology: Next.js 16 · OpenNext
   provider: Cloudflare Workers
-  screens: 59
+  screens: 63
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service
@@ -417,10 +429,14 @@ api:
     prefix: /contracts
   - domain: deliverables
     prefix: /contracts/{contract_id}/deliverables
+  - domain: documents
+    prefix: /documents
   - domain: endorsements
     prefix: /endorsements
   - domain: engineers
     prefix: /engineers
+  - domain: github
+    prefix: /github
   - domain: groups
     prefix: /groups
   - domain: jobs

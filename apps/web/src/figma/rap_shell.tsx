@@ -3,67 +3,69 @@ import { Ic, Av, Brand, cx, useDialogFocus } from "./rap_kit";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { useApi } from "./live";
+// Enterprise navigation: sections follow what people do (connect, communicate,
+// find work, hire, deliver, collaborate), each with its own sidebar. Admin lives
+// in the separate staff console (admin.remoteaiplatform.com), not here.
 const sections: Record<string, string[][]> = {
-  Community: [
-    ["feed", "Home", "home"],
-    ["network", "My network", "users"],
-    ["groups", "Groups", "users"],
-    ["messenger", "Messages", "chat"],
-    ["channels", "Channels", "users"],
-    ["meetings", "Meetings", "video"],
+  Home: [
+    ["feed", "News feed", "home"],
     ["notifications", "Notifications", "bell"],
+    ["assistant", "AI assistant", "spark"],
+    ["search", "Search everything", "search"],
+  ],
+  Network: [
+    ["network", "My network", "users"],
+    ["groups", "Groups", "globe"],
+    ["engineers", "Discover professionals", "search"],
+    ["companies", "Organisations", "building"],
     ["profile", "My profile", "user"],
   ],
+  Messaging: [
+    ["messenger", "Direct messages", "chat"],
+    ["channels", "Channels", "inbox"],
+    ["meetings", "Meetings & calls", "video"],
+  ],
   Careers: [
-    ["jobs", "Discover jobs", "briefcase"],
+    ["jobs", "Find jobs", "briefcase"],
     ["recs", "Recommended for you", "target"],
     ["applications", "My applications", "file"],
     ["saved", "Saved jobs", "bookmark"],
-    ["dash", "Career overview", "chart"],
-    ["companies", "Explore companies", "building"],
-    ["onboarding", "Career preferences", "settings"],
+    ["dash", "Career insights", "chart"],
+    ["onboarding", "Job preferences", "settings"],
   ],
-  Workspace: [
-    ["workspace", "Overview", "layers"],
-    ["projects", "Project board", "board"],
-    ["assistant", "AI assistant", "spark"],
-    ["taskmarket", "Task offers", "inbox"],
-    ["submissions", "Submissions", "file"],
-    ["worklog", "Work log", "clock"],
+  Freelance: [
+    ["taskmarket", "Find freelance work", "zap"],
     ["contracts", "Contracts", "file"],
-    ["earnings", "Payments", "wallet"],
+    ["submissions", "Deliverables", "inbox"],
+    ["worklog", "Time & work log", "clock"],
     ["reviews", "Reviews", "star"],
-    ["quality", "Quality review", "code"],
+    ["earnings", "Payments", "wallet"],
   ],
   Hiring: [
     ["codash", "Hiring overview", "chart"],
-    ["ride", "Hire a professional", "zap"],
-    ["cojobs", "Job postings", "briefcase"],
     ["postjob", "Post a job", "plus"],
+    ["cojobs", "Job postings", "briefcase"],
     ["candidates", "Candidates", "users"],
-    ["engineers", "Discover talent", "search"],
-    ["coprofile", "Company profile", "building"],
+    ["ride", "Match a professional", "zap"],
+    ["engineers", "Talent search", "search"],
     ["contracts", "Contracts", "file"],
     ["copayments", "Payments", "wallet"],
+    ["coprofile", "Organisation profile", "building"],
+  ],
+  Projects: [
+    ["workspace", "Workspace overview", "layers"],
+    ["projects", "Boards & sprints", "board"],
+    ["files", "All files", "file"],
+    ["docs", "Docs", "file"],
+    ["sheets", "Sheets", "grid"],
+    ["slides", "Slides", "layers"],
+    ["quality", "Code review", "code"],
   ],
   Account: [
     ["settings", "Account settings", "settings"],
     ["security", "Security & verification", "shield"],
-    ["profile", "Profile & visibility", "user"],
     ["help", "Help center", "question"],
     ["support", "Contact support", "chat"],
-  ],
-  Admin: [
-    ["admin", "Platform overview", "chart"],
-    ["adminusers", "People & access", "users"],
-    ["adminjobs", "Job moderation", "briefcase"],
-    ["reports", "Content reports", "flag"],
-    ["verifications", "Verification queue", "shieldcheck"],
-    ["audit", "Audit trail", "history"],
-    ["sync", "Job sources", "layers"],
-    ["aiusage", "AI usage", "spark"],
-    ["health", "System health", "bolt"],
-    ["flags", "Feature availability", "settings"],
   ],
 };
 type ShellPerson = { id: string; full_name?: string };
@@ -131,28 +133,18 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           ],
         }
       : role === "COMPANY"
-        ? {
-            Community: sections.Community,
-            Hiring: sections.Hiring,
-            Workspace: sections.Workspace,
-            Account: sections.Account,
-          }
+        ? (({ Careers: _c, Freelance: _f, ...rest }) => rest)(sections)
         : role === "ENGINEER"
-          ? {
-              Community: sections.Community,
-              Careers: sections.Careers,
-              Workspace: sections.Workspace,
-              Account: sections.Account,
-            }
+          ? (({ Hiring: _h, ...rest }) => rest)(sections)
           : sections;
   let section = Object.keys(visible).find((s) => visible[s].some((x) => x[0] === r)) || Object.keys(visible)[0];
   const prefer = (name: string) => {
     if (visible[name]) section = name;
   };
   if (["jobdetail", "work"].includes(r)) prefer("Careers");
-  if (["company", "engineer", "talent"].includes(r)) prefer("Hiring");
-  if (["contractsign"].includes(r)) prefer("Workspace");
-  if (r === "group") prefer("Community");
+  if (["company", "engineer", "talent"].includes(r)) prefer(role === "COMPANY" ? "Hiring" : "Network");
+  if (["contractsign"].includes(r)) prefer(role === "COMPANY" ? "Hiring" : "Freelance");
+  if (r === "group") prefer("Network");
   const nav = (rows: string[][]) =>
     rows.map(([path, label, icon]) => (
       <button
@@ -175,12 +167,13 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           ["companies", "Companies", "building", "Explore"],
         ]
       : [
-          ["feed", "Home", "home", "Community"],
-          ["network", "My network", "users", "Network"],
-          ...(role !== "COMPANY" ? [["jobs", "Jobs", "briefcase", "Careers"]] : []),
-          ["workspace", "Workspace", "board", "Workspace"],
+          ["feed", "Home", "home", "Home"],
+          ["network", "Network", "users", "Network"],
+          ["messenger", "Messaging", "chat", "Messaging"],
+          ...(role !== "COMPANY" ? [["jobs", "Careers", "briefcase", "Careers"]] : []),
+          ...(role !== "COMPANY" ? [["taskmarket", "Freelance", "zap", "Freelance"]] : []),
           ...(role !== "ENGINEER" ? [["codash", "Hiring", "building", "Hiring"]] : []),
-          ...(role === "ADMIN" ? [["admin", "Admin", "shield", "Admin"]] : []),
+          ["workspace", "Projects", "board", "Projects"],
         ];
   return (
     <div className="rap-app">
@@ -278,7 +271,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
       </header>
       <aside className="rap-sidebar">
         <div className="rap-side-title">
-          {section === "Community" && user ? (
+          {section === "Home" && user ? (
             <button className="rap-person" onClick={() => go("profile")}>
               <Av name={me} s={38} />
               <b>{me}</b>
@@ -298,7 +291,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             <div className="rap-divider" />
             <h3 className="rap-side-label">Your shortcuts</h3>
             {nav(
-              section === "Community"
+              section === "Home"
                 ? role === "COMPANY"
                   ? [
                       ["codash", "Hiring overview", "building"],

@@ -99,8 +99,10 @@ components:
     - companies
     - contracts
     - deliverables
+    - documents
     - endorsements
     - engineers
+    - github
     - groups
     - jobs
     - matching

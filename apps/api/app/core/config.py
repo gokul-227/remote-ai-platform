@@ -49,6 +49,11 @@ class Settings(BaseSettings):
         validation_alias="CORS_ORIGINS",
     )
 
+    # GitHub OAuth app (users connect their own account). Unset = feature off.
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    GITHUB_CALLBACK_URL: str = ""
+
     # Comma-separated emails that become ADMIN on their next sign-in (Supabase only
     # issues sessions for confirmed emails). Grants only; never demotes. Set in Infisical.
     ADMIN_EMAILS_RAW: str = Field(default="", validation_alias="ADMIN_EMAILS")

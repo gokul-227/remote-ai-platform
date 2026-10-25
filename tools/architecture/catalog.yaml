@@ -251,6 +251,14 @@ ignore:
     - structlog
   node_deps:
     - "@supabase/supabase-js"   # drawn as users -> auth
+    # In-browser editors and file import/export for Docs/Sheets/Slides (no server).
+    - "@tiptap/pm"
+    - "@tiptap/react"
+    - "@tiptap/starter-kit"
+    - docx
+    - exceljs
+    - mammoth
+    - pptxgenjs
     - "@tanstack/react-query"
     - axios
     - class-variance-authority
@@ -263,6 +271,8 @@ ignore:
   settings:
     # Matches the external-service pattern but is not a separate component.
     - API_URL                   # this API's own URL
+    - GITHUB_CALLBACK_URL       # this API's own OAuth callback
+    - GITHUB_CLIENT_SECRET      # credential for the github component
     - DATABASE_URL              # postgres
     - REDIS_URL                 # redis
     - CELERY_BROKER_URL         # legacy alias of REDIS_URL; no Celery dependency

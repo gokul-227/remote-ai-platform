@@ -680,20 +680,19 @@ export function Flags() {
 /* ---------------- Job sources ---------------- */
 
 export function JobSources() {
-  const q =
-    useLoad<
-      {
-        id: string;
-        source: string;
-        status: string;
-        jobs_fetched: number;
-        jobs_inserted: number;
-        jobs_updated: number;
-        error_message: string | null;
-        duration_ms: number;
-        created_at: string;
-      }[]
-    >("/admin/sync-logs");
+  const q = useLoad<
+    {
+      id: string;
+      source: string;
+      status: string;
+      jobs_fetched: number;
+      jobs_inserted: number;
+      jobs_updated: number;
+      error_message: string | null;
+      duration_ms: number;
+      created_at: string;
+    }[]
+  >("/admin/sync-logs");
   return (
     <Section title="Job sources">
       <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
@@ -783,6 +782,244 @@ export function Integrations() {
           </tbody>
         </table>
       </div>
+    </Section>
+  );
+}
+
+/* ---------------- Job moderation ---------------- */
+
+interface AdminJob {
+  id: string;
+  title: string;
+  company_name: string;
+  source?: string | null;
+  is_active: boolean;
+  posted_at?: string | null;
+}
+
+export function Jobs({ writable }: { writable: boolean }) {
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const q = useLoad<AdminJob[]>(
+    `/admin/jobs?limit=50&skip=${page * 50}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
+  );
+  const [pending, setPending] = useState<{ job: AdminJob; kind: "toggle" | "delete" } | null>(null);
+  return (
+    <Section title="Job moderation">
+      <form
+        className="row"
+        style={{ marginBottom: 10 }}
+        onSubmit={(e) => {
+          e.preventDefault();
+          setPage(0);
+          setQuery(search.trim());
+        }}
+      >
+        <input
+          className="input"
+          placeholder="Title or company"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search jobs"
+        />
+        <button className="btn">Search</button>
+      </form>
+      <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
+      {!!q.data?.length && (
+        <div className="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Source</th>
+                <th>Status</th>
+                <th>Posted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {q.data.map((j) => (
+                <tr key={j.id}>
+                  <td>
+                    {j.title}
+                    <div className="muted">{j.company_name}</div>
+                  </td>
+                  <td>{j.source ?? "—"}</td>
+                  <td>
+                    <span className={`pill ${j.is_active ? "green" : ""}`}>{j.is_active ? "Live" : "Hidden"}</span>
+                  </td>
+                  <td className="muted">{when(j.posted_at)}</td>
+                  <td>
+                    <div className="row">
+                      <button
+                        className="btn"
+                        disabled={!writable}
+                        onClick={() => setPending({ job: j, kind: "toggle" })}
+                      >
+                        {j.is_active ? "Hide" : "Restore"}
+                      </button>
+                      <button
+                        className="btn danger"
+                        disabled={!writable}
+                        onClick={() => setPending({ job: j, kind: "delete" })}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="row" style={{ marginTop: 8 }}>
+            <button className="btn" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+              Previous
+            </button>
+            <button className="btn" disabled={(q.data?.length ?? 0) < 50} onClick={() => setPage((p) => p + 1)}>
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+      {pending && (
+        <ReasonDialog
+          title={
+            pending.kind === "delete"
+              ? `Delete “${pending.job.title}” permanently`
+              : `${pending.job.is_active ? "Hide" : "Restore"} “${pending.job.title}”`
+          }
+          danger={pending.kind === "delete"}
+          confirmWord={pending.kind === "delete" ? "DELETE" : undefined}
+          onCancel={() => setPending(null)}
+          onConfirm={async () => {
+            if (pending.kind === "delete") await api(`/admin/jobs/${pending.job.id}`, { method: "DELETE" });
+            else
+              await api(`/admin/jobs/${pending.job.id}/status`, {
+                method: "PATCH",
+                json: { is_active: !pending.job.is_active },
+              });
+            setPending(null);
+            q.reload();
+          }}
+        />
+      )}
+    </Section>
+  );
+}
+
+/* ---------------- Verification queue ---------------- */
+
+export function Verifications({ writable }: { writable: boolean }) {
+  const q =
+    useLoad<{ id: string; user_id: string; verification_type: string; status: string; created_at: string }[]>(
+      "/trust/verifications",
+    );
+  const [pending, setPending] = useState<{ id: string; status: "VERIFIED" | "REJECTED" } | null>(null);
+  return (
+    <Section title="Verification queue">
+      <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
+      {!!q.data?.length && (
+        <div className="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th>Decision</th>
+              </tr>
+            </thead>
+            <tbody>
+              {q.data.map((v) => (
+                <tr key={v.id}>
+                  <td>{v.verification_type.replace(/_/g, " ").toLowerCase()}</td>
+                  <td className="muted">{v.user_id}</td>
+                  <td>
+                    <span
+                      className={`pill ${v.status === "VERIFIED" ? "green" : v.status === "REJECTED" ? "red" : "amber"}`}
+                    >
+                      {v.status}
+                    </span>
+                  </td>
+                  <td className="muted">{when(v.created_at)}</td>
+                  <td>
+                    {v.status === "PENDING" && (
+                      <div className="row">
+                        <button
+                          className="btn primary"
+                          disabled={!writable}
+                          onClick={() => setPending({ id: v.id, status: "VERIFIED" })}
+                        >
+                          Verify
+                        </button>
+                        <button
+                          className="btn"
+                          disabled={!writable}
+                          onClick={() => setPending({ id: v.id, status: "REJECTED" })}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {pending && (
+        <ReasonDialog
+          title={pending.status === "VERIFIED" ? "Verify credential" : "Reject credential"}
+          onCancel={() => setPending(null)}
+          onConfirm={async (note) => {
+            await api(`/trust/verifications/${pending.id}/review`, {
+              method: "PATCH",
+              json: { status: pending.status, verifier_notes: note },
+            });
+            setPending(null);
+            q.reload();
+          }}
+        />
+      )}
+    </Section>
+  );
+}
+
+/* ---------------- Organisations directory ---------------- */
+
+export function Organisations() {
+  const q =
+    useLoad<
+      { id: string; name: string; industry?: string | null; location?: string | null; website?: string | null }[]
+    >("/companies/public?limit=100");
+  return (
+    <Section title="Organisations">
+      <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
+      {!!q.data?.length && (
+        <div className="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Industry</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {q.data.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.name}</td>
+                  <td>{c.industry ?? "—"}</td>
+                  <td>{c.location ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </Section>
   );
 }

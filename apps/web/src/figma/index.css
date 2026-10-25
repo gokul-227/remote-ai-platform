@@ -9,3 +9,15 @@
 
 /* Respect the OS "reduce motion" setting. */
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* Built-in Docs editor typography. */
+.rap-doc h1 { font-size: 1.875rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+.rap-doc h2 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; }
+.rap-doc h3 { font-size: 1.25rem; font-weight: 600; margin: 0.75rem 0 0.5rem; }
+.rap-doc p { margin: 0.5rem 0; line-height: 1.6; }
+.rap-doc ul { list-style: disc; padding-left: 1.5rem; }
+.rap-doc ol { list-style: decimal; padding-left: 1.5rem; }
+.rap-doc blockquote { border-left: 4px solid #0552cc; padding-left: 1rem; color: #475569; }
+.rap-doc pre { background: #0b1220; color: #e2e8f0; padding: 0.75rem; border-radius: 0.5rem; font-family: ui-monospace, monospace; }
+.rap-doc code { background: #eef2f7; padding: 0 0.25rem; border-radius: 0.25rem; }
+.rap-doc hr { border-color: #e2e8f0; margin: 1rem 0; }

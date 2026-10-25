@@ -6694,6 +6694,613 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents:
+    post:
+      tags:
+      - Documents
+      summary: Create Document
+      operationId: create_document_api_v1_documents_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Documents
+      summary: List Documents
+      operationId: list_documents_api_v1_documents_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: kind
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Kind
+      - name: project_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+      - name: contract_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contract Id
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentSummary'
+                title: Response List Documents Api V1 Documents Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/{doc_id}:
+    get:
+      tags:
+      - Documents
+      summary: Get Document
+      operationId: get_document_api_v1_documents__doc_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - Documents
+      summary: Save Document
+      operationId: save_document_api_v1_documents__doc_id__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentSave'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Documents
+      summary: Delete Document
+      operationId: delete_document_api_v1_documents__doc_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/{doc_id}/versions:
+    get:
+      tags:
+      - Documents
+      summary: List Versions
+      operationId: list_versions_api_v1_documents__doc_id__versions_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Versions Api V1 Documents  Doc Id  Versions Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/{doc_id}/versions/{version}/restore:
+    post:
+      tags:
+      - Documents
+      summary: Restore Version
+      operationId: restore_version_api_v1_documents__doc_id__versions__version__restore_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/{doc_id}/shares:
+    get:
+      tags:
+      - Documents
+      summary: List Shares
+      operationId: list_shares_api_v1_documents__doc_id__shares_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Shares Api V1 Documents  Doc Id  Shares Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Documents
+      summary: Share Document
+      operationId: share_document_api_v1_documents__doc_id__shares_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Share Document Api V1 Documents  Doc Id  Shares Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/{doc_id}/shares/{user_id}:
+    delete:
+      tags:
+      - Documents
+      summary: Unshare Document
+      operationId: unshare_document_api_v1_documents__doc_id__shares__user_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Unshare Document Api V1 Documents  Doc Id  Shares  User Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/{doc_id}/comments:
+    get:
+      tags:
+      - Documents
+      summary: List Comments
+      operationId: list_comments_api_v1_documents__doc_id__comments_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Comments Api V1 Documents  Doc Id  Comments Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Documents
+      summary: Add Comment
+      operationId: add_comment_api_v1_documents__doc_id__comments_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Add Comment Api V1 Documents  Doc Id  Comments Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/documents/{doc_id}/comments/{comment_id}/resolve:
+    post:
+      tags:
+      - Documents
+      summary: Resolve Comment
+      operationId: resolve_comment_api_v1_documents__doc_id__comments__comment_id__resolve_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      - name: comment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Comment Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Resolve Comment Api V1 Documents  Doc Id  Comments  Comment Id  Resolve Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/github/status:
+    get:
+      tags:
+      - GitHub
+      summary: Github Status
+      operationId: github_status_api_v1_github_status_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Github Status Api V1 Github Status Get
+      security:
+      - HTTPBearer: []
+  /api/v1/github/connect:
+    post:
+      tags:
+      - GitHub
+      summary: Github Connect
+      operationId: github_connect_api_v1_github_connect_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: access
+        in: query
+        required: false
+        schema:
+          enum:
+          - public
+          - private
+          type: string
+          default: public
+          title: Access
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Github Connect Api V1 Github Connect Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/github/connection:
+    delete:
+      tags:
+      - GitHub
+      summary: Github Disconnect
+      operationId: github_disconnect_api_v1_github_connection_delete
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+                title: Response Github Disconnect Api V1 Github Connection Delete
+      security:
+      - HTTPBearer: []
+  /api/v1/github/repos:
+    get:
+      tags:
+      - GitHub
+      summary: My Repos
+      operationId: my_repos_api_v1_github_repos_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 20
+          minimum: 1
+          default: 1
+          title: Page
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response My Repos Api V1 Github Repos Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/github/repos/{owner}/{repo}/commits:
+    get:
+      tags:
+      - GitHub
+      summary: Repo Commits
+      operationId: repo_commits_api_v1_github_repos__owner___repo__commits_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: owner
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Owner
+      - name: repo
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Repo
+      - name: branch
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Branch
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Repo Commits Api V1 Github Repos  Owner   Repo  Commits Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/trust/scores/{user_id}:
     get:
       tags:
@@ -8525,6 +9132,23 @@ components:
       - task_description
       - code_snippet
       title: CodeReviewRequest
+    CommentIn:
+      properties:
+        body:
+          type: string
+          maxLength: 5000
+          minLength: 1
+          title: Body
+        anchor:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Anchor
+      type: object
+      required:
+      - body
+      title: CommentIn
     CommentResponse:
       properties:
         id:
@@ -9310,6 +9934,170 @@ components:
       - payee_id
       - amount
       title: DirectEscrowCreate
+    DocumentCreate:
+      properties:
+        kind:
+          type: string
+          enum:
+          - DOC
+          - SHEET
+          - SLIDES
+          title: Kind
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Title
+        content:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Content
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        contract_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contract Id
+      type: object
+      required:
+      - kind
+      - title
+      title: DocumentCreate
+    DocumentOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          type: string
+          title: Kind
+        title:
+          type: string
+          title: Title
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        contract_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contract Id
+        version:
+          type: integer
+          title: Version
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        my_role:
+          type: string
+          title: My Role
+        content:
+          additionalProperties: true
+          type: object
+          title: Content
+      type: object
+      required:
+      - id
+      - kind
+      - title
+      - owner_id
+      - project_id
+      - contract_id
+      - version
+      - updated_at
+      - my_role
+      - content
+      title: DocumentOut
+    DocumentSave:
+      properties:
+        expected_version:
+          type: integer
+          title: Expected Version
+        title:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Title
+        content:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Content
+      type: object
+      required:
+      - expected_version
+      title: DocumentSave
+    DocumentSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          type: string
+          title: Kind
+        title:
+          type: string
+          title: Title
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        contract_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Contract Id
+        version:
+          type: integer
+          title: Version
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        my_role:
+          type: string
+          title: My Role
+      type: object
+      required:
+      - id
+      - kind
+      - title
+      - owner_id
+      - project_id
+      - contract_id
+      - version
+      - updated_at
+      - my_role
+      title: DocumentSummary
     DownloadLink:
       properties:
         url:
@@ -12141,6 +12929,24 @@ components:
       required:
       - reason
       title: SessionRevoke
+    ShareIn:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        role:
+          type: string
+          enum:
+          - VIEW
+          - COMMENT
+          - EDIT
+          title: Role
+      type: object
+      required:
+      - user_id
+      - role
+      title: ShareIn
     SkillCount:
       properties:
         skill:

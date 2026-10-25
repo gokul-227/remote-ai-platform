@@ -75,6 +75,11 @@ SOURCES: tuple[Source, ...] = (
     Source("channel_message_reactions", ("user_id",)),
     Source("channel_messages", ("author_id",), drop=frozenset({"client_token"})),
     Source("skill_endorsements", ("endorser_id", "endorsee_id")),
+    Source("documents", ("owner_id",)),
+    Source("document_versions", ("author_id",)),
+    Source("document_shares", ("user_id",)),
+    Source("document_comments", ("author_id",)),
+    Source("github_connections", ("user_id",), drop=frozenset({"token_encrypted"})),
     Source("support_tickets", ("requester_id",), drop=frozenset({"assignee_id", "version"})),
     Source("support_messages", ("author_id",)),
     Source("deliverables", ("submitted_by_id",), drop=frozenset({"file_key"})),
@@ -108,6 +113,7 @@ EXCLUDED: dict[tuple[str, str], str] = {
     ("recommendations", "engineer_id"): "already exported through user_id",
     ("messages", "sender_id"): "exported through the user's conversations, in both directions",
     ("user_blocks", "blocked_id"): "who blocked the user is never revealed",
+    ("github_oauth_states", "user_id"): "short-lived sign-in handshakes, not personal data",
     ("support_tickets", "assignee_id"): "tickets the user handled as staff belong to the requester",
 }
 

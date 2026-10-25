@@ -5,7 +5,20 @@ import type { Session } from "@supabase/supabase-js";
 import { api, publicGet, supabase } from "@/lib/client";
 import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
-import { Audit, AiUsage, Flags, Integrations, JobSources, Moderation, Overview, People, Support } from "./modules";
+import {
+  Audit,
+  AiUsage,
+  Flags,
+  Integrations,
+  JobSources,
+  Jobs,
+  Moderation,
+  Organisations,
+  Overview,
+  People,
+  Support,
+  Verifications,
+} from "./modules";
 
 interface Me {
   id: string;
@@ -23,7 +36,10 @@ const MODULES = [
   ["overview", "Overview"],
   ["support", "Support tickets"],
   ["people", "People & access"],
-  ["moderation", "Moderation"],
+  ["moderation", "Content reports"],
+  ["jobs", "Job moderation"],
+  ["verifications", "Verifications"],
+  ["orgs", "Organisations"],
   ["audit", "Audit log"],
   ["ai", "AI usage & quota"],
   ["flags", "Feature flags"],
@@ -89,6 +105,9 @@ export default function Console() {
         {mod === "support" && <Support writable={writable} meId={me.id} />}
         {mod === "people" && <People writable={writable} meId={me.id} />}
         {mod === "moderation" && <Moderation writable={writable} />}
+        {mod === "jobs" && <Jobs writable={writable} />}
+        {mod === "verifications" && <Verifications writable={writable} />}
+        {mod === "orgs" && <Organisations />}
         {mod === "audit" && <Audit />}
         {mod === "ai" && <AiUsage />}
         {mod === "flags" && <Flags />}
