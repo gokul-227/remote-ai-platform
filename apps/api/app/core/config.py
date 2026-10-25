@@ -11,6 +11,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 ADMIN_CONSOLE_ORIGINS = {
     "production": "https://admin.remoteaiplatform.com",
     "development": "https://admin-dev.remoteaiplatform.com",
+    # The hosted dev API runs with APP_ENV=staging.
+    "staging": "https://admin-dev.remoteaiplatform.com",
 }
 
 
