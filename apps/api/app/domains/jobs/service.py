@@ -175,8 +175,21 @@ class JobService:
             try:
                 fetched_jobs = await aggregator.fetch_jobs(limit=limit_per_source)
                 inserted = updated = 0
+                skipped = 0
                 for job_data in fetched_jobs:
-                    saved, created = await self.repo.upsert_external_job(job_data)
+                    # One bad posting (e.g. a field the database rejects) is skipped,
+                    # never allowed to roll back the whole source.
+                    try:
+                        async with self.repo.db.begin_nested():
+                            saved, created = await self.repo.upsert_external_job(job_data)
+                    except Exception as exc:
+                        skipped += 1
+                        if skipped <= 3:
+                            logger.warning(
+                                f"Skipped one {aggregator.source_name} job: {type(exc).__name__}",
+                                external_id=job_data.external_id,
+                            )
+                        continue
                     if created:
                         new_job_ids.append(saved.id)
                     inserted += int(created)

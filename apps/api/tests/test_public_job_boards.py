@@ -218,3 +218,62 @@ async def test_import_announces_new_jobs_and_per_source_runs_skip_maintenance(
     assert maintained == []
     await service.sync_all_job_sources()
     assert maintained == [True]
+
+
+def test_long_fields_are_trimmed_to_column_limits():
+    agg = pb.GreenhouseAggregator()
+    places = ", ".join(f"City {i}" for i in range(80))  # ~600 characters of locations
+    job = agg._job(
+        ext_id="1", title="T" * 400, company="C" * 400, url=None, description="d", location=places
+    )
+    assert len(job.title) == 255
+    assert len(job.company_name) == 255
+    assert len(job.location) <= 255
+    assert job.location.endswith("…")
+
+
+@pytest.mark.asyncio
+async def test_one_bad_job_never_discards_the_whole_source(db: AsyncSession, monkeypatch):
+    from app.domains.jobs import service as svc
+    from app.domains.jobs.schemas import JobPostCreate
+
+    class Mixed:
+        source_name = "MIXED"
+
+        async def fetch_jobs(self, limit: int = 100):
+            good = [
+                JobPostCreate(
+                    title=f"Role {i}",
+                    description="d",
+                    company_name="C",
+                    external_id=f"mixed_{uuid.uuid4().hex}",
+                    source="MIXED",
+                )
+                for i in range(3)
+            ]
+            bad = JobPostCreate(
+                title="Bad",
+                description="d",
+                company_name="C",
+                external_id="mixed_bad",
+                source="MIXED",
+            )
+            return [good[0], bad, good[1], good[2]]
+
+    real = JobRepository.upsert_external_job
+
+    async def flaky(self, data):
+        if data.external_id == "mixed_bad":
+            raise ValueError("rejected by the database")
+        return await real(self, data)
+
+    monkeypatch.setattr(JobRepository, "upsert_external_job", flaky)
+
+    async def no_notify(ids):
+        return {}
+
+    monkeypatch.setattr(svc, "notify_new_jobs", no_notify)
+    service = svc.JobService(JobRepository(db))
+    service.aggregators = [Mixed()]
+    stats = await service.sync_all_job_sources(source_name="MIXED", run_maintenance=False)
+    assert stats == {"MIXED": 3}

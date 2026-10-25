@@ -66,15 +66,16 @@ class _Board(BaseAggregator):
         ]
         location = self.clean_text(location) or "Remote"
         low, high, currency = salary
+        # Column limits (VARCHAR 255): multi-city locations can be far longer.
         return JobPostCreate(
-            title=title,
+            title=title[:255],
             description=description,
-            company_name=self.clean_text(company) or "Unknown Company",
-            location=location,
+            company_name=(self.clean_text(company) or "Unknown Company")[:255],
+            location=location if len(location) <= 255 else location[:252].rsplit(",", 1)[0] + "…",
             is_remote=_remote(location, title) if remote is None else remote,
             job_type=self.normalize_job_type(job_type),
             skills=self.extract_skills(f"{title} {' '.join(tags or [])} {description}"),
-            external_id=f"{self.source_name.lower()}_{ext_id}",
+            external_id=f"{self.source_name.lower()}_{ext_id}"[:255],
             external_url=url,
             source=self.source_name,
             salary_min=low,
