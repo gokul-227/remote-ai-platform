@@ -88,6 +88,7 @@ async def test_private_hosts_are_refused_including_after_redirect(
 async def test_tampered_or_bad_scheme_is_rejected(client: AsyncClient, auth_headers, web):
     r = await _token(client, auth_headers, "https://example.com")
     path = r.json()["view_path"]
-    assert (await client.get(path[:-2] + "00")).status_code == 403
+    tampered = path[:-1] + ("0" if path[-1] != "0" else "1")  # always a different signature
+    assert (await client.get(tampered)).status_code == 403
     assert (await _token(client, auth_headers, "file:///etc/passwd")).status_code == 422
     assert (await _token(client, auth_headers, "https://user:pw@example.com")).status_code == 422

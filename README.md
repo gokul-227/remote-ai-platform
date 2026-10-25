@@ -54,7 +54,7 @@ from the web app's routes, the API's routers and the user roles:
   Jooble, USAJOBS. Every job links to its original posting. Imported jobs unseen for 30 days leave the public
   list; imported jobs posted over 90 days ago are deleted (or hidden, if someone applied). Public job pages carry
   schema.org JobPosting data for Google's job search; only production is indexable. After each import, new job
-  pages are announced to Google (Indexing API, service account `job-indexer@rap-job-indexing-1025` in a Google Cloud
+  pages are announced to Google (Indexing API, service account `remoteaiplatform-indexer@remoteaiplatform` in the Google Cloud
   project **without billing**; key in Infisical as `GOOGLE_INDEXING_CREDENTIALS_B64`) and to IndexNow (Bing and others;
   public key at `/indexnow.txt`). Messaging and notifications poll;
   the WebSocket endpoints stay off (`FEATURE_REALTIME_WEBSOCKETS`).
