@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Ic, Btn, Card, Tag, Modal, Field, inputCls, Notice } from "./rap_kit";
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Ic, Btn, Card, Tag, Modal, Field, inputCls, Notice, cx } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, safeHref, timeAgo, statusOf } from "./live";
@@ -582,17 +582,14 @@ interface Turn {
   actionState?: string;
 }
 
-export function Assistant({ go }: { go?: (r: string) => void }) {
+export function AssistantChat({ go, compact }: { go?: (r: string) => void; compact?: boolean }) {
+  const inputId = useId();
   const { user } = useAuth();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   if (!user)
-    return (
-      <Page title="Assistant" sub="Sign in to use the assistant.">
-        <Empty icon="spark" title="Sign in first" text="The assistant works with your own data and permissions." />
-      </Page>
-    );
+    return <Empty icon="spark" title="Sign in first" text="The assistant works with your own data and permissions." />;
   const send = async () => {
     const message = text.trim();
     if (!message || busy) return;
@@ -632,18 +629,15 @@ export function Assistant({ go }: { go?: (r: string) => void }) {
     }
   };
   return (
-    <Page
-      title="Assistant"
-      sub="Ask about your work. It acts only with your permissions and asks before changing anything."
-    >
-      <Card c="grid gap-3">
+    <>
+      <Card c={cx("grid gap-3", compact && "border-0 shadow-none")} p={compact ? "p-3" : true}>
         {turns.length === 0 && (
           <div className="text-sm text-slate-500">
             Try: “Find React jobs”, “What are my open tasks?”, “Draft an intro message to a client”, or “Schedule a call
             tomorrow at 10:00 UTC”.
           </div>
         )}
-        <ol className="grid gap-2" aria-live="polite">
+        <ol className={cx("grid gap-2", compact && "max-h-[50vh] overflow-y-auto")} aria-live="polite">
           {turns.map((t, i) => (
             <li
               key={i}
@@ -694,11 +688,11 @@ export function Assistant({ go }: { go?: (r: string) => void }) {
             send();
           }}
         >
-          <label htmlFor="assistant-input" className="sr-only">
+          <label htmlFor={inputId} className="sr-only">
             Message the assistant
           </label>
           <input
-            id="assistant-input"
+            id={inputId}
             className={inputCls}
             value={text}
             maxLength={2000}
@@ -709,7 +703,58 @@ export function Assistant({ go }: { go?: (r: string) => void }) {
         </form>
         <p className="text-xs text-slate-500">AI answers can be wrong. Uses your monthly AI allowance.</p>
       </Card>
+    </>
+  );
+}
+
+export function Assistant({ go }: { go?: (r: string) => void }) {
+  return (
+    <Page
+      title="AI assistant"
+      sub="Ask about your work. It acts only with your permissions and asks before changing anything."
+    >
+      <AssistantChat go={go} />
     </Page>
+  );
+}
+
+/** Messenger-style assistant bubble available on every page. */
+export function AssistantDock({ go }: { go: (r: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rap-dock">
+      {open && (
+        <div className="rap-dock-panel" role="dialog" aria-label="AI assistant chat">
+          <div className="rap-dock-head">
+            <span className="rap-area-icon">
+              <Ic n="spark" s={18} />
+            </span>
+            <div className="flex-1">
+              <b>AI assistant</b>
+              <p className="text-xs text-slate-500">Asks before changing anything</p>
+            </div>
+            <button
+              aria-label="Open full screen"
+              title="Open full screen"
+              onClick={() => (setOpen(false), go("assistant"))}
+            >
+              <Ic n="layers" s={16} />
+            </button>
+            <button aria-label="Close chat" title="Close" onClick={() => setOpen(false)}>
+              <Ic n="x" s={16} />
+            </button>
+          </div>
+          <AssistantChat go={go} compact />
+        </div>
+      )}
+      <button
+        className="rap-dock-bubble"
+        aria-label={open ? "Hide AI assistant" : "Chat with the AI assistant"}
+        onClick={() => setOpen(!open)}
+      >
+        <Ic n={open ? "x" : "spark"} s={26} />
+      </button>
+    </div>
   );
 }
 

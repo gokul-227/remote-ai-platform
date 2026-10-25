@@ -1,72 +1,210 @@
 import { useState, useEffect, useRef, type ReactNode } from "react";
+import { AssistantDock } from "./rap_collab";
 import { Ic, Av, Brand, cx, useDialogFocus } from "./rap_kit";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { useApi } from "./live";
-// Enterprise navigation: sections follow what people do (connect, communicate,
-// find work, hire, deliver, collaborate), each with its own sidebar. Admin lives
-// in the separate staff console (admin.remoteaiplatform.com), not here.
-const sections: Record<string, string[][]> = {
-  Home: [
-    ["feed", "News feed", "home"],
-    ["notifications", "Notifications", "bell"],
-    ["assistant", "AI assistant", "spark"],
-    ["search", "Search everything", "search"],
+// Enterprise navigation: each area has a purpose, an icon and named groups of
+// pages. The sidebar shows the current area's groups; the app launcher shows
+// every area at once. Admin lives in the separate staff console.
+type NavItem = [route: string, label: string, icon: string];
+type Area = { icon: string; blurb: string; groups: { label: string; items: NavItem[] }[] };
+const catalog: Record<string, Area> = {
+  Home: {
+    icon: "home",
+    blurb: "Your feed, alerts and assistant",
+    groups: [
+      {
+        label: "Stay updated",
+        items: [
+          ["feed", "News feed", "home"],
+          ["notifications", "Notifications", "bell"],
+        ],
+      },
+      {
+        label: "Get help fast",
+        items: [
+          ["assistant", "AI assistant", "spark"],
+          ["search", "Search everything", "search"],
+        ],
+      },
+    ],
+  },
+  Network: {
+    icon: "users",
+    blurb: "People, groups and organisations",
+    groups: [
+      {
+        label: "Your network",
+        items: [
+          ["network", "Connections", "users"],
+          ["groups", "Groups", "globe"],
+          ["profile", "My profile", "user"],
+        ],
+      },
+      {
+        label: "Discover",
+        items: [
+          ["engineers", "Professionals", "search"],
+          ["companies", "Organisations", "building"],
+        ],
+      },
+    ],
+  },
+  Messaging: {
+    icon: "chat",
+    blurb: "Chat, channels and video calls",
+    groups: [
+      {
+        label: "Conversations",
+        items: [
+          ["messenger", "Direct messages", "chat"],
+          ["channels", "Channels", "inbox"],
+        ],
+      },
+      { label: "Meet", items: [["meetings", "Meetings & calls", "video"]] },
+    ],
+  },
+  Careers: {
+    icon: "briefcase",
+    blurb: "Find and apply to remote jobs",
+    groups: [
+      {
+        label: "Find work",
+        items: [
+          ["jobs", "Search jobs", "briefcase"],
+          ["recs", "Recommended for you", "target"],
+          ["saved", "Saved jobs", "bookmark"],
+        ],
+      },
+      {
+        label: "Track",
+        items: [
+          ["applications", "My applications", "file"],
+          ["dash", "Career insights", "chart"],
+        ],
+      },
+      { label: "Preferences", items: [["onboarding", "Job preferences", "settings"]] },
+    ],
+  },
+  Freelance: {
+    icon: "zap",
+    blurb: "Gigs, contracts and deliverables",
+    groups: [
+      {
+        label: "Find work",
+        items: [
+          ["freelancework", "Freelance work for you", "target"],
+          ["taskmarket", "Task offers", "zap"],
+        ],
+      },
+      {
+        label: "Deliver",
+        items: [
+          ["contracts", "Contracts", "file"],
+          ["submissions", "Deliverables", "inbox"],
+          ["worklog", "Time & work log", "clock"],
+        ],
+      },
+      {
+        label: "Reputation & pay",
+        items: [
+          ["reviews", "Reviews", "star"],
+          ["earnings", "Payments", "wallet"],
+        ],
+      },
+    ],
+  },
+  Hiring: {
+    icon: "building",
+    blurb: "Post jobs, find talent, contract",
+    groups: [
+      { label: "Overview", items: [["codash", "Hiring overview", "chart"]] },
+      {
+        label: "Jobs",
+        items: [
+          ["postjob", "Post a job", "plus"],
+          ["cojobs", "Job postings", "briefcase"],
+          ["candidates", "Candidates", "users"],
+        ],
+      },
+      {
+        label: "Talent",
+        items: [
+          ["ride", "Match a professional", "zap"],
+          ["engineers", "Talent search", "search"],
+        ],
+      },
+      {
+        label: "Engagements",
+        items: [
+          ["contracts", "Contracts", "file"],
+          ["copayments", "Payments", "wallet"],
+          ["coprofile", "Organisation profile", "building"],
+        ],
+      },
+    ],
+  },
+  Projects: {
+    icon: "board",
+    blurb: "Boards, sprints, docs and code",
+    groups: [
+      {
+        label: "Plan & track",
+        items: [
+          ["workspace", "Workspace overview", "layers"],
+          ["projects", "Boards & sprints", "board"],
+        ],
+      },
+      {
+        label: "Docs & files",
+        items: [
+          ["files", "All files", "file"],
+          ["docs", "Docs", "file"],
+          ["sheets", "Sheets", "grid"],
+          ["slides", "Slides", "layers"],
+        ],
+      },
+      { label: "Code", items: [["quality", "Code review", "code"]] },
+    ],
+  },
+  Account: {
+    icon: "settings",
+    blurb: "Settings, security and support",
+    groups: [
+      {
+        label: "Your account",
+        items: [
+          ["settings", "Settings & connected apps", "settings"],
+          ["security", "Security & verification", "shield"],
+        ],
+      },
+      {
+        label: "Support",
+        items: [
+          ["help", "Help center", "question"],
+          ["support", "Contact support", "chat"],
+        ],
+      },
+    ],
+  },
+};
+const sections: Record<string, string[][]> = Object.fromEntries(
+  Object.entries(catalog).map(([name, a]) => [name, a.groups.flatMap((g) => g.items)]),
+);
+// Quick actions shown in the app launcher.
+const CREATE: Record<string, NavItem[]> = {
+  ENGINEER: [
+    ["feed", "Write a post", "plus"],
+    ["meetings", "Schedule a meeting", "video"],
+    ["docs", "New document", "file"],
+    ["support", "Ask support", "question"],
   ],
-  Network: [
-    ["network", "My network", "users"],
-    ["groups", "Groups", "globe"],
-    ["engineers", "Discover professionals", "search"],
-    ["companies", "Organisations", "building"],
-    ["profile", "My profile", "user"],
-  ],
-  Messaging: [
-    ["messenger", "Direct messages", "chat"],
-    ["channels", "Channels", "inbox"],
-    ["meetings", "Meetings & calls", "video"],
-  ],
-  Careers: [
-    ["jobs", "Find jobs", "briefcase"],
-    ["recs", "Recommended for you", "target"],
-    ["applications", "My applications", "file"],
-    ["saved", "Saved jobs", "bookmark"],
-    ["dash", "Career insights", "chart"],
-    ["onboarding", "Job preferences", "settings"],
-  ],
-  Freelance: [
-    ["freelancework", "Freelance work for you", "target"],
-    ["taskmarket", "Task offers", "zap"],
-    ["contracts", "Contracts", "file"],
-    ["submissions", "Deliverables", "inbox"],
-    ["worklog", "Time & work log", "clock"],
-    ["reviews", "Reviews", "star"],
-    ["earnings", "Payments", "wallet"],
-  ],
-  Hiring: [
-    ["codash", "Hiring overview", "chart"],
+  COMPANY: [
     ["postjob", "Post a job", "plus"],
-    ["cojobs", "Job postings", "briefcase"],
-    ["candidates", "Candidates", "users"],
-    ["ride", "Match a professional", "zap"],
-    ["engineers", "Talent search", "search"],
-    ["contracts", "Contracts", "file"],
-    ["copayments", "Payments", "wallet"],
-    ["coprofile", "Organisation profile", "building"],
-  ],
-  Projects: [
-    ["workspace", "Workspace overview", "layers"],
-    ["projects", "Boards & sprints", "board"],
-    ["files", "All files", "file"],
-    ["docs", "Docs", "file"],
-    ["sheets", "Sheets", "grid"],
-    ["slides", "Slides", "layers"],
-    ["quality", "Code review", "code"],
-  ],
-  Account: [
-    ["settings", "Account settings", "settings"],
-    ["security", "Security & verification", "shield"],
-    ["help", "Help center", "question"],
-    ["support", "Contact support", "chat"],
+    ["ride", "Find a professional", "zap"],
+    ["meetings", "Schedule a meeting", "video"],
+    ["docs", "New document", "file"],
   ],
 };
 type ShellPerson = { id: string; full_name?: string };
@@ -118,6 +256,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   const menuBox = useRef<HTMLDivElement>(null);
   useDialogFocus(menuBox, !!menu, () => setMenu(""));
   const [q, setQ] = useState("");
+  const [menuQ, setMenuQ] = useState("");
   useEffect(() => {
     setMenu("");
   }, [r]);
@@ -146,6 +285,15 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   if (["company", "engineer", "talent"].includes(r)) prefer(role === "COMPANY" ? "Hiring" : "Network");
   if (["contractsign"].includes(r)) prefer(role === "COMPANY" ? "Hiring" : "Freelance");
   if (r === "group") prefer("Network");
+  const crumb = (() => {
+    const area = catalog[section];
+    if (!area) return null;
+    for (const g of area.groups) {
+      const hit = g.items.find((i) => i[0] === r);
+      if (hit) return { area: section, group: g.label, page: hit[1] };
+    }
+    return null;
+  })();
   const nav = (rows: string[][]) =>
     rows.map(([path, label, icon]) => (
       <button
@@ -286,7 +434,14 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             </>
           )}
         </div>
-        {nav(visible[section])}
+        {catalog[section]
+          ? catalog[section].groups.map((g) => (
+              <div key={g.label}>
+                <h3 className="rap-side-label">{g.label}</h3>
+                {nav(g.items)}
+              </div>
+            ))
+          : nav(visible[section])}
         {user ? (
           <>
             <div className="rap-divider" />
@@ -326,8 +481,16 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           <p>Remote AI Platform</p>
         </footer>
       </aside>
+      {user && r !== "assistant" && <AssistantDock go={go} />}
       <main className={cx("rap-main", r === "feed" && "rap-main-feed")}>
         <div className="rap-content" key={r}>
+          {crumb && r !== "feed" && (
+            <nav aria-label="Breadcrumb" className="rap-crumb">
+              <button onClick={() => go(sections[crumb.area]?.[0]?.[0] ?? "feed")}>{crumb.area}</button>
+              {crumb.group && <span>{crumb.group}</span>}
+              <b aria-current="page">{crumb.page}</b>
+            </nav>
+          )}
           {children}
         </div>
       </main>
@@ -405,22 +568,70 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             </div>
             {menu === "pages" ? (
               <>
-                <div className="rap-menu-grid">
-                  {Object.entries(visible).map(([title, rows]) => (
-                    <section key={title}>
-                      <h3>{title}</h3>
-                      {nav(rows)}
-                    </section>
-                  ))}
-                  {!user && (
-                    <section>
-                      <h3>Joining Remote AI</h3>
-                      {nav([
-                        ["login", "Sign in", "lock"],
-                        ["register", "Create an account", "user"],
-                        ["forgot", "Having trouble signing in?", "mail"],
-                      ])}
-                    </section>
+                <label className="sr-only" htmlFor="menu-search">
+                  Search the menu
+                </label>
+                <input
+                  id="menu-search"
+                  className="rap-menu-search"
+                  placeholder="Search menu…"
+                  value={menuQ}
+                  onChange={(e) => setMenuQ(e.target.value)}
+                  autoFocus
+                />
+                <div className="rap-launcher">
+                  <div className="rap-menu-grid">
+                    {Object.entries(visible)
+                      .map(([title, rows]) => {
+                        const area = catalog[title];
+                        const groups = area ? area.groups : [{ label: "", items: rows as NavItem[] }];
+                        const ql = menuQ.trim().toLowerCase();
+                        const shown = groups
+                          .map((g) => ({
+                            ...g,
+                            items: g.items.filter(
+                              (i) => !ql || `${title} ${g.label} ${i[1]}`.toLowerCase().includes(ql),
+                            ),
+                          }))
+                          .filter((g) => g.items.length);
+                        return { title, area, shown };
+                      })
+                      .filter((x) => x.shown.length)
+                      .map(({ title, area, shown }) => (
+                        <section key={title} className="rap-area">
+                          <div className="rap-area-head">
+                            <span className="rap-area-icon">
+                              <Ic n={area?.icon ?? "layers"} s={20} />
+                            </span>
+                            <div>
+                              <h3>{title}</h3>
+                              {area && <p>{area.blurb}</p>}
+                            </div>
+                          </div>
+                          {shown.map((g) => (
+                            <div key={g.label || title}>
+                              {g.label && <h4 className="rap-area-group">{g.label}</h4>}
+                              {nav(g.items)}
+                            </div>
+                          ))}
+                        </section>
+                      ))}
+                    {!user && (
+                      <section className="rap-area">
+                        <h3>Joining Remote AI</h3>
+                        {nav([
+                          ["login", "Sign in", "lock"],
+                          ["register", "Create an account", "user"],
+                          ["forgot", "Having trouble signing in?", "mail"],
+                        ])}
+                      </section>
+                    )}
+                  </div>
+                  {user && CREATE[role] && (
+                    <aside className="rap-create">
+                      <h3>Create</h3>
+                      {nav(CREATE[role])}
+                    </aside>
                   )}
                 </div>
               </>
