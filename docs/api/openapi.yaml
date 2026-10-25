@@ -8732,6 +8732,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/usage:
+    get:
+      tags:
+      - Admin Operations
+      summary: Platform Usage
+      description: Live counts measured against the free-tier limits, plus links to provider dashboards.
+      operationId: platform_usage_api_v1_admin_usage_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Platform Usage Api V1 Admin Usage Get
+      security:
+      - HTTPBearer: []
 components:
   schemas:
     AIUsageStatsResponse:

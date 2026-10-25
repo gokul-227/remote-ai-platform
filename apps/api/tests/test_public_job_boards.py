@@ -81,6 +81,7 @@ def feeds(monkeypatch):
     monkeypatch.setattr(settings, "GREENHOUSE_BOARDS", "acme")
     monkeypatch.setattr(settings, "LEVER_BOARDS", "acme")
     monkeypatch.setattr(settings, "ASHBY_BOARDS", "acme")
+    monkeypatch.setattr(settings, "ATS_BOARD_SHARDS", 1)
 
 
 @pytest.mark.asyncio
@@ -156,3 +157,14 @@ async def test_old_imported_jobs_are_removed_unless_someone_applied(db: AsyncSes
     assert left[direct_id].expired_at is None  # posted jobs are never touched
     assert removed == 1
     assert hidden == 1
+
+
+def test_board_groups_rotate_and_cover_every_company(monkeypatch):
+    from datetime import UTC, datetime
+
+    monkeypatch.setattr(settings, "ATS_BOARD_SHARDS", 4)
+    boards = [f"c{i}" for i in range(10)]
+    seen = [pb._shard(boards, datetime(2030, 1, 1, h, tzinfo=UTC)) for h in (0, 3, 6, 9)]
+    assert sorted(sum(seen, [])) == sorted(boards)  # four runs cover every board once
+    assert all(len(g) <= 3 for g in seen)
+    assert pb._shard(boards, datetime(2030, 1, 1, 12, tzinfo=UTC)) == seen[0]  # then it repeats

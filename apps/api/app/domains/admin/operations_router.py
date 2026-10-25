@@ -208,3 +208,105 @@ async def list_assistant_actions(
         }
         for a, email in rows
     ]
+
+
+# Free-tier limits of the services this platform runs on (what the usage page measures against).
+FREE_LIMITS = {
+    "database_bytes": 500 * 1024 * 1024,  # Supabase Free: 500 MB database
+    "monthly_active_users": 50_000,  # Supabase Free auth
+    "emails_per_day": 100,  # Resend Free
+    "emails_per_month": 3_000,  # Resend Free
+    "google_indexing_per_day": 200,  # Google Indexing API default quota
+}
+PROVIDER_DASHBOARDS = {
+    "Supabase (database, sign-in, storage)": "https://supabase.com/dashboard/project/_/settings/billing/usage",
+    "Render (API server hours)": "https://dashboard.render.com/billing",
+    "Cloudflare Workers (web requests per day)": "https://dash.cloudflare.com/?to=/:account/workers/plans",
+    "Upstash Redis (commands per month)": "https://console.upstash.com",
+    "Resend (all emails incl. sign-in codes)": "https://resend.com/emails",
+    "Sentry (errors per month)": "https://sentry.io/stats/",
+    "Google Search Console (indexing)": "https://search.google.com/search-console",
+    "UptimeRobot (uptime)": "https://dashboard.uptimerobot.com",
+}
+
+
+@router.get("/admin/usage")
+async def platform_usage(
+    _admin: User = Depends(staff), db: AsyncSession = Depends(get_db)
+) -> dict[str, Any]:
+    """Live counts measured against the free-tier limits, plus links to provider dashboards."""
+    from sqlalchemy import func, text
+
+    from app.domains.admin.models import ApiSyncLog
+    from app.domains.jobs.models import JobPost
+    from app.domains.notifications.models import EmailOutbox
+    from app.domains.social.models import Post
+    from app.services.ai.models import AIUsageLog
+
+    now = _now()
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month = day.replace(day=1)
+
+    async def scalar(stmt: Any) -> int:
+        return int((await db.execute(stmt)).scalar() or 0)
+
+    db_bytes: int | None = None
+    if db.bind is not None and db.bind.dialect.name == "postgresql":
+        db_bytes = await scalar(text("select pg_database_size(current_database())"))
+    by_source: dict[str, int] = dict(
+        (
+            await db.execute(
+                select(JobPost.source, func.count())
+                .where(JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None))
+                .group_by(JobPost.source)
+            )
+        )
+        .tuples()
+        .all()
+    )
+    latest = (
+        select(ApiSyncLog.source, func.max(ApiSyncLog.created_at).label("at"))
+        .group_by(ApiSyncLog.source)
+        .subquery()
+    )
+    runs = (
+        await db.execute(
+            select(ApiSyncLog).join(
+                latest,
+                (ApiSyncLog.source == latest.c.source) & (ApiSyncLog.created_at == latest.c.at),
+            )
+        )
+    ).scalars()
+    return {
+        "measured_at": now,
+        "limits": FREE_LIMITS,
+        "database_bytes": db_bytes,
+        "users_total": await scalar(select(func.count()).select_from(User)),
+        "users_new_this_month": await scalar(
+            select(func.count()).select_from(User).where(User.created_at >= month)
+        ),
+        "jobs_live": sum(by_source.values()),
+        "jobs_by_source": dict(sorted(by_source.items(), key=lambda kv: -kv[1])),
+        "posts_total": await scalar(select(func.count()).select_from(Post)),
+        "emails_sent_today": await scalar(
+            select(func.count()).select_from(EmailOutbox).where(EmailOutbox.sent_at >= day)
+        ),
+        "emails_sent_this_month": await scalar(
+            select(func.count()).select_from(EmailOutbox).where(EmailOutbox.sent_at >= month)
+        ),
+        "ai_calls_this_month": await scalar(
+            select(func.count()).select_from(AIUsageLog).where(AIUsageLog.created_at >= month)
+        ),
+        "last_import": [
+            {
+                "source": r.source,
+                "status": r.status,
+                "at": r.created_at,
+                "fetched": r.jobs_fetched,
+                "new": r.jobs_inserted,
+                "error": r.error_message,
+            }
+            for r in sorted(runs, key=lambda r: r.source)
+        ],
+        "dashboards": PROVIDER_DASHBOARDS,
+    }

@@ -1343,3 +1343,162 @@ export function SystemStatus() {
     </Section>
   );
 }
+
+/* ---------------- Platform configuration: usage & limits ---------------- */
+
+interface Usage {
+  measured_at: string;
+  limits: Record<string, number>;
+  database_bytes: number | null;
+  users_total: number;
+  users_new_this_month: number;
+  jobs_live: number;
+  jobs_by_source: Record<string, number>;
+  posts_total: number;
+  emails_sent_today: number;
+  emails_sent_this_month: number;
+  ai_calls_this_month: number;
+  last_import: { source: string; status: string; at: string; fetched: number; new: number; error: string | null }[];
+  dashboards: Record<string, string>;
+}
+
+function Meter({ label, value, limit, unit = "" }: { label: string; value: number; limit: number; unit?: string }) {
+  const pct = Math.min(100, Math.round((value / limit) * 100));
+  const tone = pct >= 85 ? "var(--danger)" : pct >= 60 ? "#d97706" : "var(--brand)";
+  return (
+    <div className="card metric">
+      <span>{label}</span>
+      <strong>
+        {value.toLocaleString()}
+        {unit}{" "}
+        <small className="muted">
+          / {limit.toLocaleString()}
+          {unit}
+        </small>
+      </strong>
+      <div style={{ height: 8, background: "var(--chip)", borderRadius: 4, marginTop: 8 }}>
+        <div style={{ width: `${pct}%`, height: 8, background: tone, borderRadius: 4 }} />
+      </div>
+      <span style={{ marginTop: 6 }}>{pct}% of the free limit</span>
+    </div>
+  );
+}
+
+export function UsageLimits() {
+  const q = useLoad<Usage>("/admin/usage");
+  const u = q.data;
+  const mb = (b: number) => Math.round(b / 1024 / 1024);
+  return (
+    <Section
+      title="Usage & limits"
+      action={
+        <button className="btn" onClick={q.reload}>
+          Refresh
+        </button>
+      }
+    >
+      <p className="muted">
+        Live counts from the platform against the free-tier limits. Numbers only the provider sees (web requests, server
+        hours, Redis commands, sign-in emails) are on each provider&apos;s dashboard below.
+      </p>
+      <State loading={q.loading && !q.data} error={q.error} retry={q.reload} />
+      {u && (
+        <>
+          <div className="grid">
+            {u.database_bytes != null && (
+              <Meter
+                label="Database size (Supabase)"
+                value={mb(u.database_bytes)}
+                limit={mb(u.limits.database_bytes)}
+                unit=" MB"
+              />
+            )}
+            <Meter
+              label="Registered users (Supabase auth)"
+              value={u.users_total}
+              limit={u.limits.monthly_active_users}
+            />
+            <Meter
+              label="Notification emails today (Resend)"
+              value={u.emails_sent_today}
+              limit={u.limits.emails_per_day}
+            />
+            <Meter
+              label="Notification emails this month"
+              value={u.emails_sent_this_month}
+              limit={u.limits.emails_per_month}
+            />
+          </div>
+          <div className="grid">
+            <div className="card metric">
+              <span>Live jobs</span>
+              <strong>{u.jobs_live.toLocaleString()}</strong>
+            </div>
+            <div className="card metric">
+              <span>New users this month</span>
+              <strong>{u.users_new_this_month.toLocaleString()}</strong>
+            </div>
+            <div className="card metric">
+              <span>Feed posts</span>
+              <strong>{u.posts_total.toLocaleString()}</strong>
+            </div>
+            <div className="card metric">
+              <span>AI calls this month</span>
+              <strong>{u.ai_calls_this_month.toLocaleString()}</strong>
+            </div>
+          </div>
+          <div className="card">
+            <h3 style={{ marginTop: 0 }}>Job import by source</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Live jobs</th>
+                  <th>Last run</th>
+                  <th>Status</th>
+                  <th>Fetched / new</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(u.jobs_by_source).map(([src, n]) => {
+                  const run = u.last_import.find((r) => r.source === src);
+                  return (
+                    <tr key={src}>
+                      <td>{src}</td>
+                      <td>{n.toLocaleString()}</td>
+                      <td>{run ? when(run.at) : "—"}</td>
+                      <td>
+                        {run ? (
+                          <span
+                            className={`pill ${run.status === "SUCCESS" ? "green" : run.status === "FAILED" ? "red" : ""}`}
+                          >
+                            {run.status}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td>{run ? `${run.fetched} / ${run.new}` : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="card">
+            <h3 style={{ marginTop: 0 }}>Provider dashboards</h3>
+            <ul>
+              {Object.entries(u.dashboards).map(([name, url]) => (
+                <li key={name}>
+                  <a href={url} target="_blank" rel="noopener noreferrer">
+                    {name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
+    </Section>
+  );
+}

@@ -22,6 +22,7 @@ import {
   People,
   Support,
   SystemStatus,
+  UsageLimits,
   Verifications,
 } from "./modules";
 
@@ -149,7 +150,13 @@ const SECTIONS: {
           ["announcements", "Announcements", "bell"],
         ],
       },
-      { label: "Health", items: [["status", "System status", "zap"]] },
+      {
+        label: "Health",
+        items: [
+          ["status", "System status", "zap"],
+          ["usage", "Usage & limits", "chart"],
+        ],
+      },
     ],
   },
   {
@@ -274,6 +281,7 @@ export default function Console() {
     integrations: <Integrations />,
     announcements: <Announcements writable={writable} />,
     status: <SystemStatus />,
+    usage: <UsageLimits />,
     audit: <Audit />,
     security: <Audit prefix="auth.,admin.user.,admin.bootstrap" title="Security events" />,
   };

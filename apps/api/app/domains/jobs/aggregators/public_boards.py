@@ -11,6 +11,7 @@ default to large employers whose public boards were verified live.
 
 import asyncio
 import html
+from datetime import UTC, datetime
 
 import httpx
 
@@ -29,6 +30,15 @@ def _remote(*parts: str | None) -> bool:
 
 def _boards(raw: str) -> list[str]:
     return [b.strip() for b in raw.split(",") if b.strip()]
+
+
+def _shard(boards: list[str], now: datetime | None = None) -> list[str]:
+    """This run's group of company boards: the groups rotate every 3 hours, so each
+    company is fetched in full twice a day without one run doing all of them."""
+    shards = max(1, settings.ATS_BOARD_SHARDS)
+    hour = (now or datetime.now(UTC)).hour
+    current = (hour // 3) % shards
+    return [b for i, b in enumerate(sorted(boards)) if i % shards == current]
 
 
 class _Board(BaseAggregator):
@@ -51,7 +61,7 @@ class _Board(BaseAggregator):
         title = self.clean_text(title)
         if not title:
             return None
-        description = self.clean_rich_text(description) or title
+        description = (self.clean_rich_text(description) or title)[: settings.JOB_DESCRIPTION_MAX_CHARS]
         location = self.clean_text(location) or "Remote"
         low, high, currency = salary
         return JobPostCreate(
@@ -120,7 +130,7 @@ class GreenhouseAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_boards(settings.GREENHOUSE_BOARDS), fetch, limit)
+        return await self._many(_shard(_boards(settings.GREENHOUSE_BOARDS)), fetch, limit)
 
 
 class LeverAggregator(_Board):
@@ -150,7 +160,7 @@ class LeverAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_boards(settings.LEVER_BOARDS), fetch, limit)
+        return await self._many(_shard(_boards(settings.LEVER_BOARDS)), fetch, limit)
 
 
 class AshbyAggregator(_Board):
@@ -182,7 +192,7 @@ class AshbyAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_boards(settings.ASHBY_BOARDS), fetch, limit)
+        return await self._many(_shard(_boards(settings.ASHBY_BOARDS)), fetch, limit)
 
 
 class SmartRecruitersAggregator(_Board):
@@ -215,7 +225,7 @@ class SmartRecruitersAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_boards(settings.SMARTRECRUITERS_COMPANIES), fetch, limit)
+        return await self._many(_shard(_boards(settings.SMARTRECRUITERS_COMPANIES)), fetch, limit)
 
 
 class JobicyAggregator(_Board):

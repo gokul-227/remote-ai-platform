@@ -96,3 +96,15 @@ async def test_audit_events_filter_on_several_prefixes(client: AsyncClient):
     assert {e["action"] for e in both.json()} >= {"admin.announcement.create"}
     none = await client.get("/api/v1/admin/audit-events?action_prefix=nothing.here", headers=admin)
     assert none.json() == []
+
+
+@pytest.mark.asyncio
+async def test_usage_page_reports_counts_and_limits_to_staff_only(client: AsyncClient):
+    admin = await _headers(UserRole.ADMIN)
+    member = await _headers(UserRole.ENGINEER)
+    assert (await client.get("/api/v1/admin/usage", headers=member)).status_code == 403
+    body = (await client.get("/api/v1/admin/usage", headers=admin)).json()
+    assert body["limits"]["database_bytes"] == 500 * 1024 * 1024
+    assert body["users_total"] >= 2
+    assert isinstance(body["jobs_by_source"], dict)
+    assert "Resend (all emails incl. sign-in codes)" in body["dashboards"]

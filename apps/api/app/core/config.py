@@ -190,7 +190,7 @@ class Settings(BaseSettings):
     USAJOBS_AUTH_KEY: str | None = None
     THEMUSE_API_URL: str = "https://www.themuse.com/api/public/jobs"
     # Arbeitnow serves 100 jobs per page; read this many pages per sync.
-    ARBEITNOW_MAX_PAGES: int = 5
+    ARBEITNOW_MAX_PAGES: int = 20
     # Public company career boards (comma-separated board names), verified live.
     GREENHOUSE_BOARDS: str = (
         "stripe,gitlab,cloudflare,datadog,figma,discord,duolingo,reddit,coinbase,robinhood,elastic,"
@@ -200,16 +200,36 @@ class Settings(BaseSettings):
         "monzo,faire,wrike,peloton,tailscale,sofi,newrelic,workato,fastly,pagerduty,mixpanel,n26,"
         "salesloft,cultureamp,bitwarden,coursera,attentive,squarespace,algolia,gocardless,betterment,"
         "honeycomb,contentful,bandwidth,vonage,wise,dialpad,cockroachlabs,trivago,wikimedia,yugabyte,"
-        "planetscale,typeform,calendly,lattice"
+        "planetscale,typeform,calendly,lattice,abnormalsecurity,applovin,axios,axon,billcom,bitpanda,"
+        "blend,blockchain,carvana,catawiki,checkr,circleci,classpass,clear,cleo,cognite,collibra,"
+        "consensys,coreweave,cresta,dataiku,deliveroo,descript,dremio,earnin,epicgames,everlaw,fetch,"
+        "flexport,formlabs,forter,gemini,gofundme,gostudent,greenhouse,hudl,jumio,justworks,launchdarkly,"
+        "lithic,masterclass,mercury,mirakl,modernhealth,motive,nuro,onetrust,oscar,pendo,raisin,"
+        "relativity,ripple,roblox,rubrik,salsify,seatgeek,splice,stackadapt,stitchfix,sweetgreen,tanium,"
+        "tide,tripactions,twitch,upgrade,upstart,veriff,verkada,wolt,yext,zocdoc,zuora"
     )
-    LEVER_BOARDS: str = "spotify,outreach,gopuff,aircall,wealthfront,contentsquare,neon"
+    # Company boards are split into this many groups; each import handles one group in
+    # full (rotating every run), so every company refreshes twice a day on the
+    # 3-hourly schedule without one run overloading the small API instance.
+    ATS_BOARD_SHARDS: int = 4
+    # Long descriptions are cut here: keeps ~50k jobs inside the free 500 MB database.
+    JOB_DESCRIPTION_MAX_CHARS: int = 6000
+    LEVER_BOARDS: str = (
+        "spotify,outreach,gopuff,aircall,wealthfront,contentsquare,neon,arcadia,blablacar,houzz,metabase,"
+        "olo,palantir,pipedrive,swile,tala"
+    )
     ASHBY_BOARDS: str = (
         "openai,ramp,notion,linear,vanta,supabase,posthog,zapier,cursor,snowflake,clickhouse,doctolib,"
         "plaid,perplexity,alan,cohere,1password,docker,mollie,clickup,writer,sentry,modal,qonto,"
         "amplitude,n8n,render,snyk,backmarket,redis,strava,nerdwallet,oyster,miro,anyscale,gorgias,"
-        "astronomer,paddle,airbyte,iterable,deepl,prefect,helpscout,railway"
+        "astronomer,paddle,airbyte,iterable,deepl,prefect,helpscout,railway,airwallex,alchemy,appfolio,"
+        "atlan,benchling,betterup,circle,close,consensys,crusoe,deliveroo,forto,fullstory,handshake,"
+        "headway,hopper,kayak,ledger,lemonade,mural,outschool,patreon,persona,poshmark,quora,replit,"
+        "skydio,thumbtack,wealthsimple,webflow"
     )
-    SMARTRECRUITERS_COMPANIES: str = "ServiceNow,Canva"
+    SMARTRECRUITERS_COMPANIES: str = (
+        "ServiceNow,Canva,justworks,palantir,splice,together,wise,workato"
+    )
     # Optional aggregators with free developer keys (Infisical); skipped when unset.
     ADZUNA_APP_ID: str | None = None
     ADZUNA_APP_KEY: str | None = None
