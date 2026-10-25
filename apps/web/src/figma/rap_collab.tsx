@@ -774,6 +774,7 @@ export function Deliverables({
   const q = useApi<Deliverable[]>(party ? `/contracts/${contractId}/deliverables` : null);
   const [adding, setAdding] = useState<{ kind: string; supersedes?: Deliverable } | null>(null);
   const [previewing, setPreviewing] = useState<Deliverable | null>(null);
+  const [viewing, setViewing] = useState<Deliverable | null>(null);
   const [msg, setMsg] = useState("");
   if (!party) return null;
   const review = async (d: Deliverable, decision: string) => {
@@ -869,6 +870,11 @@ export function Deliverables({
                   {d.kind === "DEMO" && (
                     <p className="mt-1 text-xs">
                       {d.environment && <Tag>{d.environment}</Tag>}{" "}
+                      {canEmbed(d.demo_url) && (
+                        <button className="mr-2 text-[#0552CC] underline" onClick={() => setViewing(d)}>
+                          Open in demo viewer
+                        </button>
+                      )}
                       <a
                         className="text-[#0552CC] underline break-all"
                         href={safeHref(d.demo_url)}
@@ -904,6 +910,7 @@ export function Deliverables({
           )}
         </div>
       ))}
+      {viewing && <DemoViewer deliverable={viewing} onClose={() => setViewing(null)} />}
       {previewing && (
         <PreviewModal contractId={contractId} deliverable={previewing} onClose={() => setPreviewing(null)} />
       )}
@@ -1631,5 +1638,50 @@ export function SprintBar({ projectId, onChange }: { projectId: string; onChange
       </form>
       {msg && <span className="text-xs text-slate-500">{msg}</span>}
     </div>
+  );
+}
+
+/* ---------------- Demo viewer: an in-app browser for live demos ---------------- */
+
+/** Only https pages on other sites are embedded; our own domains never are. */
+export function canEmbed(url: string | null | undefined): boolean {
+  const href = safeHref(url);
+  if (!href) return false;
+  const u = new URL(href);
+  return u.protocol === "https:" && !/(^|\.)remoteaiplatform\.com$/i.test(u.hostname);
+}
+
+function DemoViewer({ deliverable, onClose }: { deliverable: Deliverable; onClose: () => void }) {
+  const href = safeHref(deliverable.demo_url)!;
+  const [key, setKey] = useState(0);
+  return (
+    <Modal open onClose={onClose} title={deliverable.title} w="max-w-6xl">
+      <div className="mb-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm">
+        <Ic n="shield" s={14} />
+        <span className="flex-1 truncate font-mono text-xs" title={href}>
+          {href}
+        </span>
+        {deliverable.environment && <Tag>{deliverable.environment}</Tag>}
+        <Btn sm v="ghost" onClick={() => setKey((k) => k + 1)}>
+          Reload
+        </Btn>
+        <Btn sm v="line" onClick={() => openExternal(href)}>
+          Open in new tab
+        </Btn>
+      </div>
+      <iframe
+        key={key}
+        src={href}
+        title={`Live demo: ${deliverable.title}`}
+        className="h-[65vh] w-full rounded-lg border border-slate-200 bg-white"
+        sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        referrerPolicy="no-referrer"
+        allow=""
+      />
+      <p className="mt-2 text-xs text-slate-500">
+        The demo runs in an isolated frame and can’t see your account. If it stays blank, the site doesn’t allow
+        embedding: use “Open in new tab”.
+      </p>
+    </Modal>
   );
 }

@@ -15,4 +15,5 @@ def test_admin_console_origin_is_environment_specific():
 def test_hosted_dev_api_allows_dev_console():
     staging = Settings(APP_ENV="staging", CORS_ORIGINS="https://dev.remoteaiplatform.com")
     assert "https://admin-dev.remoteaiplatform.com" in staging.CORS_ORIGINS
+    assert "https://dev.admin.remoteaiplatform.com" in staging.CORS_ORIGINS
     assert "https://admin.remoteaiplatform.com" not in staging.CORS_ORIGINS

@@ -79,3 +79,14 @@ describe("Deliverables", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Accept" })).toBeInTheDocument());
   });
 });
+
+describe("canEmbed", () => {
+  it("embeds only https pages on other sites", async () => {
+    const { canEmbed } = await import("./rap_collab");
+    expect(canEmbed("https://demo.example.com/app")).toBe(true);
+    expect(canEmbed("http://demo.example.com")).toBe(false);
+    expect(canEmbed("javascript:alert(1)")).toBe(false);
+    expect(canEmbed("https://remoteaiplatform.com/#admin")).toBe(false);
+    expect(canEmbed("https://api.remoteaiplatform.com/x")).toBe(false);
+  });
+});

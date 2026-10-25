@@ -124,3 +124,23 @@ async def test_read_tool_and_outage(client: AsyncClient, monkeypatch):
     assert down.status_code == 503
     # Ordinary features keep working while the assistant is down.
     assert (await client.get("/api/v1/contracts/me", headers=h)).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_apply_tool_keeps_the_professional_only_rule(client: AsyncClient, monkeypatch):
+    h, _ = await _company_with_project(client)
+    _model_says(monkeypatch, {"reply": "ok", "tool": "apply_to_job", "args": {"job_id": str(uuid.uuid4())}})
+    pending = (await client.post("/api/v1/assistant/chat", json={"message": "apply"}, headers=h)).json()["pending_action"]
+    res = await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)
+    assert res.json()["result"] == {"ok": False, "error": "Only professionals can apply to jobs"}
+
+
+@pytest.mark.asyncio
+async def test_channel_tools(client: AsyncClient, monkeypatch):
+    h, _ = await _company_with_project(client)
+    _model_says(monkeypatch, {"reply": "Your channels:", "tool": "my_channels", "args": {}})
+    assert (await client.post("/api/v1/assistant/chat", json={"message": "channels"}, headers=h)).json()["result"] == {"ok": True, "items": []}
+    _model_says(monkeypatch, {"reply": "ok", "tool": "post_to_channel", "args": {"channel_id": str(uuid.uuid4()), "body": "hi"}})
+    pending = (await client.post("/api/v1/assistant/chat", json={"message": "post"}, headers=h)).json()["pending_action"]
+    res = await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)
+    assert res.json()["result"] == {"ok": False, "error": "Channel not found"}

@@ -9,10 +9,10 @@ from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ADMIN_CONSOLE_ORIGINS = {
-    "production": "https://admin.remoteaiplatform.com",
-    "development": "https://admin-dev.remoteaiplatform.com",
+    "production": ("https://admin.remoteaiplatform.com",),
+    "development": ("https://dev.admin.remoteaiplatform.com", "https://admin-dev.remoteaiplatform.com"),
     # The hosted dev API runs with APP_ENV=staging.
-    "staging": "https://admin-dev.remoteaiplatform.com",
+    "staging": ("https://dev.admin.remoteaiplatform.com", "https://admin-dev.remoteaiplatform.com"),
 }
 
 
@@ -54,9 +54,9 @@ class Settings(BaseSettings):
         origins = [origin.strip() for origin in self.CORS_ORIGINS_RAW.split(",") if origin.strip()]
         # The staff console (apps/admin) of the same environment only; a dev
         # console can never call the production API and vice versa.
-        admin = ADMIN_CONSOLE_ORIGINS.get(self.APP_ENV)
-        if admin and admin not in origins:
-            origins.append(admin)
+        for admin in ADMIN_CONSOLE_ORIGINS.get(self.APP_ENV, ()):
+            if admin not in origins:
+                origins.append(admin)
         return origins
 
     # ── Database ───────────────────────────────────────────────────────────────

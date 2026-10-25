@@ -39,6 +39,9 @@ const csp = [
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
+  // The demo viewer embeds professionals' live demos in a sandboxed frame;
+  // HTTPS only. Our own pages still refuse to be framed (frame-ancestors).
+  "frame-src https:",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",

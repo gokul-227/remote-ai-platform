@@ -22,8 +22,12 @@ from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.auth.models import User
+from app.domains.applications.models import JobApplication
+from app.domains.applications.router import ApplicationCreate, apply_to_job
+from app.domains.auth.models import User, UserRole
+from app.domains.channels.router import MessageIn, my_channels, post_message
 from app.domains.contracts.models import Contract
+from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.router import list_jobs
 from app.domains.jobs.service import JobService
@@ -68,6 +72,16 @@ class SupportTicketArgs(BaseModel):
     subject: str = Field(min_length=3, max_length=255)
     category: str = "OTHER"
     body: str = Field(min_length=1, max_length=5000)
+
+
+class ApplyArgs(BaseModel):
+    job_id: uuid.UUID
+    cover_note: str | None = Field(default=None, max_length=5000)
+
+
+class ChannelPostArgs(BaseModel):
+    channel_id: uuid.UUID
+    body: str = Field(min_length=1, max_length=4000)
 
 
 Runner = Callable[[BaseModel, User, AsyncSession], Awaitable[dict[str, Any]]]
@@ -119,6 +133,34 @@ async def _my_meetings(_: BaseModel, user: User, db: AsyncSession) -> dict[str, 
     return {"items": [{"title": m.title, "starts_at": m.starts_at.isoformat(), "phase": m.phase, "link": _link("meetings")} for m in meetings]}
 
 
+async def _my_applications(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    rows = await db.execute(
+        select(JobApplication, JobPost).join(JobPost, JobPost.id == JobApplication.job_id)
+        .where(JobApplication.user_id == user.id).order_by(JobApplication.updated_at.desc()).limit(10)
+    )
+    return {"items": [{"title": j.title, "company": j.company_name, "status": a.status, "link": _link("applications")} for a, j in rows.all()]}
+
+
+async def _my_channels(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    chans = await my_channels(project_id=None, current_user=user, db=db)
+    return {"items": [{"title": f"#{c.name}", "status": f"{c.unread} unread", "id": str(c.id), "link": _link("channels")} for c in chans[:15]]}
+
+
+async def _apply(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, ApplyArgs)
+    # The endpoint's role dependency doesn't run on a direct call; enforce it here.
+    if user.role != UserRole.ENGINEER:
+        raise HTTPException(status_code=403, detail="Only professionals can apply to jobs")
+    app_ = await apply_to_job(a.job_id, ApplicationCreate(cover_note=a.cover_note), current_user=user, db=db)
+    return {"id": str(app_.id), "status": app_.status, "link": _link("applications")}
+
+
+async def _post_channel(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, ChannelPostArgs)
+    msg = await post_message(a.channel_id, MessageIn(body=a.body), current_user=user, db=db)
+    return {"id": str(msg.id), "link": _link("channels")}
+
+
 async def _draft(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     assert isinstance(a, DraftArgs)
     return {"draft": a.text, "note": "Draft only — nothing was sent. Copy it where you want to use it."}
@@ -157,11 +199,17 @@ TOOLS: dict[str, Tool] = {
         Tool("my_tasks", READ, "List my open work items.", _NoArgs, _my_tasks),
         Tool("my_contracts", READ, "List my contracts and their status.", _NoArgs, _my_contracts),
         Tool("my_meetings", READ, "List my upcoming meetings.", _NoArgs, _my_meetings),
+        Tool("my_applications", READ, "List my job applications and their status.", _NoArgs, _my_applications),
+        Tool("my_channels", READ, "List my channels with unread counts and their ids.", _NoArgs, _my_channels),
         Tool("draft_text", DRAFT, "Draft a message, proposal or profile text for the user to edit (never sent).", DraftArgs, _draft),
         Tool("create_task", WRITE, "Create a work item in a project the user belongs to.", CreateTaskArgs, _create_task,
              lambda a: f"Create work item “{a.title}”"),  # type: ignore[attr-defined]
         Tool("schedule_meeting", WRITE, "Schedule a meeting with people the user is connected to.", ScheduleMeetingArgs,
              _schedule_meeting, lambda a: f"Schedule “{a.title}” at {a.starts_at:%Y-%m-%d %H:%M} UTC"),  # type: ignore[attr-defined]
+        Tool("apply_to_job", WRITE, "Apply to a job by id, with an optional cover note.", ApplyArgs, _apply,
+             lambda a: f"Apply to job {a.job_id}"),  # type: ignore[attr-defined]
+        Tool("post_to_channel", WRITE, "Post a message in one of my channels (by channel id).", ChannelPostArgs, _post_channel,
+             lambda a: f"Post in the channel: “{a.body[:80]}”"),  # type: ignore[attr-defined]
         Tool("open_support_ticket", WRITE, "Open a support ticket for the user.", SupportTicketArgs, _open_ticket,
              lambda a: f"Open support ticket “{a.subject}”"),  # type: ignore[attr-defined]
     )
