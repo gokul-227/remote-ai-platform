@@ -173,12 +173,18 @@ jobs:
 
       - name: Install Playwright browsers
         # Normally under a minute. A stalled download once held this step for
-        # 20+ minutes; give each attempt 5 minutes and retry once.
-        timeout-minutes: 12
+        # 20+ minutes; give each attempt 7 minutes and retry once. A timed-out
+        # attempt can leave apt running and holding the dpkg lock, so the retry
+        # stops it and repairs dpkg first instead of failing on the lock.
+        timeout-minutes: 16
         run: |
           for attempt in 1 2; do
-            timeout 300 npx playwright install --with-deps chromium webkit firefox && exit 0
+            timeout 420 npx playwright install --with-deps chromium webkit firefox && exit 0
             echo "::warning::browser install attempt $attempt failed or stalled"
+            sudo pkill -9 -x apt-get || true
+            sudo pkill -9 -x dpkg || true
+            sudo rm -f /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/cache/apt/archives/lock
+            sudo dpkg --configure -a || true
           done
           exit 1
 
