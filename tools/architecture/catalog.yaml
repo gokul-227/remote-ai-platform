@@ -282,6 +282,7 @@ ignore:
     - API_URL                   # this API's own URL
     - GITHUB_CALLBACK_URL       # this API's own OAuth callback
     - GITHUB_CLIENT_SECRET      # credential for the github component
+    - JOOBLE_API_KEY            # credential for the Jooble job board (job_boards)
     - DATABASE_URL              # postgres
     - REDIS_URL                 # redis
     - CELERY_BROKER_URL         # legacy alias of REDIS_URL; no Celery dependency

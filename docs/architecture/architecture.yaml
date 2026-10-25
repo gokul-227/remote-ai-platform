@@ -281,6 +281,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/core/config.py: AI_FREE_TIER_CHAIN mistral/*'
+- id: board-adzuna
+  name: Adzuna
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=ADZUNA'
 - id: board-arbeitnow
   name: Arbeitnow
   type: external
@@ -289,6 +297,54 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=ARBEITNOW'
+- id: board-ashby
+  name: Ashby boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=ASHBY'
+- id: board-greenhouse
+  name: Greenhouse boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=GREENHOUSE'
+- id: board-himalayas
+  name: Himalayas
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=HIMALAYAS'
+- id: board-jobicy
+  name: Jobicy
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=JOBICY'
+- id: board-jooble
+  name: Jooble
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=JOOBLE'
+- id: board-lever
+  name: Lever boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=LEVER'
 - id: board-remoteok
   name: RemoteOK
   type: external
@@ -305,6 +361,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=REMOTIVE'
+- id: board-smartrecruiters
+  name: SmartRecruiters boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=SMARTRECRUITERS'
 - id: board-themuse
   name: The Muse
   type: external
@@ -321,6 +385,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=USAJOBS'
+- id: board-workingnomads
+  name: Working Nomads
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=WORKINGNOMADS'
 connections:
 - from: users
   to: web

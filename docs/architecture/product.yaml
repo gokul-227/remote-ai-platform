@@ -501,7 +501,8 @@ platform:
   status: active
 - id: job-boards
   name: Job boards
-  technology: Arbeitnow · RemoteOK · Remotive · The Muse · USAJOBS
+  technology: Adzuna · Arbeitnow · Ashby boards · Greenhouse boards · Himalayas · Jobicy · Jooble · Lever boards
+    · RemoteOK · Remotive · SmartRecruiters boards · The Muse · USAJOBS · Working Nomads
   icon: null
   status: active
 - id: redis
@@ -663,8 +664,43 @@ infrastructure:
     icon: mistralai
     group: ai-providers
     status: active
+  - id: board-adzuna
+    name: Adzuna
+    technology: Jobs API
+    group: job-boards
+    status: active
   - id: board-arbeitnow
     name: Arbeitnow
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-ashby
+    name: Ashby boards
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-greenhouse
+    name: Greenhouse boards
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-himalayas
+    name: Himalayas
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-jobicy
+    name: Jobicy
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-jooble
+    name: Jooble
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-lever
+    name: Lever boards
     technology: Jobs API
     group: job-boards
     status: active
@@ -678,6 +714,11 @@ infrastructure:
     technology: Jobs API
     group: job-boards
     status: active
+  - id: board-smartrecruiters
+    name: SmartRecruiters boards
+    technology: Jobs API
+    group: job-boards
+    status: active
   - id: board-themuse
     name: The Muse
     technology: Jobs API
@@ -685,6 +726,11 @@ infrastructure:
     status: active
   - id: board-usajobs
     name: USAJOBS
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-workingnomads
+    name: Working Nomads
     technology: Jobs API
     group: job-boards
     status: active

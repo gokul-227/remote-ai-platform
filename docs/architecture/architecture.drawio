@@ -1,6 +1,6 @@
 <mxfile host="remote-ai-platform" agent="tools/architecture" type="device">
   <diagram id="architecture" name="Architecture">
-    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1402" pageHeight="1400" math="0" shadow="0" background="#FFFFFF">
+    <mxGraphModel grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1402" pageHeight="1922" math="0" shadow="0" background="#FFFFFF">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -26,7 +26,7 @@
           <mxGeometry as="geometry" x="268" y="978" width="258" height="332" />
         </mxCell>
         <mxCell id="group-job-boards" value="&lt;b&gt;Job boards (public APIs)&lt;/b&gt;" style="shape=rect;rounded=1;arcSize=6;absoluteArcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#2D7FF9;strokeWidth=1.5;dashed=0;align=left;verticalAlign=top;spacingLeft=12;spacingTop=4;fontColor=#1F2937;fontSize=12;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="636" y="978" width="258" height="332" />
+          <mxGeometry as="geometry" x="636" y="978" width="258" height="854" />
         </mxCell>
         <mxCell id="group-saas" value="&lt;b&gt;Third-party services&lt;/b&gt;" style="shape=rect;rounded=1;arcSize=6;absoluteArcSize=1;container=1;collapsible=0;html=1;whiteSpace=wrap;fillColor=#FFFFFF;strokeColor=#5F6B7A;strokeWidth=1.5;dashed=0;align=left;verticalAlign=top;spacingLeft=12;spacingTop=4;fontColor=#1F2937;fontSize=12;" vertex="1" parent="1">
           <mxGeometry as="geometry" x="1104" y="978" width="258" height="216" />
@@ -97,20 +97,47 @@
         <mxCell id="ai-mistral" value="&lt;b&gt;Mistral AI&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=46;image=data:image/svg+xml,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI0ZBNTIwRiIgZD0iTTE3LjE0MyAzLjQyOXYzLjQyOGgtMy40Mjl2My40MjloLTMuNDI4VjYuODU3SDYuODU3VjMuNDNIMy40M3YxMy43MTRIMHYzLjQyOGgxMC4yODZ2LTMuNDI4SDYuODU3di0zLjQyOWgzLjQyOXYzLjQyOWgzLjQyOXYtMy40MjloMy40Mjh2My40MjloLTMuNDI4djMuNDI4SDI0di0zLjQyOGgtMy40M1YzLjQyOXoiLz48L3N2Zz4K;imageWidth=28;imageHeight=28;imageAlign=left;imageVerticalAlign=middle;" vertex="1" parent="group-ai-providers">
           <mxGeometry as="geometry" x="14" y="272" width="230" height="46" />
         </mxCell>
-        <mxCell id="board-arbeitnow" value="&lt;b&gt;Arbeitnow&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+        <mxCell id="board-adzuna" value="&lt;b&gt;Adzuna&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
           <mxGeometry as="geometry" x="14" y="40" width="230" height="46" />
         </mxCell>
-        <mxCell id="board-remoteok" value="&lt;b&gt;RemoteOK&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+        <mxCell id="board-arbeitnow" value="&lt;b&gt;Arbeitnow&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
           <mxGeometry as="geometry" x="14" y="98" width="230" height="46" />
         </mxCell>
-        <mxCell id="board-remotive" value="&lt;b&gt;Remotive&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+        <mxCell id="board-ashby" value="&lt;b&gt;Ashby boards&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
           <mxGeometry as="geometry" x="14" y="156" width="230" height="46" />
         </mxCell>
-        <mxCell id="board-themuse" value="&lt;b&gt;The Muse&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+        <mxCell id="board-greenhouse" value="&lt;b&gt;Greenhouse boards&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
           <mxGeometry as="geometry" x="14" y="214" width="230" height="46" />
         </mxCell>
-        <mxCell id="board-usajobs" value="&lt;b&gt;USAJOBS&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+        <mxCell id="board-himalayas" value="&lt;b&gt;Himalayas&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
           <mxGeometry as="geometry" x="14" y="272" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-jobicy" value="&lt;b&gt;Jobicy&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="330" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-jooble" value="&lt;b&gt;Jooble&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="388" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-lever" value="&lt;b&gt;Lever boards&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="446" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-remoteok" value="&lt;b&gt;RemoteOK&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="504" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-remotive" value="&lt;b&gt;Remotive&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="562" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-smartrecruiters" value="&lt;b&gt;SmartRecruiters boards&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="620" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-themuse" value="&lt;b&gt;The Muse&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="678" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-usajobs" value="&lt;b&gt;USAJOBS&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="736" width="230" height="46" />
+        </mxCell>
+        <mxCell id="board-workingnomads" value="&lt;b&gt;Working Nomads&lt;/b&gt;" style="shape=label;rounded=1;arcSize=8;absoluteArcSize=1;html=1;whiteSpace=wrap;fontColor=#1F2937;fontSize=12;fillColor=#FFFFFF;strokeColor=#CBD5E1;dashed=0;opacity=100;align=left;verticalAlign=middle;spacingLeft=14;" vertex="1" parent="group-job-boards">
+          <mxGeometry as="geometry" x="14" y="794" width="230" height="46" />
         </mxCell>
         <mxCell id="edge-00-users-web" value="HTTPS" style="edgeStyle=none;rounded=1;html=1;exitX=1.0;exitY=0.5;exitPerimeter=0;entryX=0.0;entryY=0.5;entryPerimeter=0;endArrow=block;endFill=1;endSize=6;strokeColor=#475569;strokeWidth=1.25;dashed=0;fontSize=10;fontColor=#334155;labelBackgroundColor=#FFFFFF;" edge="1" parent="1" source="users" target="web">
           <mxGeometry as="geometry" x="0.0" relative="1" />
@@ -240,7 +267,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="legend" value="&lt;font color=&quot;#475569&quot;&gt;━━ runtime request&amp;nbsp;&amp;nbsp;&amp;nbsp;&lt;font color=&quot;#2088FF&quot;&gt;╍╍ delivery &amp;amp; operations&lt;/font&gt;&amp;nbsp;&amp;nbsp;&amp;nbsp;dashed card = present in code, switched off&amp;nbsp;&amp;nbsp;&amp;nbsp;·&amp;nbsp;&amp;nbsp;&amp;nbsp;Generated from repository evidence by &lt;b&gt;make architecture-sync&lt;/b&gt; — edit tools/architecture/catalog.yaml, not this file.&lt;/font&gt;" style="text=1;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry as="geometry" x="40" y="1340" width="1322" height="30" />
+          <mxGeometry as="geometry" x="40" y="1862" width="1322" height="30" />
         </mxCell>
       </root>
     </mxGraphModel>
