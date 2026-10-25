@@ -210,5 +210,7 @@ export function useApi<T>(path: string | null, params?: Record<string, unknown>)
 export const statusOf = (e: unknown) => (e as { response?: { status?: number } } | undefined)?.response?.status;
 
 /** Every non-staff account is one kind of member: it can find work, freelance and hire. */
+// Every signed-in account is a member of the product; staff (ADMIN) also have the
+// separate staff console.
 export const isMember = (user: { role?: string } | null | undefined): boolean =>
-  !!user && (user.role === "ENGINEER" || user.role === "COMPANY");
+  !!user && (user.role === "ENGINEER" || user.role === "COMPANY" || user.role === "ADMIN");

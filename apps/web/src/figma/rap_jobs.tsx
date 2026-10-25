@@ -522,10 +522,6 @@ export function Profile() {
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const p = q.data;
-  if (user?.role === "ADMIN") {
-    goRoute("settings");
-    return null;
-  }
   if (q.loading && !p)
     return (
       <div className="mx-auto max-w-[1200px] px-4 py-10">

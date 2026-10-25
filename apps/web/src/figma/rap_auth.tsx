@@ -22,7 +22,7 @@ const OAUTH_LABELS: [OAuthProvider, string][] = [
 // with the real Supabase email-code / OAuth sign-in and the backend's
 // password-recovery endpoints.
 // One kind of member account: everyone starts on the feed (staff use the separate console).
-const homeFor = (role?: string) => (role === "ADMIN" ? "admin" : "feed");
+const homeFor = () => "feed";
 
 export function AuthFlow({ route, go }: { route: string; go: (r: string) => void }) {
   const { login } = useAuth();
@@ -108,7 +108,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
       let user = await fetchBackendUser(data.session);
       user = await applyPendingRegistration(data.session, user);
       login(data.session.access_token, user, data.session.refresh_token);
-      go(join ? "onboarding" : takeReturnTo(homeFor(user.role)));
+      go(join ? "onboarding" : takeReturnTo(homeFor()));
     } catch (e) {
       // The API's own explanation (e.g. an account that uses another sign-in
       // method) beats axios's generic "Request failed with status code …".
