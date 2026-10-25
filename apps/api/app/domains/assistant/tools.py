@@ -18,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, Response
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,7 +28,9 @@ from app.domains.applications.router import ApplicationCreate, apply_to_job
 from app.domains.auth.models import User, UserRole
 from app.domains.channels.router import MessageIn, my_channels, post_message
 from app.domains.contracts.models import Contract
-from app.domains.documents.router import DocumentCreate, create_document
+from app.domains.documents.router import DocumentCreate, create_document, list_documents
+from app.domains.endorsements.router import EndorseIn, endorse
+from app.domains.groups.models import Group, GroupMembership
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.router import list_jobs
@@ -38,7 +40,15 @@ from app.domains.matching.router import FREELANCE_TYPES
 from app.domains.matching.service import MatchingService
 from app.domains.meetings.router import list_my_meetings, schedule_meeting
 from app.domains.meetings.schemas import MeetingCreate
+from app.domains.network.models import Connection
+from app.domains.network.router import ConnectionCreate, send_connection
+from app.domains.notifications.models import Notification
 from app.domains.projects.router import TaskCreate, create_task
+from app.domains.saved_jobs.models import SavedJob
+from app.domains.saved_jobs.router import save_job
+from app.domains.social.router import create_post
+from app.domains.social.schemas import PostCreate
+from app.domains.support.models import SupportTicket
 from app.domains.support.router import open_ticket
 from app.domains.support.schemas import TicketCreate
 
@@ -81,6 +91,53 @@ class SupportTicketArgs(BaseModel):
 class CreateDocArgs(BaseModel):
     kind: str = Field(pattern="^(DOC|SHEET|SLIDES)$")
     title: str = Field(min_length=1, max_length=255)
+
+
+# Every screen the assistant can take you to (route -> what it is).
+SCREENS: dict[str, str] = {
+    "feed": "news feed", "notifications": "notifications", "network": "connections", "groups": "groups",
+    "engineers": "find professionals", "companies": "organisations", "profile": "my profile",
+    "messenger": "direct messages", "channels": "channels", "meetings": "meetings and video calls",
+    "jobs": "job search", "recs": "recommended jobs", "saved": "saved jobs", "applications": "my applications",
+    "dash": "career insights", "onboarding": "job preferences", "freelancework": "freelance work for you",
+    "taskmarket": "task offers", "contracts": "contracts", "submissions": "deliverables", "worklog": "work log",
+    "reviews": "reviews", "earnings": "payments", "codash": "hiring overview", "postjob": "post a job",
+    "cojobs": "my job postings", "candidates": "candidates", "ride": "match a professional",
+    "coprofile": "organisation profile", "workspace": "workspace", "projects": "boards and sprints",
+    "files": "all files", "docs": "documents", "sheets": "spreadsheets", "slides": "presentations",
+    "quality": "code review", "settings": "settings and connected apps", "security": "security",
+    "help": "help center", "support": "contact support", "assistant": "AI assistant",
+}
+
+
+class NavigateArgs(BaseModel):
+    screen: str
+
+    @field_validator("screen")
+    @classmethod
+    def _known(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in SCREENS:
+            raise ValueError("unknown screen")
+        return v
+
+
+class PostArgs(BaseModel):
+    content: str = Field(min_length=1, max_length=3000)
+    visibility: str = Field(default="PUBLIC", pattern="^(PUBLIC|CONNECTIONS|PRIVATE)$")
+
+
+class UserArgs(BaseModel):
+    user_id: uuid.UUID
+
+
+class JobArgs(BaseModel):
+    job_id: uuid.UUID
+
+
+class EndorseArgs(BaseModel):
+    user_id: uuid.UUID
+    skill: str = Field(min_length=1, max_length=100)
 
 
 class ApplyArgs(BaseModel):
@@ -192,6 +249,80 @@ async def _create_doc(a: BaseModel, user: User, db: AsyncSession) -> dict[str, A
     return {"id": str(doc.id), "title": doc.title, "link": _link("files")}
 
 
+async def _navigate(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, NavigateArgs)
+    return {"items": [{"title": f"Open {SCREENS[a.screen]}", "link": _link(a.screen)}]}
+
+
+async def _notifications(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    rows = await db.execute(
+        select(Notification).where(Notification.user_id == user.id).order_by(Notification.created_at.desc()).limit(10)
+    )
+    return {"items": [{"title": n.title, "status": "new" if not n.is_read else "", "link": _link("notifications")} for n in rows.scalars()]}
+
+
+async def _connections(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    rows = await db.execute(
+        select(Connection).where(
+            Connection.status == "ACCEPTED", (Connection.sender_id == user.id) | (Connection.receiver_id == user.id)
+        ).limit(20)
+    )
+    ids = [c.receiver_id if c.sender_id == user.id else c.sender_id for c in rows.scalars()]
+    people: list[User] = list((await db.execute(select(User).where(User.id.in_(ids)))).scalars()) if ids else []
+    return {"items": [{"title": p.full_name or "Member", "id": str(p.id), "link": _link(f"engineer/{p.id}")} for p in people]}
+
+
+async def _my_groups(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    rows = await db.execute(
+        select(Group).join(GroupMembership, GroupMembership.group_id == Group.id)
+        .where(GroupMembership.user_id == user.id).limit(20)
+    )
+    return {"items": [{"title": g.name, "link": _link(f"group/{g.id}")} for g in rows.scalars()]}
+
+
+async def _my_files(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    docs = await list_documents(Response(), kind=None, project_id=None, contract_id=None, q=None, current_user=user, db=db)
+    return {"items": [{"title": d.title, "status": d.kind.lower(), "link": _link("files")} for d in docs[:15]]}
+
+
+async def _my_tickets(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    rows = await db.execute(
+        select(SupportTicket).where(SupportTicket.requester_id == user.id).order_by(SupportTicket.updated_at.desc()).limit(10)
+    )
+    return {"items": [{"title": t.subject, "status": t.status, "link": _link("support")} for t in rows.scalars()]}
+
+
+async def _saved_jobs(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    rows = await db.execute(
+        select(JobPost).join(SavedJob, SavedJob.job_id == JobPost.id).where(SavedJob.user_id == user.id).limit(15)
+    )
+    return {"items": [{"title": j.title, "company": j.company_name, "link": _link(f"jobdetail/{j.id}")} for j in rows.scalars()]}
+
+
+async def _post(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, PostArgs)
+    post = await create_post(PostCreate(content=a.content, visibility=a.visibility), current_user=user, db=db)
+    return {"id": str(post.id), "link": _link("feed")}
+
+
+async def _connect(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, UserArgs)
+    await send_connection(ConnectionCreate(receiver_id=a.user_id), current_user=user, db=db)
+    return {"link": _link("network")}
+
+
+async def _save_job(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, JobArgs)
+    await save_job(a.job_id, current_user=user, db=db)
+    return {"link": _link("saved")}
+
+
+async def _endorse(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, EndorseArgs)
+    await endorse(EndorseIn(user_id=a.user_id, skill=a.skill), current_user=user, db=db)
+    return {"link": _link(f"engineer/{a.user_id}")}
+
+
 async def _draft(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     assert isinstance(a, DraftArgs)
     return {"draft": a.text, "note": "Draft only — nothing was sent. Copy it where you want to use it."}
@@ -233,6 +364,13 @@ TOOLS: dict[str, Tool] = {
         Tool("my_applications", READ, "List my job applications and their status.", _NoArgs, _my_applications),
         Tool("my_channels", READ, "List my channels with unread counts and their ids.", _NoArgs, _my_channels),
         Tool("freelance_recommendations", READ, "Recommend freelance/contract work that fits my profile.", _NoArgs, _freelance_recs),
+        Tool("open_screen", READ, "Take me to a screen. screen must be one of: " + ", ".join(SCREENS), NavigateArgs, _navigate),
+        Tool("my_notifications", READ, "My latest notifications.", _NoArgs, _notifications),
+        Tool("my_connections", READ, "People I'm connected with, with their ids.", _NoArgs, _connections),
+        Tool("my_groups", READ, "Groups I belong to.", _NoArgs, _my_groups),
+        Tool("my_files", READ, "My Docs, Sheets and Slides.", _NoArgs, _my_files),
+        Tool("my_support_tickets", READ, "My support tickets and their status.", _NoArgs, _my_tickets),
+        Tool("saved_jobs", READ, "Jobs I saved.", _NoArgs, _saved_jobs),
         Tool("draft_text", DRAFT, "Draft a message, proposal or profile text for the user to edit (never sent).", DraftArgs, _draft),
         Tool("create_task", WRITE, "Create a work item in a project the user belongs to.", CreateTaskArgs, _create_task,
              lambda a: f"Create work item “{a.title}”"),  # type: ignore[attr-defined]
@@ -244,6 +382,13 @@ TOOLS: dict[str, Tool] = {
              lambda a: f"Post in the channel: “{a.body[:80]}”"),  # type: ignore[attr-defined]
         Tool("create_document", WRITE, "Create a Doc, Sheet or Slides file (kind DOC/SHEET/SLIDES) with a title.",
              CreateDocArgs, _create_doc, lambda a: f"Create {a.kind.lower()} “{a.title}”"),  # type: ignore[attr-defined]
+        Tool("create_post", WRITE, "Publish a post on my feed (visibility PUBLIC, CONNECTIONS or PRIVATE).", PostArgs, _post,
+             lambda a: f"Post: “{a.content[:80]}”"),  # type: ignore[attr-defined]
+        Tool("send_connection_request", WRITE, "Send a connection request to a member by user id.", UserArgs, _connect,
+             lambda a: "Send a connection request"),
+        Tool("save_job", WRITE, "Save a job by id.", JobArgs, _save_job, lambda a: "Save this job"),
+        Tool("endorse_skill", WRITE, "Endorse a connection for a skill on their profile.", EndorseArgs, _endorse,
+             lambda a: f"Endorse them for {a.skill}"),  # type: ignore[attr-defined]
         Tool("open_support_ticket", WRITE, "Open a support ticket for the user.", SupportTicketArgs, _open_ticket,
              lambda a: f"Open support ticket “{a.subject}”"),  # type: ignore[attr-defined]
     )

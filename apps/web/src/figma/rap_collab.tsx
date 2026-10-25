@@ -599,6 +599,9 @@ export function AssistantChat({ go, compact }: { go?: (r: string) => void; compa
     try {
       const r = await api.post<ChatOut>("/assistant/chat", { message });
       setTurns((t) => [...t, { role: "assistant", text: r.data.reply, out: r.data }]);
+      // "Take me to …" opens the screen right away.
+      const target = r.data.tool === "open_screen" ? r.data.result?.items?.[0]?.link : null;
+      if (typeof target === "string" && go) go(target.replace(/^#/, ""));
     } catch (e) {
       const s = statusOf(e);
       const fallback =
@@ -633,8 +636,8 @@ export function AssistantChat({ go, compact }: { go?: (r: string) => void; compa
       <Card c={cx("grid gap-3", compact && "border-0 shadow-none")} p={compact ? "p-3" : true}>
         {turns.length === 0 && (
           <div className="text-sm text-slate-500">
-            Try: “Find React jobs”, “What are my open tasks?”, “Draft an intro message to a client”, or “Schedule a call
-            tomorrow at 10:00 UTC”.
+            Try: “Find React jobs”, “Freelance work for me”, “Open my spreadsheets”, “Post that I’m hiring a designer”,
+            “What are my open tasks?”, “Schedule a call tomorrow at 10:00 UTC”, or “Create a doc called Kickoff notes”.
           </div>
         )}
         <ol className={cx("grid gap-2", compact && "max-h-[50vh] overflow-y-auto")} aria-live="polite">

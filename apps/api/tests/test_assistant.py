@@ -151,3 +151,35 @@ async def test_create_document_tool(client: AsyncClient, monkeypatch):
     bad = (await client.post("/api/v1/assistant/chat", json={"message": "x"}, headers=h)).json()
     assert bad["pending_action"] is None
 
+
+
+@pytest.mark.asyncio
+async def test_open_screen_only_known_screens(client: AsyncClient, monkeypatch):
+    h, _ = await _company_with_project(client)
+    _model_says(monkeypatch, {"reply": "Opening.", "tool": "open_screen", "args": {"screen": "Sheets"}})
+    res = (await client.post("/api/v1/assistant/chat", json={"message": "open sheets"}, headers=h)).json()
+    assert res["result"]["items"][0]["link"] == "#sheets"
+    _model_says(monkeypatch, {"reply": "ok", "tool": "open_screen", "args": {"screen": "javascript:alert(1)"}})
+    bad = (await client.post("/api/v1/assistant/chat", json={"message": "x"}, headers=h)).json()
+    assert bad["result"] is None
+
+
+@pytest.mark.asyncio
+async def test_post_and_reads_cover_the_app(client: AsyncClient, monkeypatch):
+    h, _ = await _company_with_project(client)
+    _model_says(monkeypatch, {"reply": "ok", "tool": "create_post", "args": {"content": "Hiring a designer!"}})
+    pending = (await client.post("/api/v1/assistant/chat", json={"message": "post"}, headers=h)).json()["pending_action"]
+    assert (await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)).json()["status"] == "EXECUTED"
+    for tool in ("my_notifications", "my_connections", "my_groups", "my_files", "my_support_tickets", "saved_jobs"):
+        _model_says(monkeypatch, {"reply": "ok", "tool": tool, "args": {}})
+        out = (await client.post("/api/v1/assistant/chat", json={"message": tool}, headers=h)).json()
+        assert out["result"]["ok"] is True, (tool, out)
+
+
+@pytest.mark.asyncio
+async def test_connection_tool_respects_rules(client: AsyncClient, monkeypatch):
+    h, _ = await _company_with_project(client)
+    _model_says(monkeypatch, {"reply": "ok", "tool": "send_connection_request", "args": {"user_id": str(uuid.uuid4())}})
+    pending = (await client.post("/api/v1/assistant/chat", json={"message": "connect"}, headers=h)).json()["pending_action"]
+    res = (await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)).json()
+    assert res["status"] == "FAILED"

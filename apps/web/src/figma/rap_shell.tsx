@@ -631,7 +631,6 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                   placeholder="Search menu…"
                   value={menuQ}
                   onChange={(e) => setMenuQ(e.target.value)}
-                  autoFocus
                 />
                 <div className="rap-launcher">
                   <div className="rap-menu-grid">
