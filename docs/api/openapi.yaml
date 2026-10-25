@@ -982,7 +982,7 @@ paths:
       tags:
       - Job Posts
       summary: Create Job
-      description: Post a new job (Requires COMPANY or ADMIN role).
+      description: Post a new job (any member with an organisation profile, or an admin).
       operationId: create_job_api_v1_jobs_post
       security:
       - HTTPBearer: []

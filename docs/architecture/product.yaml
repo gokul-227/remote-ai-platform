@@ -121,7 +121,7 @@ features:
   - route: recs
     label: Recommendations
   - route: ride
-    label: Match a professional
+    label: Find a professional
   - route: freelancework
     label: Freelance work for you
   api:
@@ -138,7 +138,7 @@ features:
   - organisation
   screens:
   - route: codash
-    label: Hiring overview
+    label: My hiring
   - route: cojobs
     label: Job postings
   - route: postjob
@@ -188,7 +188,7 @@ features:
   - route: channels
     label: Channels
   - route: meetings
-    label: Meetings & calls
+    label: Schedule a meeting
   - route: notifications
     label: Notifications
   api:
@@ -276,7 +276,7 @@ features:
   - route: files
     label: All files
   - route: docs
-    label: Docs
+    label: New document
   - route: sheets
     label: Sheets
   - route: slides
@@ -387,7 +387,7 @@ features:
   - route: help
     label: Help & support
   - route: support
-    label: Contact support
+    label: Ask support
   - route: terms
     label: Terms
   - route: privacy

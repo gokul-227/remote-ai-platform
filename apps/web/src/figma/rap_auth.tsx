@@ -21,13 +21,13 @@ const OAUTH_LABELS: [OAuthProvider, string][] = [
 // Figma Make "AuthFlow" — markup unchanged; the simulated steps are replaced
 // with the real Supabase email-code / OAuth sign-in and the backend's
 // password-recovery endpoints.
-const homeFor = (role?: string) => (role === "COMPANY" ? "codash" : role === "ADMIN" ? "admin" : "feed");
+// One kind of member account: everyone starts on the feed (staff use the separate console).
+const homeFor = (role?: string) => (role === "ADMIN" ? "admin" : "feed");
 
 export function AuthFlow({ route, go }: { route: string; go: (r: string) => void }) {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState("engineer");
   const [step, setStep] = useState("email");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -78,7 +78,8 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
           JSON.stringify({
             email: email.trim(),
             fullName: name.trim(),
-            role: role === "company" ? "COMPANY" : "ENGINEER",
+            // One kind of member account: it can find work and hire.
+            role: "ENGINEER",
           }),
         );
       setStep("code");
@@ -107,7 +108,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
       let user = await fetchBackendUser(data.session);
       user = await applyPendingRegistration(data.session, user);
       login(data.session.access_token, user, data.session.refresh_token);
-      go(join ? (user.role === "COMPANY" ? "coprofile" : "onboarding") : takeReturnTo(homeFor(user.role)));
+      go(join ? "onboarding" : takeReturnTo(homeFor(user.role)));
     } catch (e) {
       // The API's own explanation (e.g. an account that uses another sign-in
       // method) beats axios's generic "Request failed with status code …".
@@ -137,7 +138,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
   const oauth = async (provider: OAuthProvider) => {
     setError("");
     // Keep the "Find work"/"Hire talent" choice for the account the provider creates.
-    if (join) rememberOAuthSignUp(role === "company" ? "COMPANY" : "ENGINEER", name.trim());
+    if (join) rememberOAuthSignUp("ENGINEER", name.trim());
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -255,35 +256,11 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                 <h2>{join ? "Create your account" : recovery ? "Recover your account" : "Welcome back"}</h2>
                 <p className="mt-2 text-sm text-slate-500">
                   {join
-                    ? "Find your community and your next opportunity."
+                    ? "One account to find work, freelance, hire and collaborate."
                     : recovery
                       ? "Enter the email you signed up with. We'll email you a one-time sign-in code, so you don't need a password. If you signed up with Google, Microsoft or GitHub, use that button on the sign-in page."
                       : "Continue with one of the accounts below, or sign in with an email code. No password needed."}
                 </p>
-                {join && (
-                  <div className="mt-5">
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        ["engineer", "Find work", "briefcase"],
-                        ["company", "Hire talent", "building"],
-                      ].map(([value, label, icon]) => (
-                        <button
-                          type="button"
-                          aria-pressed={role === value}
-                          key={value}
-                          onClick={() => setRole(value)}
-                          className={cx(
-                            "rounded-lg border-2 p-3 text-left",
-                            role === value ? "border-[#0866FF] bg-blue-50" : "border-slate-200",
-                          )}
-                        >
-                          <Ic n={icon} />
-                          <b className="mt-2 block">{label}</b>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 {!recovery && (
                   <>
                     {/* Provider sign-in first: it needs no email delivery, which

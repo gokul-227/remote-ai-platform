@@ -156,7 +156,15 @@ def require_role(*allowed_roles: UserRole) -> Callable:
     Example: Depends(require_role(UserRole.COMPANY, UserRole.ADMIN))
     """
 
+    # Everyone who isn't staff is one kind of member: the professional
+    # (ENGINEER) and organisation (COMPANY) abilities belong to every member.
+    # ADMIN stays a separate, explicit grant. Ownership checks in each
+    # endpoint still decide *what* a member may change.
+    member_ok = bool({UserRole.ENGINEER, UserRole.COMPANY} & set(allowed_roles))
+
     async def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if member_ok and current_user.role in (UserRole.ENGINEER, UserRole.COMPANY):
+            return current_user
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

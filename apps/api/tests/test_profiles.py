@@ -140,9 +140,10 @@ async def test_public_engineer_profile_hides_resume_url_from_anonymous_callers(
     assert own_res.json()["resume_url"] is not None
 
     # An admin sees it too.
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
 
     async with TestingSessionLocal() as admin_db:
         admin = User(
@@ -197,24 +198,3 @@ async def test_company_profile_onboarding_flow(client: AsyncClient):
     assert "FastAPI" in company["tech_stack"]
     assert company["is_verified"] is False
 
-
-@pytest.mark.asyncio
-async def test_company_profile_creation_requires_company_role(client: AsyncClient):
-    # Register regular engineer
-    reg = await client.post("/api/v1/auth/register", json={
-        "email": "engineer_no_company@example.com",
-        "password": "Password123!",
-        "full_name": "Regular Engineer",
-        "role": "engineer",
-    })
-    assert reg.status_code == 200
-    token = reg.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
-
-    # Try creating company profile as engineer -> should be forbidden (403)
-    company_data = {
-        "name": "Unauthorized Inc",
-        "industry": "Tech",
-    }
-    res = await client.post("/api/v1/companies/me", json=company_data, headers=headers)
-    assert res.status_code == 403

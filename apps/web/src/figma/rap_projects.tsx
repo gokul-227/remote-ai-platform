@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { SprintBar } from "./rap_collab";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, goRoute } from "./live";
+import { useApi, goRoute, isMember } from "./live";
 import {
   Ic,
   Av,
@@ -152,7 +152,7 @@ function Side({ page, setPage, projects, pid, setPid, risk, onRisk, busy }: any)
 
 export function Projects() {
   const { user } = useAuth();
-  const company = user?.role === "COMPANY";
+  const company = isMember(user);
   const list = useApi<any[]>(user ? "/projects" : null);
   const projects = list.data ?? [];
   const [pidSel, setPid] = useState<string | null>(null);

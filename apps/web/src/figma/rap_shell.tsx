@@ -3,7 +3,7 @@ import { AssistantDock } from "./rap_collab";
 import { Ic, Av, Brand, cx, useDialogFocus } from "./rap_kit";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
-import { useApi } from "./live";
+import { isMember, useApi } from "./live";
 // Enterprise navigation: each area has a purpose, an icon and named groups of
 // pages. The sidebar shows the current area's groups; the app launcher shows
 // every area at once. Admin lives in the separate staff console.
@@ -194,6 +194,13 @@ const sections: Record<string, string[][]> = Object.fromEntries(
 );
 // Quick actions shown in the app launcher.
 const CREATE: Record<string, NavItem[]> = {
+  MEMBER: [
+    ["feed", "Write a post", "plus"],
+    ["postjob", "Post a job", "briefcase"],
+    ["meetings", "Schedule a meeting", "video"],
+    ["docs", "New document", "file"],
+    ["ride", "Find a professional", "zap"],
+  ],
   ENGINEER: [
     ["feed", "Write a post", "plus"],
     ["meetings", "Schedule a meeting", "video"],
@@ -218,12 +225,9 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   const unreadN = useApi<{ count: number }>(user ? "/notifications/unread-count" : null);
   const unreadM = useApi<{ count: number }>(user ? "/conversations/unread-count" : null);
   const conns = useApi<ShellConnection[]>(user && r === "feed" ? "/connections" : null, { status: "ACCEPTED" });
-  const top = useApi<ShellRecommendation[]>(
-    user?.role === "ENGINEER" && r === "feed" ? "/matching/recommendations" : null,
-    {
-      limit: 1,
-    },
-  );
+  const top = useApi<ShellRecommendation[]>(isMember(user) && r === "feed" ? "/matching/recommendations" : null, {
+    limit: 1,
+  });
   useEffect(() => {
     unreadN.reload();
     unreadM.reload();
@@ -261,7 +265,8 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
     setMenu("");
   }, [r]);
   // Navigation follows the signed-in role; visitors only see public discovery.
-  const role = user?.role || "GUEST";
+  // One member account: professionals and organisations see the same areas.
+  const role = !user ? "GUEST" : user.role === "ADMIN" ? "ADMIN" : "MEMBER";
   const visible: Record<string, string[][]> =
     role === "GUEST"
       ? {
@@ -272,18 +277,15 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             ["help", "Help center", "question"],
           ],
         }
-      : role === "COMPANY"
-        ? (({ Careers: _c, Freelance: _f, ...rest }) => rest)(sections)
-        : role === "ENGINEER"
-          ? (({ Hiring: _h, ...rest }) => rest)(sections)
-          : sections;
+      : sections;
   let section = Object.keys(visible).find((s) => visible[s].some((x) => x[0] === r)) || Object.keys(visible)[0];
   const prefer = (name: string) => {
     if (visible[name]) section = name;
   };
   if (["jobdetail", "work"].includes(r)) prefer("Careers");
-  if (["company", "engineer", "talent"].includes(r)) prefer(role === "COMPANY" ? "Hiring" : "Network");
-  if (["contractsign"].includes(r)) prefer(role === "COMPANY" ? "Hiring" : "Freelance");
+  if (["company", "engineer"].includes(r)) prefer("Network");
+  if (r === "talent") prefer("Hiring");
+  if (["contractsign"].includes(r)) prefer("Freelance");
   if (r === "group") prefer("Network");
   const crumb = (() => {
     const area = catalog[section];
@@ -319,9 +321,9 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           ["feed", "Home", "home", "Home"],
           ["network", "Network", "users", "Network"],
           ["messenger", "Messaging", "chat", "Messaging"],
-          ...(role !== "COMPANY" ? [["jobs", "Careers", "briefcase", "Careers"]] : []),
-          ...(role !== "COMPANY" ? [["freelancework", "Freelance", "zap", "Freelance"]] : []),
-          ...(role !== "ENGINEER" ? [["codash", "Hiring", "building", "Hiring"]] : []),
+          ["jobs", "Careers", "briefcase", "Careers"],
+          ["freelancework", "Freelance", "zap", "Freelance"],
+          ["codash", "Hiring", "building", "Hiring"],
           ["workspace", "Projects", "board", "Projects"],
         ];
   return (
@@ -448,15 +450,11 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             <h3 className="rap-side-label">Your shortcuts</h3>
             {nav(
               section === "Home"
-                ? role === "COMPANY"
-                  ? [
-                      ["codash", "Hiring overview", "building"],
-                      ["workspace", "My workspace", "board"],
-                    ]
-                  : [
-                      ["dash", "My career", "briefcase"],
-                      ["workspace", "My workspace", "board"],
-                    ]
+                ? [
+                    ["dash", "My career", "briefcase"],
+                    ["codash", "My hiring", "building"],
+                    ["workspace", "My workspace", "board"],
+                  ]
                 : [
                     ["feed", "Community home", "home"],
                     ["network", "My network", "users"],

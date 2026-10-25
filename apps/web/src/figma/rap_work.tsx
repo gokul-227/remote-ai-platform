@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
+import { useApi, toFigmaJob, goRoute, safeHref, isMember } from "./live";
 import {
   Ic,
   Av,
@@ -26,7 +26,7 @@ const GR = "#0552CC";
 export function Work() {
   // Live: contract / freelance roles from /jobs, real saved jobs, proposals submitted as applications.
   const { user } = useAuth();
-  const eng = user?.role === "ENGINEER";
+  const eng = isMember(user);
   const [tab, setTab] = useState("Best Matches");
   const [q, setQ] = useState("");
   const [term, setTerm] = useState("");
@@ -391,7 +391,7 @@ export function Talent() {
     term ? "/engineers/search" : "/engineers",
     term ? { query: term, is_open_to_work: false, limit: 100 } : { limit: 100 },
   );
-  const myJobs = useApi<any[]>(user?.role === "COMPANY" ? "/jobs/company" : null, { limit: 100 });
+  const myJobs = useApi<any[]>(isMember(user) ? "/jobs/company" : null, { limit: 100 });
   const band = (y: number) => (y >= 8 ? "Expert" : y >= 3 ? "Intermediate" : "Entry");
   const inRate = (r: number) =>
     rate === "Any" ||
@@ -498,7 +498,7 @@ export function Talent() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  {user?.role === "COMPANY" && (
+                  {isMember(user) && (
                     <Btn v="primary" onClick={() => setInviting(p)}>
                       Invite to job
                     </Btn>
@@ -581,7 +581,7 @@ export function Contracts() {
   // No payment is attached to a milestone: PAID is only ever set from a settled payment server-side.
   const { user } = useAuth();
   const q = useApi<any[]>(user ? "/contracts/me" : null);
-  const accepted = useApi<any[]>(user?.role === "COMPANY" ? "/applications/company" : null, { limit: 100 });
+  const accepted = useApi<any[]>(isMember(user) ? "/applications/company" : null, { limit: 100 });
   const [tab, setTab] = useState("Active");
   const [openId, setOpenId] = useState<string | null>(null);
   const [dt, setDt] = useState("Milestones");
@@ -647,7 +647,7 @@ export function Contracts() {
       <div className="mx-auto max-w-[1300px] px-4">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-3xl font-light">Contracts</h1>
-          {user?.role === "COMPANY" && (
+          {isMember(user) && (
             <Btn v="primary" icon="plus" onClick={() => setOffer(true)}>
               Send offer
             </Btn>
@@ -695,7 +695,7 @@ export function Contracts() {
           {!q.loading && !rows.length && (
             <p className="p-6 text-sm text-slate-500">
               No {tab.toLowerCase()} contracts.
-              {user?.role === "COMPANY" && tab !== "Ended" ? " Send an offer to a candidate you’ve accepted." : ""}
+              {isMember(user) && tab !== "Ended" ? " Send an offer to a candidate you’ve accepted." : ""}
             </p>
           )}
         </Card>
@@ -1133,7 +1133,7 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
   // Live: engineers — /projects/my-offers, /my-tasks (+ submit work), submissions with AI review, /reputation;
   // companies — offers they sent (/projects/task-offers) with cancel.
   const { user } = useAuth();
-  const company = user?.role === "COMPANY";
+  const company = isMember(user);
   const offersQ = useApi<any[]>(user && !company ? "/projects/my-offers" : null);
   const tasksQ = useApi<any[]>(user && !company ? "/projects/my-tasks" : null);
   const repQ = useApi<any>(user && !company ? `/projects/reputation/${user.id}` : null);

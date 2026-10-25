@@ -2,9 +2,11 @@
 Tests for AI Matching Engine logic.
 """
 
-import pytest
 import uuid
+
+import pytest
 from httpx import AsyncClient
+
 from app.domains.engineers.models import EngineerProfile
 from app.domains.jobs.models import JobPost
 from app.domains.matching.service import MatchingService
@@ -44,7 +46,7 @@ async def test_matching_score_calculation(client: AsyncClient):
 
         service = MatchingService(db)
         match_obj = await service.calculate_match(engineer, job)
-        
+
         assert match_obj.overall_score > 60.0
         assert "Python" in match_obj.matching_skills
         assert "Docker" in match_obj.missing_skills
@@ -72,6 +74,7 @@ async def test_get_my_match_for_job_computes_on_demand(client: AsyncClient):
     assert profile.status_code == 201
 
     from conftest import TestingSessionLocal
+
     from app.domains.jobs.models import JobPost
 
     async with TestingSessionLocal() as db:
@@ -100,15 +103,3 @@ async def test_get_my_match_for_job_computes_on_demand(client: AsyncClient):
     assert res2.status_code == 200
     assert res2.json()["id"] == body["id"]
 
-
-@pytest.mark.asyncio
-async def test_get_my_match_for_job_requires_engineer_role(client: AsyncClient):
-    registered = await client.post("/api/v1/auth/register", json={
-        "email": "match-company@example.com",
-        "password": "secure-pass",
-        "full_name": "A Company",
-        "role": "COMPANY",
-    })
-    headers = {"Authorization": f"Bearer {registered.json()['access_token']}"}
-    res = await client.get(f"/api/v1/matching/jobs/{uuid.uuid4()}", headers=headers)
-    assert res.status_code == 403

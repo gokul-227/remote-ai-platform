@@ -115,8 +115,8 @@ async def list_company_jobs(
     company = await service.repo.db.scalar(
         select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
     )
-    if not company and current_user.role == UserRole.COMPANY:
-        raise HTTPException(status_code=404, detail="Company profile required")
+    if not company and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=404, detail="Create your organisation profile first")
     query = select(JobPost).order_by(JobPost.posted_at.desc())
     if company:
         query = query.where(JobPost.company_id == company.id)
@@ -180,7 +180,7 @@ async def update_job(
 ) -> JobPostResponse:
     """Update a job post (publish/unpublish, edit fields). COMPANY can only edit its own jobs."""
     existing = await service.get_by_id(job_id)
-    if current_user.role == UserRole.COMPANY:
+    if current_user.role != UserRole.ADMIN:
         if existing.company_id is None:
             raise HTTPException(
                 status_code=403, detail="Aggregated jobs cannot be edited by a company"
@@ -203,8 +203,8 @@ async def create_job(
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     service: JobService = Depends(get_job_service),
 ) -> JobPostResponse:
-    """Post a new job (Requires COMPANY or ADMIN role)."""
-    if current_user.role == UserRole.COMPANY:
+    """Post a new job (any member with an organisation profile, or an admin)."""
+    if current_user.role != UserRole.ADMIN:
         company = await service.repo.db.scalar(
             select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
         )

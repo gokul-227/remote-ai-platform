@@ -208,3 +208,7 @@ export function useApi<T>(path: string | null, params?: Record<string, unknown>)
 }
 
 export const statusOf = (e: unknown) => (e as { response?: { status?: number } } | undefined)?.response?.status;
+
+/** Every non-staff account is one kind of member: it can find work, freelance and hire. */
+export const isMember = (user: { role?: string } | null | undefined): boolean =>
+  !!user && (user.role === "ENGINEER" || user.role === "COMPANY");

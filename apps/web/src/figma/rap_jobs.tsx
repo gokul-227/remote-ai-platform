@@ -1,7 +1,7 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref } from "./live";
+import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember } from "./live";
 import {
   Ic,
   Av,
@@ -25,7 +25,7 @@ const BL = "#0552CC";
 export function Jobs() {
   // Live: real jobs, saved jobs, applications and AI match (markup is the Figma design).
   const { user } = useAuth();
-  const engineer = user?.role === "ENGINEER";
+  const engineer = isMember(user);
   const [q, setQ] = useState("");
   const [skill, setSkill] = useState("");
   const [search, setSearch] = useState({ q: "", skill: "" });
@@ -510,7 +510,7 @@ const title = (s?: string | null) =>
 export function Profile() {
   // Live: the signed-in engineer's profile (/engineers/me) with edit, resume upload, AI review, trust reviews.
   const { user } = useAuth();
-  const q = useApi<any>(user?.role === "ENGINEER" ? "/engineers/me" : null);
+  const q = useApi<any>(isMember(user) ? "/engineers/me" : null);
   const conns = useApi<any[]>(user ? "/connections" : null, { status: "ACCEPTED", limit: 200 });
   const reviews = useApi<any[]>(user ? `/trust/reviews/${user.id}` : null);
   const people = useApi<any[]>("/engineers", { limit: 8 });
@@ -522,8 +522,8 @@ export function Profile() {
   const [busy, setBusy] = useState("");
   const [notice, setNotice] = useState("");
   const p = q.data;
-  if (user?.role && user.role !== "ENGINEER") {
-    goRoute(user.role === "COMPANY" ? "coprofile" : "settings");
+  if (user?.role === "ADMIN") {
+    goRoute("settings");
     return null;
   }
   if (q.loading && !p)

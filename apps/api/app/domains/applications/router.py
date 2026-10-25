@@ -170,8 +170,8 @@ async def list_company_applications(
     company = await db.scalar(
         select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
     )
-    if not company and current_user.role == UserRole.COMPANY:
-        raise HTTPException(status_code=404, detail="Company profile required")
+    if not company and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=404, detail="Create your organisation profile first")
     query = select(JobApplication, JobPost, User, EngineerProfile, JobMatch).join(
         JobPost, JobPost.id == JobApplication.job_id
     )
@@ -402,7 +402,7 @@ async def update_application_status(
         select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
     )
     job = await db.get(JobPost, application.job_id)
-    if current_user.role == UserRole.COMPANY and (
+    if current_user.role != UserRole.ADMIN and (
         not company or not job or job.company_id != company.id
     ):
         raise HTTPException(status_code=403, detail="Application is not for your company")

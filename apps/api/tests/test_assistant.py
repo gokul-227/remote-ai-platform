@@ -127,15 +127,6 @@ async def test_read_tool_and_outage(client: AsyncClient, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_apply_tool_keeps_the_professional_only_rule(client: AsyncClient, monkeypatch):
-    h, _ = await _company_with_project(client)
-    _model_says(monkeypatch, {"reply": "ok", "tool": "apply_to_job", "args": {"job_id": str(uuid.uuid4())}})
-    pending = (await client.post("/api/v1/assistant/chat", json={"message": "apply"}, headers=h)).json()["pending_action"]
-    res = await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)
-    assert res.json()["result"] == {"ok": False, "error": "Only professionals can apply to jobs"}
-
-
-@pytest.mark.asyncio
 async def test_channel_tools(client: AsyncClient, monkeypatch):
     h, _ = await _company_with_project(client)
     _model_says(monkeypatch, {"reply": "Your channels:", "tool": "my_channels", "args": {}})
@@ -160,9 +151,3 @@ async def test_create_document_tool(client: AsyncClient, monkeypatch):
     bad = (await client.post("/api/v1/assistant/chat", json={"message": "x"}, headers=h)).json()
     assert bad["pending_action"] is None
 
-
-@pytest.mark.asyncio
-async def test_freelance_tool_for_non_professional_is_empty(client: AsyncClient, monkeypatch):
-    h, _ = await _company_with_project(client)
-    _model_says(monkeypatch, {"reply": "Here:", "tool": "freelance_recommendations", "args": {}})
-    assert (await client.post("/api/v1/assistant/chat", json={"message": "gigs"}, headers=h)).json()["result"] == {"ok": True, "items": []}

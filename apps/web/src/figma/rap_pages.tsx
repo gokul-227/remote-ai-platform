@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
+import { useApi, toFigmaJob, goRoute, safeHref, isMember } from "./live";
 import { Groups } from "./rap_social";
 import { Deliverables, Endorsements } from "./rap_collab";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
@@ -31,7 +31,7 @@ export function EngineerDetail() {
   const conns = useApi<any[]>(user ? "/connections" : null, { limit: 200 });
   const blocks = useApi<{ user_id: string }[]>(user ? "/blocks" : null);
   const [blockOpen, setBlockOpen] = useState(false);
-  const myJobs = useApi<any[]>(user?.role === "COMPANY" ? "/jobs/company" : null, { limit: 100 });
+  const myJobs = useApi<any[]>(isMember(user) ? "/jobs/company" : null, { limit: 100 });
   const [t, setT] = useState("About");
   const [invOpen, setInvOpen] = useState(false);
   const [notice, setNotice] = useState("");
@@ -131,7 +131,7 @@ export function EngineerDetail() {
                 <Btn v={conn ? "gray" : "primary"} icon={conn ? "check" : "plus"} onClick={() => !conn && connect()}>
                   {conn ? (conn.status === "ACCEPTED" ? "Connected" : "Pending") : "Connect"}
                 </Btn>
-                {user?.role === "COMPANY" && (
+                {isMember(user) && (
                   <Btn v="outline" onClick={() => setInvOpen(true)}>
                     Invite to job
                   </Btn>
@@ -307,7 +307,7 @@ export function EngineerDetail() {
 export function JobDetail() {
   // Live: the selected job (/jobs/{id}), real match breakdown, save, Easy Apply.
   const { user } = useAuth();
-  const eng = user?.role === "ENGINEER";
+  const eng = isMember(user);
   const [id] = useState(
     () => new URLSearchParams(window.location.search).get("id") || localStorage.getItem("rap-selected-job") || "",
   );
@@ -700,7 +700,7 @@ export function ContractSign() {
 export function Workspace() {
   // Live: my tasks, active contracts, offers, reputation; the timer logs real time to a task's work ledger.
   const { user } = useAuth();
-  const eng = user?.role === "ENGINEER";
+  const eng = isMember(user);
   const tasksQ = useApi<any[]>(eng ? "/projects/my-tasks" : null);
   const offersQ = useApi<any[]>(eng ? "/projects/my-offers" : null);
   const contractsQ = useApi<any[]>(user ? "/contracts/me" : null);

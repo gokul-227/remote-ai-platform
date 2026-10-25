@@ -159,7 +159,8 @@ test("the organisation and the professional exchange messages", async ({ browser
 
 test("the API refuses what the UI doesn't offer", async ({ browser, request }) => {
   const proPage = await asUser(browser, pro.email);
-  expect((await apiAs(request, proPage, "get", "/applications/company")).status()).toBe(403);
+  // No organisation profile yet: refused (404 asks them to create one).
+  expect((await apiAs(request, proPage, "get", "/applications/company")).status()).toBeGreaterThanOrEqual(403);
   expect((await apiAs(request, proPage, "get", "/admin/stats")).status()).toBe(403);
   expect((await apiAs(request, proPage, "delete", `/jobs/${jobId}`)).status()).toBeGreaterThanOrEqual(403);
   expect((await request.get(`${API}/api/v1/auth/me`)).status()).toBe(401);

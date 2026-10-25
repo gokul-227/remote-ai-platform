@@ -63,7 +63,7 @@ async def get_candidates_for_job(
     service: MatchingService = Depends(get_matching_service),
 ) -> list[CandidateMatchResponse]:
     """Get top matching engineer candidates for a company's job post."""
-    if current_user.role == UserRole.COMPANY:
+    if current_user.role != UserRole.ADMIN:
         job = await service.job_repo.get_by_id(job_id)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job post not found")

@@ -57,8 +57,8 @@ async def _visible_user_or_404(db: AsyncSession, user_id: uuid.UUID, viewer: Use
     if target is not None:
         if viewer is not None and (viewer.id == target.id or viewer.role == UserRole.ADMIN):
             return target
-        if target.role == UserRole.COMPANY:
-            return target
+        if await db.scalar(select(CompanyProfile.id).where(CompanyProfile.user_id == target.id)):
+            return target  # organisations are public
         is_public = await db.scalar(select(EngineerProfile.is_public).where(EngineerProfile.user_id == target.id))
         if is_public:
             return target
@@ -164,17 +164,13 @@ async def submit_review(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reviewee user not found")
 
     # The reviewee must also actually be part of this project, not an arbitrary user.
-    if reviewee.role == UserRole.COMPANY:
-        reviewee_company = await db.scalar(
-            select(CompanyProfile).where(
-                CompanyProfile.user_id == reviewee.id, CompanyProfile.id == project.company_id
-            )
+    reviewee_company = await db.scalar(
+        select(CompanyProfile).where(
+            CompanyProfile.user_id == reviewee.id, CompanyProfile.id == project.company_id
         )
-        if not reviewee_company:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Review recipient is not part of this project",
-            )
+    )
+    if reviewee_company:
+        pass  # the client organisation
     elif not await db.scalar(
         select(ProjectMember).where(
             ProjectMember.project_id == project.id, ProjectMember.user_id == reviewee.id

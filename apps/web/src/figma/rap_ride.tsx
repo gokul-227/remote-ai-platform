@@ -1,7 +1,7 @@
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, goRoute } from "./live";
+import { useApi, goRoute, isMember } from "./live";
 import { Ic, Av, Tag, cx } from "./rap_kit";
 
 // Engagement options: how many engineers and how candidates are ranked. Prices
@@ -75,7 +75,7 @@ export function Ride() {
   // Live: real engineers matched from /engineers/search; confirming sends a real contract offer
   // (POST /contracts) at the engineer's own rate; kickoff opens a conversation with them.
   const { user } = useAuth();
-  const company = user?.role === "COMPANY";
+  const company = isMember(user);
   const [step, setStep] = useState(0);
   const [sel, setSel] = useState("best");
   const [mode, setMode] = useState("now");

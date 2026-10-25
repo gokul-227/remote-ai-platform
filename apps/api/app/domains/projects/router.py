@@ -5,7 +5,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func, or_, select
+from sqlalchemy import false, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.quality_engine import QualityEngineAgent
@@ -193,12 +193,18 @@ async def get_project(project_id: uuid.UUID, db: AsyncSession) -> Project:
     return project
 
 
+async def _owns_project(db: AsyncSession, user: User, project: Project) -> bool:
+    """True when `user`'s organisation owns `project` (the client side)."""
+    company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == user.id))
+    return bool(company and company.id == project.company_id)
+
+
 async def can_access(project: Project, user: User, db: AsyncSession) -> bool:
     if user.role == UserRole.ADMIN:
         return True
-    if user.role == UserRole.COMPANY:
-        company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == user.id))
-        return bool(company and company.id == project.company_id)
+    company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == user.id))
+    if company and company.id == project.company_id:
+        return True
     return bool(
         await db.scalar(
             select(ProjectMember).where(
@@ -212,6 +218,15 @@ async def require_project_access(project_id: uuid.UUID, user: User, db: AsyncSes
     project = await get_project(project_id, db)
     if not await can_access(project, user, db):
         raise HTTPException(status_code=403, detail="Project access required")
+    return project
+
+
+async def require_project_owner(project_id: uuid.UUID, user: User, db: AsyncSession) -> Project:
+    """Client-side actions (approve, void, pay, offer, plan): the owning organisation or an admin only.
+    Project members such as the assigned professional get 403 here."""
+    project = await require_project_access(project_id, user, db)
+    if user.role != UserRole.ADMIN and not await _owns_project(db, user, project):
+        raise HTTPException(status_code=403, detail="Only the client organisation can do this")
     return project
 
 
@@ -236,26 +251,16 @@ async def list_projects(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ):
-    if current_user.role == UserRole.COMPANY:
+    if current_user.role == UserRole.ADMIN:
+        query = select(Project).order_by(Project.created_at.desc())
+    else:
+        # Projects the member's organisation owns, plus projects they're a member of.
         company = await db.scalar(
             select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
         )
-        if not company:
-            return []
-        query = (
-            select(Project)
-            .where(Project.company_id == company.id)
-            .order_by(Project.created_at.desc())
-        )
-    elif current_user.role == UserRole.ADMIN:
-        query = select(Project).order_by(Project.created_at.desc())
-    else:
-        query = (
-            select(Project)
-            .join(ProjectMember, ProjectMember.project_id == Project.id)
-            .where(ProjectMember.user_id == current_user.id)
-            .order_by(Project.created_at.desc())
-        )
+        member_of = select(ProjectMember.project_id).where(ProjectMember.user_id == current_user.id)
+        owned = Project.company_id == company.id if company else false()
+        query = select(Project).where(or_(owned, Project.id.in_(member_of))).order_by(Project.created_at.desc())
     result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
 
@@ -621,7 +626,8 @@ async def update_milestone_status(
     if (
         milestone.contract_milestone_id
         and data.status in {"DONE", "COMPLETED"}
-        and current_user.role == UserRole.ENGINEER
+        and current_user.role != UserRole.ADMIN
+        and not await _owns_project(db, current_user, project)
     ):
         raise HTTPException(
             status_code=403,
@@ -828,7 +834,7 @@ async def void_work_ledger_entry(
     entry = await db.get(WorkLedgerEntry, entry_id)
     if not entry:
         raise HTTPException(status_code=404, detail="Ledger entry not found")
-    project = await require_project_access(entry.project_id, current_user, db)
+    project = await require_project_owner(entry.project_id, current_user, db)
     if entry.status != "RECORDED":
         raise HTTPException(status_code=409, detail="Ledger entry is already voided")
     entry.status = "VOID"
@@ -882,18 +888,10 @@ async def create_project_review(
     if data.reviewee_id == current_user.id:
         raise HTTPException(status_code=422, detail="Users cannot review themselves")
     reviewee = await db.get(User, data.reviewee_id)
-    if not reviewee or (reviewee.role != UserRole.ENGINEER and reviewee.role != UserRole.COMPANY):
+    if not reviewee or reviewee.role == UserRole.ADMIN:
         raise HTTPException(status_code=404, detail="Review recipient not found")
-    if reviewee.role == UserRole.COMPANY:
-        company = await db.scalar(
-            select(CompanyProfile).where(
-                CompanyProfile.user_id == reviewee.id, CompanyProfile.id == project.company_id
-            )
-        )
-        if not company:
-            raise HTTPException(
-                status_code=403, detail="Review recipient is not part of this project"
-            )
+    if await _owns_project(db, reviewee, project):
+        pass  # the client organisation
     elif not await db.scalar(
         select(ProjectMember).where(
             ProjectMember.project_id == project.id, ProjectMember.user_id == reviewee.id
@@ -968,14 +966,14 @@ async def create_sandbox_escrow(
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ):
-    project = await require_project_access(project_id, current_user, db)
+    project = await require_project_owner(project_id, current_user, db)
     if data.task_id:
         task = await db.get(ProjectTask, data.task_id)
         if not task or task.project_id != project.id:
             raise HTTPException(status_code=422, detail="Task must belong to the project")
     payee = await db.get(User, data.payee_id)
-    if not payee or payee.role != UserRole.ENGINEER:
-        raise HTTPException(status_code=422, detail="Payee must be a professional")
+    if not payee or payee.role == UserRole.ADMIN:
+        raise HTTPException(status_code=422, detail="Payee must be a member")
     existing = await db.scalar(
         select(PaymentTransaction).where(
             PaymentTransaction.project_id == project.id,
@@ -1038,7 +1036,7 @@ async def release_sandbox_payment(
     payment = await db.get(PaymentTransaction, payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
-    project = await require_project_access(payment.project_id, current_user, db)
+    project = await require_project_owner(payment.project_id, current_user, db)
     if payment.status != "ESCROWED":
         raise HTTPException(status_code=409, detail="Payment is not currently escrowed")
     result = await get_payment_provider().release(payment.provider_reference)
@@ -1071,7 +1069,7 @@ async def refund_sandbox_payment(
     payment = await db.get(PaymentTransaction, payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
-    project = await require_project_access(payment.project_id, current_user, db)
+    project = await require_project_owner(payment.project_id, current_user, db)
     if payment.status != "ESCROWED":
         raise HTTPException(status_code=409, detail="Only escrowed payments can be refunded")
     result = await get_payment_provider().refund(payment.provider_reference)
@@ -1104,7 +1102,7 @@ async def create_task_offer(
     task = await db.get(ProjectTask, task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    project = await require_project_access(task.project_id, current_user, db)
+    project = await require_project_owner(task.project_id, current_user, db)
     profile = await db.scalar(
         select(EngineerProfile).where(
             (EngineerProfile.id == data.candidate_id)
@@ -1242,7 +1240,7 @@ async def cancel_task_offer(
     task = await db.get(ProjectTask, offer.task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    project = await require_project_access(task.project_id, current_user, db)
+    project = await require_project_owner(task.project_id, current_user, db)
     if offer.status != "OFFERED":
         raise HTTPException(status_code=409, detail="Task offer is no longer active")
     offer.status = "CANCELLED"
@@ -1348,7 +1346,7 @@ async def review_task_submission(
     task = await db.get(ProjectTask, submission.task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    project = await require_project_access(task.project_id, current_user, db)
+    project = await require_project_owner(task.project_id, current_user, db)
     if data.status not in {"APPROVED", "CHANGES_REQUESTED"}:
         raise HTTPException(
             status_code=422, detail="Review status must be APPROVED or CHANGES_REQUESTED"
@@ -1409,7 +1407,7 @@ async def ai_review_submission(
     task = await db.get(ProjectTask, submission.task_id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    project = await require_project_access(task.project_id, current_user, db)
+    project = await require_project_owner(task.project_id, current_user, db)
 
     agent = QualityEngineAgent()
     artifacts_str = (
@@ -1761,7 +1759,7 @@ async def approve_project_plan(
     current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ):
-    project = await require_project_access(project_id, current_user, db)
+    project = await require_project_owner(project_id, current_user, db)
     latest_plan = await db.scalar(
         select(AIReport)
         .where(AIReport.project_id == project.id, AIReport.report_type == "PROJECT_PLAN")

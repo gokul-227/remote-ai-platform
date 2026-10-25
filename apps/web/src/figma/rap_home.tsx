@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { GithubConnect } from "./rap_collab";
 import api, { extractErrorMessage } from "@/lib/api";
-import { useApi, toFigmaJob, goRoute } from "./live";
+import { useApi, toFigmaJob, goRoute, isMember } from "./live";
 import { useAuth } from "@/lib/auth";
 import { downloadCsv } from "@/lib/csv";
 const openJob = (id: string) => {
@@ -466,7 +466,7 @@ export function Engineers() {
     term ? { query: term, is_open_to_work: false, limit: 100 } : { limit: 100 },
   );
   const conns = useApi<any[]>(user ? "/connections" : null, { limit: 200 });
-  const myJobs = useApi<any[]>(user?.role === "COMPANY" ? "/jobs/company" : null, { limit: 100 });
+  const myJobs = useApi<any[]>(isMember(user) ? "/jobs/company" : null, { limit: 100 });
   const known = new Set((conns.data ?? []).flatMap((c: any) => [c.sender_id, c.receiver_id]));
   const region = (t?: string | null) => (t || "").split("/")[0].replace("America", "Americas");
   const ENGS = (q1.data ?? [])
@@ -587,7 +587,7 @@ export function Engineers() {
               AI tip
             </p>
             <p className="text-slate-700">
-              {user?.role === "COMPANY"
+              {isMember(user)
                 ? "Open a job’s Candidates view to see professionals ranked by match against that role."
                 : "Keep your own profile complete so companies find you here."}
             </p>
@@ -662,7 +662,7 @@ export function Engineers() {
                       >
                         {known.has(e.uid) ? "Connected / pending" : "Connect"}
                       </Btn>
-                      {user?.role === "COMPANY" && (
+                      {isMember(user) && (
                         <Btn v="primary" sm onClick={() => setInviting(e)}>
                           Invite
                         </Btn>
@@ -819,7 +819,7 @@ export function Settings() {
   const [delOpen, setDelOpen] = useState(false);
   const [delText, setDelText] = useState("");
   const [notice, setNotice] = useState("");
-  const eng = user?.role === "ENGINEER";
+  const eng = isMember(user);
   useEffect(() => {
     if (eng)
       api

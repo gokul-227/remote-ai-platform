@@ -158,8 +158,8 @@ async def _my_channels(_: BaseModel, user: User, db: AsyncSession) -> dict[str, 
 async def _apply(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     assert isinstance(a, ApplyArgs)
     # The endpoint's role dependency doesn't run on a direct call; enforce it here.
-    if user.role != UserRole.ENGINEER:
-        raise HTTPException(status_code=403, detail="Only professionals can apply to jobs")
+    if user.role == UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Staff accounts can't apply to jobs")
     app_ = await apply_to_job(a.job_id, ApplicationCreate(cover_note=a.cover_note), current_user=user, db=db)
     return {"id": str(app_.id), "status": app_.status, "link": _link("applications")}
 
@@ -171,7 +171,7 @@ async def _post_channel(a: BaseModel, user: User, db: AsyncSession) -> dict[str,
 
 
 async def _freelance_recs(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
-    if user.role != UserRole.ENGINEER:
+    if user.role == UserRole.ADMIN:
         return {"items": []}
     try:
         matches = await MatchingService(db).get_recommendations_for_engineer(

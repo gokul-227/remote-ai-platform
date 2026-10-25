@@ -15,14 +15,16 @@ export const unique = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(
 
 /** Sign up through the real registration UI. */
 export async function signUp(page: Page, opts: { as: "professional" | "organisation"; name: string; email: string }) {
+  // One member account can find work and hire; "organisation" here means the
+  // account goes on to set up an organisation profile.
   await page.goto("/#register");
-  await page.getByRole("button", { name: opts.as === "professional" ? "Find work" : "Hire talent" }).click();
   await page.getByLabel("Full name").fill(opts.name);
   await page.getByLabel("Email address").fill(opts.email);
   await page.getByRole("button", { name: /email me a sign-up code/i }).click();
   await page.locator("#code").fill(OTP);
   await page.getByRole("button", { name: /verify/i }).click();
-  await expect(page).toHaveURL(opts.as === "professional" ? /#onboarding/ : /#coprofile/, { timeout: 20_000 });
+  await expect(page).toHaveURL(/#onboarding/, { timeout: 20_000 });
+  if (opts.as === "organisation") await page.goto("/#coprofile");
 }
 
 /** Sign in through the real sign-in UI. */
