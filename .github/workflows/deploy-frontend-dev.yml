@@ -126,6 +126,64 @@ jobs:
           curl -sf --max-time 15 "https://remote-ai-platform-dev.gokulraj22797.workers.dev/robots.txt" | tee /dev/stderr | grep -qx "Disallow: /"
           curl -sf --max-time 15 -o /dev/null "https://remote-ai-platform-dev.gokulraj22797.workers.dev/#jobs"
 
+  deploy-admin:
+    # The staff console (apps/admin): a static export on Workers static assets.
+    # Its hostname is not a security boundary; the API's ADMIN check is.
+    needs: current
+    timeout-minutes: 15
+    if: needs.current.outputs.is_tip == 'true'
+    environment:
+      name: dev
+      url: https://admin-dev.remoteaiplatform.com
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install -g npm@12.1.0 && npm ci
+
+      - name: Build the staff console
+        working-directory: apps/admin
+        env:
+          NEXT_PUBLIC_DEPLOY_ENV: development
+          NEXT_PUBLIC_API_URL: ${{ vars.DEV_API_BASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL_DEV }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY_DEV }}
+        run: npm run build
+
+      - name: Deploy
+        working-directory: apps/admin
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --env dev
+
+      - name: Attach admin-dev.remoteaiplatform.com custom domain (idempotent)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          curl -sf --max-time 60 -X PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+            --data "{\"environment\":\"production\",\"hostname\":\"admin-dev.remoteaiplatform.com\",\"service\":\"remote-ai-platform-admin-dev\",\"zone_id\":\"$CLOUDFLARE_ZONE_ID\"}"
+
+      - name: Verify the console serves and is not indexable
+        run: |
+          for i in $(seq 1 12); do
+            curl -sf --max-time 15 "https://admin-dev.remoteaiplatform.com/" | grep -q "Staff console" && break
+            sleep 5
+          done
+          curl -sf --max-time 15 "https://admin-dev.remoteaiplatform.com/" | grep -q "Staff console"
+          curl -sf --max-time 15 "https://admin-dev.remoteaiplatform.com/robots.txt" | grep -qx "Disallow: /"
+
   deploy-backend:
     # Render's own GitHub-integration auto-deploy has been unreliable (real
     # incident: several merges to dev sat undeployed for hours with no error

@@ -9,6 +9,12 @@ from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+ADMIN_CONSOLE_ORIGINS = {
+    "production": "https://admin.remoteaiplatform.com",
+    "development": "https://admin-dev.remoteaiplatform.com",
+}
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -44,7 +50,13 @@ class Settings(BaseSettings):
 
     @property
     def CORS_ORIGINS(self) -> list[str]:  # noqa: N802
-        return [origin.strip() for origin in self.CORS_ORIGINS_RAW.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.CORS_ORIGINS_RAW.split(",") if origin.strip()]
+        # The staff console (apps/admin) of the same environment only; a dev
+        # console can never call the production API and vice versa.
+        admin = ADMIN_CONSOLE_ORIGINS.get(self.APP_ENV)
+        if admin and admin not in origins:
+            origins.append(admin)
+        return origins
 
     # ── Database ───────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost:5432/remote_ai_platform"
