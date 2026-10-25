@@ -1,13 +1,12 @@
 name: Scheduled job source sync (production)
 
-# The six-hourly job-source sync for the $0 deployment (no hosted worker).
-# Authorised by JOB_SYNC_TOKEN, which can trigger this sync (plus its
-# maintenance: erasure retries, email outbox drain) and nothing else. The old
-# administrator-password fallback and its service account were retired on
-# 2026-10-03.
+# Imports jobs from every source every 3 hours, on this GitHub runner, straight
+# into the production database (python -m app.domains.jobs.runner), then asks
+# the API for the light maintenance step (retention, size budget, erasure
+# retries, email backstop) with JOB_SYNC_TOKEN.
 #
-# Requires: repository secret JOB_SYNC_TOKEN and repository variable
-# PROD_API_URL (the production API base URL + /api/v1).
+# Requires: secrets PROD_DATABASE_URL, JOB_SYNC_TOKEN, GOOGLE_INDEXING_CREDENTIALS_B64,
+# JOOBLE_API_KEY (copied from Infisical prod) and variable PROD_API_URL.
 
 on:
   schedule:
@@ -21,30 +20,47 @@ permissions: {}
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
-      - name: Trigger job sync
+      # Imports run here, on GitHub's runner, straight against the production
+      # database: parsing thousands of postings on the single free API instance
+      # blocked it for users (health checks timed out). The API only does the
+      # light maintenance step at the end.
+      - uses: actions/checkout@v4
+        with:
+          ref: prod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: apps/api/pyproject.toml
+      - name: Install the API package
+        working-directory: apps/api
+        run: pip install --quiet -e .
+      - name: Import every source
+        working-directory: apps/api
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          APP_ENV: production
+          APP_URL: https://remoteaiplatform.com
+          GOOGLE_INDEXING_CREDENTIALS_B64: ${{ secrets.GOOGLE_INDEXING_CREDENTIALS_B64 }}
+          JOOBLE_API_KEY: ${{ secrets.JOOBLE_API_KEY }}
+          LOG_LEVEL: WARNING
         run: |
-          set -euo pipefail
-          API_URL="${{ vars.PROD_API_URL }}"
-          SYNC_TOKEN="${{ secrets.JOB_SYNC_TOKEN }}"
-          if [ -z "$API_URL" ] || [ -z "$SYNC_TOKEN" ]; then
-            echo "::error::PROD_API_URL or JOB_SYNC_TOKEN is not configured"
-            exit 1
-          fi
-          # One source per request keeps each import small enough for the free API
-          # instance (512 MB); a failing source doesn't stop the others.
+          set -uo pipefail
+          if [ -z "$DATABASE_URL" ]; then echo "::error::PROD_DATABASE_URL is not configured"; exit 1; fi
           failed=0
-          for src in REMOTEOK ARBEITNOW REMOTIVE THEMUSE USAJOBS JOBICY HIMALAYAS WORKINGNOMADS \
-                     GREENHOUSE LEVER ASHBY SMARTRECRUITERS ADZUNA JOOBLE; do
+          for src in $(python -m app.domains.jobs.runner --list); do
             echo "::group::$src"
-            if ! curl -sf --max-time 600 -X POST "$API_URL/jobs/sync/scheduled?source=$src" \
-                 -H "X-Job-Sync-Token: $SYNC_TOKEN" -w "\nHTTP %{http_code}\n"; then
+            if ! timeout 900 python -m app.domains.jobs.runner --source "$src"; then
               echo "::warning::$src import failed"; failed=$((failed+1))
             fi
             echo "::endgroup::"
           done
-          # Retention, size budget, pending erasures and the email backstop, once.
-          curl -sf --max-time 600 -X POST "$API_URL/jobs/sync/scheduled?step=maintenance" \
-            -H "X-Job-Sync-Token: $SYNC_TOKEN" -w "\nHTTP %{http_code}\n"
           [ "$failed" -lt 7 ] || { echo "::error::$failed sources failed"; exit 1; }
+      - name: Maintenance (retention, size budget, erasures, email backstop)
+        run: |
+          set -euo pipefail
+          API_URL="${{ vars.PROD_API_URL }}"
+          curl -sf --max-time 600 -X POST "$API_URL/jobs/sync/scheduled?step=maintenance" \
+            -H "X-Job-Sync-Token: ${{ secrets.JOB_SYNC_TOKEN }}" -w "\nHTTP %{http_code}\n"

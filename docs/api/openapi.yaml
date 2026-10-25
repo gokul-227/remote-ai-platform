@@ -8750,6 +8750,24 @@ paths:
                 title: Response Platform Usage Api V1 Admin Usage Get
       security:
       - HTTPBearer: []
+  /api/v1/admin/search-status:
+    get:
+      tags:
+      - Admin Operations
+      summary: Search Status
+      description: Google Search Console summary for the staff console (staff only).
+      operationId: search_status_api_v1_admin_search_status_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Search Status Api V1 Admin Search Status Get
+      security:
+      - HTTPBearer: []
   /api/v1/public/posts/{post_id}:
     get:
       tags:
