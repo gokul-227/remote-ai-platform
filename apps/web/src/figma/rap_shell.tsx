@@ -261,6 +261,8 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   useDialogFocus(menuBox, !!menu, () => setMenu(""));
   const [q, setQ] = useState("");
   const [menuQ, setMenuQ] = useState("");
+  const [sideQ, setSideQ] = useState("");
+  const [openAreas, setOpenAreas] = useState<string[]>([]);
   useEffect(() => {
     setMenu("");
   }, [r]);
@@ -436,14 +438,60 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             </>
           )}
         </div>
-        {catalog[section]
-          ? catalog[section].groups.map((g) => (
-              <div key={g.label}>
-                <h3 className="rap-side-label">{g.label}</h3>
-                {nav(g.items)}
-              </div>
-            ))
-          : nav(visible[section])}
+        {/* Full navigation tree: every area, its sub-categories and every screen. */}
+        <label className="sr-only" htmlFor="side-filter">
+          Find a feature
+        </label>
+        <input
+          id="side-filter"
+          className="rap-side-filter"
+          placeholder="Find a feature…"
+          value={sideQ}
+          onChange={(e) => setSideQ(e.target.value)}
+        />
+        <nav aria-label="All features" className="rap-tree">
+          {Object.entries(visible).map(([title, rows]) => {
+            const area = catalog[title];
+            const ql = sideQ.trim().toLowerCase();
+            const groups = (area ? area.groups : [{ label: "", items: rows as NavItem[] }])
+              .map((g) => ({
+                ...g,
+                items: g.items.filter((i) => !ql || `${title} ${g.label} ${i[1]}`.toLowerCase().includes(ql)),
+              }))
+              .filter((g) => g.items.length);
+            if (!groups.length) return null;
+            const isOpen = !!ql || title === section || openAreas.includes(title);
+            return (
+              <section key={title} className={cx("rap-tree-area", title === section && "current")}>
+                <button
+                  className="rap-tree-head"
+                  aria-expanded={isOpen}
+                  onClick={() =>
+                    setOpenAreas((o) => (o.includes(title) ? o.filter((x) => x !== title) : [...o, title]))
+                  }
+                >
+                  <span className="rap-area-icon">
+                    <Ic n={area?.icon ?? "layers"} s={18} />
+                  </span>
+                  <span className="flex-1 text-left">
+                    <b>{title}</b>
+                    {area && <small>{area.blurb}</small>}
+                  </span>
+                  <span className={cx("rap-tree-caret", isOpen && "open")} aria-hidden="true">
+                    ›
+                  </span>
+                </button>
+                {isOpen &&
+                  groups.map((g) => (
+                    <div key={g.label || title} className="rap-tree-group">
+                      {g.label && <h4>{g.label}</h4>}
+                      {nav(g.items)}
+                    </div>
+                  ))}
+              </section>
+            );
+          })}
+        </nav>
         {user ? (
           <>
             <div className="rap-divider" />
