@@ -36,7 +36,8 @@ const csp = [
   // Organisations link logos hosted anywhere; images can't run code, so any
   // HTTPS source is allowed (plain HTTP and other schemes are not).
   "img-src 'self' data: https:",
-  "script-src 'self' 'unsafe-inline'",
+  // React's development build needs eval() for its debugging features; production never uses it.
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   // The demo viewer embeds professionals' live demos in a sandboxed frame;
