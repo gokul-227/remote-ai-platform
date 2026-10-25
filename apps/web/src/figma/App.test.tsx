@@ -9,7 +9,7 @@ describe("Figma Make app", () => {
 
   it("renders the app shell on the default route", () => {
     render(<App />);
-    expect(screen.getByRole("navigation", { name: /navigation$/i })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /main navigation/i })).toBeInTheDocument();
   });
 
   it("renders the sign-in flow on #login", () => {
