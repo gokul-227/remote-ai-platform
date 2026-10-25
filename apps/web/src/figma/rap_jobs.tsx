@@ -1001,41 +1001,43 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
         </Card>
         <main className="min-w-0 space-y-3">
           {view === "invitations" && (
-          <Card c="rounded-lg" p={false}>
-            <div className="flex items-center justify-between p-4">
-              <p className="font-bold">Invitations ({inv.length})</p>
-            </div>
-            {inv.map((c: any) => (
-              <div key={c.id} className="flex items-center gap-3 border-t border-slate-100 p-4">
-                <Av name={c.sender?.full_name || "Member"} s={64} />
-                <div className="flex-1">
-                  <button onClick={() => open(c.sender?.engineer_profile_id)} className="font-bold hover:underline">
-                    {c.sender?.full_name || "Member"}
-                  </button>
-                  <p className="text-sm text-slate-500">
-                    {c.sender?.headline ||
-                      (c.sender?.role === "COMPANY" ? "Hiring on Remote AI Platform" : "Remote AI Platform member")}
-                  </p>
-                </div>
-                <Btn v="ghost" onClick={() => respond(c.id, "REJECTED")}>
-                  Ignore
-                </Btn>
-                <Btn v="outline" onClick={() => respond(c.id, "ACCEPTED")}>
-                  Accept
-                </Btn>
+            <Card c="rounded-lg" p={false}>
+              <div className="flex items-center justify-between p-4">
+                <p className="font-bold">Invitations ({inv.length})</p>
               </div>
-            ))}
-            {!inv.length && (
-              <p className="border-t border-slate-100 p-4 text-sm text-slate-500">No pending invitations.</p>
-            )}
-          </Card>
+              {inv.map((c: any) => (
+                <div key={c.id} className="flex items-center gap-3 border-t border-slate-100 p-4">
+                  <Av name={c.sender?.full_name || "Member"} s={64} />
+                  <div className="flex-1">
+                    <button onClick={() => open(c.sender?.engineer_profile_id)} className="font-bold hover:underline">
+                      {c.sender?.full_name || "Member"}
+                    </button>
+                    <p className="text-sm text-slate-500">
+                      {c.sender?.headline ||
+                        (c.sender?.role === "COMPANY" ? "Hiring on Remote AI Platform" : "Remote AI Platform member")}
+                    </p>
+                  </div>
+                  <Btn v="ghost" onClick={() => respond(c.id, "REJECTED")}>
+                    Ignore
+                  </Btn>
+                  <Btn v="outline" onClick={() => respond(c.id, "ACCEPTED")}>
+                    Accept
+                  </Btn>
+                </div>
+              ))}
+              {!inv.length && (
+                <p className="border-t border-slate-100 p-4 text-sm text-slate-500">No pending invitations.</p>
+              )}
+            </Card>
           )}
           {view === "invitations" && pendingOut.size > 0 && (
             <p className="text-sm text-slate-500">You have {pendingOut.size} sent invitation(s) awaiting a response.</p>
           )}
           {view === "connections" && !accepted.length && (
             <Card c="rounded-lg">
-              <p className="text-sm text-slate-500">No connections yet. Explore Suggested Connections to grow your network.</p>
+              <p className="text-sm text-slate-500">
+                No connections yet. Explore Suggested Connections to grow your network.
+              </p>
             </Card>
           )}
           {view === "connections" && accepted.length > 0 && (
@@ -1066,45 +1068,45 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
             </Card>
           )}
           {view === "suggestions" && (
-          <Card c="rounded-lg">
-            <p className="mb-3 font-bold">Suggested connections</p>
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-              {suggest.map((p: any) => {
-                const name = p.full_name || "Professional";
-                const pending = pendingOut.has(p.user_id);
-                return (
-                  <div key={p.id} className="overflow-hidden rounded-lg border border-slate-200 text-center">
-                    <div className={cx("h-14 bg-gradient-to-br", grad(name))} />
-                    <div className="-mt-9 flex justify-center">
-                      <div className="rounded-full border-2 border-white">
-                        <Av name={name} s={72} />
+            <Card c="rounded-lg">
+              <p className="mb-3 font-bold">Suggested connections</p>
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+                {suggest.map((p: any) => {
+                  const name = p.full_name || "Professional";
+                  const pending = pendingOut.has(p.user_id);
+                  return (
+                    <div key={p.id} className="overflow-hidden rounded-lg border border-slate-200 text-center">
+                      <div className={cx("h-14 bg-gradient-to-br", grad(name))} />
+                      <div className="-mt-9 flex justify-center">
+                        <div className="rounded-full border-2 border-white">
+                          <Av name={name} s={72} />
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <button onClick={() => open(p.id)} className="font-bold hover:underline">
+                          {name}
+                        </button>
+                        <p className="h-8 text-xs text-slate-500">{p.headline || p.primary_role || ""}</p>
+                        <p className="mt-2 text-xs text-slate-500">{p.location || "Remote"}</p>
+                        <Btn
+                          v={pending ? "gray" : "outline"}
+                          full
+                          sm
+                          c="mt-3"
+                          icon={pending ? "clock" : "plus"}
+                          onClick={() => !pending && connect(p.user_id)}
+                        >
+                          {pending ? "Pending" : "Connect"}
+                        </Btn>
                       </div>
                     </div>
-                    <div className="p-3">
-                      <button onClick={() => open(p.id)} className="font-bold hover:underline">
-                        {name}
-                      </button>
-                      <p className="h-8 text-xs text-slate-500">{p.headline || p.primary_role || ""}</p>
-                      <p className="mt-2 text-xs text-slate-500">{p.location || "Remote"}</p>
-                      <Btn
-                        v={pending ? "gray" : "outline"}
-                        full
-                        sm
-                        c="mt-3"
-                        icon={pending ? "clock" : "plus"}
-                        onClick={() => !pending && connect(p.user_id)}
-                      >
-                        {pending ? "Pending" : "Connect"}
-                      </Btn>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {!people.loading && !suggest.length && (
-              <p className="text-sm text-slate-500">No new suggestions right now.</p>
-            )}
-          </Card>
+                  );
+                })}
+              </div>
+              {!people.loading && !suggest.length && (
+                <p className="text-sm text-slate-500">No new suggestions right now.</p>
+              )}
+            </Card>
           )}
         </main>
         <aside className="self-start">

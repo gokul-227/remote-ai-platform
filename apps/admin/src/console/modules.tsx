@@ -106,13 +106,23 @@ interface TicketDetail {
   }[];
 }
 
-export function Support({ writable, meId }: { writable: boolean; meId: string }) {
-  const [filter, setFilter] = useState("status=active");
+export function Support({
+  writable,
+  meId,
+  initial = "status=active",
+  title = "Ticket queue",
+}: {
+  writable: boolean;
+  meId: string;
+  initial?: string;
+  title?: string;
+}) {
+  const [filter, setFilter] = useState(initial);
   const q = useLoad<Ticket[]>(`/admin/support/tickets?${filter}&limit=100`);
   const [sel, setSel] = useState<string | null>(null);
   return (
     <Section
-      title="Support tickets"
+      title={title}
       action={
         <select
           className="input"
@@ -302,12 +312,22 @@ interface UserRow {
   created_at: string;
 }
 
-export function People({ writable, meId }: { writable: boolean; meId: string }) {
+export function People({
+  writable,
+  meId,
+  preset = "",
+  title = "User directory",
+}: {
+  writable: boolean;
+  meId: string;
+  preset?: string;
+  title?: string;
+}) {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
   const q = useLoad<UserRow[]>(
-    `/admin/users?limit=50&skip=${page * 50}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
+    `/admin/users?limit=50&skip=${page * 50}${preset}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
   );
   const [pending, setPending] = useState<{
     user: UserRow;
@@ -452,14 +472,14 @@ interface Report {
 
 const DECISION_FOR: Record<string, string> = { JOB: "HIDE_JOB", USER: "SUSPEND_USER", POST: "REMOVE_POST" };
 
-export function Moderation({ writable }: { writable: boolean }) {
+export function Moderation({ writable, history = false }: { writable: boolean; history?: boolean }) {
   const q = useLoad<Report[]>("/moderation/reports");
-  const [showClosed, setShowClosed] = useState(false);
+  const [showClosed, setShowClosed] = useState(history);
   const [pending, setPending] = useState<{ r: Report; action: boolean } | null>(null);
-  const rows = (q.data ?? []).filter((r) => showClosed || r.status === "OPEN");
+  const rows = (q.data ?? []).filter((r) => (history ? r.status !== "OPEN" : showClosed || r.status === "OPEN"));
   return (
     <Section
-      title="Moderation"
+      title={history ? "Moderation history" : "Review queue"}
       action={
         <label>
           <input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Show decided
@@ -525,15 +545,15 @@ interface AuditRow {
   created_at: string;
 }
 
-export function Audit() {
+export function Audit({ prefix = "", title = "Audit log" }: { prefix?: string; title?: string }) {
   const [action, setAction] = useState("");
   const [page, setPage] = useState(0);
   const q = useLoad<AuditRow[]>(
-    `/admin/audit-events?limit=100&skip=${page * 100}${action ? `&action=${encodeURIComponent(action)}` : ""}`,
+    `/admin/audit-events?limit=100&skip=${page * 100}${prefix ? `&action_prefix=${encodeURIComponent(prefix)}` : ""}${action ? `&action=${encodeURIComponent(action)}` : ""}`,
   );
   return (
     <Section
-      title="Audit log"
+      title={title}
       action={
         <input
           className="input"
@@ -996,7 +1016,7 @@ export function Organisations() {
       { id: string; name: string; industry?: string | null; location?: string | null; website?: string | null }[]
     >("/companies/public?limit=100");
   return (
-    <Section title="Organisations">
+    <Section title="Company directory">
       <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
       {!!q.data?.length && (
         <div className="card">
@@ -1014,6 +1034,307 @@ export function Organisations() {
                   <td>{c.name}</td>
                   <td>{c.industry ?? "—"}</td>
                   <td>{c.location ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* ---------------- Marketplace: contracts ---------------- */
+
+interface ContractRow {
+  id: string;
+  title: string;
+  status: string;
+  rate_type: string;
+  rate_amount: number;
+  currency: string;
+  client: { name: string | null; email: string | null };
+  worker: { name: string | null; email: string | null };
+  created_at: string;
+}
+
+export function Contracts() {
+  const [statusF, setStatusF] = useState("");
+  const q = useLoad<ContractRow[]>(`/admin/contracts?limit=200${statusF ? `&status=${statusF}` : ""}`);
+  return (
+    <Section
+      title="Contracts"
+      action={
+        <select
+          className="input"
+          aria-label="Filter contracts"
+          value={statusF}
+          onChange={(e) => setStatusF(e.target.value)}
+        >
+          <option value="">All</option>
+          {["DRAFT", "PENDING", "SIGNED", "ACTIVE", "COMPLETED", "TERMINATED"].map((s) => (
+            <option key={s} value={s}>
+              {s.replace("_", " ").toLowerCase()}
+            </option>
+          ))}
+        </select>
+      }
+    >
+      <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
+      {!!q.data?.length && (
+        <div className="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Contract</th>
+                <th>Client</th>
+                <th>Professional</th>
+                <th>Rate</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {q.data.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.title}</td>
+                  <td>{c.client.name || c.client.email || "—"}</td>
+                  <td>{c.worker.name || c.worker.email || "—"}</td>
+                  <td>
+                    {c.rate_amount} {c.currency} {c.rate_type === "HOURLY" ? "/ h" : ""}
+                  </td>
+                  <td>
+                    <span className="pill">{c.status}</span>
+                  </td>
+                  <td>{when(c.created_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* ---------------- AI & automation: assistant activity ---------------- */
+
+export function AssistantActivity() {
+  const [statusF, setStatusF] = useState("");
+  const q = useLoad<
+    { id: string; user_email: string; tool: string; summary: string; status: string; created_at: string }[]
+  >(`/admin/assistant-actions?limit=200${statusF ? `&status=${statusF}` : ""}`);
+  return (
+    <Section
+      title="Assistant activity"
+      action={
+        <select
+          className="input"
+          aria-label="Filter actions"
+          value={statusF}
+          onChange={(e) => setStatusF(e.target.value)}
+        >
+          <option value="">All</option>
+          {["PENDING", "EXECUTED", "FAILED", "CANCELLED"].map((s) => (
+            <option key={s} value={s}>
+              {s.toLowerCase()}
+            </option>
+          ))}
+        </select>
+      }
+    >
+      <p className="muted">
+        Actions the AI assistant proposed and members confirmed. Arguments are hidden: they can contain private content.
+      </p>
+      <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
+      {!!q.data?.length && (
+        <div className="card">
+          <table>
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Member</th>
+                <th>Tool</th>
+                <th>Summary</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {q.data.map((a) => (
+                <tr key={a.id}>
+                  <td>{when(a.created_at)}</td>
+                  <td>{a.user_email}</td>
+                  <td>
+                    <code>{a.tool}</code>
+                  </td>
+                  <td>{a.summary}</td>
+                  <td>
+                    <span className="pill">{a.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* ---------------- Platform configuration: announcements ---------------- */
+
+interface AnnouncementRow {
+  id: string;
+  title: string;
+  body: string;
+  severity: string;
+  active: boolean;
+  created_at: string;
+}
+
+export function Announcements({ writable }: { writable: boolean }) {
+  const q = useLoad<AnnouncementRow[]>("/admin/announcements");
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [severity, setSeverity] = useState("INFO");
+  const [err, setErr] = useState("");
+  const publish = async () => {
+    setErr("");
+    try {
+      await api("/admin/announcements", { method: "POST", json: { title, body, severity } });
+      setTitle("");
+      setBody("");
+      q.reload();
+    } catch (e) {
+      setErr(errText(e));
+    }
+  };
+  const toggle = async (a: AnnouncementRow) => {
+    try {
+      await api(`/admin/announcements/${a.id}`, { method: "PATCH", json: { active: !a.active } });
+      q.reload();
+    } catch (e) {
+      setErr(errText(e));
+    }
+  };
+  return (
+    <Section title="Announcements">
+      <div className="card">
+        <p className="muted" style={{ marginTop: 0 }}>
+          Active announcements appear as a banner for every signed-in member.
+        </p>
+        <label>
+          Title
+          <input
+            className="input"
+            style={{ width: "100%" }}
+            value={title}
+            maxLength={160}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </label>
+        <label style={{ display: "block", marginTop: 8 }}>
+          Message
+          <textarea
+            className="input"
+            style={{ width: "100%", minHeight: 70 }}
+            value={body}
+            maxLength={2000}
+            onChange={(e) => setBody(e.target.value)}
+          />
+        </label>
+        <div className="row" style={{ marginTop: 8 }}>
+          <select
+            className="input"
+            aria-label="Severity"
+            value={severity}
+            onChange={(e) => setSeverity(e.target.value)}
+          >
+            <option value="INFO">Information</option>
+            <option value="WARNING">Warning</option>
+            <option value="CRITICAL">Critical</option>
+          </select>
+          <button className="btn primary" disabled={!writable || !title.trim() || !body.trim()} onClick={publish}>
+            Publish
+          </button>
+        </div>
+        {err && <p className="error">{err}</p>}
+      </div>
+      <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
+      {!!q.data?.length && (
+        <div className="card">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Severity</th>
+                <th>Published</th>
+                <th>Status</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {q.data.map((a) => (
+                <tr key={a.id}>
+                  <td>
+                    <b>{a.title}</b>
+                    <div className="muted">{a.body}</div>
+                  </td>
+                  <td>{a.severity}</td>
+                  <td>{when(a.created_at)}</td>
+                  <td>{a.active ? "Live" : "Off"}</td>
+                  <td>
+                    <button className="btn" disabled={!writable} onClick={() => toggle(a)}>
+                      {a.active ? "Turn off" : "Turn on"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+/* ---------------- Platform configuration: system status ---------------- */
+
+export function SystemStatus() {
+  const health = useLoad<Health>("/admin/health/details");
+  return (
+    <Section
+      title="System status"
+      action={
+        <button className="btn" onClick={health.reload}>
+          Refresh
+        </button>
+      }
+    >
+      <State loading={health.loading && !health.data} error={health.error} retry={health.reload} />
+      {health.data && (
+        <div className="card">
+          <p>
+            Overall: <span className="pill">{health.data.overall_status}</span>
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Latency</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {health.data.services.map((x) => (
+                <tr key={x.service}>
+                  <td>{x.service}</td>
+                  <td>
+                    <span className="pill">{x.status}</span>
+                  </td>
+                  <td>{x.latency_ms == null ? "—" : `${Math.round(x.latency_ms)} ms`}</td>
+                  <td>{x.details ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

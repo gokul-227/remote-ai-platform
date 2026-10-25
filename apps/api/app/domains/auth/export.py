@@ -113,6 +113,7 @@ EXCLUDED: dict[tuple[str, str], str] = {
     ("recommendations", "engineer_id"): "already exported through user_id",
     ("messages", "sender_id"): "exported through the user's conversations, in both directions",
     ("user_blocks", "blocked_id"): "who blocked the user is never revealed",
+    ("announcements", "created_by"): "platform-wide banners authored as staff, not personal data",
     ("call_signals", "from_user_id"): "transient call connection data (network candidates), not content",
     ("call_signals", "to_user_id"): "transient call connection data (network candidates), not content",
     ("github_oauth_states", "user_id"): "short-lived sign-in handshakes, not personal data",

@@ -811,7 +811,9 @@ export function Companies() {
 export function Settings({ initial }: { initial?: string } = {}) {
   /* Live: /auth/me, /engineers/me (open to work), /auth/logout-all */ const { user, updateUser, logout } = useAuth();
   const [tab, setTab] = useState(() =>
-    typeof window !== "undefined" && window.location.hash.includes("github=") ? "Connected accounts" : initial || "Account",
+    typeof window !== "undefined" && window.location.hash.includes("github=")
+      ? "Connected accounts"
+      : initial || "Account",
   );
   const [name, setName] = useState(user?.full_name || "");
   const [open, setOpen] = useState<boolean | null>(null);

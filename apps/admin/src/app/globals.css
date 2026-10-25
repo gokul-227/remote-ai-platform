@@ -48,3 +48,22 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .dialog > div { background: #fff; border-radius: 10px; padding: 18px; width: 100%; max-width: 440px; }
 pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 0; }
 @media (max-width: 760px) { .shell { grid-template-columns: 1fr; } .side { display: flex; overflow-x: auto; gap: 4px; } .side h1 { display: none; } .side button { width: auto; white-space: nowrap; } }
+/* Top bar, section sidebar and menu */
+.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 16px; background: #0b1220; color: #fff; }
+.top .brand { font-size: 15px; }
+.top .who { margin-left: auto; color: #cbd5e1; font-size: 13px; }
+.menu-btn { background: #1e293b; color: #fff; border: 0; width: 36px; height: 36px; border-radius: 8px; font-size: 18px; cursor: pointer; }
+.env { font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 3px 8px; border-radius: 4px; background: #334155; }
+.env.production { background: #dc2626; } .env.development { background: #d97706; } .env.mismatch { background: #7f1d1d; }
+.app .shell { min-height: calc(100vh - 52px); }
+.side h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin: 14px 10px 4px; }
+.side-blurb { color: #94a3b8; font-size: 12px; margin: -10px 8px 10px; }
+.side .all { color: #93c5fd; font-size: 13px; }
+.crumb { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.overlay { position: fixed; inset: 0; background: #0f172a66; z-index: 50; }
+.launcher { position: absolute; left: 16px; top: 60px; width: min(1000px, calc(100vw - 32px)); max-height: calc(100vh - 80px); overflow: auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 20px 60px #0004; }
+.launcher-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+.launcher h3 { margin: 0; font-size: 15px; } .launcher h4 { margin: 10px 0 2px; font-size: 11px; text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
+.launcher .link { display: block; background: none; border: 0; padding: 4px 0; color: var(--brand); cursor: pointer; text-align: left; }
+.launcher .link:hover { text-decoration: underline; }
+@media (max-width: 760px) { .app .shell { grid-template-columns: 1fr; } .app .side { display: none; } .top .who { display: none; } }

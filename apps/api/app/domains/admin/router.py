@@ -99,13 +99,14 @@ async def list_all_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     role: UserRole | None = Query(None),
+    is_active: bool | None = Query(None, description="false lists suspended accounts"),
     q: str | None = Query(None, max_length=100, description="Search email or name"),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> list[UserResponse]:
     """List all registered platform users (Admin only)."""
     repo = UserRepository(db)
-    users = await repo.list_users(skip=skip, limit=limit, role=role, q=q)
+    users = await repo.list_users(skip=skip, limit=limit, role=role, is_active=is_active, q=q)
     return [UserResponse.model_validate(u) for u in users]
 
 
@@ -114,6 +115,7 @@ async def list_audit_events(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     action: str | None = Query(None),
+    action_prefix: str | None = Query(None, max_length=60, description="e.g. 'auth.' or 'admin.'"),
     resource_type: str | None = Query(None),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
     db: AsyncSession = Depends(get_db),
@@ -122,6 +124,8 @@ async def list_audit_events(
     stmt = select(AuditEvent).order_by(AuditEvent.created_at.desc())
     if action:
         stmt = stmt.where(AuditEvent.action == action)
+    if action_prefix:
+        stmt = stmt.where(AuditEvent.action.startswith(action_prefix, autoescape=True))
     if resource_type:
         stmt = stmt.where(AuditEvent.resource_type == resource_type)
     stmt = stmt.offset(skip).limit(limit)

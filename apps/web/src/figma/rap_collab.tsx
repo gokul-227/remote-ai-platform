@@ -2151,23 +2151,26 @@ export function Browser() {
   const [err, setErr] = useState("");
   const frame = useRef<HTMLIFrameElement>(null);
   const current = pos >= 0 ? stack[pos] : "";
-  const load = useCallback(async (raw: string, push = true) => {
-    setErr("");
-    setBusy(true);
-    try {
-      const r = await api.post<{ url: string; view_path: string }>("/browser/views", { url: raw });
-      setAddress(r.data.url);
-      setSrc(`${API_ORIGIN}${r.data.view_path}`);
-      if (push) {
-        setStack((s) => [...s.slice(0, pos + 1), r.data.url]);
-        setPos((p) => p + 1);
+  const load = useCallback(
+    async (raw: string, push = true) => {
+      setErr("");
+      setBusy(true);
+      try {
+        const r = await api.post<{ url: string; view_path: string }>("/browser/views", { url: raw });
+        setAddress(r.data.url);
+        setSrc(`${API_ORIGIN}${r.data.view_path}`);
+        if (push) {
+          setStack((s) => [...s.slice(0, pos + 1), r.data.url]);
+          setPos((p) => p + 1);
+        }
+      } catch (e) {
+        setErr(extractErrorMessage(e, "That page couldn’t be opened."));
+      } finally {
+        setBusy(false);
       }
-    } catch (e) {
-      setErr(extractErrorMessage(e, "That page couldn’t be opened."));
-    } finally {
-      setBusy(false);
-    }
-  }, [pos]);
+    },
+    [pos],
+  );
   // Links clicked inside the sandboxed page come back here so browsing stays in the app.
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
@@ -2207,7 +2210,13 @@ export function Browser() {
           >
             ›
           </button>
-          <button type="button" className={tool} aria-label="Reload" disabled={!current} onClick={() => load(current, false)}>
+          <button
+            type="button"
+            className={tool}
+            aria-label="Reload"
+            disabled={!current}
+            onClick={() => load(current, false)}
+          >
             ↻
           </button>
           <input
@@ -2225,7 +2234,12 @@ export function Browser() {
             {busy ? "Loading…" : "Go"}
           </button>
           {current && (
-            <a className="px-2 text-sm font-semibold text-[#0552CC] hover:underline" href={current} target="_blank" rel="noopener noreferrer">
+            <a
+              className="px-2 text-sm font-semibold text-[#0552CC] hover:underline"
+              href={current}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Open in new tab
             </a>
           )}

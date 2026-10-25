@@ -218,6 +218,23 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   const { user, logout } = useAuth();
   const unreadN = useApi<{ count: number }>(user ? "/notifications/unread-count" : null);
   const unreadM = useApi<{ count: number }>(user ? "/conversations/unread-count" : null);
+  const notices = useApi<{ id: string; title: string; body: string; severity: string }[]>(
+    user ? "/announcements/active" : null,
+  );
+  const [hidden, setHidden] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("rap-hidden-notices") || "[]");
+    } catch {
+      return [];
+    }
+  });
+  const hide = (id: string) => {
+    const next = [...hidden, id];
+    setHidden(next);
+    try {
+      localStorage.setItem("rap-hidden-notices", JSON.stringify(next.slice(-20)));
+    } catch {}
+  };
   const conns = useApi<ShellConnection[]>(user && r === "feed" ? "/connections" : null, { status: "ACCEPTED" });
   const top = useApi<ShellRecommendation[]>(isMember(user) && r === "feed" ? "/matching/recommendations" : null, {
     limit: 1,
@@ -278,9 +295,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
       other_participant?: { full_name?: string };
       last_message?: { content?: string; created_at?: string } | null;
     }[]
-  >(
-    user && menu === "messages" ? "/conversations" : null,
-  );
+  >(user && menu === "messages" ? "/conversations" : null);
   useEffect(() => {
     setMenu("");
   }, [r]);
@@ -302,8 +317,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
     HOME_OF[route] && visible[HOME_OF[route]]
       ? HOME_OF[route]
       : Object.keys(visible).find((name) => visible[name].some((x) => x[0] === route));
-  const section =
-    chosen && visible[chosen]?.some((x) => x[0] === r) ? chosen : owner(r) || Object.keys(visible)[0];
+  const section = chosen && visible[chosen]?.some((x) => x[0] === r) ? chosen : owner(r) || Object.keys(visible)[0];
   const crumb = (() => {
     const area = catalog[section];
     if (!area) return null;
@@ -472,6 +486,19 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
       {user && r !== "assistant" && <AssistantDock go={go} />}
       <main className={cx("rap-main", r === "feed" && "rap-main-feed")}>
         <div className="rap-content" key={r}>
+          {(notices.data ?? [])
+            .filter((n) => !hidden.includes(n.id))
+            .map((n) => (
+              <div key={n.id} role="status" className={cx("rap-announcement", n.severity.toLowerCase())}>
+                <div>
+                  <b>{n.title}</b>
+                  <p>{n.body}</p>
+                </div>
+                <button aria-label="Dismiss announcement" onClick={() => hide(n.id)}>
+                  <Ic n="x" s={16} />
+                </button>
+              </div>
+            ))}
           {crumb && r !== "feed" && (
             <nav aria-label="Breadcrumb" className="rap-crumb">
               <button onClick={() => go(sections[crumb.area]?.[0]?.[0] ?? "feed")}>{crumb.area}</button>

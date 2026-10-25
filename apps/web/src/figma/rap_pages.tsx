@@ -824,7 +824,7 @@ export function Workspace() {
                 </p>
               )}
             </Card>
-          
+
             <Card c="rounded-xl" p="p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[17px] font-bold">Your projects</h2>

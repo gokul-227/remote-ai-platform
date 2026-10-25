@@ -1,0 +1,87 @@
+"""Staff console operations: announcements, contract oversight, assistant activity, filters."""
+
+import uuid
+
+import pytest
+from auth_support import token_for
+from conftest import TestingSessionLocal
+from httpx import AsyncClient
+
+from app.domains.auth.models import User, UserRole
+
+
+async def _headers(role: UserRole) -> dict[str, str]:
+    async with TestingSessionLocal() as db:
+        user = User(email=f"ops-{uuid.uuid4().hex[:8]}@example.com", full_name="Ops", role=role)
+        db.add(user)
+        await db.commit()
+        return {"Authorization": f"Bearer {token_for(user)}"}
+
+
+@pytest.mark.asyncio
+async def test_announcements_lifecycle_is_staff_only_and_audited(client: AsyncClient):
+    admin = await _headers(UserRole.ADMIN)
+    member = await _headers(UserRole.ENGINEER)
+    body = {"title": "Maintenance", "body": "Short downtime tonight.", "severity": "WARNING"}
+    assert (
+        await client.post("/api/v1/admin/announcements", json=body, headers=member)
+    ).status_code == 403
+    created = await client.post("/api/v1/admin/announcements", json=body, headers=admin)
+    assert created.status_code == 201
+    item = created.json()
+    active = await client.get("/api/v1/announcements/active", headers=member)
+    assert [a["id"] for a in active.json()] == [item["id"]]
+    off = await client.patch(
+        f"/api/v1/admin/announcements/{item['id']}", json={"active": False}, headers=admin
+    )
+    assert off.json()["active"] is False
+    assert (await client.get("/api/v1/announcements/active", headers=member)).json() == []
+    audit = await client.get(
+        "/api/v1/admin/audit-events?action_prefix=admin.announcement", headers=admin
+    )
+    assert {e["action"] for e in audit.json()} == {
+        "admin.announcement.create",
+        "admin.announcement.update",
+    }
+
+
+@pytest.mark.asyncio
+async def test_announcement_end_must_follow_start(client: AsyncClient):
+    admin = await _headers(UserRole.ADMIN)
+    bad = {
+        "title": "x",
+        "body": "y",
+        "starts_at": "2030-01-02T00:00:00Z",
+        "ends_at": "2030-01-01T00:00:00Z",
+    }
+    assert (
+        await client.post("/api/v1/admin/announcements", json=bad, headers=admin)
+    ).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_contracts_and_assistant_activity_require_staff(client: AsyncClient):
+    admin = await _headers(UserRole.ADMIN)
+    member = await _headers(UserRole.ENGINEER)
+    for path in ("/api/v1/admin/contracts", "/api/v1/admin/assistant-actions"):
+        assert (await client.get(path, headers=member)).status_code == 403
+        r = await client.get(path, headers=admin)
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_users_can_be_filtered_to_suspended_accounts(client: AsyncClient):
+    admin = await _headers(UserRole.ADMIN)
+    async with TestingSessionLocal() as db:
+        gone = User(
+            email=f"sus-{uuid.uuid4().hex[:8]}@example.com",
+            full_name="Suspended",
+            role=UserRole.ENGINEER,
+        )
+        gone.is_active = False
+        db.add(gone)
+        await db.commit()
+    rows = (await client.get("/api/v1/admin/users?is_active=false&limit=100", headers=admin)).json()
+    assert rows
+    assert all(not u["is_active"] for u in rows)
