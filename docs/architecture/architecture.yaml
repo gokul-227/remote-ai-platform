@@ -90,6 +90,7 @@ components:
     routers:
     - health
     - admin.moderation
+    - admin.operations
     - admin
     - analytics
     - applications

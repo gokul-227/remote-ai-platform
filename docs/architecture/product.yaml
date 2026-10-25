@@ -362,6 +362,8 @@ features:
     prefix: /api/v1/admin
   - domain: admin.moderation
     prefix: /api/v1/moderation
+  - domain: admin.operations
+    prefix: /api/v1/{admin,announcements}
   - domain: analytics
     prefix: /api/v1/analytics
   - domain: health
@@ -413,6 +415,8 @@ api:
     prefix: /health
   - domain: admin.moderation
     prefix: /moderation
+  - domain: admin.operations
+    prefix: /{admin,announcements}
   - domain: admin
     prefix: /admin
   - domain: analytics

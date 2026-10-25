@@ -117,7 +117,7 @@ features:
     name: Administration & moderation (staff console app)
     personas: [admin]
     screens: [admin]
-    api: [admin, admin.moderation, analytics, health]
+    api: [admin, admin.moderation, admin.operations, analytics, health]
     uses: [job-boards, ai-providers, sentry]
   - id: help
     icon: concepts/life-buoy

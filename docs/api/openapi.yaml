@@ -1608,6 +1608,16 @@ paths:
           - $ref: '#/components/schemas/UserRole'
           - type: 'null'
           title: Role
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: false lists suspended accounts
+          title: Is Active
+        description: false lists suspended accounts
       - name: q
         in: query
         required: false
@@ -1670,6 +1680,17 @@ paths:
           - type: string
           - type: 'null'
           title: Action
+      - name: action_prefix
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 60
+          - type: 'null'
+          description: e.g. 'auth.' or 'admin.'
+          title: Action Prefix
+        description: e.g. 'auth.' or 'admin.'
       - name: resource_type
         in: query
         required: false
@@ -8518,6 +8539,199 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
+  /api/v1/announcements/active:
+    get:
+      tags:
+      - Admin Operations
+      summary: Active Announcements
+      operationId: active_announcements_api_v1_announcements_active_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AnnouncementOut'
+                type: array
+                title: Response Active Announcements Api V1 Announcements Active Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/announcements:
+    get:
+      tags:
+      - Admin Operations
+      summary: List Announcements
+      operationId: list_announcements_api_v1_admin_announcements_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/AnnouncementOut'
+                type: array
+                title: Response List Announcements Api V1 Admin Announcements Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Admin Operations
+      summary: Create Announcement
+      operationId: create_announcement_api_v1_admin_announcements_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/announcements/{item_id}:
+    patch:
+      tags:
+      - Admin Operations
+      summary: Update Announcement
+      operationId: update_announcement_api_v1_admin_announcements__item_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Item Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnouncementPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnouncementOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/contracts:
+    get:
+      tags:
+      - Admin Operations
+      summary: List Contracts
+      operationId: list_contracts_api_v1_admin_contracts_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Contracts Api V1 Admin Contracts Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/assistant-actions:
+    get:
+      tags:
+      - Admin Operations
+      summary: List Assistant Actions
+      operationId: list_assistant_actions_api_v1_admin_assistant_actions_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 20
+          - type: 'null'
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response List Assistant Actions Api V1 Admin Assistant Actions Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AIUsageStatsResponse:
@@ -8678,6 +8892,97 @@ components:
       required:
       - rows
       title: AnalyticsSummaryResponse
+    AnnouncementIn:
+      properties:
+        title:
+          type: string
+          maxLength: 160
+          minLength: 1
+          title: Title
+        body:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          title: Body
+        severity:
+          type: string
+          enum:
+          - INFO
+          - WARNING
+          - CRITICAL
+          title: Severity
+          default: INFO
+        starts_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Starts At
+        ends_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Ends At
+      type: object
+      required:
+      - title
+      - body
+      title: AnnouncementIn
+    AnnouncementOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        body:
+          type: string
+          title: Body
+        severity:
+          type: string
+          title: Severity
+        active:
+          type: boolean
+          title: Active
+        starts_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Starts At
+        ends_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Ends At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - title
+      - body
+      - severity
+      - active
+      - starts_at
+      - ends_at
+      - created_at
+      title: AnnouncementOut
+    AnnouncementPatch:
+      properties:
+        active:
+          type: boolean
+          title: Active
+      type: object
+      required:
+      - active
+      title: AnnouncementPatch
     ApiSyncLogResponse:
       properties:
         id:
