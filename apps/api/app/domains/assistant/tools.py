@@ -22,16 +22,20 @@ from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import NotFoundError
 from app.domains.applications.models import JobApplication
 from app.domains.applications.router import ApplicationCreate, apply_to_job
 from app.domains.auth.models import User, UserRole
 from app.domains.channels.router import MessageIn, my_channels, post_message
 from app.domains.contracts.models import Contract
+from app.domains.documents.router import DocumentCreate, create_document
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.router import list_jobs
 from app.domains.jobs.service import JobService
 from app.domains.marketplace.models import ProjectTask
+from app.domains.matching.router import FREELANCE_TYPES
+from app.domains.matching.service import MatchingService
 from app.domains.meetings.router import list_my_meetings, schedule_meeting
 from app.domains.meetings.schemas import MeetingCreate
 from app.domains.projects.router import TaskCreate, create_task
@@ -72,6 +76,11 @@ class SupportTicketArgs(BaseModel):
     subject: str = Field(min_length=3, max_length=255)
     category: str = "OTHER"
     body: str = Field(min_length=1, max_length=5000)
+
+
+class CreateDocArgs(BaseModel):
+    kind: str = Field(pattern="^(DOC|SHEET|SLIDES)$")
+    title: str = Field(min_length=1, max_length=255)
 
 
 class ApplyArgs(BaseModel):
@@ -161,6 +170,28 @@ async def _post_channel(a: BaseModel, user: User, db: AsyncSession) -> dict[str,
     return {"id": str(msg.id), "link": _link("channels")}
 
 
+async def _freelance_recs(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    if user.role != UserRole.ENGINEER:
+        return {"items": []}
+    try:
+        matches = await MatchingService(db).get_recommendations_for_engineer(
+            user.id, limit=8, job_types=FREELANCE_TYPES
+        )
+    except NotFoundError:
+        return {"ok": False, "error": "Create your professional profile first"}
+    return {"items": [
+        {"title": m.job.title, "company": m.job.company_name, "status": f"{round(m.overall_score)}% match",
+         "link": _link(f"jobdetail/{m.job.id}")}
+        for m in matches if m.job
+    ]}
+
+
+async def _create_doc(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, CreateDocArgs)
+    doc = await create_document(DocumentCreate(kind=a.kind, title=a.title), current_user=user, db=db)  # type: ignore[arg-type]
+    return {"id": str(doc.id), "title": doc.title, "link": _link("files")}
+
+
 async def _draft(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     assert isinstance(a, DraftArgs)
     return {"draft": a.text, "note": "Draft only — nothing was sent. Copy it where you want to use it."}
@@ -201,6 +232,7 @@ TOOLS: dict[str, Tool] = {
         Tool("my_meetings", READ, "List my upcoming meetings.", _NoArgs, _my_meetings),
         Tool("my_applications", READ, "List my job applications and their status.", _NoArgs, _my_applications),
         Tool("my_channels", READ, "List my channels with unread counts and their ids.", _NoArgs, _my_channels),
+        Tool("freelance_recommendations", READ, "Recommend freelance/contract work that fits my profile.", _NoArgs, _freelance_recs),
         Tool("draft_text", DRAFT, "Draft a message, proposal or profile text for the user to edit (never sent).", DraftArgs, _draft),
         Tool("create_task", WRITE, "Create a work item in a project the user belongs to.", CreateTaskArgs, _create_task,
              lambda a: f"Create work item “{a.title}”"),  # type: ignore[attr-defined]
@@ -210,6 +242,8 @@ TOOLS: dict[str, Tool] = {
              lambda a: f"Apply to job {a.job_id}"),  # type: ignore[attr-defined]
         Tool("post_to_channel", WRITE, "Post a message in one of my channels (by channel id).", ChannelPostArgs, _post_channel,
              lambda a: f"Post in the channel: “{a.body[:80]}”"),  # type: ignore[attr-defined]
+        Tool("create_document", WRITE, "Create a Doc, Sheet or Slides file (kind DOC/SHEET/SLIDES) with a title.",
+             CreateDocArgs, _create_doc, lambda a: f"Create {a.kind.lower()} “{a.title}”"),  # type: ignore[attr-defined]
         Tool("open_support_ticket", WRITE, "Open a support ticket for the user.", SupportTicketArgs, _open_ticket,
              lambda a: f"Open support ticket “{a.subject}”"),  # type: ignore[attr-defined]
     )

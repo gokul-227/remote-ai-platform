@@ -144,3 +144,25 @@ async def test_channel_tools(client: AsyncClient, monkeypatch):
     pending = (await client.post("/api/v1/assistant/chat", json={"message": "post"}, headers=h)).json()["pending_action"]
     res = await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)
     assert res.json()["result"] == {"ok": False, "error": "Channel not found"}
+
+
+@pytest.mark.asyncio
+async def test_create_document_tool(client: AsyncClient, monkeypatch):
+    h, _ = await _company_with_project(client)
+    _model_says(monkeypatch, {"reply": "ok", "tool": "create_document", "args": {"kind": "SHEET", "title": "Q3 budget"}})
+    pending = (await client.post("/api/v1/assistant/chat", json={"message": "new sheet"}, headers=h)).json()["pending_action"]
+    assert pending["summary"] == "Create sheet “Q3 budget”"
+    res = (await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)).json()
+    assert res["status"] == "EXECUTED"
+    docs = (await client.get("/api/v1/documents", headers=h)).json()
+    assert [d["title"] for d in docs] == ["Q3 budget"]
+    _model_says(monkeypatch, {"reply": "ok", "tool": "create_document", "args": {"kind": "EXE", "title": "x"}})
+    bad = (await client.post("/api/v1/assistant/chat", json={"message": "x"}, headers=h)).json()
+    assert bad["pending_action"] is None
+
+
+@pytest.mark.asyncio
+async def test_freelance_tool_for_non_professional_is_empty(client: AsyncClient, monkeypatch):
+    h, _ = await _company_with_project(client)
+    _model_says(monkeypatch, {"reply": "Here:", "tool": "freelance_recommendations", "args": {}})
+    assert (await client.post("/api/v1/assistant/chat", json={"message": "gigs"}, headers=h)).json()["result"] == {"ok": True, "items": []}
