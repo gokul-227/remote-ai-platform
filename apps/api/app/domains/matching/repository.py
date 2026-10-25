@@ -86,7 +86,12 @@ class MatchingRepository:
         return match_obj
 
     async def list_recommendations_for_engineer(
-        self, engineer_id: uuid.UUID, min_score: float = 50.0, skip: int = 0, limit: int = 20
+        self,
+        engineer_id: uuid.UUID,
+        min_score: float = 50.0,
+        skip: int = 0,
+        limit: int = 20,
+        job_types: tuple[str, ...] | None = None,
     ) -> Sequence[JobMatch]:
         stmt = (
             select(JobMatch)
@@ -101,6 +106,7 @@ class MatchingRepository:
                 JobPost.is_active.is_(True),
                 JobPost.is_deleted.is_(False),
                 JobPost.expired_at.is_(None),
+                *([JobPost.job_type.in_(job_types)] if job_types else []),
             )
             .order_by(JobMatch.overall_score.desc(), JobMatch.job_id)
             .offset(skip)

@@ -3,6 +3,7 @@ API Router for AI Matching domain.
 """
 
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -23,16 +24,20 @@ async def get_matching_service(db: AsyncSession = Depends(get_db)) -> MatchingSe
     return MatchingService(db)
 
 
+FREELANCE_TYPES = ("freelance", "contract", "part-time", "temporary")
+
+
 @router.get("/recommendations", response_model=list[JobMatchResponse])
 async def get_my_job_recommendations(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    kind: Literal["all", "freelance"] = Query("all", description="'freelance' = contract/freelance/part-time work"),
     current_user: User = Depends(get_current_user),
     service: MatchingService = Depends(get_matching_service),
 ) -> list[JobMatchResponse]:
     """Get personalized AI-recommended jobs with per-factor match scores for logged-in engineer."""
     matches = await service.get_recommendations_for_engineer(
-        current_user.id, skip=skip, limit=limit
+        current_user.id, skip=skip, limit=limit, job_types=FREELANCE_TYPES if kind == "freelance" else None
     )
     return [JobMatchResponse.model_validate(m) for m in matches]
 

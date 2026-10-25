@@ -12,9 +12,11 @@ import json
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any, Literal
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from pydantic import BaseModel
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +25,7 @@ from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.contracts.lifecycle import party_of
 from app.domains.contracts.models import Contract
-from app.domains.meetings.models import Meeting, MeetingParticipant
+from app.domains.meetings.models import CallSignal, Meeting, MeetingParticipant
 from app.domains.meetings.schemas import (
     MAX_PARTICIPANTS,
     JoinLink,
@@ -337,3 +339,90 @@ async def remove_participant(
         await notify_user(db, user_id, "Removed from meeting", f"You are no longer invited to “{m.title}”.", "meeting")
         await db.flush()
     return await _build(db, m)
+
+
+# ── In-app calls: WebRTC signalling relayed through the API ───────────────────
+
+MAX_SIGNAL_BYTES = 16_000
+MAX_SIGNALS_PER_MEETING = 5_000
+
+
+class SignalIn(BaseModel):
+    kind: Literal["JOIN", "LEAVE", "OFFER", "ANSWER", "ICE"]
+    to_user_id: uuid.UUID | None = None
+    payload: dict[str, Any] | None = None
+
+
+async def _in_call(db: AsyncSession, meeting_id: uuid.UUID, user: User) -> Meeting:
+    """Only the organiser and non-declined invitees, and only while the meeting is joinable."""
+    m, p = await _visible_meeting(db, meeting_id, user)
+    if p is not None and p.response == "DECLINED":
+        raise HTTPException(status.HTTP_409_CONFLICT, "You declined this meeting; accept it to join")
+    if _phase(m, datetime.now(UTC)) != "JOINABLE":
+        raise HTTPException(status.HTTP_409_CONFLICT, "This call isn't open right now")
+    return m
+
+
+@router.post("/{meeting_id}/signals", status_code=status.HTTP_201_CREATED)
+async def send_signal(
+    meeting_id: uuid.UUID,
+    payload: SignalIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    m = await _in_call(db, meeting_id, current_user)
+    if payload.payload is not None and len(json.dumps(payload.payload)) > MAX_SIGNAL_BYTES:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Signal too large")
+    if payload.kind in {"OFFER", "ANSWER", "ICE"} and payload.to_user_id is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Say who the signal is for")
+    if payload.to_user_id is not None:
+        allowed = {m.organizer_id} | set(
+            (await db.execute(select(MeetingParticipant.user_id).where(MeetingParticipant.meeting_id == m.id))).scalars()
+        )
+        if payload.to_user_id not in allowed:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "That person isn't in this meeting")
+    count = await db.scalar(select(func.count()).select_from(CallSignal).where(CallSignal.meeting_id == m.id))
+    if (count or 0) >= MAX_SIGNALS_PER_MEETING:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too much call traffic; rejoin the call")
+    sig = CallSignal(
+        meeting_id=m.id, from_user_id=current_user.id, to_user_id=payload.to_user_id, kind=payload.kind, payload=payload.payload
+    )
+    db.add(sig)
+    await db.flush()
+    return {"id": sig.id}
+
+
+@router.get("/{meeting_id}/signals")
+async def receive_signals(
+    meeting_id: uuid.UUID,
+    after: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Signals for me (or for everyone) newer than `after`; never my own."""
+    m = await _in_call(db, meeting_id, current_user)
+    rows = (
+        await db.execute(
+            select(CallSignal)
+            .where(
+                CallSignal.meeting_id == m.id,
+                CallSignal.id > after,
+                CallSignal.from_user_id != current_user.id,
+                or_(CallSignal.to_user_id == current_user.id, CallSignal.to_user_id.is_(None)),
+            )
+            .order_by(CallSignal.id)
+            .limit(200)
+        )
+    ).scalars().all()
+    names = {
+        u.id: u.full_name
+        for u in (await db.execute(select(User).where(User.id.in_({r.from_user_id for r in rows})))).scalars()
+    } if rows else {}
+    return {
+        "signals": [
+            {"id": r.id, "kind": r.kind, "from_user_id": str(r.from_user_id), "from_name": names.get(r.from_user_id), "payload": r.payload}
+            for r in rows
+        ],
+        "cursor": rows[-1].id if rows else after,
+        "ice_servers": [{"urls": ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"]}],
+    }

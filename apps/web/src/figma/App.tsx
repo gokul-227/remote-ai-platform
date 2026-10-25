@@ -80,6 +80,7 @@ export const REG: Record<string, any> = {
   assistant: Assistant,
   channels: Channels,
   files: Office,
+  freelancework: () => <Recs kind="freelance" />,
   docs: () => <Office initial="DOC" />,
   sheets: () => <Office initial="SHEET" />,
   slides: () => <Office initial="SLIDES" />,
@@ -164,7 +165,8 @@ const safeDecode = (s: string) => {
 
 export function readRoute(): { route: string; id: string | null } {
   const raw = (window.location.hash || "#feed").slice(1) || "feed";
-  const [head, ...rest] = raw.split("/");
+  // "#settings?github=connected": the query is for the screen, not part of the route.
+  const [head, ...rest] = raw.split("?")[0].split("/");
   const route = head.toLowerCase() || "feed";
   let id = rest.length ? safeDecode(rest.join("/")) : null;
   const spec = ID_ROUTES[route];

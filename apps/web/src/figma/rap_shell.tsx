@@ -34,7 +34,8 @@ const sections: Record<string, string[][]> = {
     ["onboarding", "Job preferences", "settings"],
   ],
   Freelance: [
-    ["taskmarket", "Find freelance work", "zap"],
+    ["freelancework", "Freelance work for you", "target"],
+    ["taskmarket", "Task offers", "zap"],
     ["contracts", "Contracts", "file"],
     ["submissions", "Deliverables", "inbox"],
     ["worklog", "Time & work log", "clock"],
@@ -171,7 +172,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           ["network", "Network", "users", "Network"],
           ["messenger", "Messaging", "chat", "Messaging"],
           ...(role !== "COMPANY" ? [["jobs", "Careers", "briefcase", "Careers"]] : []),
-          ...(role !== "COMPANY" ? [["taskmarket", "Freelance", "zap", "Freelance"]] : []),
+          ...(role !== "COMPANY" ? [["freelancework", "Freelance", "zap", "Freelance"]] : []),
           ...(role !== "ENGINEER" ? [["codash", "Hiring", "building", "Hiring"]] : []),
           ["workspace", "Projects", "board", "Projects"],
         ];

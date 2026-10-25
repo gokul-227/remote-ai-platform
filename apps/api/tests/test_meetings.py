@@ -147,3 +147,42 @@ async def test_time_rules(client: AsyncClient, db: AsyncSession):
         assert (await client.post("/api/v1/meetings", json=body, headers=ah)).status_code == 422
     naive = _payload([b]) | {"starts_at": "2030-01-01T10:00:00", "ends_at": "2030-01-01T11:00:00"}
     assert (await client.post("/api/v1/meetings", json=naive, headers=ah)).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_call_signalling_is_private_to_participants(client: AsyncClient, db: AsyncSession):
+    a, ah = await _register(client)
+    b, bh = await _register(client)
+    c, ch = await _register(client)
+    await _connect(db, a, b)
+    m = (await client.post("/api/v1/meetings", json=_payload([b], start_in=timedelta(minutes=5)), headers=ah)).json()
+    base = f"/api/v1/meetings/{m['id']}/signals"
+
+    assert (await client.post(base, json={"kind": "JOIN"}, headers=ah)).status_code == 201
+    got = (await client.get(base, headers=bh)).json()
+    assert [s["kind"] for s in got["signals"]] == ["JOIN"]
+    assert got["ice_servers"][0]["urls"][0].startswith("stun:")
+    offer = {"kind": "OFFER", "to_user_id": str(a), "payload": {"sdp": "v=0", "type": "offer"}}
+    assert (await client.post(base, json=offer, headers=bh)).status_code == 201
+    # The organiser sees the offer addressed to them; nobody sees their own signals.
+    mine = (await client.get(base, headers=ah)).json()["signals"]
+    assert [s["kind"] for s in mine] == ["OFFER"]
+    # Outsiders and people outside the meeting can't use it.
+    assert (await client.get(base, headers=ch)).status_code == 404
+    assert (await client.post(base, json={"kind": "OFFER", "to_user_id": str(c), "payload": {}}, headers=ah)).status_code == 422
+    assert (await client.post(base, json={"kind": "OFFER", "payload": {}}, headers=ah)).status_code == 422
+    big = {"kind": "ICE", "to_user_id": str(b), "payload": {"x": "y" * 20_000}}
+    assert (await client.post(base, json=big, headers=ah)).status_code == 422
+    # Cursor: nothing new after the last id.
+    cur = got["cursor"]
+    assert (await client.get(base, params={"after": 10**9}, headers=bh)).json()["signals"] == []
+    assert cur >= 1
+
+
+@pytest.mark.asyncio
+async def test_call_closed_outside_join_window(client: AsyncClient, db: AsyncSession):
+    a, ah = await _register(client)
+    b, _ = await _register(client)
+    await _connect(db, a, b)
+    m = (await client.post("/api/v1/meetings", json=_payload([b]), headers=ah)).json()
+    assert (await client.post(f"/api/v1/meetings/{m['id']}/signals", json={"kind": "JOIN"}, headers=ah)).status_code == 409

@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
@@ -177,27 +178,41 @@ class MatchingService:
         }
 
     async def get_recommendations_for_engineer(
-        self, user_id: uuid.UUID, skip: int = 0, limit: int = 20
+        self, user_id: uuid.UUID, skip: int = 0, limit: int = 20, job_types: tuple[str, ...] | None = None
     ) -> Sequence[JobMatch]:
-        """Fetch or compute recommendations for logged in engineer."""
+        """Fetch or compute recommendations for logged in engineer; `job_types` narrows
+        them (e.g. freelance/contract work) using the same explainable scores."""
         engineer = await self.engineer_repo.get_by_user_id(user_id)
         if not engineer:
             raise NotFoundError("Create your professional profile to get job recommendations")
 
-        # Fetch existing matches
         existing = await self.match_repo.list_recommendations_for_engineer(
-            engineer.id, skip=skip, limit=limit
+            engineer.id, skip=skip, limit=limit, job_types=job_types
         )
 
         if len(existing) < 5:
-            # Score against the newest public jobs (previously only 30).
-            jobs = await self.job_repo.search(is_remote=None, skip=0, limit=RECOMMENDATION_JOB_POOL)
+            if job_types:
+                rows = await self.db.execute(
+                    select(JobPost)
+                    .where(
+                        JobPost.job_type.in_(job_types),
+                        JobPost.is_active.is_(True),
+                        JobPost.is_deleted.is_(False),
+                        JobPost.expired_at.is_(None),
+                    )
+                    .order_by(JobPost.posted_at.desc())
+                    .limit(RECOMMENDATION_JOB_POOL)
+                )
+                jobs = list(rows.scalars())
+            else:
+                # Score against the newest public jobs (previously only 30).
+                jobs = list(await self.job_repo.search(is_remote=None, skip=0, limit=RECOMMENDATION_JOB_POOL))
             for job in jobs:
                 await self.calculate_match(engineer, job)
             await self.db.commit()
 
             existing = await self.match_repo.list_recommendations_for_engineer(
-                engineer.id, skip=skip, limit=limit
+                engineer.id, skip=skip, limit=limit, job_types=job_types
             )
 
         return existing

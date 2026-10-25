@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Ic, Btn, Card, Tag, Modal, Field, inputCls, Notice } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -94,19 +94,23 @@ export function Meetings() {
       setMsg(extractErrorMessage(e, "That didn’t work. Please try again."));
     }
   };
-  const join = async (m: Meeting) => {
-    try {
-      const r = await api.get<{ url: string }>(`/meetings/${m.id}/join`);
-      openExternal(r.data.url);
-    } catch (e) {
-      setMsg(extractErrorMessage(e, "You can’t join this meeting right now."));
+  const [inCall, setInCall] = useState<Meeting | null>(null);
+  const join = (m: Meeting) => {
+    if (typeof RTCPeerConnection === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      // Browsers without WebRTC use the external room.
+      api
+        .get<{ url: string }>(`/meetings/${m.id}/join`)
+        .then((r) => openExternal(r.data.url))
+        .catch((e) => setMsg(extractErrorMessage(e, "You can’t join this meeting right now.")));
+      return;
     }
+    setInCall(m);
   };
   const rows = q.data ?? [];
   return (
     <Page
       title="Meetings"
-      sub="Schedule calls with your connections and contract partners. Calls open in a separate tab."
+      sub="Schedule and hold video calls with your connections and contract partners, right here."
       action={
         <Btn icon="plus" onClick={() => setOpen(true)}>
           Schedule meeting
@@ -220,6 +224,7 @@ export function Meetings() {
           })}
         </div>
       )}
+      {inCall && <CallRoom meeting={inCall} onLeave={() => setInCall(null)} />}
       <ScheduleMeeting
         open={open}
         onClose={() => setOpen(false)}
@@ -1024,6 +1029,13 @@ function SubmitDeliverable({
                 />
               </Field>
             </div>
+            <CommitPicker
+              onPick={(r, b, c) => {
+                setRepo(r);
+                setBranch(b);
+                setSha(c);
+              }}
+            />
             <p className="text-xs text-slate-500">The deliverable stays tied to this exact commit.</p>
           </>
         )}
@@ -1681,6 +1693,382 @@ function DemoViewer({ deliverable, onClose }: { deliverable: Deliverable; onClos
       <p className="mt-2 text-xs text-slate-500">
         The demo runs in an isolated frame and can’t see your account. If it stays blank, the site doesn’t allow
         embedding: use “Open in new tab”.
+      </p>
+    </Modal>
+  );
+}
+
+/* ---------------- GitHub (the user's own account) ---------------- */
+
+interface GhStatus {
+  configured: boolean;
+  connected: boolean;
+  login: string | null;
+  private_access: boolean;
+}
+
+export function GithubConnect() {
+  const q = useApi<GhStatus>("/github/status");
+  const [err, setErr] = useState("");
+  const result = typeof window !== "undefined" ? /github=([a-z]+)/.exec(window.location.hash)?.[1] : undefined;
+  const connect = async (access: "public" | "private") => {
+    try {
+      const r = await api.post<{ authorize_url: string }>(`/github/connect?access=${access}`);
+      const href = safeHref(r.data.authorize_url);
+      if (href && new URL(href).hostname === "github.com") window.location.assign(href);
+    } catch (e) {
+      setErr(extractErrorMessage(e, "Couldn’t start the GitHub connection."));
+    }
+  };
+  const s = q.data;
+  return (
+    <div>
+      <h2>Connected accounts</h2>
+      <p className="mt-1 text-sm text-slate-600">
+        Connect GitHub to pick commits for code deliverables and verify private repositories.
+      </p>
+      {result === "connected" && (
+        <p className="mt-3 rounded-lg bg-emerald-50 p-2 text-sm text-emerald-800">GitHub connected.</p>
+      )}
+      {result && result !== "connected" && (
+        <p className="mt-3 rounded-lg bg-amber-50 p-2 text-sm text-amber-800">
+          The GitHub connection didn’t finish ({result}). Try again.
+        </p>
+      )}
+      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 p-4">
+        <Ic n="code" s={22} />
+        <div className="flex-1">
+          <b>GitHub</b>
+          <p className="text-sm text-slate-500">
+            {!s
+              ? "Checking…"
+              : !s.configured
+                ? "Not available on this server yet."
+                : s.connected
+                  ? `Connected as @${s.login}${s.private_access ? " · private repositories allowed" : " · public repositories only"}`
+                  : "Not connected"}
+          </p>
+        </div>
+        {s?.configured && !s.connected && (
+          <>
+            <Btn sm onClick={() => connect("public")}>
+              Connect (public repos)
+            </Btn>
+            <Btn sm v="line" onClick={() => connect("private")}>
+              Connect incl. private
+            </Btn>
+          </>
+        )}
+        {s?.connected && (
+          <Btn
+            sm
+            v="line"
+            onClick={async () => {
+              await api.delete("/github/connection").catch(() => undefined);
+              q.reload();
+            }}
+          >
+            Disconnect
+          </Btn>
+        )}
+      </div>
+      {err && (
+        <p role="alert" className="mt-2 text-sm text-red-600">
+          {err}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function CommitPicker({ onPick }: { onPick: (repo: string, branch: string, sha: string) => void }) {
+  const status = useApi<GhStatus>("/github/status");
+  const connected = !!status.data?.connected;
+  const repos = useApi<{ full_name: string; html_url: string; default_branch: string; private: boolean }[]>(
+    connected ? "/github/repos" : null,
+  );
+  const [repo, setRepo] = useState("");
+  const chosen = (repos.data ?? []).find((r) => r.full_name === repo);
+  const commits = useApi<{ sha: string; message: string; date: string }[]>(
+    chosen ? `/github/repos/${chosen.full_name}/commits` : null,
+    chosen ? { branch: chosen.default_branch } : undefined,
+  );
+  if (!connected)
+    return (
+      <p className="text-xs text-slate-500">
+        Tip: connect GitHub in Settings → Connected accounts to pick a commit instead of pasting it.
+      </p>
+    );
+  return (
+    <div className="grid gap-2 rounded-lg border border-slate-200 p-2">
+      <Field label="Pick from your GitHub">
+        <select className={inputCls} value={repo} onChange={(e) => setRepo(e.target.value)}>
+          <option value="">Choose a repository…</option>
+          {(repos.data ?? []).map((r) => (
+            <option key={r.full_name} value={r.full_name}>
+              {r.full_name} {r.private ? "(private)" : ""}
+            </option>
+          ))}
+        </select>
+      </Field>
+      {chosen && (
+        <ul className="max-h-40 overflow-y-auto text-xs">
+          {(commits.data ?? []).map((c) => (
+            <li key={c.sha}>
+              <button
+                type="button"
+                className="w-full rounded p-1 text-left hover:bg-slate-50"
+                onClick={() => onPick(chosen.html_url, chosen.default_branch, c.sha)}
+              >
+                <span className="font-mono">{c.sha.slice(0, 8)}</span> {c.message}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- In-app calls (WebRTC, browser to browser) ---------------- */
+
+interface Signal {
+  id: number;
+  kind: "JOIN" | "LEAVE" | "OFFER" | "ANSWER" | "ICE";
+  from_user_id: string;
+  from_name: string | null;
+  payload: any;
+}
+
+function VideoTile({ stream, name, muted }: { stream: MediaStream | null; name: string; muted?: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (ref.current && ref.current.srcObject !== stream) ref.current.srcObject = stream;
+  }, [stream]);
+  return (
+    <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-900">
+      <video ref={ref} autoPlay playsInline muted={muted} className="h-full w-full object-cover" />
+      <span className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">{name}</span>
+    </div>
+  );
+}
+
+export function CallRoom({ meeting, onLeave }: { meeting: Meeting; onLeave: () => void }) {
+  const { user } = useAuth();
+  const me = user?.id ?? "";
+  const [local, setLocal] = useState<MediaStream | null>(null);
+  const [remotes, setRemotes] = useState<Record<string, { stream: MediaStream; name: string }>>({});
+  const [micOn, setMicOn] = useState(true);
+  const [camOn, setCamOn] = useState(true);
+  const [sharing, setSharing] = useState(false);
+  const [problem, setProblem] = useState("");
+  const [failed, setFailed] = useState(false);
+  const peers = useRef<Record<string, RTCPeerConnection>>({});
+  const names = useRef<Record<string, string>>({});
+  const ice = useRef<RTCIceServer[]>([{ urls: ["stun:stun.l.google.com:19302"] }]);
+  const localRef = useRef<MediaStream | null>(null);
+  const base = `/meetings/${meeting.id}/signals`;
+
+  const send = useCallback(
+    (kind: Signal["kind"], to: string | null, payload?: unknown) =>
+      api.post(base, { kind, to_user_id: to, payload: payload ?? null }).catch(() => undefined),
+    [base],
+  );
+
+  const peer = useCallback(
+    (other: string) => {
+      if (peers.current[other]) return peers.current[other];
+      const pc = new RTCPeerConnection({ iceServers: ice.current });
+      localRef.current?.getTracks().forEach((t) => pc.addTrack(t, localRef.current!));
+      pc.onicecandidate = (e) => e.candidate && send("ICE", other, e.candidate.toJSON());
+      pc.ontrack = (e) =>
+        setRemotes((r) => ({ ...r, [other]: { stream: e.streams[0], name: names.current[other] || "Participant" } }));
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "failed") setFailed(true);
+        if (["closed", "disconnected"].includes(pc.connectionState))
+          setRemotes((r) => {
+            const next = { ...r };
+            delete next[other];
+            return next;
+          });
+      };
+      peers.current[other] = pc;
+      return pc;
+    },
+    [send],
+  );
+
+  useEffect(() => {
+    let live = true;
+    let cursor = 0;
+    let timer: number | undefined;
+    const handle = async (s: Signal) => {
+      names.current[s.from_user_id] = s.from_name || "Participant";
+      if (s.kind === "JOIN") {
+        // Whoever is already in the call calls the newcomer.
+        const pc = peer(s.from_user_id);
+        await pc.setLocalDescription(await pc.createOffer());
+        await send("OFFER", s.from_user_id, pc.localDescription);
+      } else if (s.kind === "OFFER") {
+        const pc = peer(s.from_user_id);
+        const collision = pc.signalingState !== "stable";
+        const polite = me > s.from_user_id;
+        if (collision && !polite) return;
+        if (collision) await pc.setLocalDescription({ type: "rollback" });
+        await pc.setRemoteDescription(s.payload);
+        await pc.setLocalDescription(await pc.createAnswer());
+        await send("ANSWER", s.from_user_id, pc.localDescription);
+      } else if (s.kind === "ANSWER") {
+        const pc = peers.current[s.from_user_id];
+        if (pc && pc.signalingState === "have-local-offer") await pc.setRemoteDescription(s.payload);
+      } else if (s.kind === "ICE") {
+        await peers.current[s.from_user_id]?.addIceCandidate(s.payload).catch(() => undefined);
+      } else if (s.kind === "LEAVE") {
+        peers.current[s.from_user_id]?.close();
+        delete peers.current[s.from_user_id];
+        setRemotes((r) => {
+          const next = { ...r };
+          delete next[s.from_user_id];
+          return next;
+        });
+      }
+    };
+    const poll = async () => {
+      try {
+        const r = await api.get<{ signals: Signal[]; cursor: number; ice_servers: RTCIceServer[] }>(base, {
+          params: { after: cursor },
+        });
+        ice.current = r.data.ice_servers;
+        cursor = r.data.cursor;
+        for (const s of r.data.signals) await handle(s).catch(() => undefined);
+      } catch (e) {
+        if (statusOf(e) === 409) setProblem("This call has ended.");
+      }
+      if (live) timer = window.setTimeout(poll, document.visibilityState === "visible" ? 1000 : 3000);
+    };
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        if (!live) return stream.getTracks().forEach((t) => t.stop());
+        localRef.current = stream;
+        setLocal(stream);
+      } catch {
+        try {
+          const audio = await navigator.mediaDevices.getUserMedia({ audio: true });
+          localRef.current = audio;
+          setLocal(audio);
+          setCamOn(false);
+          setProblem("Camera unavailable: you joined with audio only.");
+        } catch {
+          setProblem(
+            "Allow microphone (and camera) access in your browser, then rejoin. You can still listen and watch.",
+          );
+        }
+      }
+      // Skip anything sent before we arrived, then announce ourselves.
+      try {
+        const r = await api.get<{ cursor: number }>(base, { params: { after: 0 } });
+        cursor = r.data.cursor;
+      } catch {
+        /* handled by poll */
+      }
+      await send("JOIN", null);
+      poll();
+    })();
+    const leave = () => send("LEAVE", null);
+    window.addEventListener("beforeunload", leave);
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+      window.removeEventListener("beforeunload", leave);
+      leave();
+      Object.values(peers.current).forEach((pc) => pc.close());
+      peers.current = {};
+      localRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, [base, me, peer, send]);
+
+  const toggleMic = () => {
+    localRef.current?.getAudioTracks().forEach((t) => (t.enabled = !micOn));
+    setMicOn(!micOn);
+  };
+  const toggleCam = () => {
+    localRef.current?.getVideoTracks().forEach((t) => (t.enabled = !camOn));
+    setCamOn(!camOn);
+  };
+  const replaceVideo = (track: MediaStreamTrack | null) =>
+    Object.values(peers.current).forEach((pc) =>
+      pc
+        .getSenders()
+        .find((s) => s.track?.kind === "video")
+        ?.replaceTrack(track),
+    );
+  const toggleShare = async () => {
+    if (sharing) {
+      replaceVideo(localRef.current?.getVideoTracks()[0] ?? null);
+      setSharing(false);
+      return;
+    }
+    try {
+      const screen = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const track = screen.getVideoTracks()[0];
+      replaceVideo(track);
+      setSharing(true);
+      track.onended = () => {
+        replaceVideo(localRef.current?.getVideoTracks()[0] ?? null);
+        setSharing(false);
+      };
+    } catch {
+      setProblem("Screen sharing was cancelled or isn’t supported in this browser.");
+    }
+  };
+  const fallback = async () => {
+    try {
+      const r = await api.get<{ url: string }>(`/meetings/${meeting.id}/join`);
+      openExternal(r.data.url);
+    } catch (e) {
+      setProblem(extractErrorMessage(e, "The backup room isn’t available."));
+    }
+  };
+  const tiles = Object.entries(remotes);
+  return (
+    <Modal open onClose={onLeave} title={`Call: ${meeting.title}`} w="max-w-5xl">
+      {problem && <p className="mb-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800">{problem}</p>}
+      {failed && (
+        <p className="mb-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800">
+          Your networks can’t connect directly (common on strict office Wi-Fi).{" "}
+          <button className="font-semibold underline" onClick={fallback}>
+            Join the backup room instead
+          </button>
+          .
+        </p>
+      )}
+      <div className={`grid gap-2 ${tiles.length ? "md:grid-cols-2" : ""}`}>
+        <VideoTile stream={local} name={`You${micOn ? "" : " (muted)"}${sharing ? " · sharing screen" : ""}`} muted />
+        {tiles.map(([id, t]) => (
+          <VideoTile key={id} stream={t.stream} name={t.name} />
+        ))}
+      </div>
+      {!tiles.length && <p className="mt-2 text-sm text-slate-500">Waiting for others to join…</p>}
+      <div className="mt-3 flex flex-wrap justify-center gap-2">
+        <Btn v={micOn ? "line" : "danger"} onClick={toggleMic}>
+          {micOn ? "Mute" : "Unmute"}
+        </Btn>
+        <Btn v={camOn ? "line" : "danger"} onClick={toggleCam}>
+          {camOn ? "Stop video" : "Start video"}
+        </Btn>
+        <Btn v={sharing ? "primary" : "line"} onClick={toggleShare}>
+          {sharing ? "Stop sharing" : "Share screen"}
+        </Btn>
+        <Btn v="ghost" onClick={fallback}>
+          Backup room
+        </Btn>
+        <Btn v="danger" onClick={onLeave}>
+          Leave call
+        </Btn>
+      </div>
+      <p className="mt-2 text-center text-xs text-slate-500">
+        Audio and video go directly between browsers; nothing is recorded or stored.
       </p>
     </Modal>
   );

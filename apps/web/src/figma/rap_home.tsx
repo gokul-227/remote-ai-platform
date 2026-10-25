@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { GithubConnect } from "./rap_collab";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useApi, toFigmaJob, goRoute } from "./live";
 import { useAuth } from "@/lib/auth";
@@ -153,9 +154,9 @@ export function Dashboard() {
     </Page>
   );
 }
-export function Recs() {
+export function Recs({ kind = "all" }: { kind?: "all" | "freelance" }) {
   /* Live */ const [filter, setFilter] = useState("All");
-  const matches = useApi<any[]>("/matching/recommendations", { limit: 50 });
+  const matches = useApi<any[]>("/matching/recommendations", { limit: 50, kind });
   const savedQ = useApi<any[]>("/saved-jobs", { limit: 100 });
   const saved = new Set((savedQ.data ?? []).map((j: any) => j.id));
   const all = (matches.data ?? []).filter((m: any) => m.job && m.status !== "dismissed");
@@ -809,7 +810,9 @@ export function Companies() {
 
 export function Settings() {
   /* Live: /auth/me, /engineers/me (open to work), /auth/logout-all */ const { user, updateUser, logout } = useAuth();
-  const [tab, setTab] = useState("Account");
+  const [tab, setTab] = useState(() =>
+    typeof window !== "undefined" && window.location.hash.includes("github=") ? "Connected accounts" : "Account",
+  );
   const [name, setName] = useState(user?.full_name || "");
   const [open, setOpen] = useState<boolean | null>(null);
   const [pub, setPub] = useState<boolean | null>(null);
@@ -840,7 +843,7 @@ export function Settings() {
     <Page title="Settings" sub="Manage your account and how your profile appears">
       <div className="grid gap-5 md:grid-cols-[180px_1fr]">
         <div>
-          {["Account", "Privacy", "Security"].map((t) => (
+          {["Account", "Privacy", "Security", "Connected accounts"].map((t) => (
             <button
               key={t}
               onClick={() => {
@@ -857,7 +860,9 @@ export function Settings() {
           ))}
         </div>
         <Card>
-          {tab === "Account" ? (
+          {tab === "Connected accounts" ? (
+            <GithubConnect />
+          ) : tab === "Account" ? (
             <>
               <h2>Account details</h2>
               <Field label="Full name">
