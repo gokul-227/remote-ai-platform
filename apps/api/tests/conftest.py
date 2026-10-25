@@ -2,20 +2,19 @@
 Pytest configuration and async test fixtures.
 """
 
-import pytest
 import asyncio
 import uuid
-from typing import AsyncGenerator
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy import select
+from collections.abc import AsyncGenerator
 
-from app.main import app
+import pytest
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.compiler import compiles
+
 from app.core.database import Base, get_db, session_dependency
 from app.domains.auth.models import User, UserRole
-
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from app.main import app
 
 
 @compiles(JSONB, "sqlite")
@@ -88,8 +87,8 @@ def isolate_rate_limiting():
     Isolate rate limiter state between tests.
     Sets high limit for general test suite and clears in-memory sliding windows.
     """
-    from app.core.config import settings
     import app.core.rate_limiter as rl
+    from app.core.config import settings
     orig_limit = settings.RATE_LIMIT_MAX_REQUESTS
     settings.RATE_LIMIT_MAX_REQUESTS = 1000
     rl.reset_fallback_state()
@@ -173,3 +172,13 @@ def marketplace_payments_enabled():
     settings.MARKETPLACE_PAYMENTS_ENABLED = True
     yield
     settings.MARKETPLACE_PAYMENTS_ENABLED = orig
+
+
+@pytest.fixture(autouse=True)
+def no_github_calls(monkeypatch):
+    """Deliverable submissions check commits on GitHub; tests never reach the network."""
+
+    async def _unverified(repo_url: str, sha: str) -> str:
+        return "UNVERIFIED"
+
+    monkeypatch.setattr("app.domains.deliverables.router.check_commit", _unverified)

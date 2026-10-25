@@ -48,6 +48,8 @@ class Deliverable(Base):
     repo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     branch: Mapped[str | None] = mapped_column(String(255), nullable=True)
     commit_sha: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # VERIFIED (commit found in the public repo), NOT_FOUND, UNVERIFIED (private repo / GitHub unreachable)
+    commit_check: Mapped[str | None] = mapped_column(String(20), nullable=True)
     # DOCUMENT (private object storage; downloads are short-lived presigned URLs)
     file_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)

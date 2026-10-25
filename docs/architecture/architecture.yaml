@@ -99,6 +99,7 @@ components:
     - companies
     - contracts
     - deliverables
+    - endorsements
     - engineers
     - groups
     - jobs

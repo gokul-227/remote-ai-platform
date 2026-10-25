@@ -13,14 +13,19 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
-from app.domains.channels.models import Channel, ChannelMember, ChannelMessage
+from app.domains.channels.models import (
+    Channel,
+    ChannelMember,
+    ChannelMessage,
+    ChannelMessageReaction,
+)
 from app.domains.meetings.router import may_invite
 from app.domains.projects.models import Project
 from app.domains.projects.router import can_access
@@ -44,6 +49,14 @@ class MessageIn(BaseModel):
     parent_id: uuid.UUID | None = None
     mentions: list[uuid.UUID] = Field(default_factory=list, max_length=20)
     client_token: str | None = Field(default=None, min_length=8, max_length=64)
+
+
+class EditIn(BaseModel):
+    body: str = Field(min_length=1, max_length=10_000)
+
+
+# A small fixed set keeps reactions meaningful and avoids storing arbitrary text.
+ALLOWED_EMOJI = ("👍", "🎉", "❤️", "👀", "✅", "🙏", "😂", "🚀")
 
 
 class MemberIn(BaseModel):
@@ -79,6 +92,10 @@ class MessageOut(BaseModel):
     body: str
     mentions: list[str]
     reply_count: int = 0
+    reactions: dict[str, int] = Field(default_factory=dict)
+    my_reactions: list[str] = Field(default_factory=list)
+    edited: bool = False
+    deleted: bool = False
     created_at: datetime
 
 
@@ -195,8 +212,26 @@ async def my_channels(
     return out
 
 
-async def _messages_out(db: AsyncSession, rows: list[ChannelMessage]) -> list[MessageOut]:
+async def _messages_out(
+    db: AsyncSession, rows: list[ChannelMessage], viewer: uuid.UUID | None = None
+) -> list[MessageOut]:
     ids = [m.id for m in rows]
+    reactions: dict[uuid.UUID, dict[str, int]] = {}
+    mine: dict[uuid.UUID, list[str]] = {}
+    if ids:
+        for mid, emoji, n in (await db.execute(
+            select(ChannelMessageReaction.message_id, ChannelMessageReaction.emoji, func.count())
+            .where(ChannelMessageReaction.message_id.in_(ids))
+            .group_by(ChannelMessageReaction.message_id, ChannelMessageReaction.emoji)
+        )).tuples():
+            reactions.setdefault(mid, {})[emoji] = n
+        if viewer is not None:
+            for mid, emoji in (await db.execute(
+                select(ChannelMessageReaction.message_id, ChannelMessageReaction.emoji).where(
+                    ChannelMessageReaction.message_id.in_(ids), ChannelMessageReaction.user_id == viewer
+                )
+            )).tuples():
+                mine.setdefault(mid, []).append(emoji)
     counts = dict(
         (await db.execute(
             select(ChannelMessage.parent_id, func.count()).where(ChannelMessage.parent_id.in_(ids)).group_by(ChannelMessage.parent_id)
@@ -208,7 +243,14 @@ async def _messages_out(db: AsyncSession, rows: list[ChannelMessage]) -> list[Me
     return [
         MessageOut(
             id=m.id, channel_id=m.channel_id, author_id=m.author_id, author_name=authors.get(m.author_id) if m.author_id else None,
-            parent_id=m.parent_id, body=m.body, mentions=list(m.mentions or []), reply_count=int(counts.get(m.id, 0)),
+            parent_id=m.parent_id,
+            body="" if m.deleted_at else m.body,
+            mentions=[] if m.deleted_at else list(m.mentions or []),
+            reply_count=int(counts.get(m.id, 0)),
+            reactions={} if m.deleted_at else reactions.get(m.id, {}),
+            my_reactions=mine.get(m.id, []),
+            edited=m.edited_at is not None,
+            deleted=m.deleted_at is not None,
             created_at=m.created_at,
         )
         for m in rows
@@ -237,7 +279,7 @@ async def history(
         rows = list(reversed((await db.execute(
             q.order_by(ChannelMessage.created_at.desc(), ChannelMessage.id.desc()).limit(limit)
         )).scalars().all()))
-    return await _messages_out(db, list(rows))
+    return await _messages_out(db, list(rows), current_user.id)
 
 
 @router.post("/{channel_id}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
@@ -303,6 +345,83 @@ async def post_message(
                 if member is not None and await _has_access(db, ch, member):
                     await notify_user(db, uid, f"New in #{ch.name}", preview, "channel")
     return (await _messages_out(db, [msg]))[0]
+
+
+async def _message_in(db: AsyncSession, ch: Channel, message_id: uuid.UUID) -> ChannelMessage:
+    msg = await db.get(ChannelMessage, message_id)
+    if msg is None or msg.channel_id != ch.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Message not found")
+    return msg
+
+
+@router.patch("/{channel_id}/messages/{message_id}", response_model=MessageOut)
+async def edit_message(
+    channel_id: uuid.UUID, message_id: uuid.UUID, payload: EditIn,
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+) -> MessageOut:
+    ch = await _channel(db, channel_id, current_user)
+    msg = await _message_in(db, ch, message_id)
+    if msg.author_id != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "You can only edit your own messages")
+    if msg.deleted_at is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This message was deleted")
+    msg.body = payload.body
+    msg.edited_at = _now()
+    await db.flush()
+    return (await _messages_out(db, [msg], current_user.id))[0]
+
+
+@router.delete("/{channel_id}/messages/{message_id}", response_model=MessageOut)
+async def delete_message(
+    channel_id: uuid.UUID, message_id: uuid.UUID,
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+) -> MessageOut:
+    ch = await _channel(db, channel_id, current_user)
+    msg = await _message_in(db, ch, message_id)
+    if msg.author_id != current_user.id and ch.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the author or the channel owner can delete this")
+    if msg.deleted_at is None:
+        msg.deleted_at = _now()
+        msg.body = ""
+        msg.mentions = []
+        await db.flush()
+    return (await _messages_out(db, [msg], current_user.id))[0]
+
+
+@router.put("/{channel_id}/messages/{message_id}/reactions/{emoji}", response_model=MessageOut)
+async def add_reaction(
+    channel_id: uuid.UUID, message_id: uuid.UUID, emoji: str,
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+) -> MessageOut:
+    ch = await _channel(db, channel_id, current_user)
+    msg = await _message_in(db, ch, message_id)
+    if emoji not in ALLOWED_EMOJI:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Unsupported reaction")
+    if msg.deleted_at is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This message was deleted")
+    try:
+        async with db.begin_nested():
+            db.add(ChannelMessageReaction(message_id=msg.id, user_id=current_user.id, emoji=emoji))
+    except IntegrityError:
+        pass  # already reacted with this emoji
+    return (await _messages_out(db, [msg], current_user.id))[0]
+
+
+@router.delete("/{channel_id}/messages/{message_id}/reactions/{emoji}", response_model=MessageOut)
+async def remove_reaction(
+    channel_id: uuid.UUID, message_id: uuid.UUID, emoji: str,
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+) -> MessageOut:
+    ch = await _channel(db, channel_id, current_user)
+    msg = await _message_in(db, ch, message_id)
+    await db.execute(
+        delete(ChannelMessageReaction).where(
+            ChannelMessageReaction.message_id == msg.id,
+            ChannelMessageReaction.user_id == current_user.id,
+            ChannelMessageReaction.emoji == emoji,
+        )
+    )
+    return (await _messages_out(db, [msg], current_user.id))[0]
 
 
 @router.post("/{channel_id}/read", response_model=ChannelOut)

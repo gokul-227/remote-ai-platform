@@ -745,6 +745,7 @@ interface Deliverable {
   repo_url: string | null;
   branch: string | null;
   commit_sha: string | null;
+  commit_check: string | null;
   file_name: string | null;
   file_size: number | null;
   demo_url: string | null;
@@ -772,6 +773,7 @@ export function Deliverables({
 }) {
   const q = useApi<Deliverable[]>(party ? `/contracts/${contractId}/deliverables` : null);
   const [adding, setAdding] = useState<{ kind: string; supersedes?: Deliverable } | null>(null);
+  const [previewing, setPreviewing] = useState<Deliverable | null>(null);
   const [msg, setMsg] = useState("");
   if (!party) return null;
   const review = async (d: Deliverable, decision: string) => {
@@ -848,12 +850,20 @@ export function Deliverables({
                       >
                         {d.repo_url?.replace("https://github.com/", "")}@{d.commit_sha?.slice(0, 12)}
                       </a>
-                      {d.branch && ` (${d.branch})`}
+                      {d.branch && ` (${d.branch})`}{" "}
+                      {d.commit_check === "VERIFIED" && <Tag t="green">Found on GitHub</Tag>}
+                      {d.commit_check === "NOT_FOUND" && <Tag t="amber">Not in a public repo</Tag>}
+                      {d.commit_check === "UNVERIFIED" && <Tag>Not checked</Tag>}
                     </p>
                   )}
                   {d.kind === "DOCUMENT" && (
                     <button className="mt-1 text-xs text-[#0552CC] underline" onClick={() => download(d)}>
                       Download {d.file_name} ({Math.ceil((d.file_size ?? 0) / 1024)} KB)
+                    </button>
+                  )}
+                  {d.kind === "DOCUMENT" && /\.(csv|txt|md)$/i.test(d.file_name ?? "") && (
+                    <button className="ml-3 mt-1 text-xs text-[#0552CC] underline" onClick={() => setPreviewing(d)}>
+                      Preview
                     </button>
                   )}
                   {d.kind === "DEMO" && (
@@ -894,6 +904,9 @@ export function Deliverables({
           )}
         </div>
       ))}
+      {previewing && (
+        <PreviewModal contractId={contractId} deliverable={previewing} onClose={() => setPreviewing(null)} />
+      )}
       {adding && (
         <SubmitDeliverable
           contractId={contractId}
@@ -1065,8 +1078,14 @@ interface ChannelMsg {
   parent_id: string | null;
   body: string;
   reply_count: number;
+  reactions: Record<string, number>;
+  my_reactions: string[];
+  edited: boolean;
+  deleted: boolean;
   created_at: string;
 }
+
+const QUICK_EMOJI = ["👍", "🎉", "❤️", "👀", "✅", "🙏", "😂", "🚀"];
 
 const token = () =>
   (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`).replace(/-/g, "").slice(0, 32);
@@ -1167,6 +1186,17 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
       setErr(extractErrorMessage(e, "Message not sent. Try again."));
     }
   };
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const msgAction = async (fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+      setErr("");
+      q.reload();
+    } catch (e) {
+      setErr(extractErrorMessage(e, "That didn’t work. Try again."));
+    }
+  };
   const mute = async () => {
     await api.post(`/channels/${channel.id}/mute`, { muted: !channel.muted }).catch(() => undefined);
     onRead();
@@ -1220,7 +1250,97 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
             <p className="text-xs text-slate-500">
               <b className="text-slate-700">{m.author_name || "Former member"}</b> · {timeAgo(m.created_at)}
             </p>
-            <p className="whitespace-pre-line">{m.body}</p>
+            {m.deleted ? (
+              <p className="italic text-slate-400">This message was deleted.</p>
+            ) : editing === m.id ? (
+              <form
+                className="mt-1 flex gap-2"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  await msgAction(() => api.patch(`/channels/${channel.id}/messages/${m.id}`, { body: draft }));
+                  setEditing(null);
+                }}
+              >
+                <label className="sr-only" htmlFor={`edit-${m.id}`}>
+                  Edit message
+                </label>
+                <input
+                  id={`edit-${m.id}`}
+                  className={inputCls}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                />
+                <Btn sm>Save</Btn>
+                <Btn sm v="ghost" onClick={() => setEditing(null)}>
+                  Cancel
+                </Btn>
+              </form>
+            ) : (
+              <p className="whitespace-pre-line">
+                {m.body} {m.edited && <span className="text-xs text-slate-400">(edited)</span>}
+              </p>
+            )}
+            {!m.deleted && (
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                {Object.entries(m.reactions).map(([emoji, n]) => (
+                  <button
+                    key={emoji}
+                    aria-pressed={m.my_reactions.includes(emoji)}
+                    className={`rounded-full border px-2 text-xs ${m.my_reactions.includes(emoji) ? "border-[#0552CC] bg-white" : "border-slate-200"}`}
+                    onClick={() =>
+                      msgAction(() =>
+                        m.my_reactions.includes(emoji)
+                          ? api.delete(
+                              `/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(emoji)}`,
+                            )
+                          : api.put(`/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(emoji)}`),
+                      )
+                    }
+                  >
+                    {emoji} {n}
+                  </button>
+                ))}
+                <select
+                  aria-label="Add a reaction"
+                  className="rounded bg-transparent text-xs text-slate-500"
+                  value=""
+                  onChange={(e) =>
+                    e.target.value &&
+                    msgAction(() =>
+                      api.put(
+                        `/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(e.target.value)}`,
+                      ),
+                    )
+                  }
+                >
+                  <option value="">+ react</option>
+                  {QUICK_EMOJI.map((e) => (
+                    <option key={e} value={e}>
+                      {e}
+                    </option>
+                  ))}
+                </select>
+                {m.author_id === user?.id && (
+                  <button
+                    className="text-xs text-slate-500 underline"
+                    onClick={() => {
+                      setDraft(m.body);
+                      setEditing(m.id);
+                    }}
+                  >
+                    edit
+                  </button>
+                )}
+                {(m.author_id === user?.id || channel.owner_id === user?.id) && (
+                  <button
+                    className="text-xs text-red-600 underline"
+                    onClick={() => msgAction(() => api.delete(`/channels/${channel.id}/messages/${m.id}`))}
+                  >
+                    delete
+                  </button>
+                )}
+              </div>
+            )}
             {!thread && (
               <button className="mt-1 text-xs text-[#0552CC] underline" onClick={() => setThread(m)}>
                 {m.reply_count ? `${m.reply_count} repl${m.reply_count === 1 ? "y" : "ies"}` : "Reply in thread"}
@@ -1345,5 +1465,171 @@ function NewChannel({ onClose, onDone }: { onClose: () => void; onDone: (id: str
         </div>
       </div>
     </Modal>
+  );
+}
+
+/* ---------------- Document preview (text/CSV only; nothing is executed) ---------------- */
+
+function PreviewModal({
+  contractId,
+  deliverable,
+  onClose,
+}: {
+  contractId: string;
+  deliverable: Deliverable;
+  onClose: () => void;
+}) {
+  const q = useApi<{ kind: "text" | "table"; text?: string; rows?: string[][]; truncated: boolean }>(
+    `/contracts/${contractId}/deliverables/${deliverable.id}/preview`,
+  );
+  return (
+    <Modal open onClose={onClose} title={`Preview: ${deliverable.file_name}`} w="max-w-4xl">
+      {!!q.error && <p className="text-sm text-red-600">Preview isn’t available; download the file instead.</p>}
+      {!q.data && !q.error && <p className="text-sm text-slate-500">Loading…</p>}
+      {q.data?.kind === "text" && (
+        <pre className="max-h-[60vh] overflow-auto whitespace-pre-wrap text-sm">{q.data.text}</pre>
+      )}
+      {q.data?.kind === "table" && (
+        <div className="max-h-[60vh] overflow-auto">
+          <table className="text-sm">
+            <tbody>
+              {q.data.rows!.map((r, i) => (
+                <tr key={i} className={i === 0 ? "font-semibold" : ""}>
+                  {r.map((c, j) => (
+                    <td key={j} className="border border-slate-200 px-2 py-1">
+                      {c}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {q.data?.truncated && (
+        <p className="mt-2 text-xs text-slate-500">Showing the beginning only. Download for the full file.</p>
+      )}
+    </Modal>
+  );
+}
+
+/* ---------------- Endorsements (on a professional's profile) ---------------- */
+
+export function Endorsements({ userId, canEndorse }: { userId: string; canEndorse: boolean }) {
+  const q = useApi<{ skill: string; count: number; endorsed_by_me: boolean }[]>(`/endorsements/${userId}`);
+  const [err, setErr] = useState("");
+  const toggle = async (skill: string, mine: boolean) => {
+    try {
+      if (mine) await api.delete(`/endorsements/${userId}/${encodeURIComponent(skill)}`);
+      else await api.post("/endorsements", { user_id: userId, skill });
+      setErr("");
+      q.reload();
+    } catch (e) {
+      setErr(extractErrorMessage(e, "Couldn’t update the endorsement."));
+    }
+  };
+  if (!q.data?.length) return null;
+  return (
+    <div className="mt-3">
+      <h4 className="text-sm font-semibold text-slate-600">Endorsed skills</h4>
+      <ul className="mt-1 flex flex-wrap gap-2">
+        {q.data.map((s) => (
+          <li
+            key={s.skill}
+            className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-sm"
+          >
+            <span className="capitalize">{s.skill}</span>
+            <span className="text-xs text-slate-500">{s.count}</span>
+            {canEndorse && (
+              <button className="text-xs text-[#0552CC] underline" onClick={() => toggle(s.skill, s.endorsed_by_me)}>
+                {s.endorsed_by_me ? "Withdraw" : "Endorse"}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {err && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {err}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Sprints (on the project board) ---------------- */
+
+interface SprintRow {
+  id: string;
+  name: string;
+  goal: string | null;
+  status: "PLANNED" | "ACTIVE" | "COMPLETED";
+}
+
+export function SprintBar({ projectId, onChange }: { projectId: string; onChange: () => void }) {
+  const q = useApi<SprintRow[]>(`/projects/${projectId}/sprints`);
+  const [name, setName] = useState("");
+  const [msg, setMsg] = useState("");
+  const act = async (fn: () => Promise<{ data?: { returned_to_backlog?: number } }>, ok: string) => {
+    try {
+      const r = await fn();
+      const back = r?.data?.returned_to_backlog;
+      setMsg(back != null ? `${ok} ${back} unfinished item${back === 1 ? "" : "s"} moved to the backlog.` : ok);
+      q.reload();
+      onChange();
+    } catch (e) {
+      setMsg(extractErrorMessage(e, "That didn’t work."));
+    }
+  };
+  const rows = (q.data ?? []).filter((s) => s.status !== "COMPLETED");
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+      {rows.map((s) => (
+        <span key={s.id} className="flex items-center gap-1 rounded border border-slate-200 px-2 py-1">
+          <b>{s.name}</b>
+          <Tag t={s.status === "ACTIVE" ? "green" : "gray"}>{s.status === "ACTIVE" ? "Active" : "Planned"}</Tag>
+          {s.status === "PLANNED" && (
+            <button
+              className="text-[#0552CC] underline"
+              onClick={() => act(() => api.post(`/projects/sprints/${s.id}/start`), "Sprint started.")}
+            >
+              Start
+            </button>
+          )}
+          {s.status === "ACTIVE" && (
+            <button
+              className="text-[#0552CC] underline"
+              onClick={() => act(() => api.post(`/projects/sprints/${s.id}/complete`), "Sprint completed.")}
+            >
+              Complete
+            </button>
+          )}
+        </span>
+      ))}
+      <form
+        className="flex items-center gap-1"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!name.trim()) return;
+          act(() => api.post(`/projects/${projectId}/sprints`, { name }), "Sprint created.");
+          setName("");
+        }}
+      >
+        <label className="sr-only" htmlFor="new-sprint">
+          New sprint name
+        </label>
+        <input
+          id="new-sprint"
+          className="h-8 rounded border border-slate-300 px-2"
+          placeholder="New sprint"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Btn sm v="line">
+          Add sprint
+        </Btn>
+      </form>
+      {msg && <span className="text-xs text-slate-500">{msg}</span>}
+    </div>
   );
 }

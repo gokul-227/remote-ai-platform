@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -27,6 +27,7 @@ from app.domains.projects.models import (
     ProjectActivity,
     ProjectMember,
     ProjectReview,
+    Sprint,
     TaskAssignmentOffer,
     TaskComment,
     TaskDependency,
@@ -123,8 +124,17 @@ class TaskUpdate(BaseModel):
     item_type: ItemType | None = None
     labels: list[str] | None = None
     deadline: datetime | None = None
+    # A sprint of the same project, or null to move the item to the backlog.
+    sprint_id: uuid.UUID | None = None
 
     _labels = field_validator("labels")(lambda cls, v: _clean_labels(v))
+
+
+class SprintCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    goal: str | None = Field(default=None, max_length=2000)
+    starts_on: datetime | None = None
+    ends_on: datetime | None = None
 
 
 class TaskDependencyCreate(BaseModel):
@@ -687,6 +697,7 @@ async def list_project_tasks(
     item_type: str | None = None,
     label: str | None = None,
     q: str | None = Query(None, max_length=100),
+    sprint: str | None = Query(None, description="'backlog' or a sprint id"),
     skip: int = Query(0, ge=0),
     limit: int = Query(500, ge=1, le=500),
     current_user: User = Depends(get_current_user),
@@ -707,6 +718,13 @@ async def list_project_tasks(
             raise HTTPException(status_code=422, detail="assignee must be 'me', 'none' or a user id") from exc
     if priority:
         query = query.where(ProjectTask.priority == priority)
+    if sprint == "backlog":
+        query = query.where(ProjectTask.sprint_id.is_(None))
+    elif sprint:
+        try:
+            query = query.where(ProjectTask.sprint_id == uuid.UUID(sprint))
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail="sprint must be 'backlog' or a sprint id") from exc
     if item_type:
         query = query.where(ProjectTask.item_type == item_type)
     if q:
@@ -1444,6 +1462,12 @@ async def update_task(
         assignee = await db.get(User, updates["assigned_user_id"])
         if assignee is None or not assignee.is_active or not await can_access(project, assignee, db):
             raise HTTPException(status_code=422, detail="Assignee must be a member of this project")
+    if updates.get("sprint_id") is not None:
+        sprint = await db.get(Sprint, updates["sprint_id"])
+        if sprint is None or sprint.project_id != project.id:
+            raise HTTPException(status_code=422, detail="Sprint must belong to this project")
+        if sprint.status == "COMPLETED":
+            raise HTTPException(status_code=409, detail="That sprint is already completed")
     if updates.get("status") and updates["status"] not in TASK_STATUSES:
         raise HTTPException(status_code=422, detail="Invalid task status")
     if updates.get("status") == "COMPLETED":
@@ -1516,6 +1540,91 @@ async def _depends_on(db: AsyncSession, start: uuid.UUID, target: uuid.UUID) -> 
                 nxt.append(dep)
         frontier = nxt
     return False
+
+
+@router.post("/{project_id}/sprints", status_code=status.HTTP_201_CREATED)
+async def create_sprint(
+    project_id: uuid.UUID,
+    data: SprintCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    project = await require_project_access(project_id, current_user, db)
+    if data.starts_on and data.ends_on and data.ends_on <= data.starts_on:
+        raise HTTPException(status_code=422, detail="A sprint must end after it starts")
+    sprint = Sprint(project_id=project.id, name=data.name.strip(), goal=data.goal, starts_on=data.starts_on, ends_on=data.ends_on)
+    db.add(sprint)
+    await db.flush()
+    await record_activity(db, project.id, current_user.id, "SPRINT_CREATED", {"sprint_id": str(sprint.id), "name": sprint.name})
+    return sprint
+
+
+@router.get("/{project_id}/sprints")
+async def list_sprints(
+    project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await require_project_access(project_id, current_user, db)
+    rows = await db.execute(
+        select(Sprint).where(Sprint.project_id == project_id).order_by(Sprint.created_at, Sprint.id)
+    )
+    return rows.scalars().all()
+
+
+async def _sprint_for(db: AsyncSession, sprint_id: uuid.UUID, user: User) -> tuple[Sprint, Project]:
+    sprint = await db.get(Sprint, sprint_id)
+    if sprint is None:
+        raise HTTPException(status_code=404, detail="Sprint not found")
+    project = await require_project_access(sprint.project_id, user, db)
+    return sprint, project
+
+
+@router.post("/sprints/{sprint_id}/start")
+async def start_sprint(
+    sprint_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    sprint, project = await _sprint_for(db, sprint_id, current_user)
+    if sprint.status != "PLANNED":
+        raise HTTPException(status_code=409, detail="Only a planned sprint can start")
+    active = await db.scalar(
+        select(Sprint.id).where(Sprint.project_id == project.id, Sprint.status == "ACTIVE")
+    )
+    if active is not None:
+        raise HTTPException(status_code=409, detail="Complete the active sprint first")
+    sprint.status = "ACTIVE"
+    sprint.starts_on = sprint.starts_on or datetime.now(UTC)
+    await record_activity(db, project.id, current_user.id, "SPRINT_STARTED", {"sprint_id": str(sprint.id)})
+    return sprint
+
+
+@router.post("/sprints/{sprint_id}/complete")
+async def complete_sprint(
+    sprint_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Close the sprint; unfinished items go back to the backlog."""
+    sprint, project = await _sprint_for(db, sprint_id, current_user)
+    if sprint.status != "ACTIVE":
+        raise HTTPException(status_code=409, detail="Only the active sprint can be completed")
+    unfinished = (
+        await db.execute(
+            select(ProjectTask).where(ProjectTask.sprint_id == sprint.id, ProjectTask.status != "COMPLETED")
+        )
+    ).scalars().all()
+    for task in unfinished:
+        task.sprint_id = None
+        task.version += 1
+    sprint.status = "COMPLETED"
+    sprint.completed_at = datetime.now(UTC)
+    await record_activity(
+        db, project.id, current_user.id, "SPRINT_COMPLETED",
+        {"sprint_id": str(sprint.id), "returned_to_backlog": len(unfinished)},
+    )
+    return {"sprint": sprint, "returned_to_backlog": len(unfinished)}
 
 
 @router.post("/tasks/{task_id}/watch", status_code=status.HTTP_200_OK)

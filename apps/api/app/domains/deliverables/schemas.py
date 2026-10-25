@@ -62,6 +62,7 @@ class DeliverableResponse(BaseModel):
     repo_url: str | None
     branch: str | None
     commit_sha: str | None
+    commit_check: str | None = None
     file_name: str | None
     file_mime: str | None
     file_size: int | None

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { SprintBar } from "./rap_collab";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, goRoute } from "./live";
@@ -36,6 +37,7 @@ type Issue = {
   deadline?: string;
   labels: string[];
   version?: number;
+  sprintId: string | null;
 };
 const COLS = [
   ["todo", "TO DO"],
@@ -156,6 +158,7 @@ export function Projects() {
   const [pidSel, setPid] = useState<string | null>(null);
   const pid = pidSel || projects[0]?.id || null;
   const dq = useApi<any>(pid ? `/projects/${pid}` : null);
+  const sprintsQ = useApi<any[]>(pid ? `/projects/${pid}/sprints` : null);
   const [page, setPage] = useState("board");
   const [drag, setDrag] = useState<string | null>(null);
   const [over, setOver] = useState<string | null>(null);
@@ -179,6 +182,7 @@ export function Projects() {
     type: (t.item_type || "TASK").toLowerCase(),
     labels: (t.labels as string[]) || [],
     version: t.version as number | undefined,
+    sprintId: (t.sprint_id as string | null) ?? null,
     pri: PRI[(t.priority || "MEDIUM").toUpperCase()] || "medium",
     as: name(t.assigned_user_id),
     asId: t.assigned_user_id,
@@ -410,6 +414,15 @@ export function Projects() {
 
         {page === "board" && d && (
           <>
+            {pid && (
+              <SprintBar
+                projectId={pid}
+                onChange={() => {
+                  dq.reload();
+                  sprintsQ.reload();
+                }}
+              />
+            )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <div className="flex h-8 items-center gap-2 rounded border border-slate-300 px-2">
                 <Ic n="search" s={14} c="text-slate-500" />
@@ -865,6 +878,24 @@ export function Projects() {
                           {p.charAt(0) + p.slice(1).toLowerCase()}
                         </option>
                       ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between border-b border-slate-100 p-3">
+                    <span className="text-slate-500">Sprint</span>
+                    <select
+                      aria-label="Sprint"
+                      value={open.sprintId ?? ""}
+                      onChange={(e) => patch(open.id, { sprint_id: e.target.value || null }, "Sprint updated")}
+                      className="max-w-[150px] rounded border border-slate-200 px-1 text-sm"
+                    >
+                      <option value="">Backlog</option>
+                      {(sprintsQ.data ?? [])
+                        .filter((sp: any) => sp.status !== "COMPLETED" || sp.id === open.sprintId)
+                        .map((sp: any) => (
+                          <option key={sp.id} value={sp.id}>
+                            {sp.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
                   <div className="flex items-center justify-between border-b border-slate-100 p-3">

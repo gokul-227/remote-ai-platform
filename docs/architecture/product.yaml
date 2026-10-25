@@ -67,6 +67,8 @@ features:
   api:
   - domain: engineers
     prefix: /api/v1/engineers
+  - domain: endorsements
+    prefix: /api/v1/endorsements
   uses:
   - id: storage
     name: Object storage
@@ -415,6 +417,8 @@ api:
     prefix: /contracts
   - domain: deliverables
     prefix: /contracts/{contract_id}/deliverables
+  - domain: endorsements
+    prefix: /endorsements
   - domain: engineers
     prefix: /engineers
   - domain: groups

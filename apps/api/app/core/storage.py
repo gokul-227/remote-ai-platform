@@ -113,6 +113,20 @@ class StorageService:
             )
             raise RuntimeError("Object storage upload failed") from e
 
+    async def read_file(self, bucket_name: str, object_name: str, max_bytes: int) -> bytes | None:
+        """Read at most max_bytes of one object. Returns None (and logs) instead of raising."""
+
+        def _read() -> bytes:
+            obj = self.client.get_object(Bucket=bucket_name, Key=object_name, Range=f"bytes=0-{max_bytes - 1}")
+            body: bytes = obj["Body"].read(max_bytes)
+            return body
+
+        try:
+            return await asyncio.to_thread(_read)
+        except Exception as e:
+            logger.error("Storage read failed", bucket=bucket_name, error=str(e))
+            return None
+
     async def delete_file(self, bucket_name: str, object_name: str) -> bool:
         """Delete one object. Returns False (and logs) instead of raising."""
         try:

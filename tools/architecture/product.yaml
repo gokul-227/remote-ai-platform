@@ -33,7 +33,7 @@ features:
     step: 2
     personas: [professional, organisation]
     screens: [profile, dash, engineer, engineers]
-    api: [engineers]
+    api: [engineers, endorsements]
     uses: [storage, ai-providers]
   - id: discovery
     icon: concepts/search

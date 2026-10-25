@@ -338,3 +338,24 @@ class TaskWatcher(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class Sprint(Base):
+    """A time-boxed iteration. At most one ACTIVE sprint per project."""
+
+    __tablename__ = "project_sprints"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    goal: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # PLANNED, ACTIVE, COMPLETED
+    status: Mapped[str] = mapped_column(String(20), default="PLANNED", nullable=False, index=True)
+    starts_on: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ends_on: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

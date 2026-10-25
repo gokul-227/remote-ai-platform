@@ -7,6 +7,8 @@ an ACTIVE contract and reviewed by the client. Only the two contract parties
 can see them; everyone else gets 404, so ids cannot be probed.
 """
 
+import csv
+import io
 import uuid
 from datetime import UTC, datetime
 
@@ -21,6 +23,7 @@ from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.contracts.lifecycle import party_of
 from app.domains.contracts.models import Contract, ContractMilestone
+from app.domains.deliverables.github import check_commit
 from app.domains.deliverables.models import Deliverable
 from app.domains.deliverables.schemas import (
     CodeDeliverableCreate,
@@ -132,6 +135,8 @@ async def submit_code(
         repo_url=payload.repo_url,
         branch=payload.branch,
         commit_sha=payload.commit_sha,
+        # Not blocking: private repos and GitHub outages still allow submission.
+        commit_check=await check_commit(payload.repo_url, payload.commit_sha),
     )
     db.add(d)
     await db.flush()
@@ -234,6 +239,39 @@ async def download_document(
     if not url:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "File storage is unavailable; please try again later")
     return DownloadLink(url=url, expires_in_seconds=DOWNLOAD_TTL_SECONDS, file_name=d.file_name or "document")
+
+
+PREVIEW_MAX_BYTES = 512 * 1024
+PREVIEW_MAX_ROWS = 200
+
+
+@router.get("/{deliverable_id}/preview")
+async def preview_document(
+    contract_id: uuid.UUID,
+    deliverable_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, object]:
+    """In-browser preview for text, Markdown and CSV. Office and PDF files are download-only:
+    nothing is converted or executed on the server, and CSV cells are returned as plain text."""
+    _, _, d = await _deliverable_for_party(db, contract_id, deliverable_id, current_user)
+    ext = (d.file_name or "").rsplit(".", 1)[-1].lower()
+    if d.kind != "DOCUMENT" or not d.file_key or ext not in {"txt", "md", "csv"}:
+        raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "No preview for this file type; download it instead")
+    data = await get_storage().read_file(settings.MINIO_BUCKET_DELIVERABLES, d.file_key, PREVIEW_MAX_BYTES)
+    if data is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "File storage is unavailable; please try again later")
+    text = data.decode("utf-8", errors="replace")
+    truncated = (d.file_size or 0) > PREVIEW_MAX_BYTES
+    if ext != "csv":
+        return {"kind": "text", "text": text, "truncated": truncated}
+    rows = []
+    for row in csv.reader(io.StringIO(text)):
+        rows.append([cell[:500] for cell in row[:50]])
+        if len(rows) >= PREVIEW_MAX_ROWS:
+            truncated = True
+            break
+    return {"kind": "table", "rows": rows, "truncated": truncated}
 
 
 @router.post("/{deliverable_id}/review", response_model=DeliverableResponse)

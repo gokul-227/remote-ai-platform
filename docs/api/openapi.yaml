@@ -2926,6 +2926,16 @@ paths:
             maxLength: 100
           - type: 'null'
           title: Q
+      - name: sprint
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: '''backlog'' or a sprint id'
+          title: Sprint
+        description: '''backlog'' or a sprint id'
       - name: skip
         in: query
         required: false
@@ -3471,6 +3481,124 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/sprints:
+    post:
+      tags:
+      - Projects
+      summary: Create Sprint
+      operationId: create_sprint_api_v1_projects__project_id__sprints_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SprintCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Projects
+      summary: List Sprints
+      operationId: list_sprints_api_v1_projects__project_id__sprints_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/sprints/{sprint_id}/start:
+    post:
+      tags:
+      - Projects
+      summary: Start Sprint
+      operationId: start_sprint_api_v1_projects_sprints__sprint_id__start_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: sprint_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Sprint Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/sprints/{sprint_id}/complete:
+    post:
+      tags:
+      - Projects
+      summary: Complete Sprint
+      description: Close the sprint; unfinished items go back to the backlog.
+      operationId: complete_sprint_api_v1_projects_sprints__sprint_id__complete_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: sprint_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Sprint Id
       responses:
         '200':
           description: Successful Response
@@ -5131,6 +5259,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/preview:
+    get:
+      tags:
+      - Deliverables
+      summary: Preview Document
+      description: |-
+        In-browser preview for text, Markdown and CSV. Office and PDF files are download-only:
+        nothing is converted or executed on the server, and CSV cells are returned as plain text.
+      operationId: preview_document_api_v1_contracts__contract_id__deliverables__deliverable_id__preview_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      - name: deliverable_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Deliverable Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Preview Document Api V1 Contracts  Contract Id  Deliverables  Deliverable Id  Preview Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/contracts/{contract_id}/deliverables/{deliverable_id}/review:
     post:
       tags:
@@ -6093,6 +6262,166 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/channels/{channel_id}/messages/{message_id}:
+    patch:
+      tags:
+      - Channels
+      summary: Edit Message
+      operationId: edit_message_api_v1_channels__channel_id__messages__message_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Message Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Channels
+      summary: Delete Message
+      operationId: delete_message_api_v1_channels__channel_id__messages__message_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Message Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/channels/{channel_id}/messages/{message_id}/reactions/{emoji}:
+    put:
+      tags:
+      - Channels
+      summary: Add Reaction
+      operationId: add_reaction_api_v1_channels__channel_id__messages__message_id__reactions__emoji__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Message Id
+      - name: emoji
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Emoji
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Channels
+      summary: Remove Reaction
+      operationId: remove_reaction_api_v1_channels__channel_id__messages__message_id__reactions__emoji__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Message Id
+      - name: emoji
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Emoji
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/channels/{channel_id}/read:
     post:
       tags:
@@ -6261,6 +6590,104 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Remove Member Api V1 Channels  Channel Id  Members  User Id  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/endorsements:
+    post:
+      tags:
+      - Endorsements
+      summary: Endorse
+      operationId: endorse_api_v1_endorsements_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EndorseIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Endorse Api V1 Endorsements Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/endorsements/{user_id}/{skill}:
+    delete:
+      tags:
+      - Endorsements
+      summary: Withdraw
+      operationId: withdraw_api_v1_endorsements__user_id___skill__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      - name: skill
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Skill
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Withdraw Api V1 Endorsements  User Id   Skill  Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/endorsements/{user_id}:
+    get:
+      tags:
+      - Endorsements
+      summary: Endorsements For
+      operationId: endorsements_for_api_v1_endorsements__user_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillCount'
+                title: Response Endorsements For Api V1 Endorsements  User Id  Get
         '422':
           description: Validation Error
           content:
@@ -8738,6 +9165,11 @@ components:
           - type: string
           - type: 'null'
           title: Commit Sha
+        commit_check:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Commit Check
         file_name:
           anyOf:
           - type: string
@@ -8895,6 +9327,17 @@ components:
       - expires_in_seconds
       - file_name
       title: DownloadLink
+    EditIn:
+      properties:
+        body:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Body
+      type: object
+      required:
+      - body
+      title: EditIn
     EducationItem:
       properties:
         institution:
@@ -8923,6 +9366,22 @@ components:
       - institution
       - degree
       title: EducationItem
+    EndorseIn:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        skill:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Skill
+      type: object
+      required:
+      - user_id
+      - skill
+      title: EndorseIn
     EngineerProfileCreate:
       properties:
         country:
@@ -11682,6 +12141,52 @@ components:
       required:
       - reason
       title: SessionRevoke
+    SkillCount:
+      properties:
+        skill:
+          type: string
+          title: Skill
+        count:
+          type: integer
+          title: Count
+        endorsed_by_me:
+          type: boolean
+          title: Endorsed By Me
+      type: object
+      required:
+      - skill
+      - count
+      - endorsed_by_me
+      title: SkillCount
+    SprintCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        goal:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Goal
+        starts_on:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Starts On
+        ends_on:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Ends On
+      type: object
+      required:
+      - name
+      title: SprintCreate
     StaffMessageCreate:
       properties:
         body:
@@ -12105,6 +12610,12 @@ components:
             format: date-time
           - type: 'null'
           title: Deadline
+        sprint_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Sprint Id
       type: object
       title: TaskUpdate
     TicketCreate:
@@ -12643,6 +13154,24 @@ components:
           type: integer
           title: Reply Count
           default: 0
+        reactions:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Reactions
+        my_reactions:
+          items:
+            type: string
+          type: array
+          title: My Reactions
+        edited:
+          type: boolean
+          title: Edited
+          default: false
+        deleted:
+          type: boolean
+          title: Deleted
+          default: false
         created_at:
           type: string
           format: date-time

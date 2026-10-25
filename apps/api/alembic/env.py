@@ -32,6 +32,7 @@ import app.domains.meetings.models  # noqa: F401
 import app.domains.support.models  # noqa: F401
 import app.domains.assistant.models  # noqa: F401
 import app.domains.channels.models  # noqa: F401
+import app.domains.endorsements.models  # noqa: F401
 import app.domains.social.models  # noqa: F401
 import app.domains.trust.models  # noqa: F401
 import app.domains.groups.models  # noqa: F401

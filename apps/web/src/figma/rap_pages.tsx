@@ -4,7 +4,7 @@ import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, goRoute, safeHref } from "./live";
 import { Groups } from "./rap_social";
-import { Deliverables } from "./rap_collab";
+import { Deliverables, Endorsements } from "./rap_collab";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
 const nav = (h: string) => {
@@ -178,6 +178,7 @@ export function EngineerDetail() {
                 ))}
                 {!p.skills.length && <span className="text-sm text-slate-500">No skills listed.</span>}
               </div>
+              {user && p0.user_id && <Endorsements userId={p0.user_id} canEndorse={user.id !== p0.user_id} />}
             </>
           )}
           {t === "Experience" &&
