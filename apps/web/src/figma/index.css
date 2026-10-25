@@ -78,3 +78,63 @@
 .rap-announcement p{font-size:14px;margin-top:2px}
 .rap-announcement.warning{border-color:#f5d48a;background:#fff8e6;color:#7a5200}
 .rap-announcement.critical{border-color:#f3b4b4;background:#fdecec;color:#8a1c1c}
+
+/* Top-bar section tabs (Facebook/LinkedIn style). */
+.rap-primary{display:flex;height:100%;flex:1;max-width:640px;justify-content:center;gap:4px}
+.rap-primary button{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;flex:1;min-width:0;color:#65676b;border-bottom:3px solid transparent;padding-top:3px;border-radius:0}
+.rap-primary button span{font-size:11px;font-weight:500;white-space:nowrap}
+.rap-primary button.active{color:#0866ff;border-color:#0866ff}
+.rap-primary button:hover{background:#f2f3f5}
+@media(max-width:1200px){.rap-primary button span{display:none}}
+@media(max-width:900px){.rap-primary{display:none}}
+
+/* Home: identity card instead of section navigation. */
+.rap-sidebar-home{background:transparent;border-right:0}
+.rap-home-side{display:flex;flex-direction:column;gap:12px}
+.rap-profile-card{background:#fff;border:1px solid #e4e6eb;border-radius:10px;overflow:hidden;text-align:center;padding-bottom:12px}
+.rap-profile-cover{height:56px;background:linear-gradient(135deg,#0866ff,#5b9dff)}
+.rap-profile-avatar{margin-top:-36px;border:3px solid #fff;border-radius:50%;display:inline-block}
+.rap-profile-name{display:block;width:100%;font-weight:700;font-size:16px;margin-top:6px}
+.rap-profile-name:hover{text-decoration:underline}
+.rap-profile-headline{font-size:13px;color:#65676b;padding:2px 14px}
+.rap-profile-meta{font-size:12px;color:#65676b}
+.rap-profile-cta{font-size:13px;color:#0866ff;font-weight:600;margin-top:4px}
+.rap-card-stats{border-top:1px solid #e4e6eb;margin-top:12px;padding-top:6px;text-align:left}
+.rap-card-stat{display:flex;justify-content:space-between;width:100%;padding:5px 14px;font-size:13px;color:#65676b}
+.rap-card-stat b{color:#0866ff}
+.rap-card-stat:hover{background:#f2f3f5}
+.rap-quick{text-align:left;padding:12px 6px}
+.rap-quick h3{font-size:13px;color:#65676b;padding:0 8px 4px}
+.rap-quick .rap-nav{min-height:40px;padding:6px 8px}
+
+/* Dark mode (Facebook-style palette). Applied with <html data-theme="dark">. */
+:root[data-theme=dark]{color-scheme:dark}
+[data-theme=dark] body{background:#18191a;color:#e4e6eb}
+[data-theme=dark] .rap-top,[data-theme=dark] .rap-sidebar:not(.rap-sidebar-home),[data-theme=dark] .rap-menu,[data-theme=dark] .rap-mobile,
+[data-theme=dark] .rap-panel,[data-theme=dark] .rap-profile-card,[data-theme=dark] .v2-metric,[data-theme=dark] .v2-list,
+[data-theme=dark] .v2-table-wrap,[data-theme=dark] .v2-section,[data-theme=dark] .bg-white,[data-theme=dark] .rap-dock-panel{background:#242526!important;color:#e4e6eb;border-color:#3a3b3c}
+[data-theme=dark] .rap-sidebar{border-color:#3a3b3c}
+[data-theme=dark] .bg-slate-50,[data-theme=dark] .bg-\[\#F1F2F4\],[data-theme=dark] .bg-\[\#f3f2ef\],[data-theme=dark] .bg-gray-50,[data-theme=dark] .v2-table th{background:#18191a!important}
+[data-theme=dark] .bg-slate-100,[data-theme=dark] .bg-gray-100,[data-theme=dark] .rap-brand-search form,[data-theme=dark] .rap-tools>button,
+[data-theme=dark] .rap-launcher-btn,[data-theme=dark] .rap-all-sections,[data-theme=dark] .rap-menu-head button,[data-theme=dark] .rap-side-filter{background:#3a3b3c!important;color:#e4e6eb}
+[data-theme=dark] .text-slate-900,[data-theme=dark] .text-slate-800,[data-theme=dark] .text-slate-700,[data-theme=dark] .text-gray-900,[data-theme=dark] .text-black,[data-theme=dark] h1,[data-theme=dark] h2,[data-theme=dark] h3{color:#e4e6eb}
+[data-theme=dark] .text-slate-600,[data-theme=dark] .text-slate-500,[data-theme=dark] .text-slate-400,[data-theme=dark] .text-gray-500,[data-theme=dark] .text-gray-600,
+[data-theme=dark] .rap-nav-icon,[data-theme=dark] .rap-side-label,[data-theme=dark] .v2-page-head p,[data-theme=dark] .rap-tree-group h4,[data-theme=dark] .rap-section-head p,
+[data-theme=dark] .rap-profile-headline,[data-theme=dark] .rap-card-stat,[data-theme=dark] .rap-primary button{color:#b0b3b8}
+[data-theme=dark] .border-slate-200,[data-theme=dark] .border-slate-100,[data-theme=dark] .border-slate-300,[data-theme=dark] .border-gray-200,[data-theme=dark] .rap-card-stats,
+[data-theme=dark] .rap-divider,[data-theme=dark] .v2-row,[data-theme=dark] .v2-table td,[data-theme=dark] .rap-content td,[data-theme=dark] .rap-content th{border-color:#3a3b3c!important}
+[data-theme=dark] .rap-nav:hover,[data-theme=dark] .rap-contact:hover,[data-theme=dark] .rap-person:hover,[data-theme=dark] .hover\:bg-slate-50:hover,[data-theme=dark] .hover\:bg-slate-100:hover,
+[data-theme=dark] .rap-primary button:hover,[data-theme=dark] .rap-card-stat:hover{background:#3a3b3c!important}
+[data-theme=dark] .rap-nav.selected,[data-theme=dark] .bg-blue-50,[data-theme=dark] .bg-\[\#E8F0FC\],[data-theme=dark] .bg-\[\#e7f0ff\]{background:#263951!important;color:#4599ff}
+[data-theme=dark] .rap-primary button.active{color:#4599ff;border-color:#4599ff}
+[data-theme=dark] input,[data-theme=dark] select,[data-theme=dark] textarea{background:#3a3b3c;color:#e4e6eb;border-color:#4e4f50}
+[data-theme=dark] input::placeholder,[data-theme=dark] textarea::placeholder{color:#8a8d91}
+[data-theme=dark] .rap-overlay{background:#000a}
+[data-theme=dark] .rap-profile-avatar{border-color:#242526}
+[data-theme=dark] .rap-content .bg-gradient-to-r,[data-theme=dark] .rap-content .bg-gradient-to-br{background-color:#263951;color:#e4e6eb}
+[data-theme=dark] .rap-announcement{background:#263951;border-color:#2d4a73;color:#cfe0ff}
+.rap-theme{display:flex;gap:6px;padding:0 12px 8px}
+.rap-theme button{flex:1;padding:7px 0;border-radius:8px;background:#f0f2f5;font-size:13px;font-weight:600}
+.rap-theme button[aria-checked=true]{background:#0866ff;color:#fff}
+[data-theme=dark] .rap-theme button{background:#3a3b3c;color:#e4e6eb}
+[data-theme=dark] .rap-theme button[aria-checked=true]{background:#0866ff;color:#fff}

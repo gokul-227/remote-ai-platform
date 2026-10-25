@@ -160,6 +160,22 @@ export default function Console() {
   const [screen, setScreen] = useState("overview");
   const [menu, setMenu] = useState(false);
   const [menuQ, setMenuQ] = useState("");
+  const [theme, setTheme] = useState(() => {
+    try {
+      return (
+        localStorage.getItem("rap-theme") ||
+        (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      );
+    } catch {
+      return "light";
+    }
+  });
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+    try {
+      localStorage.setItem("rap-theme", theme);
+    } catch {}
+  }, [theme]);
   useEffect(() => {
     const sync = () => setScreen(screenFromHash());
     sync();
@@ -241,11 +257,23 @@ export default function Console() {
         <button className="menu-btn" aria-label="Open the menu" aria-expanded={menu} onClick={() => setMenu(!menu)}>
           ☰
         </button>
-        <b className="brand">Remote AI · Staff console</b>
+        <b className="brand">
+          <span className="logo" aria-hidden="true">
+            R
+          </span>
+          Staff console
+        </b>
         <span className={`env ${envClass}`}>
           {version && !writable ? "ENVIRONMENT MISMATCH · READ-ONLY" : (envLabel(CONSOLE_ENV) ?? "").toUpperCase()}
         </span>
         <span className="who">{me.email}</span>
+        <button
+          className="theme-btn"
+          aria-label="Switch between light and dark mode"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </button>
         <button className="btn" onClick={() => supabase.auth.signOut()}>
           Sign out
         </button>

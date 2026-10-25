@@ -196,7 +196,7 @@ features:
   - route: channels
     label: Channels
   - route: meetings
-    label: Schedule a meeting
+    label: Meetings
   - route: calls
     label: Calls
   - route: notifications
@@ -290,7 +290,7 @@ features:
   - route: files
     label: Files
   - route: docs
-    label: New document
+    label: Documents
   - route: sheets
     label: Spreadsheets
   - route: slides

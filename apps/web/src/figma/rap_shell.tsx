@@ -272,6 +272,27 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   useDialogFocus(menuBox, !!menu, () => setMenu(""));
   const [q, setQ] = useState("");
   const [menuQ, setMenuQ] = useState("");
+  // Appearance: light, dark or follow the device (default).
+  const [theme, setTheme] = useState<string>(() => {
+    try {
+      return localStorage.getItem("rap-theme") || "system";
+    } catch {
+      return "system";
+    }
+  });
+  useEffect(() => {
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const dark = theme === "dark" || (theme === "system" && !!media?.matches);
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+    };
+    apply();
+    try {
+      localStorage.setItem("rap-theme", theme);
+    } catch {}
+    media?.addEventListener?.("change", apply);
+    return () => media?.removeEventListener?.("change", apply);
+  }, [theme]);
   // The section picked in the menu; the sidebar shows only this section.
   const [chosen, setChosen] = useState(() => {
     try {
@@ -344,6 +365,23 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
         <span>{label}</span>
       </button>
     ));
+  // Top-bar section tabs (Facebook/LinkedIn style); each opens its section's first screen.
+  const tabs: [route: string, label: string, icon: string, area: string][] =
+    role === "GUEST"
+      ? [
+          ["jobs", "Jobs", "briefcase", "Explore"],
+          ["engineers", "People", "users", "Explore"],
+          ["companies", "Companies", "building", "Explore"],
+        ]
+      : [
+          ["feed", "Home", "home", "Home"],
+          ["network", "Network", "users", "Network"],
+          ["messenger", "Collaboration", "chat", "Collaboration"],
+          ["jobs", "Jobs", "briefcase", "Jobs"],
+          ["work", "Freelancing", "zap", "Freelancing"],
+          ["workspace", "Projects", "board", "Projects"],
+        ];
+  const home = !!user && section === "Home";
   // Phone bottom bar: the most used sections plus the full menu.
   const mobile =
     role === "GUEST"
@@ -391,6 +429,23 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             />
           </form>
         </div>
+        <nav className="rap-primary" aria-label="Main navigation">
+          {tabs.map(([p, l, i, area]) => (
+            <button
+              key={p}
+              title={l}
+              aria-current={section === area ? "page" : undefined}
+              className={section === area ? "active" : ""}
+              onClick={() => {
+                choose(area);
+                go(p);
+              }}
+            >
+              <Ic n={i} s={24} />
+              <span>{l}</span>
+            </button>
+          ))}
+        </nav>
         <div className="rap-tools">
           {!user && (
             <>
@@ -448,28 +503,34 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           )}
         </div>
       </header>
-      <aside className="rap-sidebar">
-        <div className="rap-section-head">
-          <span className="rap-area-icon">
-            <Ic n={catalog[section]?.icon ?? "layers"} s={20} />
-          </span>
-          <div>
-            <h1>{section}</h1>
-            {catalog[section] && <p>{catalog[section].blurb}</p>}
-          </div>
-        </div>
-        <button className="rap-all-sections" onClick={() => setMenu("pages")}>
-          <Ic n="waffle" s={16} />
-          All sections
-        </button>
-        <nav aria-label={`${section} navigation`} className="rap-section-nav">
-          {(catalog[section]?.groups ?? [{ label: "", items: (visible[section] ?? []) as NavItem[] }]).map((g) => (
-            <div key={g.label || section} className="rap-tree-group">
-              {g.label && <h4>{g.label}</h4>}
-              {nav(g.items)}
+      <aside className={cx("rap-sidebar", home && "rap-sidebar-home")}>
+        {home ? (
+          <ProfileCard go={go} name={me} />
+        ) : (
+          <>
+            <div className="rap-section-head">
+              <span className="rap-area-icon">
+                <Ic n={catalog[section]?.icon ?? "layers"} s={20} />
+              </span>
+              <div>
+                <h1>{section}</h1>
+                {catalog[section] && <p>{catalog[section].blurb}</p>}
+              </div>
             </div>
-          ))}
-        </nav>
+            <button className="rap-all-sections" onClick={() => setMenu("pages")}>
+              <Ic n="waffle" s={16} />
+              All sections
+            </button>
+            <nav aria-label={`${section} navigation`} className="rap-section-nav">
+              {(catalog[section]?.groups ?? [{ label: "", items: (visible[section] ?? []) as NavItem[] }]).map((g) => (
+                <div key={g.label || section} className="rap-tree-group">
+                  {g.label && <h4>{g.label}</h4>}
+                  {nav(g.items)}
+                </div>
+              ))}
+            </nav>
+          </>
+        )}
         {!user && (
           <div className="rap-guest-cta">
             <p>Join to apply, message and hire.</p>
@@ -701,6 +762,21 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                   ["settings", "Account settings", "settings"],
                   ["help", "Help center", "question"],
                 ])}
+                <div className="rap-divider" />
+                <p className="rap-side-label">Appearance</p>
+                <div className="rap-theme" role="radiogroup" aria-label="Appearance">
+                  {(
+                    [
+                      ["light", "Light"],
+                      ["dark", "Dark"],
+                      ["system", "Device"],
+                    ] as const
+                  ).map(([k, l]) => (
+                    <button key={k} role="radio" aria-checked={theme === k} onClick={() => setTheme(k)}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
                 {user ? (
                   <button className="rap-nav" onClick={signOut}>
                     <span className="rap-nav-icon">
@@ -716,6 +792,73 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type CardProfile = {
+  headline?: string | null;
+  primary_role?: string | null;
+  location?: string | null;
+  profile_completeness?: number | null;
+};
+
+// Home: a LinkedIn-style identity card instead of section navigation.
+function ProfileCard({ go, name }: { go: (route: string) => void; name: string }) {
+  const p = useApi<CardProfile>("/engineers/me");
+  const conns = useApi<unknown[]>("/connections", { status: "ACCEPTED", limit: 200 });
+  const saved = useApi<unknown[]>("/saved-jobs", { limit: 100 });
+  const apps = useApi<unknown[]>("/applications/me", { limit: 100 });
+  const headline = p.data?.headline || p.data?.primary_role || "";
+  const stat = (label: string, value: number | undefined, route: string) => (
+    <button className="rap-card-stat" onClick={() => go(route)}>
+      <span>{label}</span>
+      <b>{value ?? "—"}</b>
+    </button>
+  );
+  return (
+    <div className="rap-home-side">
+      <section className="rap-profile-card">
+        <div className="rap-profile-cover" />
+        <button className="rap-profile-avatar" aria-label="View my profile" onClick={() => go("profile")}>
+          <Av name={name} s={72} />
+        </button>
+        <button className="rap-profile-name" onClick={() => go("profile")}>
+          {name}
+        </button>
+        {headline ? (
+          <p className="rap-profile-headline">{headline}</p>
+        ) : (
+          <button className="rap-profile-cta" onClick={() => go(p.data ? "profile" : "onboarding")}>
+            Add a headline
+          </button>
+        )}
+        {p.data?.location && <p className="rap-profile-meta">{p.data.location}</p>}
+        <div className="rap-card-stats">
+          {stat("Connections", conns.data?.length, "network")}
+          {stat("Saved jobs", saved.data?.length, "saved")}
+          {stat("Applications", apps.data?.length, "applications")}
+        </div>
+      </section>
+      <section className="rap-profile-card rap-quick">
+        <h3>Quick access</h3>
+        {(
+          [
+            ["recs", "AI-matched jobs", "target"],
+            ["freelancework", "AI-matched work", "zap"],
+            ["groups", "Communities", "globe"],
+            ["meetings", "Meetings", "calendar"],
+            ["docs", "Documents", "file"],
+          ] as const
+        ).map(([r, l, i]) => (
+          <button key={r} className="rap-nav" onClick={() => go(r)}>
+            <span className="rap-nav-icon">
+              <Ic n={i} s={20} />
+            </span>
+            <span>{l}</span>
+          </button>
+        ))}
+      </section>
     </div>
   );
 }

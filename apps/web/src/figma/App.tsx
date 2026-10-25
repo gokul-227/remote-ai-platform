@@ -38,7 +38,7 @@ const Impressum = lazy(() => import("./rap_pages").then((m) => ({ default: m.Imp
 const NotFound = lazy(() => import("./rap_pages").then((m) => ({ default: m.NotFound })));
 const GroupDetail = lazy(() => import("./rap_pages").then((m) => ({ default: m.GroupDetail })));
 const Projects = lazy(() => import("./rap_projects").then((m) => ({ default: m.Projects })));
-const Ride = lazy(() => import("./rap_ride").then((m) => ({ default: m.Ride })));
+const TalentMatching = lazy(() => import("./rap_talent").then((m) => ({ default: m.TalentMatching })));
 const Work = lazy(() => import("./rap_work").then((m) => ({ default: m.Work })));
 const Talent = lazy(() => import("./rap_work").then((m) => ({ default: m.Talent })));
 const Contracts = lazy(() => import("./rap_work").then((m) => ({ default: m.Contracts })));
@@ -133,7 +133,7 @@ export const REG: Record<string, any> = {
   cojobs: CoJobs,
   admin: AdminMoved,
   projects: Projects,
-  ride: Ride,
+  ride: TalentMatching,
   jobs: Jobs,
   profile: Profile,
   network: Network,
