@@ -24,7 +24,7 @@ export function Overview({ version }: { version: { environment: string; git_sha:
     </div>
   );
   return (
-    <Section title="Overview">
+    <Section title="Operations overview">
       <div className="grid">
         {metric("Open support tickets", active.total)}
         {metric("Overdue first responses", overdue.total)}
@@ -301,7 +301,7 @@ function TicketPanel({
   );
 }
 
-/* ---------------- People & access ---------------- */
+/* ---------------- User directory ---------------- */
 
 interface UserRow {
   id: string;
@@ -349,7 +349,7 @@ export function People({
     q.reload();
   };
   return (
-    <Section title="People & access">
+    <Section title={title}>
       <form
         className="row"
         style={{ marginBottom: 10 }}
@@ -392,12 +392,11 @@ export function People({
                     <select
                       className="input"
                       disabled={!writable || u.id === meId}
-                      value={u.role}
+                      value={u.role === "ADMIN" ? "ADMIN" : "ENGINEER"}
                       aria-label={`Role for ${u.email}`}
                       onChange={(e) => setPending({ user: u, kind: "role", role: e.target.value })}
                     >
-                      <option value="ENGINEER">Professional</option>
-                      <option value="COMPANY">Organisation</option>
+                      <option value="ENGINEER">Member</option>
                       <option value="ADMIN">Staff (admin)</option>
                     </select>
                   </td>
@@ -624,7 +623,7 @@ export function AiUsage() {
   }>("/admin/ai-usage");
   const d = q.data;
   return (
-    <Section title="AI usage & quota">
+    <Section title="AI usage & allowances">
       <State loading={q.loading && !d} error={q.error} retry={q.reload} />
       {d && (
         <>
@@ -826,7 +825,7 @@ export function Jobs({ writable }: { writable: boolean }) {
   );
   const [pending, setPending] = useState<{ job: AdminJob; kind: "toggle" | "delete" } | null>(null);
   return (
-    <Section title="Job moderation">
+    <Section title="Job listings">
       <form
         className="row"
         style={{ marginBottom: 10 }}
@@ -937,7 +936,7 @@ export function Verifications({ writable }: { writable: boolean }) {
     );
   const [pending, setPending] = useState<{ id: string; status: "VERIFIED" | "REJECTED" } | null>(null);
   return (
-    <Section title="Verification queue">
+    <Section title="Identity verification">
       <State loading={q.loading && !q.data} error={q.error} empty={q.data?.length === 0} retry={q.reload} />
       {!!q.data?.length && (
         <div className="card">

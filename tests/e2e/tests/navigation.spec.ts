@@ -1,10 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { API, signIn, signUp, unique } from "./support";
 
-const openMenu = async (page: import("@playwright/test").Page) => {
-  await page.getByRole("button", { name: "Open the menu" }).click();
-  return page.getByRole("dialog", { name: "Product menu" });
-};
+const tabs = (page: import("@playwright/test").Page) => page.getByRole("navigation", { name: "Main navigation" });
 
 test("visitors get public discovery and a way in, not a fake account", async ({ page }) => {
   await page.goto("/");
@@ -13,20 +10,18 @@ test("visitors get public discovery and a way in, not a fake account", async ({ 
   await expect(page.getByRole("button", { name: "Join" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Your account" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Messages" })).toHaveCount(0);
-  const menu = await openMenu(page);
-  await expect(menu.getByRole("heading", { name: "Jobs", exact: true })).toHaveCount(0);
-  await expect(menu.getByRole("heading", { name: "Projects", exact: true })).toHaveCount(0);
+  await expect(tabs(page).getByRole("button", { name: "Projects", exact: true })).toHaveCount(0);
+  await expect(tabs(page).getByRole("button", { name: "Freelancing", exact: true })).toHaveCount(0);
 });
 
 test("one member account sees every section, never admin", async ({ browser }) => {
   for (const as of ["professional", "organisation"] as const) {
     const page = await (await browser.newContext()).newPage();
     await signUp(page, { as, name: `Nav ${as}`, email: unique(`nav${as}`) });
-    const menu = await openMenu(page);
-    for (const area of ["Home", "Network", "Collaboration", "Jobs", "Freelancing", "Projects", "Account"])
-      await expect(menu.getByRole("heading", { name: area, exact: true })).toBeVisible();
+    for (const area of ["Home", "Network", "Collaboration", "Jobs", "Freelancing", "Projects"])
+      await expect(tabs(page).getByRole("button", { name: area, exact: true })).toBeVisible();
     // Administration lives in the separate staff console.
-    await expect(menu.getByRole("heading", { name: "Admin" })).toHaveCount(0);
+    await expect(tabs(page).getByRole("button", { name: "Admin" })).toHaveCount(0);
   }
 });
 

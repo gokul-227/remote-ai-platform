@@ -87,7 +87,7 @@ export const REG: Record<string, any> = {
   sheets: () => <Office initial="SHEET" />,
   slides: () => <Office initial="SLIDES" />,
   invitations: () => <Network view="invitations" />,
-  suggestions: () => <Network view="suggestions" />,
+  suggestions: Engineers,
   calls: () => <Meetings calls />,
   backlog: () => <Projects initial="backlog" />,
   timeline: () => <Projects initial="timeline" />,

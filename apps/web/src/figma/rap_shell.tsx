@@ -27,13 +27,12 @@ const catalog: Record<string, Area> = {
           ["profile", "My profile", "user"],
           ["network", "Connections", "users"],
           ["invitations", "Invitations", "inbox"],
-          ["suggestions", "Suggested connections", "plus"],
         ],
       },
       {
         label: "Discover",
         items: [
-          ["engineers", "People directory", "search"],
+          ["engineers", "People", "search"],
           ["companies", "Company pages", "building"],
           ["coprofile", "My company page", "briefcase"],
         ],
@@ -69,7 +68,6 @@ const catalog: Record<string, Area> = {
         label: "Find jobs",
         items: [
           ["jobs", "Job search", "briefcase"],
-          ["recs", "AI-matched jobs", "target"],
           ["saved", "Saved jobs", "bookmark"],
         ],
       },
@@ -98,10 +96,7 @@ const catalog: Record<string, Area> = {
     groups: [
       {
         label: "Find work",
-        items: [
-          ["work", "Browse projects", "search"],
-          ["freelancework", "AI-matched work", "target"],
-        ],
+        items: [["work", "Browse projects", "search"]],
       },
       {
         label: "Engagements",
@@ -181,6 +176,8 @@ const sections: Record<string, string[][]> = Object.fromEntries(
 );
 // Screens reached from inside another screen belong to that screen's section.
 const HOME_OF: Record<string, string> = {
+  recs: "Jobs",
+  freelancework: "Freelancing",
   jobdetail: "Jobs",
   talent: "Jobs",
   codash: "Jobs",
@@ -193,17 +190,22 @@ const HOME_OF: Record<string, string> = {
   search: "Home",
   assistant: "Home",
 };
-// Quick actions shown in the menu.
-const CREATE: NavItem[] = [
-  ["feed", "Write a post", "plus"],
-  ["postjob", "Post a job", "briefcase"],
-  ["meetings", "Schedule a meeting", "calendar"],
-  ["docs", "New document", "file"],
-  ["ride", "Find a professional", "zap"],
-  ["support", "Contact support", "question"],
+// Search screens and their AI-matched view share one page with a toggle.
+const JOBS_TOGGLE: NavItem[] = [
+  ["jobs", "All jobs", "briefcase"],
+  ["recs", "AI-matched for you", "spark"],
 ];
+const WORK_TOGGLE: NavItem[] = [
+  ["work", "All projects", "briefcase"],
+  ["freelancework", "AI-matched for you", "spark"],
+];
+const MATCH_TOGGLE: Record<string, NavItem[]> = {
+  jobs: JOBS_TOGGLE,
+  recs: JOBS_TOGGLE,
+  work: WORK_TOGGLE,
+  freelancework: WORK_TOGGLE,
+};
 const MENU_TITLES: Record<string, string> = {
-  pages: "Menu",
   account: "Your account",
   messages: "Messages",
   notifications: "Notifications",
@@ -271,7 +273,6 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   const menuBox = useRef<HTMLDivElement>(null);
   useDialogFocus(menuBox, !!menu, () => setMenu(""));
   const [q, setQ] = useState("");
-  const [menuQ, setMenuQ] = useState("");
   // Appearance: light, dark or follow the device (default).
   const [theme, setTheme] = useState<string>(() => {
     try {
@@ -382,33 +383,10 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           ["workspace", "Projects", "board", "Projects"],
         ];
   const home = !!user && section === "Home";
-  // Phone bottom bar: the most used sections plus the full menu.
-  const mobile =
-    role === "GUEST"
-      ? [
-          ["jobs", "Jobs", "briefcase"],
-          ["engineers", "People", "users"],
-          ["companies", "Companies", "building"],
-        ]
-      : [
-          ["feed", "Home", "home"],
-          ["network", "Network", "users"],
-          ["jobs", "Jobs", "briefcase"],
-          ["workspace", "Projects", "board"],
-        ];
   return (
     <div className="rap-app">
       <header className="rap-top">
         <div className="rap-brand-search">
-          <button
-            className="rap-launcher-btn"
-            aria-label="Open the menu"
-            aria-expanded={menu === "pages"}
-            title="Menu"
-            onClick={() => setMenu(menu === "pages" ? "" : "pages")}
-          >
-            <Ic n="waffle" s={22} />
-          </button>
           <button aria-label="Remote AI home" onClick={() => go("feed")}>
             <Brand s={42} />
           </button>
@@ -517,10 +495,6 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                 {catalog[section] && <p>{catalog[section].blurb}</p>}
               </div>
             </div>
-            <button className="rap-all-sections" onClick={() => setMenu("pages")}>
-              <Ic n="waffle" s={16} />
-              All sections
-            </button>
             <nav aria-label={`${section} navigation`} className="rap-section-nav">
               {(catalog[section]?.groups ?? [{ label: "", items: (visible[section] ?? []) as NavItem[] }]).map((g) => (
                 <div key={g.label || section} className="rap-tree-group">
@@ -566,6 +540,22 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
               {crumb.group && <span>{crumb.group}</span>}
               <b aria-current="page">{crumb.page}</b>
             </nav>
+          )}
+          {MATCH_TOGGLE[r] && (
+            <div className="rap-match-toggle" role="tablist" aria-label="Show">
+              {MATCH_TOGGLE[r].map(([route, label, icon]) => (
+                <button
+                  key={route}
+                  role="tab"
+                  aria-selected={r === route}
+                  className={r === route ? "active" : ""}
+                  onClick={() => go(route)}
+                >
+                  <Ic n={icon} s={16} />
+                  {label}
+                </button>
+              ))}
+            </div>
           )}
           {children}
         </div>
@@ -618,16 +608,12 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
         </aside>
       )}
       <nav className="rap-mobile">
-        {mobile.map(([p, l, i]) => (
+        {tabs.map(([p, l, i]) => (
           <button key={p} onClick={() => go(p)}>
             <Ic n={i} />
             <span>{l}</span>
           </button>
         ))}
-        <button onClick={() => setMenu("pages")}>
-          <Ic n="waffle" />
-          <span>Menu</span>
-        </button>
       </nav>
       {menu && (
         <div className="rap-overlay" onClick={() => setMenu("")}>
@@ -636,8 +622,8 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
             tabIndex={-1}
             role="dialog"
             aria-modal="true"
-            aria-label={menu === "pages" ? "Product menu" : MENU_TITLES[menu]}
-            className={cx("rap-menu", menu === "pages" && "wide", menu === "notifications" && "tall")}
+            aria-label={MENU_TITLES[menu]}
+            className={cx("rap-menu", menu === "notifications" && "tall")}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="rap-menu-head">
@@ -682,74 +668,6 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                   Open chats
                 </button>
               </div>
-            ) : menu === "pages" ? (
-              <>
-                <label className="sr-only" htmlFor="menu-search">
-                  Search the menu
-                </label>
-                <input
-                  id="menu-search"
-                  className="rap-menu-search"
-                  placeholder="Search menu…"
-                  value={menuQ}
-                  onChange={(e) => setMenuQ(e.target.value)}
-                />
-                <div className="rap-launcher">
-                  <div className="rap-menu-grid">
-                    {Object.entries(visible)
-                      .map(([title, rows]) => {
-                        const area = catalog[title];
-                        const groups = area ? area.groups : [{ label: "", items: rows as NavItem[] }];
-                        const ql = menuQ.trim().toLowerCase();
-                        const shown = groups
-                          .map((g) => ({
-                            ...g,
-                            items: g.items.filter(
-                              (i) => !ql || `${title} ${g.label} ${i[1]}`.toLowerCase().includes(ql),
-                            ),
-                          }))
-                          .filter((g) => g.items.length);
-                        return { title, area, shown };
-                      })
-                      .filter((x) => x.shown.length)
-                      .map(({ title, area, shown }) => (
-                        <section key={title} className="rap-area">
-                          <div className="rap-area-head">
-                            <span className="rap-area-icon">
-                              <Ic n={area?.icon ?? "layers"} s={20} />
-                            </span>
-                            <div>
-                              <h3>{title}</h3>
-                              {area && <p>{area.blurb}</p>}
-                            </div>
-                          </div>
-                          {shown.map((g) => (
-                            <div key={g.label || title}>
-                              {g.label && <h4 className="rap-area-group">{g.label}</h4>}
-                              {nav(g.items, () => choose(title))}
-                            </div>
-                          ))}
-                        </section>
-                      ))}
-                    {!user && (
-                      <section className="rap-area">
-                        <h3>Joining Remote AI</h3>
-                        {nav([
-                          ["login", "Sign in", "lock"],
-                          ["register", "Create an account", "user"],
-                          ["forgot", "Having trouble signing in?", "mail"],
-                        ])}
-                      </section>
-                    )}
-                  </div>
-                  {user && (
-                    <aside className="rap-create">
-                      <h3>Create</h3>
-                      {nav(CREATE)}
-                    </aside>
-                  )}
-                </div>
-              </>
             ) : (
               <>
                 <button className="rap-person" onClick={() => go("profile")}>
@@ -844,8 +762,8 @@ function ProfileCard({ go, name }: { go: (route: string) => void; name: string }
         <h3>Quick access</h3>
         {(
           [
-            ["recs", "AI-matched jobs", "target"],
-            ["freelancework", "AI-matched work", "zap"],
+            ["recs", "AI-matched jobs", "spark"],
+            ["freelancework", "AI-matched work", "spark"],
             ["groups", "Communities", "globe"],
             ["meetings", "Meetings", "calendar"],
             ["docs", "Documents", "file"],

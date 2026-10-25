@@ -4,15 +4,16 @@ import { apiAs, signUp, unique } from "./support";
 /* Journeys for the platform features added in the expansion: navigation tree and
    launcher, Docs/Sheets/Slides, channels, meetings, support and the assistant. */
 
-test("the menu opens a section and the sidebar shows only that section", async ({ page }) => {
+test("top tabs open a section and the sidebar shows only that section", async ({ page }) => {
   await signUp(page, { as: "professional", name: "Nav Tree", email: unique("navtree") });
-  await page.getByRole("button", { name: "Open the menu" }).click();
-  const menu = page.getByRole("dialog", { name: "Product menu" });
-  for (const area of ["Home", "Network", "Collaboration", "Jobs", "Freelancing", "Projects", "Account"])
-    await expect(menu.getByRole("heading", { name: area, exact: true })).toBeVisible();
-  await menu.getByRole("button", { name: "Spreadsheets", exact: true }).click();
-  await expect(page).toHaveURL(/#sheets$/);
+  const tabs = page.getByRole("navigation", { name: "Main navigation" });
+  for (const area of ["Home", "Network", "Collaboration", "Jobs", "Freelancing", "Projects"])
+    await expect(tabs.getByRole("button", { name: area, exact: true })).toBeVisible();
+  await tabs.getByRole("button", { name: "Projects", exact: true }).click();
+  await expect(page).toHaveURL(/#workspace$/);
   const side = page.getByRole("navigation", { name: "Projects navigation" });
+  await side.getByRole("button", { name: "Spreadsheets", exact: true }).click();
+  await expect(page).toHaveURL(/#sheets$/);
   await expect(side.getByRole("button", { name: "Timeline", exact: true })).toBeVisible();
   // Other sections stay out of the sidebar.
   await expect(side.getByRole("button", { name: "Job search", exact: true })).toHaveCount(0);
@@ -25,6 +26,16 @@ test("the menu opens a section and the sidebar shows only that section", async (
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Messages" }).click();
   await expect(page.getByRole("dialog", { name: "Messages" }).getByRole("button", { name: "Open chats" })).toBeVisible();
+});
+
+test("job search and AI-matched jobs share one page with a toggle", async ({ page }) => {
+  await signUp(page, { as: "professional", name: "Toggle", email: unique("toggle") });
+  await page.goto("/#jobs");
+  const toggle = page.getByRole("tablist", { name: "Show" });
+  await toggle.getByRole("tab", { name: "AI-matched for you" }).click();
+  await expect(page).toHaveURL(/#recs$/);
+  await toggle.getByRole("tab", { name: "All jobs" }).click();
+  await expect(page).toHaveURL(/#jobs$/);
 });
 
 test("the in-app browser refuses private addresses", async ({ page }) => {

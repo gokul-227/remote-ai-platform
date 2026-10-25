@@ -32,7 +32,7 @@ export DATABASE_URL=postgresql+asyncpg://remote_ai_platform:remote_ai_platform_d
 export REDIS_URL=redis://localhost:6379/0 MINIO_ENDPOINT=localhost:9000 MINIO_PUBLIC_ENDPOINT=http://localhost:9000
 export MINIO_ACCESS_KEY=minioadmin MINIO_SECRET_KEY=minioadmin_dev_password MINIO_SECURE=false
 export APP_ENV=development SUPABASE_URL=http://localhost:9999 ADMIN_EMAILS=admin@example.com
-export CORS_ORIGINS=http://localhost:13000,http://localhost:13001 RATE_LIMIT_MAX_REQUESTS=1000 AI_PROVIDER=auto
+export CORS_ORIGINS=http://localhost:13000,http://localhost:13001 RATE_LIMIT_MAX_REQUESTS=1000000 AI_PROVIDER=auto
 (cd apps/api && .venv/bin/alembic upgrade head >"$LOGS/migrate.log" 2>&1)
 (cd apps/api && start api 18000 .venv/bin/uvicorn app.main:app --port 18000)
 

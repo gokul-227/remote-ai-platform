@@ -138,3 +138,8 @@
 .rap-theme button[aria-checked=true]{background:#0866ff;color:#fff}
 [data-theme=dark] .rap-theme button{background:#3a3b3c;color:#e4e6eb}
 [data-theme=dark] .rap-theme button[aria-checked=true]{background:#0866ff;color:#fff}
+.rap-match-toggle{display:inline-flex;gap:4px;padding:4px;background:#e4e6eb;border-radius:22px;margin-bottom:18px}
+.rap-match-toggle button{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:18px;font-size:14px;font-weight:600;color:#65676b}
+.rap-match-toggle button.active{background:#fff;color:#0866ff;box-shadow:0 1px 2px #0002}
+[data-theme=dark] .rap-match-toggle{background:#3a3b3c}
+[data-theme=dark] .rap-match-toggle button.active{background:#242526;color:#4599ff}

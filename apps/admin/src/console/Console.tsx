@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { api, publicGet, supabase } from "@/lib/client";
 import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
+import { Ic } from "./icons";
 import {
   Announcements,
   AssistantActivity,
@@ -36,109 +37,132 @@ interface Version {
   version: string;
 }
 
-// Eight sections, each with named groups of screens. The menu lists them all;
-// the sidebar shows only the section in use. Screens are addressable as #screen.
-type Screen = [key: string, label: string];
-const SECTIONS: { name: string; blurb: string; groups: { label: string; items: Screen[] }[] }[] = [
+// Eight sections, each with named groups of screens: the top bar shows a tab per
+// section (like the product), the sidebar shows only the section in use, and
+// every screen is addressable as #screen.
+type Screen = [key: string, label: string, icon: string];
+const SECTIONS: {
+  name: string;
+  tab: string;
+  icon: string;
+  blurb: string;
+  groups: { label: string; items: Screen[] }[];
+}[] = [
   {
     name: "Dashboard",
+    tab: "Dashboard",
+    icon: "home",
     blurb: "Operations at a glance",
-    groups: [{ label: "", items: [["overview", "Operations overview"]] }],
+    groups: [{ label: "", items: [["overview", "Operations overview", "chart"]] }],
   },
   {
     name: "User Management",
+    tab: "Users",
+    icon: "users",
     blurb: "Accounts, staff and verification",
     groups: [
       {
         label: "Users",
         items: [
-          ["users", "User directory"],
-          ["staff", "Staff & roles"],
+          ["users", "User directory", "users"],
+          ["staff", "Staff & roles", "shield"],
         ],
       },
-      { label: "Organisations", items: [["companies", "Company directory"]] },
-      { label: "Trust", items: [["verifications", "Identity verification"]] },
+      { label: "Organisations", items: [["companies", "Company directory", "building"]] },
+      { label: "Trust", items: [["verifications", "Identity verification", "check"]] },
     ],
   },
   {
     name: "Trust & Safety",
+    tab: "Safety",
+    icon: "shield",
     blurb: "Reports, decisions and restrictions",
     groups: [
       {
         label: "Moderation",
         items: [
-          ["reports", "Review queue"],
-          ["decisions", "Moderation history"],
+          ["reports", "Review queue", "flag"],
+          ["decisions", "Moderation history", "clock"],
         ],
       },
-      { label: "Enforcement", items: [["restricted", "Restricted accounts"]] },
+      { label: "Enforcement", items: [["restricted", "Restricted accounts", "lock"]] },
     ],
   },
   {
     name: "Marketplace",
+    tab: "Marketplace",
+    icon: "briefcase",
     blurb: "Jobs, sources and contracts",
     groups: [
       {
         label: "Jobs",
         items: [
-          ["jobs", "Job listings"],
-          ["sources", "Job sources"],
+          ["jobs", "Job listings", "briefcase"],
+          ["sources", "Job sources", "globe"],
         ],
       },
-      { label: "Freelancing", items: [["contracts", "Contracts"]] },
+      { label: "Freelancing", items: [["contracts", "Contracts", "file"]] },
     ],
   },
   {
     name: "Customer Support",
+    tab: "Support",
+    icon: "chat",
     blurb: "Tickets and service levels",
     groups: [
       {
         label: "Tickets",
         items: [
-          ["tickets", "Ticket queue"],
-          ["mytickets", "My assigned tickets"],
-          ["resolved", "Resolved tickets"],
+          ["tickets", "Ticket queue", "inbox"],
+          ["mytickets", "My assigned tickets", "user"],
+          ["resolved", "Resolved tickets", "check"],
         ],
       },
     ],
   },
   {
     name: "AI & Automation",
+    tab: "AI",
+    icon: "spark",
     blurb: "Usage, allowances and assistant actions",
     groups: [
       {
         label: "Usage",
         items: [
-          ["ai", "AI usage & allowances"],
-          ["assistant", "Assistant activity"],
+          ["ai", "AI usage & allowances", "chart"],
+          ["assistant", "Assistant activity", "spark"],
         ],
       },
     ],
   },
   {
     name: "Platform Configuration",
+    tab: "Platform",
+    icon: "layers",
     blurb: "Flags, integrations and health",
     groups: [
       {
         label: "Settings",
         items: [
-          ["flags", "Feature flags"],
-          ["integrations", "Integrations"],
-          ["announcements", "Announcements"],
+          ["flags", "Feature flags", "flag"],
+          ["integrations", "Integrations", "link"],
+          ["announcements", "Announcements", "bell"],
         ],
       },
-      { label: "Health", items: [["status", "System status"]] },
+      { label: "Health", items: [["status", "System status", "zap"]] },
     ],
   },
   {
     name: "Compliance & Audit",
+    tab: "Compliance",
+    icon: "list",
     blurb: "Who did what, and when",
     groups: [
       {
         label: "Audit",
         items: [
-          ["audit", "Audit log"],
-          ["security", "Security events"],
+          ["audit", "Audit log", "list"],
+          ["security", "Security events", "lock"],
         ],
       },
     ],
@@ -225,7 +249,6 @@ export default function Console() {
 
   const here = ALL.find((x) => x.key === screen) ?? ALL[0];
   const section = SECTIONS.find((x) => x.name === here.section) ?? SECTIONS[0];
-  const ql = menuQ.trim().toLowerCase();
   const view: Record<string, ReactNode> = {
     overview: <Overview version={version} />,
     users: <People writable={writable} meId={me.id} />,
@@ -251,111 +274,145 @@ export default function Console() {
     security: <Audit prefix="auth." title="Security events" />,
   };
 
+  const first = (sec: (typeof SECTIONS)[number]) => sec.groups[0].items[0][0];
+  const initial = (me.full_name || me.email).trim().charAt(0).toUpperCase();
   return (
     <div className="app">
       <header className="top">
-        <button className="menu-btn" aria-label="Open the menu" aria-expanded={menu} onClick={() => setMenu(!menu)}>
-          ☰
-        </button>
-        <b className="brand">
-          <span className="logo" aria-hidden="true">
-            R
-          </span>
-          Staff console
-        </b>
-        <span className={`env ${envClass}`}>
-          {version && !writable ? "ENVIRONMENT MISMATCH · READ-ONLY" : (envLabel(CONSOLE_ENV) ?? "").toUpperCase()}
-        </span>
-        <span className="who">{me.email}</span>
-        <button
-          className="theme-btn"
-          aria-label="Switch between light and dark mode"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-        >
-          {theme === "dark" ? "Light mode" : "Dark mode"}
-        </button>
-        <button className="btn" onClick={() => supabase.auth.signOut()}>
-          Sign out
-        </button>
-      </header>
-      <div className="shell">
-        <nav className="side" aria-label={`${section.name} navigation`}>
-          <h1>{section.name}</h1>
-          <p className="side-blurb">{section.blurb}</p>
-          <button className="all" onClick={() => setMenu(true)}>
-            ← All sections
+        <div className="top-left">
+          <button className="logo" aria-label="Staff console home" onClick={() => open("overview")}>
+            <Ic n="globe" s={22} />
           </button>
-          {section.groups.map((g) => (
-            <div key={g.label || section.name}>
-              {g.label && <h2>{g.label}</h2>}
-              {g.items.map(([k, label]) => (
-                <button key={k} aria-current={screen === k ? "page" : undefined} onClick={() => open(k)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          ))}
-        </nav>
-        <main className="main">
-          <div className={`envbar ${envClass}`}>
-            {version && !writable
-              ? `Environment mismatch: this ${envLabel(CONSOLE_ENV)} console is pointed at a ${version.environment} API. Changes are disabled.`
-              : `${envLabel(CONSOLE_ENV)} · API ${version?.version ?? "?"} (${version?.git_sha?.slice(0, 7) ?? "unknown"}) · signed in as ${me.email}`}
-          </div>
-          <nav aria-label="Breadcrumb" className="crumb">
-            {here.section}
-            {here.group && ` / ${here.group}`} / <b>{here.label}</b>
-          </nav>
-          {view[screen]}
-        </main>
-      </div>
-      {menu && (
-        <div className="overlay" onClick={() => setMenu(false)}>
-          <div role="dialog" aria-label="Console menu" className="launcher" onClick={(e) => e.stopPropagation()}>
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <h2 style={{ margin: 0 }}>Menu</h2>
-              <button className="btn" aria-label="Close menu" onClick={() => setMenu(false)}>
-                ✕
-              </button>
-            </div>
+          <div className="top-search">
+            <Ic n="search" s={18} />
             <input
-              className="input"
-              aria-label="Search the menu"
-              placeholder="Search the menu…"
-              style={{ width: "100%", margin: "12px 0" }}
+              aria-label="Find a console screen"
+              placeholder="Search the console"
               value={menuQ}
               onChange={(e) => setMenuQ(e.target.value)}
-            />
-            <div className="launcher-grid">
-              {SECTIONS.map((sec) => {
-                const groups = sec.groups
-                  .map((g) => ({
-                    ...g,
-                    items: g.items.filter(([, l]) => !ql || `${sec.name} ${g.label} ${l}`.toLowerCase().includes(ql)),
-                  }))
-                  .filter((g) => g.items.length);
-                if (!groups.length) return null;
-                return (
-                  <section key={sec.name}>
-                    <h3>{sec.name}</h3>
-                    <p className="muted">{sec.blurb}</p>
-                    {groups.map((g) => (
-                      <div key={g.label || sec.name}>
-                        {g.label && <h4>{g.label}</h4>}
-                        {g.items.map(([k, l]) => (
-                          <button key={k} className="link" onClick={() => open(k)}>
-                            {l}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </section>
+              onKeyDown={(e) => {
+                const hit = ALL.find((x) =>
+                  `${x.section} ${x.label}`.toLowerCase().includes(menuQ.trim().toLowerCase()),
                 );
-              })}
-            </div>
+                if (e.key === "Enter" && menuQ.trim() && hit) {
+                  open(hit.key);
+                  setMenuQ("");
+                }
+              }}
+            />
+            {menuQ.trim() && (
+              <div className="search-results" role="listbox">
+                {ALL.filter((x) => `${x.section} ${x.label}`.toLowerCase().includes(menuQ.trim().toLowerCase()))
+                  .slice(0, 8)
+                  .map((x) => (
+                    <button
+                      key={x.key}
+                      role="option"
+                      aria-selected={false}
+                      onClick={() => {
+                        open(x.key);
+                        setMenuQ("");
+                      }}
+                    >
+                      <b>{x.label}</b>
+                      <span>{x.section}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
-      )}
+        <nav className="tabs" aria-label="Main navigation">
+          {SECTIONS.map((sec) => (
+            <button
+              key={sec.name}
+              title={sec.name}
+              className={sec.name === section.name ? "active" : ""}
+              aria-current={sec.name === section.name ? "page" : undefined}
+              onClick={() => open(first(sec))}
+            >
+              <Ic n={sec.icon} s={22} />
+              <span>{sec.tab}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="top-right">
+          <span className={`env ${envClass}`}>
+            {version && !writable ? "READ-ONLY" : (envLabel(CONSOLE_ENV) ?? "").toUpperCase()}
+          </span>
+          <button
+            className="round"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <Ic n={theme === "dark" ? "sun" : "moon"} s={20} />
+          </button>
+          <button className="avatar" aria-label="Your account" aria-expanded={menu} onClick={() => setMenu(!menu)}>
+            {initial}
+          </button>
+          {menu && (
+            <div className="account-menu" role="dialog" aria-label="Your account">
+              <div className="account-head">
+                <span className="avatar big">{initial}</span>
+                <div>
+                  <b>{me.full_name || "Staff member"}</b>
+                  <p>{me.email}</p>
+                </div>
+              </div>
+              <button className="menu-item" onClick={() => supabase.auth.signOut()}>
+                <Ic n="lock" s={18} />
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+      <div className="shell">
+        <aside className="side">
+          <div className="side-head">
+            <span className="side-icon">
+              <Ic n={section.icon} s={20} />
+            </span>
+            <div>
+              <h1>{section.name}</h1>
+              <p>{section.blurb}</p>
+            </div>
+          </div>
+          <nav aria-label={`${section.name} navigation`}>
+            {section.groups.map((g) => (
+              <div key={g.label || section.name}>
+                {g.label && <h2>{g.label}</h2>}
+                {g.items.map(([k, label, icon]) => (
+                  <button key={k} aria-current={screen === k ? "page" : undefined} onClick={() => open(k)}>
+                    <span className="nav-icon">
+                      <Ic n={icon} s={20} />
+                    </span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </aside>
+        <main className="main">
+          {version && !writable && (
+            <div className="envbar mismatch">
+              Environment mismatch: this {envLabel(CONSOLE_ENV)} console is pointed at a {version.environment} API.
+              Changes are disabled.
+            </div>
+          )}
+          <nav aria-label="Breadcrumb" className="crumb">
+            <span>{here.section}</span>
+            {here.group && <span>{here.group}</span>}
+            <b>{here.label}</b>
+          </nav>
+          <div className="page">{view[screen]}</div>
+          <footer className="foot">
+            {envLabel(CONSOLE_ENV)} · API {version?.version ?? "?"} ({version?.git_sha?.slice(0, 7) ?? "unknown"})
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }

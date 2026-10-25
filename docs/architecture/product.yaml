@@ -67,7 +67,7 @@ features:
   - route: engineer
     label: Professional detail
   - route: engineers
-    label: People
+    label: Discover professionals
   api:
   - domain: engineers
     prefix: /api/v1/engineers
@@ -97,7 +97,7 @@ features:
   - route: search
     label: Search
   - route: companies
-    label: Companies
+    label: Explore companies
   - route: company
     label: Company page
   api:
@@ -125,7 +125,7 @@ features:
   - route: recs
     label: Recommendations
   - route: ride
-    label: Find a professional
+    label: Talent matching
   - route: freelancework
     label: AI-matched work
   api:
@@ -190,7 +190,7 @@ features:
   - route: invitations
     label: Invitations
   - route: suggestions
-    label: Suggested connections
+    label: suggestions
   - route: messenger
     label: Messages
   - route: channels
@@ -272,7 +272,7 @@ features:
   - organisation
   screens:
   - route: workspace
-    label: Projects
+    label: Workspace
   - route: projects
     label: Boards
   - route: backlog
@@ -389,7 +389,7 @@ features:
   - route: help
     label: Help center
   - route: support
-    label: Contact support
+    label: Support tickets
   - route: terms
     label: Terms
   - route: privacy

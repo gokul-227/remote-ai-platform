@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { signUp, unique } from "./support";
 
 /** Automated WCAG 2.1 A/AA checks on public screens; serious and critical issues fail the build. */
 for (const route of ["#login", "#register", "#jobs", "#engineers", "#companies", "#privacy", "#terms", "#help"]) {
@@ -12,16 +13,17 @@ for (const route of ["#login", "#register", "#jobs", "#engineers", "#companies",
   });
 }
 
-test("the main menu is a keyboard-operable dialog", async ({ page }) => {
+test("the account menu is a keyboard-operable dialog", async ({ page }) => {
+  await signUp(page, { as: "professional", name: "Keys", email: unique("keys") });
   await page.goto("/#jobs");
-  const trigger = page.getByRole("button", { name: "Open the menu" });
+  const trigger = page.getByRole("button", { name: "Your account" });
   await trigger.focus();
   await page.keyboard.press("Enter");
-  const menu = page.getByRole("dialog", { name: "Product menu" });
+  const menu = page.getByRole("dialog", { name: "Your account" });
   await expect(menu).toBeVisible();
   // Focus moved into the menu and stays there.
   await expect.poll(() => menu.evaluate((el) => el.contains(document.activeElement))).toBe(true);
-  for (let i = 0; i < 40; i++) await page.keyboard.press("Tab");
+  for (let i = 0; i < 20; i++) await page.keyboard.press("Tab");
   expect(await menu.evaluate((el) => el.contains(document.activeElement))).toBe(true);
   // Escape closes it and returns focus to the button that opened it.
   await page.keyboard.press("Escape");

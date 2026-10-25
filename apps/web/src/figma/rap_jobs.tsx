@@ -14,7 +14,6 @@ import {
   Bar,
   Stars,
   cx,
-  grad,
   Field,
   inputCls,
   RichText,
@@ -920,12 +919,11 @@ export function Profile() {
   );
 }
 
-export function Network({ view = "connections" }: { view?: "connections" | "invitations" | "suggestions" } = {}) {
+export function Network({ view = "connections" }: { view?: "connections" | "invitations" } = {}) {
   // Live: real invitations, connections, suggestions (/connections, /engineers).
   const { user } = useAuth();
   const conns = useApi<any[]>(user ? "/connections" : null, { limit: 200 });
   const groups = useApi<any[]>(user ? "/groups/me/joined" : null);
-  const people = useApi<any[]>("/engineers", { limit: 30 });
   const [notice, setNotice] = useState("");
   const all = conns.data ?? [];
   const inv = all.filter((c: any) => c.status === "PENDING" && c.receiver_id === user?.id);
@@ -933,31 +931,15 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
     .filter((c: any) => c.status === "ACCEPTED")
     .map((c: any) => (c.sender_id === user?.id ? c.receiver : c.sender))
     .filter(Boolean);
-  const known = new Set(all.flatMap((c: any) => [c.sender_id, c.receiver_id]));
   const pendingOut = new Set(
     all.filter((c: any) => c.status === "PENDING" && c.sender_id === user?.id).map((c: any) => c.receiver_id),
   );
-  const suggest = (people.data ?? [])
-    .filter((p: any) => p.user_id !== user?.id && (!known.has(p.user_id) || pendingOut.has(p.user_id)))
-    .slice(0, 9);
   const respond = async (id: string, status: string) => {
     try {
       await api.patch(`/connections/${id}`, { status });
       conns.reload();
     } catch (e) {
       setNotice(extractErrorMessage(e, "Couldn't update that invitation."));
-    }
-  };
-  const connect = async (uid: string) => {
-    if (!user) {
-      goRoute("login");
-      return;
-    }
-    try {
-      await api.post("/connections", { receiver_id: uid });
-      conns.reload();
-    } catch (e) {
-      setNotice(extractErrorMessage(e, "Couldn't send that request."));
     }
   };
   const invite = async () => {
@@ -1031,9 +1013,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
           )}
           {view === "connections" && !accepted.length && (
             <Card c="rounded-lg">
-              <p className="text-sm text-slate-500">
-                No connections yet. Explore Suggested Connections to grow your network.
-              </p>
+              <p className="text-sm text-slate-500">No connections yet. Find people to connect with in People.</p>
             </Card>
           )}
           {view === "connections" && accepted.length > 0 && (
@@ -1061,47 +1041,6 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
                   </Btn>
                 </div>
               ))}
-            </Card>
-          )}
-          {view === "suggestions" && (
-            <Card c="rounded-lg">
-              <p className="mb-3 font-bold">Suggested connections</p>
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-                {suggest.map((p: any) => {
-                  const name = p.full_name || "Professional";
-                  const pending = pendingOut.has(p.user_id);
-                  return (
-                    <div key={p.id} className="overflow-hidden rounded-lg border border-slate-200 text-center">
-                      <div className={cx("h-14 bg-gradient-to-br", grad(name))} />
-                      <div className="-mt-9 flex justify-center">
-                        <div className="rounded-full border-2 border-white">
-                          <Av name={name} s={72} />
-                        </div>
-                      </div>
-                      <div className="p-3">
-                        <button onClick={() => open(p.id)} className="font-bold hover:underline">
-                          {name}
-                        </button>
-                        <p className="h-8 text-xs text-slate-500">{p.headline || p.primary_role || ""}</p>
-                        <p className="mt-2 text-xs text-slate-500">{p.location || "Remote"}</p>
-                        <Btn
-                          v={pending ? "gray" : "outline"}
-                          full
-                          sm
-                          c="mt-3"
-                          icon={pending ? "clock" : "plus"}
-                          onClick={() => !pending && connect(p.user_id)}
-                        >
-                          {pending ? "Pending" : "Connect"}
-                        </Btn>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {!people.loading && !suggest.length && (
-                <p className="text-sm text-slate-500">No new suggestions right now.</p>
-              )}
             </Card>
           )}
         </main>
