@@ -243,6 +243,10 @@ async def create_job(
 
 @router.post("/sync/scheduled", response_model=dict[str, int], include_in_schema=False)
 async def scheduled_job_sync(
+    source: str | None = Query(None, max_length=40, description="Import just this source"),
+    step: str | None = Query(
+        None, pattern="^maintenance$", description="'maintenance' = retention, erasures, emails"
+    ),
     x_job_sync_token: str | None = Header(default=None),
     service: JobService = Depends(get_job_service),
     db: AsyncSession = Depends(get_db),
@@ -257,9 +261,23 @@ async def scheduled_job_sync(
         x_job_sync_token.encode(), expected.encode()
     ):
         raise HTTPException(status_code=403, detail="Forbidden")
-    stats = await service.sync_all_job_sources(
-        limit_per_source=settings.JOB_SYNC_MAX_PER_SOURCE, admin_repo=AdminRepository(db)
-    )
+    # The workflow calls one source per request (small enough for the free API
+    # instance), then step=maintenance once. With neither, everything runs.
+    if source:
+        stats = await service.sync_all_job_sources(
+            limit_per_source=settings.JOB_SYNC_MAX_PER_SOURCE,
+            admin_repo=AdminRepository(db),
+            source_name=source,
+            run_maintenance=False,
+        )
+        await db.commit()
+        return stats
+    if step == "maintenance":
+        stats = await service.maintain_catalogue()
+    else:
+        stats = await service.sync_all_job_sources(
+            limit_per_source=settings.JOB_SYNC_MAX_PER_SOURCE, admin_repo=AdminRepository(db)
+        )
     await db.commit()
     # Same six-hourly tick: retry Supabase user erasures that failed at
     # account deletion (DATA-04). There is no hosted worker to do it.

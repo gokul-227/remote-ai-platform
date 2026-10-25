@@ -61,7 +61,9 @@ class _Board(BaseAggregator):
         title = self.clean_text(title)
         if not title:
             return None
-        description = (self.clean_rich_text(description) or title)[: settings.JOB_DESCRIPTION_MAX_CHARS]
+        description = (self.clean_rich_text(description) or title)[
+            : settings.JOB_DESCRIPTION_MAX_CHARS
+        ]
         location = self.clean_text(location) or "Remote"
         low, high, currency = salary
         return JobPostCreate(
@@ -83,7 +85,7 @@ class _Board(BaseAggregator):
 
     async def _many(self, boards: list[str], fetch, limit: int) -> list[JobPostCreate]:
         """Fetch boards concurrently; one bad board never fails the whole source."""
-        sem = asyncio.Semaphore(6)
+        sem = asyncio.Semaphore(3)  # few boards in memory at once: the API instance has 512 MB
         async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
 
             async def one(board: str) -> list[JobPostCreate]:

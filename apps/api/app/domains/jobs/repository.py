@@ -206,7 +206,9 @@ class JobRepository:
             .limit(excess)
         )
         result = await self.db.execute(
-            delete(JobPost).where(JobPost.id.in_(oldest)).execution_options(synchronize_session=False)
+            delete(JobPost)
+            .where(JobPost.id.in_(oldest))
+            .execution_options(synchronize_session=False)
         )
         return int(getattr(result, "rowcount", 0) or 0)
 

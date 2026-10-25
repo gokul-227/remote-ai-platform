@@ -35,6 +35,7 @@ from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import JobPostCreate, JobPostResponse, JobPostUpdate, JobSearchQuery
 from app.domains.marketplace.models import AIReport
+from app.services.search.indexing import notify_new_jobs
 
 logger = get_logger("jobs.service")
 
@@ -133,11 +134,24 @@ class JobService:
         list_cache.put(key, (serialized, total))
         return serialized, total
 
+    async def maintain_catalogue(self) -> dict[str, int]:
+        """Retention after imports: drop imported jobs older than JOB_RETENTION_DAYS (hide
+        them if someone applied), then trim to the database size budget."""
+        removed, hidden = await self.repo.purge_old_imported_jobs(settings.JOB_RETENTION_DAYS)
+        removed += await self.repo.trim_to_size_budget(settings.DATABASE_SIZE_BUDGET_MB)
+        await self.repo.db.commit()
+        if removed or hidden:
+            logger.info(
+                f"Retention: removed {removed} old imported jobs, hid {hidden} with applications"
+            )
+        return {"retention_removed": removed, "retention_hidden": hidden}
+
     async def sync_all_job_sources(
         self,
         limit_per_source: int = 50,
         admin_repo: AdminRepository | None = None,
         source_name: str | None = None,
+        run_maintenance: bool = True,
     ) -> dict[str, int]:
         """
         Runs job aggregation across every configured source, saving/upserting jobs to DB.
@@ -215,12 +229,10 @@ class JobService:
                 # Per source, so a later source's rollback cannot drop this record.
                 await admin_repo.db.commit()
 
-        # Retention: keep roughly the last few months of imported jobs.
-        removed, hidden = await self.repo.purge_old_imported_jobs(settings.JOB_RETENTION_DAYS)
-        removed += await self.repo.trim_to_size_budget(settings.DATABASE_SIZE_BUDGET_MB)
-        await self.repo.db.commit()
-        if removed or hidden:
-            logger.info(
-                f"Retention: removed {removed} old imported jobs, hid {hidden} with applications"
-            )
+        if run_maintenance:
+            await self.maintain_catalogue()
+        # Newest first: the per-run Google quota goes to the freshest listings.
+        sent = await notify_new_jobs(list(reversed(new_job_ids)))
+        if any(sent.values()):
+            logger.info(f"Search engines notified: {sent}")
         return stats

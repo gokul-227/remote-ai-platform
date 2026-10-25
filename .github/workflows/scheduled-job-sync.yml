@@ -21,7 +21,7 @@ permissions: {}
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 90
     steps:
       - name: Trigger job sync
         run: |
@@ -32,6 +32,19 @@ jobs:
             echo "::error::PROD_API_URL or JOB_SYNC_TOKEN is not configured"
             exit 1
           fi
-          curl -sf --max-time 900 -X POST "$API_URL/jobs/sync/scheduled" \
-            -H "X-Job-Sync-Token: $SYNC_TOKEN" \
-            -w "\nHTTP %{http_code}\n"
+          # One source per request keeps each import small enough for the free API
+          # instance (512 MB); a failing source doesn't stop the others.
+          failed=0
+          for src in REMOTEOK ARBEITNOW REMOTIVE THEMUSE USAJOBS JOBICY HIMALAYAS WORKINGNOMADS \
+                     GREENHOUSE LEVER ASHBY SMARTRECRUITERS ADZUNA JOOBLE; do
+            echo "::group::$src"
+            if ! curl -sf --max-time 600 -X POST "$API_URL/jobs/sync/scheduled?source=$src" \
+                 -H "X-Job-Sync-Token: $SYNC_TOKEN" -w "\nHTTP %{http_code}\n"; then
+              echo "::warning::$src import failed"; failed=$((failed+1))
+            fi
+            echo "::endgroup::"
+          done
+          # Retention, size budget, pending erasures and the email backstop, once.
+          curl -sf --max-time 600 -X POST "$API_URL/jobs/sync/scheduled?step=maintenance" \
+            -H "X-Job-Sync-Token: $SYNC_TOKEN" -w "\nHTTP %{http_code}\n"
+          [ "$failed" -lt 7 ] || { echo "::error::$failed sources failed"; exit 1; }

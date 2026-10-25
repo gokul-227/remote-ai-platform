@@ -174,3 +174,47 @@ def test_board_groups_rotate_and_cover_every_company(monkeypatch):
 async def test_size_budget_is_a_no_op_outside_postgres(db: AsyncSession):
     # SQLite in tests: no database size to measure, so nothing is ever trimmed.
     assert await JobRepository(db).trim_to_size_budget(1) == 0
+
+
+@pytest.mark.asyncio
+async def test_import_announces_new_jobs_and_per_source_runs_skip_maintenance(
+    db: AsyncSession, monkeypatch
+):
+    from app.domains.jobs import service as svc
+    from app.domains.jobs.schemas import JobPostCreate
+
+    class Fake:
+        source_name = "FAKE"
+
+        async def fetch_jobs(self, limit: int = 100):
+            return [
+                JobPostCreate(
+                    title="Fake role",
+                    description="d",
+                    company_name="C",
+                    external_id=f"fake_{uuid.uuid4().hex}",
+                    source="FAKE",
+                )
+            ]
+
+    sent: list = []
+    maintained: list = []
+
+    async def fake_notify(ids):
+        sent.append(ids)
+        return {"google": 0, "indexnow": len(ids)}
+
+    service = svc.JobService(JobRepository(db))
+    service.aggregators = [Fake()]
+    monkeypatch.setattr(svc, "notify_new_jobs", fake_notify)
+
+    async def fake_maintain(self):
+        maintained.append(True)
+        return {}
+
+    monkeypatch.setattr(svc.JobService, "maintain_catalogue", fake_maintain)
+    await service.sync_all_job_sources(source_name="FAKE", run_maintenance=False)
+    assert len(sent[0]) == 1  # the new job reached the search-engine notifier
+    assert maintained == []
+    await service.sync_all_job_sources()
+    assert maintained == [True]
