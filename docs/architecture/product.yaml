@@ -122,6 +122,8 @@ features:
     label: Recommendations
   - route: ride
     label: Match a professional
+  - route: freelancework
+    label: Freelance work for you
   api:
   - domain: matching
     prefix: /api/v1/matching
@@ -264,7 +266,7 @@ features:
   - route: projects
     label: Boards & sprints
   - route: taskmarket
-    label: Find freelance work
+    label: Task offers
   - route: submissions
     label: Deliverables
   - route: worklog
@@ -402,7 +404,7 @@ features:
 web:
   technology: Next.js 16 · OpenNext
   provider: Cloudflare Workers
-  screens: 63
+  screens: 64
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service

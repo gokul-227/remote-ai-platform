@@ -1327,6 +1327,18 @@ paths:
           minimum: 1
           default: 20
           title: Limit
+      - name: kind
+        in: query
+        required: false
+        schema:
+          enum:
+          - all
+          - freelance
+          type: string
+          description: '''freelance'' = contract/freelance/part-time work'
+          default: all
+          title: Kind
+        description: '''freelance'' = contract/freelance/part-time work'
       responses:
         '200':
           description: Successful Response
@@ -5674,6 +5686,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/signals:
+    post:
+      tags:
+      - Meetings
+      summary: Send Signal
+      operationId: send_signal_api_v1_meetings__meeting_id__signals_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignalIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                title: Response Send Signal Api V1 Meetings  Meeting Id  Signals Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Meetings
+      summary: Receive Signals
+      description: Signals for me (or for everyone) newer than `after`; never my own.
+      operationId: receive_signals_api_v1_meetings__meeting_id__signals_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      - name: after
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: After
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Receive Signals Api V1 Meetings  Meeting Id  Signals Get
         '422':
           description: Validation Error
           content:
@@ -12947,6 +13036,33 @@ components:
       - user_id
       - role
       title: ShareIn
+    SignalIn:
+      properties:
+        kind:
+          type: string
+          enum:
+          - JOIN
+          - LEAVE
+          - OFFER
+          - ANSWER
+          - ICE
+          title: Kind
+        to_user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: To User Id
+        payload:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Payload
+      type: object
+      required:
+      - kind
+      title: SignalIn
     SkillCount:
       properties:
         skill:

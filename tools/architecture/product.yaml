@@ -48,7 +48,7 @@ features:
     name: AI matching
     step: 4
     personas: [professional, organisation]
-    screens: [recs, ride]
+    screens: [recs, ride, freelancework]
     api: [matching]
     uses: [ai-providers]
   - id: hiring
