@@ -205,6 +205,12 @@ class Settings(BaseSettings):
     ADZUNA_COUNTRIES: str = "gb,us,de,in,ca,au,nl,fr"
     JOOBLE_API_KEY: str | None = None
     JOOBLE_KEYWORDS: str = "remote"
+    # Search-engine notifications for new job pages (production only).
+    # Base64 of a Google service-account JSON that owns the Search Console property.
+    GOOGLE_INDEXING_CREDENTIALS_B64: str | None = None
+    GOOGLE_INDEXING_PER_RUN: int = 24  # 8 runs a day stays under Google's free 200/day
+    # IndexNow key: public by design, served by the web app at /indexnow.txt.
+    INDEXNOW_KEY: str = "bd088b5c4cf346dbf16c906aff9aeb97"
     # Imported jobs posted longer ago than this are removed (or, if someone applied, hidden).
     JOB_RETENTION_DAYS: int = 90
 

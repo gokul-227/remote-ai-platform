@@ -148,6 +148,7 @@ class JobService:
         """
         logger.info(f"Starting job aggregation sync across {len(self.aggregators)} sources...")
         stats: dict[str, int] = {}
+        new_job_ids: list[uuid.UUID] = []
 
         aggregators = self.aggregators
         if source_name is not None:
@@ -161,7 +162,9 @@ class JobService:
                 fetched_jobs = await aggregator.fetch_jobs(limit=limit_per_source)
                 inserted = updated = 0
                 for job_data in fetched_jobs:
-                    _, created = await self.repo.upsert_external_job(job_data)
+                    saved, created = await self.repo.upsert_external_job(job_data)
+                    if created:
+                        new_job_ids.append(saved.id)
                     inserted += int(created)
                     updated += int(not created)
                 # Only after a successful, non-empty fetch: an outage or a feed that
