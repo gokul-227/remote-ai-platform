@@ -70,3 +70,10 @@
 .rap-tree-group .rap-nav{min-height:36px;padding:6px 10px;font-size:13.5px}
 .rap-tree-group .rap-nav-icon{width:22px}
 @media(max-width:900px){.rap-main{padding-left:0}}
+
+/* The all-features launcher opens from the top-left button. */
+.rap-launcher-btn{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#e4e6eb;flex-shrink:0}
+.rap-launcher-btn:hover,.rap-launcher-btn[aria-expanded=true]{background:#e7f0ff;color:#0552cc}
+.rap-menu.wide{left:18px;right:auto}
+.rap-brand-search{width:340px}
+@media(max-width:560px){.rap-menu.wide{left:12px}}

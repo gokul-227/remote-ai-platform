@@ -332,6 +332,15 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
     <div className="rap-app">
       <header className="rap-top">
         <div className="rap-brand-search">
+          <button
+            className="rap-launcher-btn"
+            aria-label="Open the menu of all features"
+            aria-expanded={menu === "pages"}
+            title="All features"
+            onClick={() => setMenu(menu === "pages" ? "" : "pages")}
+          >
+            <Ic n="waffle" s={22} />
+          </button>
           <button aria-label="Remote AI home" onClick={() => go("feed")}>
             <Brand s={42} />
           </button>
@@ -378,11 +387,10 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           )}
           {(user
             ? [
-                ["waffle", "Menu", "pages"],
                 ["chat", "Messages", "messenger"],
                 ["bell", "Notifications", "notifications"],
               ]
-            : [["waffle", "Menu", "pages"]]
+            : []
           ).map(([i, l, p]) => (
             <button
               key={p}
