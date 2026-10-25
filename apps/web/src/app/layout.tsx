@@ -16,8 +16,18 @@ const inter = localFont({
 
 export const metadata: Metadata = {
   ...(SITE_URL ? { metadataBase: new URL(SITE_URL) } : {}),
-  title: "Remote AI Platform",
-  description: "Connect with professionals, find remote work, and bring great projects to life together.",
+  title: "Remote AI Platform — remote jobs, freelance work and hiring",
+  description:
+    "Find remote jobs and freelance projects from leading companies, get AI-matched to roles, hire professionals and run projects together. Free to join.",
+  // One preferred address for the home page (www/http copies point here).
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "Remote AI Platform",
+    description: "Remote jobs, freelance work and hiring in one place. Free to join.",
+    url: "/",
+    siteName: "Remote AI Platform",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
