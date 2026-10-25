@@ -11,6 +11,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
+from app.core.audit import record_audit_event
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.exceptions import AuthenticationError
@@ -56,6 +57,18 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
             detail="Session has been revoked. Please log in again.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if (
+        identity.email
+        and identity.email.strip().lower() in settings.ADMIN_EMAILS
+        and user.role != UserRole.ADMIN
+    ):
+        previous = user.role
+        user.role = UserRole.ADMIN
+        await record_audit_event(
+            repo.db, "admin.bootstrap", "user", str(user.id), user.id, "SYSTEM",
+            {"previous_role": getattr(previous, "value", str(previous)), "source": "ADMIN_EMAILS"},
+        )
+        await repo.db.flush()
     # Ensure all server-default/onupdate columns are loaded within the async context
     # to avoid MissingGreenlet during Pydantic serialization.
     await repo.db.refresh(user)

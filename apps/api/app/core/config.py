@@ -49,6 +49,14 @@ class Settings(BaseSettings):
         validation_alias="CORS_ORIGINS",
     )
 
+    # Comma-separated emails that become ADMIN on their next sign-in (Supabase only
+    # issues sessions for confirmed emails). Grants only; never demotes. Set in Infisical.
+    ADMIN_EMAILS_RAW: str = Field(default="", validation_alias="ADMIN_EMAILS")
+
+    @property
+    def ADMIN_EMAILS(self) -> set[str]:  # noqa: N802
+        return {e.strip().lower() for e in self.ADMIN_EMAILS_RAW.split(",") if e.strip()}
+
     @property
     def CORS_ORIGINS(self) -> list[str]:  # noqa: N802
         origins = [origin.strip() for origin in self.CORS_ORIGINS_RAW.split(",") if origin.strip()]
