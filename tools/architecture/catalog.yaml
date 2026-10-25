@@ -216,6 +216,7 @@ job_boards:
   SMARTRECRUITERS: {name: SmartRecruiters boards}
   ADZUNA: {name: Adzuna}
   JOOBLE: {name: Jooble}
+  HACKERNEWS: {name: Hacker News (Who is hiring)}
 
 connections:
   - {from: users, to: web, label: HTTPS}

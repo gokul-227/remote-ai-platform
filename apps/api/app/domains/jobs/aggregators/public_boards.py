@@ -11,6 +11,7 @@ default to large employers whose public boards were verified live.
 
 import asyncio
 import html
+import re
 from datetime import UTC, datetime
 
 import httpx
@@ -415,3 +416,81 @@ class JoobleAggregator(_Board):
             if job:
                 out.append(job)
         return out
+
+
+ROLE_WORDS = re.compile(
+    r"engineer|developer|programmer|designer|manager|scientist|analyst|architect|"
+    r"\blead\b|head of|director|researcher|recruiter|writer|marketer|sales|support|"
+    r"devops|\bsre\b|\bqa\b|founding|\broles?\b|positions|intern|specialist|consultant",
+    re.I,
+)
+
+
+class HackerNewsAggregator(_Board):
+    """Hacker News "Ask HN: Who is hiring?" (monthly), via the free Algolia HN API.
+    Each top-level post is one employer: "Company | Role | Location | Remote | ...";
+    the job links back to the post."""
+
+    source_name = "HACKERNEWS"
+
+    async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        try:
+            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+                s = await client.get(
+                    "https://hn.algolia.com/api/v1/search_by_date",
+                    params={
+                        "tags": "story,author_whoishiring",
+                        "query": "who is hiring",
+                        "hitsPerPage": 5,
+                    },
+                )
+                s.raise_for_status()
+                story = next(
+                    h for h in s.json()["hits"] if h["title"].startswith("Ask HN: Who is hiring?")
+                )
+                r = await client.get(f"https://hn.algolia.com/api/v1/items/{story['objectID']}")
+                r.raise_for_status()
+                posts = r.json().get("children", [])
+        except Exception as e:
+            raise SourceFetchError(type(e).__name__) from e
+        out = []
+        for p in posts:
+            text = p.get("text") or ""
+            if not text or not p.get("id"):
+                continue
+            first = html.unescape(text.split("<p>")[0])
+            parts = [self.clean_text(x) for x in first.split("|") if self.clean_text(x)]
+            if len(parts) < 2:
+                continue
+            company = (
+                re.sub(
+                    r"\s*(https?://\S+|\(?[\w.-]+\.(com|io|ai|co|dev|org|net)\)?)\s*", " ", parts[0]
+                ).strip()
+                or parts[0]
+            )
+            role = next((x for x in parts[1:] if ROLE_WORDS.search(x) and "http" not in x), "")
+            if not role:
+                continue
+            # Prefer a field naming a place ("Berlin, Germany"), then a work mode.
+            others = [x for x in parts[1:] if x != role and not ROLE_WORDS.search(x)]
+            where = next((x for x in others if "," in x), "") or next(
+                (
+                    x
+                    for x in others
+                    if any(w in x.lower() for w in (*REMOTE_WORDS, "onsite", "hybrid"))
+                ),
+                "",
+            )
+            job = self._job(
+                ext_id=str(p["id"]),
+                title=role,
+                company=company,
+                url=f"https://news.ycombinator.com/item?id={p['id']}",
+                description=html.unescape(text),
+                location=where or "See post",
+                remote=_remote(first) or None,
+                tags=parts[2:],
+            )
+            if job:
+                out.append(job)
+        return out[:limit]

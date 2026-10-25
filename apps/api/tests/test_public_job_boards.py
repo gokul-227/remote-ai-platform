@@ -277,3 +277,34 @@ async def test_one_bad_job_never_discards_the_whole_source(db: AsyncSession, mon
     service.aggregators = [Mixed()]
     stats = await service.sync_all_job_sources(source_name="MIXED", run_maintenance=False)
     assert stats == {"MIXED": 3}
+
+
+@pytest.mark.asyncio
+async def test_hacker_news_who_is_hiring_posts_become_jobs(monkeypatch):
+    thread = {"hits": [{"objectID": "99", "title": "Ask HN: Who is hiring? (October 2026)"}]}
+    items = {
+        "children": [
+            {
+                "id": 1,
+                "text": "Acme (acme.io) | ONSITE | Senior Backend Engineer, SRE | Berlin, Germany<p>We use Python.",
+            },
+            {"id": 2, "text": "Just a comment without a role"},
+        ]
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=thread if "search_by_date" in request.url.path else items)
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(
+        pb.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw)
+    )
+    jobs = await pb.HackerNewsAggregator().fetch_jobs(limit=10)
+    assert len(jobs) == 1
+    j = jobs[0]
+    assert (j.company_name, j.title, j.location) == (
+        "Acme",
+        "Senior Backend Engineer, SRE",
+        "Berlin, Germany",
+    )
+    assert j.external_url == "https://news.ycombinator.com/item?id=1"

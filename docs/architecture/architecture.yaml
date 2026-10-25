@@ -314,6 +314,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=GREENHOUSE'
+- id: board-hackernews
+  name: Hacker News (Who is hiring)
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=HACKERNEWS'
 - id: board-himalayas
   name: Himalayas
   type: external
