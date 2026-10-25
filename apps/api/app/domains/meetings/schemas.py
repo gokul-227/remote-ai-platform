@@ -82,3 +82,29 @@ class MeetingResponse(BaseModel):
 class JoinLink(BaseModel):
     url: str
     provider: str
+
+
+class MeetingReschedule(BaseModel):
+    starts_at: datetime
+    ends_at: datetime
+
+    @field_validator("starts_at", "ends_at")
+    @classmethod
+    def _aware(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            raise ValueError("include a timezone offset (times are stored in UTC)")
+        return v.astimezone(UTC)
+
+    @model_validator(mode="after")
+    def _window(self) -> "MeetingReschedule":
+        if self.ends_at <= self.starts_at:
+            raise ValueError("the meeting must end after it starts")
+        if self.ends_at - self.starts_at > MAX_DURATION:
+            raise ValueError("meetings can last at most 8 hours")
+        if self.ends_at < datetime.now(UTC):
+            raise ValueError("the new time is already over")
+        return self
+
+
+class ParticipantIn(BaseModel):
+    user_id: uuid.UUID

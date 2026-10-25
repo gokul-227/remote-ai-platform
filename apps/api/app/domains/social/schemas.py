@@ -1,7 +1,9 @@
+
 """Social feed domain Pydantic schemas."""
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -53,6 +55,8 @@ class PostResponse(BaseModel):
     like_count: int
     comment_count: int
     liked_by_me: bool = False
+    my_reaction: str | None = None
+    reaction_counts: dict[str, int] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
 
@@ -69,3 +73,10 @@ class FeedResponse(BaseModel):
     page: int
     page_size: int
     has_more: bool
+
+
+REACTIONS = ("LIKE", "CELEBRATE", "SUPPORT", "INSIGHTFUL", "CURIOUS")
+
+
+class ReactionIn(BaseModel):
+    reaction: Literal["LIKE", "CELEBRATE", "SUPPORT", "INSIGHTFUL", "CURIOUS"]

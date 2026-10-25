@@ -140,9 +140,27 @@ export function Meetings() {
                     <p className="text-sm text-slate-600">
                       {fmt(m.starts_at)} – {new Date(m.ends_at).toLocaleTimeString(undefined, { timeStyle: "short" })}
                     </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      {m.participants.map((p) => `${p.full_name || "Member"} (${human(p.response)})`).join(", ")}
-                    </p>
+                    <ul className="mt-1 flex flex-wrap gap-2 text-sm text-slate-500">
+                      {m.participants.map((p) => (
+                        <li key={p.user_id}>
+                          {p.full_name || "Member"} ({human(p.response)})
+                          {mine && ["UPCOMING", "JOINABLE"].includes(m.phase) && (
+                            <button
+                              className="ml-1 text-xs text-red-600 underline"
+                              aria-label={`Remove ${p.full_name || "member"} from ${m.title}`}
+                              onClick={() =>
+                                act(
+                                  () => api.delete(`/meetings/${m.id}/participants/${p.user_id}`),
+                                  "Participant removed.",
+                                )
+                              }
+                            >
+                              remove
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                     {m.agenda && <p className="mt-2 whitespace-pre-line text-sm">{m.agenda}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1037,6 +1055,7 @@ interface ChannelRow {
   topic: string | null;
   owner_id: string;
   muted: boolean;
+  notify_level: "ALL" | "MENTIONS" | "NOTHING";
   unread: number;
 }
 interface ChannelMsg {
@@ -1167,6 +1186,20 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
               Back to channel
             </Btn>
           )}
+          <select
+            aria-label="Notify me about"
+            className="rounded-lg border border-slate-200 px-2 text-sm"
+            value={channel.notify_level}
+            disabled={channel.muted}
+            onChange={async (e) => {
+              await api.post(`/channels/${channel.id}/notifications`, { level: e.target.value }).catch(() => undefined);
+              onRead();
+            }}
+          >
+            <option value="ALL">All new posts</option>
+            <option value="MENTIONS">Just mentions</option>
+            <option value="NOTHING">Nothing</option>
+          </select>
           <Btn sm v="ghost" onClick={mute}>
             {channel.muted ? "Unmute" : "Mute"}
           </Btn>

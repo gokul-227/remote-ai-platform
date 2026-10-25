@@ -51,6 +51,8 @@ class ChannelMember(Base):
     # False = left/removed (GROUP), kept so unread state survives a re-add.
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     muted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # ALL (every top-level message), MENTIONS (default) or NOTHING. Muted means NOTHING.
+    notify_level: Mapped[str] = mapped_column(String(10), default="MENTIONS", server_default="MENTIONS", nullable=False)
     last_read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

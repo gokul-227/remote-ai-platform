@@ -672,7 +672,7 @@ async def create_task(
     task = ProjectTask(**data.model_dump())
     db.add(task)
     await db.flush()
-    db.add(TaskWatcher(task_id=task.id, user_id=current_user.id))
+    await _watch(db, task.id, current_user.id)
     await record_activity(db, project.id, current_user.id, "TASK_CREATED", {"title": task.title})
     return task
 
@@ -1475,16 +1475,28 @@ async def update_task(
     await record_activity(
         db, project.id, current_user.id, "TASK_UPDATED", {"task_id": str(task.id), **jsonable_encoder(updates)}
     )
-    watcher_ids = (
-        await db.execute(select(TaskWatcher.user_id).where(TaskWatcher.task_id == task.id))
-    ).scalars()
-    for watcher_id in watcher_ids:
-        if watcher_id != current_user.id:
-            await notify_user(
-                db, watcher_id, "Work item updated",
-                f"“{task.title}” changed: {', '.join(sorted(updates)) or 'details'}.", "project",
-            )
+    await _notify_watchers(
+        db, task, current_user, "Work item updated", f"“{task.title}” changed: {', '.join(sorted(updates)) or 'details'}."
+    )
+    await _watch(db, task.id, current_user.id)
     return task
+
+
+async def _watch(db: AsyncSession, task_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    """Make `user_id` a watcher (idempotent): people who create, update or comment watch the item."""
+    exists = await db.scalar(
+        select(TaskWatcher.id).where(TaskWatcher.task_id == task_id, TaskWatcher.user_id == user_id)
+    )
+    if exists is None:
+        db.add(TaskWatcher(task_id=task_id, user_id=user_id))
+        await db.flush()
+
+
+async def _notify_watchers(db: AsyncSession, task: ProjectTask, actor: User, title: str, body: str) -> None:
+    ids = (await db.execute(select(TaskWatcher.user_id).where(TaskWatcher.task_id == task.id))).scalars().all()
+    for watcher_id in ids:
+        if watcher_id != actor.id:
+            await notify_user(db, watcher_id, title, body, "project")
 
 
 async def _depends_on(db: AsyncSession, start: uuid.UUID, target: uuid.UUID) -> bool:
@@ -1600,6 +1612,10 @@ async def add_task_comment(
     await record_activity(
         db, project.id, current_user.id, "TASK_COMMENTED", {"task_id": str(task.id)}
     )
+    await _notify_watchers(
+        db, task, current_user, "New comment", f"{current_user.full_name or 'Someone'} commented on “{task.title}”."
+    )
+    await _watch(db, task.id, current_user.id)
     return comment
 
 

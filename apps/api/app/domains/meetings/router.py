@@ -8,12 +8,14 @@ work with the organiser (an accepted connection or a shared contract), and
 blocked pairs can never be invited.
 """
 
+import json
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -23,10 +25,13 @@ from app.domains.contracts.lifecycle import party_of
 from app.domains.contracts.models import Contract
 from app.domains.meetings.models import Meeting, MeetingParticipant
 from app.domains.meetings.schemas import (
+    MAX_PARTICIPANTS,
     JoinLink,
     MeetingCreate,
+    MeetingReschedule,
     MeetingRespond,
     MeetingResponse,
+    ParticipantIn,
     ParticipantOut,
 )
 from app.domains.network.models import Connection, UserBlock
@@ -246,4 +251,89 @@ async def join_meeting(
         raise HTTPException(status.HTTP_409_CONFLICT, "This meeting has ended")
     if phase == "UPCOMING":
         raise HTTPException(status.HTTP_409_CONFLICT, "You can join from 15 minutes before the start")
-    return JoinLink(url=m.join_url, provider=m.provider)
+    url = m.join_url
+    if m.provider == "JITSI" and current_user.full_name:
+        # Jitsi reads URL-fragment config, so the participant arrives with their
+        # own name; the fragment never reaches a server log.
+        url = f"{url}#userInfo.displayName={quote(json.dumps(current_user.full_name[:60]))}"
+    return JoinLink(url=url, provider=m.provider)
+
+
+async def _organiser_meeting(db: AsyncSession, meeting_id: uuid.UUID, user: User) -> Meeting:
+    m, _ = await _visible_meeting(db, meeting_id, user)
+    if m.organizer_id != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the organiser can change this meeting")
+    if _phase(m, datetime.now(UTC)) in {"CANCELLED", "ENDED"}:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This meeting is no longer open")
+    return m
+
+
+@router.patch("/{meeting_id}", response_model=MeetingResponse)
+async def reschedule_meeting(
+    meeting_id: uuid.UUID,
+    payload: MeetingReschedule,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingResponse:
+    m = await _organiser_meeting(db, meeting_id, current_user)
+    m.starts_at, m.ends_at = payload.starts_at, payload.ends_at
+    rows = (await db.execute(select(MeetingParticipant).where(MeetingParticipant.meeting_id == m.id))).scalars()
+    for p in rows:
+        # A new time needs a new answer.
+        p.response = "INVITED"
+        await notify_user(db, p.user_id, "Meeting rescheduled", f"“{m.title}” moved to {m.starts_at:%Y-%m-%d %H:%M} UTC.", "meeting")
+    await db.flush()
+    return await _build(db, m)
+
+
+@router.post("/{meeting_id}/participants", response_model=MeetingResponse)
+async def add_participant(
+    meeting_id: uuid.UUID,
+    payload: ParticipantIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingResponse:
+    m = await _organiser_meeting(db, meeting_id, current_user)
+    contract = await db.get(Contract, m.contract_id) if m.contract_id else None
+    user = await db.get(User, payload.user_id)
+    if (
+        payload.user_id == current_user.id
+        or user is None
+        or not user.is_active
+        or not await may_invite(db, current_user.id, payload.user_id, contract)
+    ):
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "You can only invite people you are connected with or share a contract with",
+        )
+    count = await db.scalar(
+        select(func.count()).select_from(MeetingParticipant).where(MeetingParticipant.meeting_id == m.id)
+    )
+    if (count or 0) >= MAX_PARTICIPANTS:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This meeting is full")
+    exists = await db.scalar(
+        select(MeetingParticipant).where(MeetingParticipant.meeting_id == m.id, MeetingParticipant.user_id == payload.user_id)
+    )
+    if exists is None:
+        db.add(MeetingParticipant(meeting_id=m.id, user_id=payload.user_id))
+        await notify_user(db, payload.user_id, "Meeting invitation", f"You were invited to “{m.title}”.", "meeting")
+        await db.flush()
+    return await _build(db, m)
+
+
+@router.delete("/{meeting_id}/participants/{user_id}", response_model=MeetingResponse)
+async def remove_participant(
+    meeting_id: uuid.UUID,
+    user_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MeetingResponse:
+    m = await _organiser_meeting(db, meeting_id, current_user)
+    row = await db.scalar(
+        select(MeetingParticipant).where(MeetingParticipant.meeting_id == m.id, MeetingParticipant.user_id == user_id)
+    )
+    if row is not None:
+        await db.delete(row)
+        await notify_user(db, user_id, "Removed from meeting", f"You are no longer invited to “{m.title}”.", "meeting")
+        await db.flush()
+    return await _build(db, m)

@@ -221,7 +221,15 @@ export function Applications() {
     company: a.job.company_name || "Company",
     status: a.application.status,
     note: a.application.cover_note || "",
+    expires: a.application.invite_expires_at as string | null,
   }));
+  const [declining, setDeclining] = useState<any>(null);
+  const [declineReason, setDeclineReason] = useState("NOT_INTERESTED");
+  const [revising, setRevising] = useState<any>(null);
+  const [revision, setRevision] = useState("");
+  // Read the clock once per mount so rendering stays pure.
+  const [now] = useState(() => Date.now());
+  const expired = (x: any) => !!x.expires && new Date(x.expires).getTime() < now;
   const [selected, setSelected] = useState<any>(null);
   const [withdraw, setWithdraw] = useState<any>(null);
   const [err, setErr] = useState("");
@@ -274,15 +282,29 @@ export function Applications() {
                   Withdraw
                 </Btn>
               )}
-              {x.status === "INVITED" && (
+              {["SUBMITTED", "APPLIED"].includes(x.status) && (
+                <Btn
+                  v="gray"
+                  onClick={() => {
+                    setRevision(x.note);
+                    setRevising(x);
+                  }}
+                >
+                  Edit proposal
+                </Btn>
+              )}
+              {x.status === "INVITED" && expired(x) && <Tag t="gray">Invitation expired</Tag>}
+              {x.status === "INVITED" && !expired(x) && (
                 <>
+                  {x.expires && (
+                    <span className="text-xs text-slate-500">
+                      Open until {new Date(x.expires).toLocaleDateString()}
+                    </span>
+                  )}
                   <Btn onClick={() => act(() => api.patch(`/applications/${x.id}/respond`, { accept: true }))}>
                     Accept invitation
                   </Btn>
-                  <Btn
-                    v="gray"
-                    onClick={() => act(() => api.patch(`/applications/${x.id}/respond`, { accept: false }))}
-                  >
+                  <Btn v="gray" onClick={() => setDeclining(x)}>
                     Decline
                   </Btn>
                 </>
@@ -314,6 +336,57 @@ export function Applications() {
             </Btn>
           </>
         )}
+      </Modal>
+      <Modal open={!!declining} onClose={() => setDeclining(null)} title="Decline invitation">
+        <Field label="Reason (shared with the organisation)">
+          <select className={inputCls} value={declineReason} onChange={(e) => setDeclineReason(e.target.value)}>
+            <option value="NOT_INTERESTED">Not interested in this role</option>
+            <option value="NOT_AVAILABLE">Not available right now</option>
+            <option value="RATE_TOO_LOW">The budget doesn’t fit</option>
+            <option value="NOT_A_FIT">My skills aren’t a fit</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </Field>
+        <p className="mt-3 text-sm text-slate-500">Declining doesn’t stop you from receiving future invitations.</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Btn v="gray" onClick={() => setDeclining(null)}>
+            Cancel
+          </Btn>
+          <Btn
+            onClick={() => {
+              const d = declining;
+              setDeclining(null);
+              act(() => api.patch(`/applications/${d.id}/respond`, { accept: false, decline_reason: declineReason }));
+            }}
+          >
+            Decline
+          </Btn>
+        </div>
+      </Modal>
+      <Modal open={!!revising} onClose={() => setRevising(null)} title="Edit your proposal">
+        <Field label="Cover note">
+          <textarea
+            className={`${inputCls} h-40 py-2`}
+            value={revision}
+            maxLength={5000}
+            onChange={(e) => setRevision(e.target.value)}
+          />
+        </Field>
+        <p className="mt-2 text-sm text-slate-500">You can edit until the organisation starts reviewing it.</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Btn v="gray" onClick={() => setRevising(null)}>
+            Cancel
+          </Btn>
+          <Btn
+            onClick={() => {
+              const r = revising;
+              setRevising(null);
+              act(() => api.patch(`/applications/${r.id}/proposal`, { cover_note: revision }));
+            }}
+          >
+            Save proposal
+          </Btn>
+        </div>
       </Modal>
       <Modal open={!!withdraw} onClose={() => setWithdraw(null)} title="Withdraw application?">
         <p className="mb-5 text-slate-600">

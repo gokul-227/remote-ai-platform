@@ -2450,6 +2450,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/applications/{application_id}/proposal:
+    patch:
+      tags:
+      - Applications
+      summary: Revise Proposal
+      description: Revise the cover note while the organisation hasn't started reviewing it yet.
+      operationId: revise_proposal_api_v1_applications__application_id__proposal_patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Application Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalRevision'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/applications/{application_id}/cancel-invitation:
+    post:
+      tags:
+      - Applications
+      summary: Cancel Invitation
+      description: The organisation takes back an invitation that hasn't been answered.
+      operationId: cancel_invitation_api_v1_applications__application_id__cancel_invitation_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: application_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Application Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/applications/{application_id}/status:
     patch:
       tags:
@@ -4400,6 +4464,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/social/posts/{post_id}/reaction:
+    put:
+      tags:
+      - Social Feed
+      summary: Set or change my reaction to a post
+      description: 'Idempotent: repeating the same call changes nothing; another reaction replaces mine.'
+      operationId: set_reaction_api_v1_social_posts__post_id__reaction_put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Post Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReactionIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Set Reaction Api V1 Social Posts  Post Id  Reaction Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Social Feed
+      summary: Remove my reaction from a post
+      operationId: remove_reaction_api_v1_social_posts__post_id__reaction_delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Post Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Remove Reaction Api V1 Social Posts  Post Id  Reaction Delete
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/social/posts/{post_id}/like:
     post:
       tags:
@@ -5181,6 +5313,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Meetings
+      summary: Reschedule Meeting
+      operationId: reschedule_meeting_api_v1_meetings__meeting_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingReschedule'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/meetings/{meeting_id}/respond:
     post:
       tags:
@@ -5268,6 +5434,77 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JoinLink'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/participants:
+    post:
+      tags:
+      - Meetings
+      summary: Add Participant
+      operationId: add_participant_api_v1_meetings__meeting_id__participants_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/participants/{user_id}:
+    delete:
+      tags:
+      - Meetings
+      summary: Remove Participant
+      operationId: remove_participant_api_v1_meetings__meeting_id__participants__user_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
         '422':
           description: Validation Error
           content:
@@ -5907,6 +6144,41 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MuteIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/channels/{channel_id}/notifications:
+    post:
+      tags:
+      - Channels
+      summary: Set Notify Level
+      operationId: set_notify_level_api_v1_channels__channel_id__notifications_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotifyIn'
       responses:
         '200':
           description: Successful Response
@@ -7658,6 +7930,9 @@ components:
         muted:
           type: boolean
           title: Muted
+        notify_level:
+          type: string
+          title: Notify Level
         unread:
           type: integer
           title: Unread
@@ -7670,6 +7945,7 @@ components:
       - project_id
       - owner_id
       - muted
+      - notify_level
       - unread
       title: ChannelOut
     ChatIn:
@@ -9867,6 +10143,17 @@ components:
             maxLength: 2000
           - type: 'null'
           title: Note
+        decline_reason:
+          anyOf:
+          - type: string
+            enum:
+            - NOT_INTERESTED
+            - NOT_AVAILABLE
+            - RATE_TOO_LOW
+            - NOT_A_FIT
+            - OTHER
+          - type: 'null'
+          title: Decline Reason
       type: object
       required:
       - accept
@@ -10432,6 +10719,21 @@ components:
       - ends_at
       - participant_ids
       title: MeetingCreate
+    MeetingReschedule:
+      properties:
+        starts_at:
+          type: string
+          format: date-time
+          title: Starts At
+        ends_at:
+          type: string
+          format: date-time
+          title: Ends At
+      type: object
+      required:
+      - starts_at
+      - ends_at
+      title: MeetingReschedule
     MeetingRespond:
       properties:
         response:
@@ -10704,6 +11006,29 @@ components:
       required:
       - muted
       title: MuteIn
+    NotifyIn:
+      properties:
+        level:
+          type: string
+          enum:
+          - ALL
+          - MENTIONS
+          - NOTHING
+          title: Level
+      type: object
+      required:
+      - level
+      title: NotifyIn
+    ParticipantIn:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - user_id
+      title: ParticipantIn
     ParticipantOut:
       properties:
         user_id:
@@ -10964,6 +11289,16 @@ components:
           type: boolean
           title: Liked By Me
           default: false
+        my_reaction:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: My Reaction
+        reaction_counts:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Reaction Counts
         created_at:
           type: string
           format: date-time
@@ -11176,6 +11511,17 @@ components:
       required:
       - status
       title: ProjectStatusUpdate
+    ProposalRevision:
+      properties:
+        cover_note:
+          type: string
+          maxLength: 5000
+          minLength: 1
+          title: Cover Note
+      type: object
+      required:
+      - cover_note
+      title: ProposalRevision
     QualityIssue:
       properties:
         severity:
@@ -11193,6 +11539,21 @@ components:
       - category
       - description
       title: QualityIssue
+    ReactionIn:
+      properties:
+        reaction:
+          type: string
+          enum:
+          - LIKE
+          - CELEBRATE
+          - SUPPORT
+          - INSIGHTFUL
+          - CURIOUS
+          title: Reaction
+      type: object
+      required:
+      - reaction
+      title: ReactionIn
     ResumeUploadResponse:
       properties:
         resume_url:

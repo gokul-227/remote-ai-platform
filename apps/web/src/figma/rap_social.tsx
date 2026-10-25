@@ -6,6 +6,14 @@ import { useApi, timeAgo, goRoute, safeHref } from "./live";
 const go = (r: string) => {
   goRoute(r);
 };
+const REACTION_LABEL: Record<string, string> = {
+  LIKE: "Liked",
+  CELEBRATE: "Celebrate",
+  SUPPORT: "Support",
+  INSIGHTFUL: "Insightful",
+  CURIOUS: "Curious",
+};
+
 export function Feed() {
   /* Live: /social feed, likes, comments, posts, moderation reports */ const { user } = useAuth();
   const me = user?.full_name || "You";
@@ -39,6 +47,24 @@ export function Feed() {
       patch(p.id, { liked_by_me: r.data.liked, like_count: r.data.like_count });
     } catch (e) {
       fail(e, "Couldn't update your like.");
+    }
+  };
+  const react = async (p: any, reaction: string) => {
+    if (!user) {
+      go("login");
+      return;
+    }
+    try {
+      const r = reaction
+        ? await api.put(`/social/posts/${p.id}/reaction`, { reaction })
+        : await api.delete(`/social/posts/${p.id}/reaction`);
+      patch(p.id, {
+        my_reaction: r.data.my_reaction,
+        liked_by_me: !!r.data.my_reaction,
+        like_count: r.data.like_count,
+      });
+    } catch (e) {
+      fail(e, "Couldn't update your reaction.");
     }
   };
   const openComments = async (id: string) => {
@@ -247,8 +273,21 @@ export function Feed() {
                 )}
               >
                 <Ic n="thumb" s={19} />
-                {p.liked_by_me ? "Liked" : "Like"}
+                {p.liked_by_me ? (REACTION_LABEL[p.my_reaction] ?? "Liked") : "Like"}
               </button>
+              <select
+                aria-label="Choose a reaction"
+                value={p.my_reaction ?? ""}
+                onChange={(e) => react(p, e.target.value)}
+                className="rounded-lg bg-transparent px-1 text-sm text-slate-500 hover:bg-slate-100"
+              >
+                <option value="">React…</option>
+                {Object.entries(REACTION_LABEL).map(([k, label]) => (
+                  <option key={k} value={k}>
+                    {label}
+                  </option>
+                ))}
+              </select>
               <button
                 onClick={() => openComments(p.id)}
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 font-semibold text-sm text-slate-500 hover:bg-slate-100"

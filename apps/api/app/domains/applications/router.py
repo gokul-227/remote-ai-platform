@@ -1,8 +1,10 @@
 import uuid
+from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +33,25 @@ class ApplicationStatusUpdate(BaseModel):
 class InvitationResponse(BaseModel):
     accept: bool
     note: str | None = Field(None, max_length=2000)
+    decline_reason: Literal["NOT_INTERESTED", "NOT_AVAILABLE", "RATE_TOO_LOW", "NOT_A_FIT", "OTHER"] | None = None
+
+
+class ProposalRevision(BaseModel):
+    cover_note: str = Field(min_length=1, max_length=5000)
+
+
+INVITATION_TTL = timedelta(days=7)
+# Open invitations one job may have at a time, so a posting can't mass-invite.
+MAX_OPEN_INVITATIONS_PER_JOB = 50
+
+
+def _invitation_expired(application: JobApplication) -> bool:
+    expires = application.invite_expires_at
+    if expires is None:
+        return False
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=UTC)
+    return expires < datetime.now(UTC)
 
 
 APPLICATION_STATUSES = {
@@ -42,16 +63,19 @@ APPLICATION_STATUSES = {
     "WITHDRAWN",
     "INVITED",
     "APPLIED",
+    # The organisation took the invitation back before an answer.
+    "CANCELLED",
 }
 # Statuses an invitation may (re)open: not yet reviewed, or closed.
-REINVITABLE_STATUSES = {"SUBMITTED", "APPLIED", "REJECTED", "WITHDRAWN"}
+REINVITABLE_STATUSES = {"SUBMITTED", "APPLIED", "REJECTED", "WITHDRAWN", "CANCELLED"}
 ALLOWED_TRANSITIONS = {
     "SUBMITTED": {"REVIEWING", "WITHDRAWN"},
     "APPLIED": {"REVIEWING", "WITHDRAWN"},  # Legacy status retained for existing rows.
     "REVIEWING": {"SHORTLISTED", "REJECTED", "WITHDRAWN"},
     "SHORTLISTED": {"ACCEPTED", "REJECTED", "WITHDRAWN"},
-    "INVITED": {"REVIEWING", "ACCEPTED", "REJECTED", "WITHDRAWN"},
+    "INVITED": {"REVIEWING", "ACCEPTED", "REJECTED", "WITHDRAWN", "CANCELLED"},
     "ACCEPTED": set(),
+    "CANCELLED": set(),
     "REJECTED": set(),
     "WITHDRAWN": set(),
 }
@@ -219,6 +243,8 @@ async def invite_engineer(
     job = await db.scalar(stmt)
     if not job:
         raise HTTPException(status_code=404, detail="Company job not found")
+    if not job.is_active or job.expired_at is not None:
+        raise HTTPException(status_code=409, detail="This job is closed; reopen it before inviting")
     engineer_profile = await db.get(EngineerProfile, engineer_id)
     target_user_id = engineer_profile.user_id if engineer_profile else engineer_id
     target_user = await db.get(User, target_user_id)
@@ -229,15 +255,32 @@ async def invite_engineer(
             JobApplication.user_id == target_user_id, JobApplication.job_id == job_id
         )
     )
-    if existing and existing.status not in REINVITABLE_STATUSES:
+    reopenable = existing is not None and existing.status == "INVITED" and _invitation_expired(existing)
+    if existing and existing.status not in REINVITABLE_STATUSES and not reopenable:
         # Already under review, shortlisted, accepted or invited — don't
         # silently reset the candidate's progress back to INVITED.
         return existing
+    open_invites = await db.scalar(
+        select(func.count()).select_from(JobApplication).where(
+            JobApplication.job_id == job_id,
+            JobApplication.status == "INVITED",
+            JobApplication.invite_expires_at > datetime.now(UTC),
+        )
+    )
+    if (open_invites or 0) >= MAX_OPEN_INVITATIONS_PER_JOB:
+        raise HTTPException(
+            status_code=429, detail="This job has too many open invitations; wait for answers or cancel some"
+        )
+    expires = datetime.now(UTC) + INVITATION_TTL
     if existing:
         existing.status = "INVITED"
+        existing.invite_expires_at = expires
+        existing.decline_reason = None
         application = existing
     else:
-        application = JobApplication(user_id=target_user_id, job_id=job_id, status="INVITED")
+        application = JobApplication(
+            user_id=target_user_id, job_id=job_id, status="INVITED", invite_expires_at=expires
+        )
         db.add(application)
     await db.flush()
     await notify(
@@ -268,7 +311,14 @@ async def respond_to_invitation(
         raise HTTPException(status_code=404, detail="Application not found")
     if application.status != "INVITED":
         raise HTTPException(status_code=409, detail="Only open invitations can be answered")
+    if _invitation_expired(application):
+        raise HTTPException(status_code=409, detail="This invitation has expired")
+    job_now = await db.get(JobPost, application.job_id)
+    if data.accept and (job_now is None or not job_now.is_active or job_now.expired_at is not None):
+        raise HTTPException(status_code=409, detail="This job is no longer accepting applications")
     application.status = "REVIEWING" if data.accept else "WITHDRAWN"
+    if not data.accept:
+        application.decline_reason = data.decline_reason or "OTHER"
     if data.accept and data.note:
         application.cover_note = data.note
     job = await db.get(JobPost, application.job_id)
@@ -282,6 +332,53 @@ async def respond_to_invitation(
             f" for {job.title if job else 'your job'}.",
             "application_update",
         )
+    await db.flush()
+    return application
+
+
+@router.patch("/{application_id}/proposal")
+async def revise_proposal(
+    application_id: uuid.UUID,
+    data: ProposalRevision,
+    current_user: User = Depends(require_role(UserRole.ENGINEER)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revise the cover note while the organisation hasn't started reviewing it yet."""
+    application = await db.get(JobApplication, application_id)
+    if not application or application.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if application.status not in {"SUBMITTED", "APPLIED"}:
+        raise HTTPException(
+            status_code=409, detail="This proposal is already under review; withdraw it to change it"
+        )
+    application.cover_note = data.cover_note
+    application.revised_at = datetime.now(UTC)
+    await db.flush()
+    return application
+
+
+@router.post("/{application_id}/cancel-invitation")
+async def cancel_invitation(
+    application_id: uuid.UUID,
+    current_user: User = Depends(require_role(UserRole.COMPANY, UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """The organisation takes back an invitation that hasn't been answered."""
+    application = await db.get(JobApplication, application_id)
+    job = await db.get(JobPost, application.job_id) if application else None
+    if not application or not job:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if current_user.role != UserRole.ADMIN:
+        company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == current_user.id))
+        if not company or job.company_id != company.id:
+            raise HTTPException(status_code=404, detail="Application not found")
+    if application.status != "INVITED":
+        raise HTTPException(status_code=409, detail="Only an unanswered invitation can be cancelled")
+    application.status = "CANCELLED"
+    await notify(
+        db, application.user_id, "Invitation withdrawn",
+        f"{job.company_name or 'The organisation'} withdrew its invitation for {job.title}.", "application_update",
+    )
     await db.flush()
     return application
 

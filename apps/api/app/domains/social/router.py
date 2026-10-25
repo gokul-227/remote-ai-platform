@@ -9,7 +9,7 @@ can be introduced later via the feed algorithm abstraction.
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,7 @@ from app.domains.social.schemas import (
     PostCreate,
     PostResponse,
     PostUpdate,
+    ReactionIn,
 )
 
 router = APIRouter(prefix="/social", tags=["Social Feed"])
@@ -92,12 +93,22 @@ async def _enrich_posts(
 
     # Fetch likes by current user for these posts
     liked_result = await db.execute(
-        select(PostLike.post_id).where(
+        select(PostLike.post_id, PostLike.reaction).where(
             PostLike.post_id.in_(post_ids),
             PostLike.user_id == current_user_id,
         )
     )
-    liked_set = set(liked_result.scalars().all())
+    mine = dict(liked_result.tuples().all())
+    liked_set = set(mine)
+    counts: dict[uuid.UUID, dict[str, int]] = {}
+    for pid, reaction, n in (
+        await db.execute(
+            select(PostLike.post_id, PostLike.reaction, func.count())
+            .where(PostLike.post_id.in_(post_ids))
+            .group_by(PostLike.post_id, PostLike.reaction)
+        )
+    ).all():
+        counts.setdefault(pid, {})[reaction] = n
 
     enriched = []
     for post in posts:
@@ -115,6 +126,8 @@ async def _enrich_posts(
                 like_count=post.like_count,
                 comment_count=post.comment_count,
                 liked_by_me=post.id in liked_set,
+                my_reaction=mine.get(post.id),
+                reaction_counts=counts.get(post.id, {}),
                 created_at=post.created_at,
                 updated_at=post.updated_at,
             )
@@ -320,6 +333,53 @@ async def delete_post(
 
 
 # ── Likes ──────────────────────────────────────────────────────────────────────
+
+
+@router.put("/posts/{post_id}/reaction", summary="Set or change my reaction to a post")
+async def set_reaction(
+    post_id: uuid.UUID,
+    body: ReactionIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Idempotent: repeating the same call changes nothing; another reaction replaces mine."""
+    post = await _get_visible_post_or_404(post_id, current_user.id, db)
+    existing = await db.scalar(
+        select(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == current_user.id)
+    )
+    if existing:
+        existing.reaction = body.reaction
+    else:
+        try:
+            async with db.begin_nested():
+                db.add(PostLike(post_id=post_id, user_id=current_user.id, reaction=body.reaction))
+            await db.execute(update(Post).where(Post.id == post_id).values(like_count=Post.like_count + 1))
+        except IntegrityError:
+            # A concurrent request from this person created the row; just set the type.
+            await db.execute(
+                update(PostLike)
+                .where(PostLike.post_id == post_id, PostLike.user_id == current_user.id)
+                .values(reaction=body.reaction)
+            )
+    await db.flush()
+    await db.refresh(post, ["like_count"])
+    return {"my_reaction": body.reaction, "like_count": max(post.like_count, 0)}
+
+
+@router.delete("/posts/{post_id}/reaction", summary="Remove my reaction from a post")
+async def remove_reaction(
+    post_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    post = await _get_visible_post_or_404(post_id, current_user.id, db)
+    result = await db.execute(
+        delete(PostLike).where(PostLike.post_id == post_id, PostLike.user_id == current_user.id)
+    )
+    if result.rowcount:  # type: ignore[attr-defined]
+        await db.execute(update(Post).where(Post.id == post_id).values(like_count=Post.like_count - 1))
+    await db.refresh(post, ["like_count"])
+    return {"my_reaction": None, "like_count": max(post.like_count, 0)}
 
 
 @router.post("/posts/{post_id}/like", summary="Toggle like on a post")

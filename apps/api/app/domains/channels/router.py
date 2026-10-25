@@ -54,6 +54,10 @@ class MuteIn(BaseModel):
     muted: bool
 
 
+class NotifyIn(BaseModel):
+    level: Literal["ALL", "MENTIONS", "NOTHING"]
+
+
 class ChannelOut(BaseModel):
     id: uuid.UUID
     kind: str
@@ -62,6 +66,7 @@ class ChannelOut(BaseModel):
     project_id: uuid.UUID | None
     owner_id: uuid.UUID
     muted: bool
+    notify_level: str
     unread: int
 
 
@@ -125,6 +130,7 @@ async def _out(db: AsyncSession, ch: Channel, user: User) -> ChannelOut:
     return ChannelOut(
         id=ch.id, kind=ch.kind, name=ch.name, topic=ch.topic, project_id=ch.project_id, owner_id=ch.owner_id,
         muted=bool(row and row.muted),
+        notify_level=row.notify_level if row else "MENTIONS",
         unread=await _unread(db, ch, row.last_read_at if row else None, user.id),
     )
 
@@ -280,8 +286,22 @@ async def post_message(
     # Sending marks the channel read for the sender.
     (await _member_row(db, ch, current_user.id)).last_read_at = msg.created_at
     await db.flush()
+    # Muted channels and NOTHING suppress everything, mentions included; ALL also
+    # hears about new top-level messages (thread replies only notify mentions).
+    prefs = {
+        m.user_id: ("NOTHING" if m.muted else m.notify_level)
+        for m in (await db.execute(select(ChannelMember).where(ChannelMember.channel_id == ch.id))).scalars()
+    }
+    preview = f"{current_user.full_name or 'Someone'}: {payload.body[:140]}"
     for uid in mentioned:
-        await notify_user(db, uid, f"Mentioned in #{ch.name}", f"{current_user.full_name or 'Someone'}: {payload.body[:140]}", "channel")
+        if prefs.get(uid, "MENTIONS") != "NOTHING":
+            await notify_user(db, uid, f"Mentioned in #{ch.name}", preview, "channel")
+    if payload.parent_id is None:
+        for uid, level in prefs.items():
+            if level == "ALL" and uid != current_user.id and uid not in mentioned:
+                member = await db.get(User, uid)
+                if member is not None and await _has_access(db, ch, member):
+                    await notify_user(db, uid, f"New in #{ch.name}", preview, "channel")
     return (await _messages_out(db, [msg]))[0]
 
 
@@ -299,6 +319,16 @@ async def set_mute(
 ) -> ChannelOut:
     ch = await _channel(db, channel_id, current_user)
     (await _member_row(db, ch, current_user.id)).muted = payload.muted
+    await db.flush()
+    return await _out(db, ch, current_user)
+
+
+@router.post("/{channel_id}/notifications", response_model=ChannelOut)
+async def set_notify_level(
+    channel_id: uuid.UUID, payload: NotifyIn, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> ChannelOut:
+    ch = await _channel(db, channel_id, current_user)
+    (await _member_row(db, ch, current_user.id)).notify_level = payload.level
     await db.flush()
     return await _out(db, ch, current_user)
 
