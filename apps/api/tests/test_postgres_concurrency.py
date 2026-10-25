@@ -208,3 +208,37 @@ async def test_concurrent_email_dispatchers_send_each_email_once(sessions, monke
             select(EmailOutbox.status).where(EmailOutbox.event_key.like(f"{prefix}-%"))
         )).scalars().all()
     assert statuses == ["SENT"] * 10
+
+
+async def test_assistant_action_confirmed_twice_at_once_runs_once(sessions):
+    """Two simultaneous confirms of one pending action execute it exactly once."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.domains.assistant.models import AssistantAction
+    from app.domains.assistant.router import confirm_action
+    from app.domains.auth.models import User, UserRole
+    from app.domains.support.models import SupportTicket
+
+    async with sessions() as db:
+        user = User(email=f"pg-as-{uuid.uuid4().hex[:8]}@example.com", full_name="A", role=UserRole.ENGINEER, is_active=True)
+        db.add(user)
+        await db.flush()
+        action = AssistantAction(
+            user_id=user.id, tool="open_support_ticket",
+            args={"subject": "Help please", "category": "OTHER", "body": "x"},
+            summary="Open ticket", expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        )
+        db.add(action)
+        await db.commit()
+        user_id, action_id = user.id, action.id
+
+    async def confirm():
+        async with sessions() as db:
+            me = await db.get(User, user_id)
+            return await _request(sessions, lambda db: confirm_action(action_id, current_user=me, db=db))
+
+    results = await asyncio.gather(confirm(), confirm())
+    assert len(results) == 2
+    async with sessions() as db:
+        n = await db.scalar(select(func.count()).select_from(SupportTicket).where(SupportTicket.requester_id == user_id))
+    assert n == 1

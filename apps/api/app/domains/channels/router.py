@@ -14,6 +14,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -262,7 +263,20 @@ async def post_message(
         channel_id=ch.id, author_id=current_user.id, parent_id=payload.parent_id, body=payload.body,
         mentions=[str(u) for u in mentioned], client_token=payload.client_token, created_at=_now(),
     )
-    db.add(msg)
+    try:
+        async with db.begin_nested():
+            db.add(msg)
+            await db.flush()
+    except IntegrityError:
+        # A concurrent retry with the same client_token won the insert.
+        existing = await db.scalar(
+            select(ChannelMessage).where(
+                ChannelMessage.author_id == current_user.id, ChannelMessage.client_token == payload.client_token
+            )
+        )
+        if existing is None:
+            raise
+        return (await _messages_out(db, [existing]))[0]
     # Sending marks the channel read for the sender.
     (await _member_row(db, ch, current_user.id)).last_read_at = msg.created_at
     await db.flush()

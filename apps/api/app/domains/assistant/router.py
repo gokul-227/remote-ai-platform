@@ -15,6 +15,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.llm_client import AIProviderError, AIQuotaExceededError
@@ -138,6 +139,19 @@ async def confirm_action(
     expires = action.expires_at if action.expires_at.tzinfo else action.expires_at.replace(tzinfo=UTC)
     if expires < _now():
         raise HTTPException(status.HTTP_409_CONFLICT, "This confirmation expired; ask the assistant again")
+    # Claim the action atomically: of two simultaneous confirms only one sees
+    # PENDING here (the other waits on the row lock, then matches nothing).
+    claimed = await db.execute(
+        update(AssistantAction)
+        .where(AssistantAction.id == action.id, AssistantAction.status == "PENDING")
+        .values(status="EXECUTING")
+        .execution_options(synchronize_session=False)
+    )
+    if claimed.rowcount != 1:  # type: ignore[attr-defined]
+        await db.refresh(action)
+        if action.status == "EXECUTING":
+            raise HTTPException(status.HTTP_409_CONFLICT, "This action is already running")
+        return ActionOut(id=action.id, tool=action.tool, status=action.status, result=action.result)
     tool = TOOLS[action.tool]
     result = await execute(tool, validate_args(tool, action.args), current_user, db)
     action.status = "EXECUTED" if result.get("ok") else "FAILED"
