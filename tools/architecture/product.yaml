@@ -41,7 +41,7 @@ features:
     step: 3
     personas: [visitor, professional]
     screens: [jobs, jobdetail, saved, search, companies, company]
-    api: [jobs, saved_jobs, search]
+    api: [jobs, saved_jobs, search, seo]
     uses: [job-boards, redis]
   - id: matching
     icon: concepts/sparkles

@@ -8750,6 +8750,83 @@ paths:
                 title: Response Platform Usage Api V1 Admin Usage Get
       security:
       - HTTPBearer: []
+  /api/v1/public/posts/{post_id}:
+    get:
+      tags:
+      - Public pages
+      summary: Public Post
+      operationId: public_post_api_v1_public_posts__post_id__get
+      parameters:
+      - name: post_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Post Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicPost'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/public/sitemap-entries:
+    get:
+      tags:
+      - Public pages
+      summary: Sitemap Entries
+      operationId: sitemap_entries_api_v1_public_sitemap_entries_get
+      parameters:
+      - name: kind
+        in: query
+        required: true
+        schema:
+          enum:
+          - people
+          - companies
+          - posts
+          type: string
+          title: Kind
+      - name: skip
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Skip
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
+          minimum: 1
+          default: 5000
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SitemapEntry'
+                title: Response Sitemap Entries Api V1 Public Sitemap Entries Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AIUsageStatsResponse:
@@ -13208,6 +13285,70 @@ components:
       required:
       - cover_note
       title: ProposalRevision
+    PublicAuthor:
+      properties:
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        headline:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Headline
+        profile_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Profile Id
+      type: object
+      required:
+      - name
+      title: PublicAuthor
+    PublicPost:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        content:
+          type: string
+          title: Content
+        image_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image Url
+        link_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Link Url
+        like_count:
+          type: integer
+          title: Like Count
+        comment_count:
+          type: integer
+          title: Comment Count
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        author:
+          $ref: '#/components/schemas/PublicAuthor'
+      type: object
+      required:
+      - id
+      - content
+      - image_url
+      - link_url
+      - like_count
+      - comment_count
+      - created_at
+      - author
+      title: PublicPost
     QualityIssue:
       properties:
         severity:
@@ -13413,6 +13554,21 @@ components:
       required:
       - kind
       title: SignalIn
+    SitemapEntry:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - updated_at
+      title: SitemapEntry
     SkillCount:
       properties:
         skill:

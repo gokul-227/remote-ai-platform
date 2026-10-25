@@ -107,6 +107,8 @@ features:
     prefix: /api/v1/saved-jobs
   - domain: search
     prefix: /api/v1/search
+  - domain: seo
+    prefix: /api/v1/public
   uses:
   - id: job-boards
     name: Job boards
@@ -467,6 +469,8 @@ api:
     prefix: /saved-jobs
   - domain: search
     prefix: /search
+  - domain: seo
+    prefix: /public
   - domain: social
     prefix: /social
   - domain: support
