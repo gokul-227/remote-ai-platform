@@ -257,10 +257,16 @@ async def top_up_jobs(target: int = 540) -> None:
 
     async def owner(i: int) -> dict | None:
         email = f"user{i:04d}@example.com"
-        async with httpx.AsyncClient(timeout=30) as a:
-            await a.post(f"{AUTH}/otp", json={"email": email, "create_user": False})
-            r = await a.post(f"{AUTH}/verify", json={"email": email, "token": CODE, "type": "email"})
-        if r.status_code != 200:
+        r = None
+        async with auth_sem, httpx.AsyncClient(timeout=30) as a:
+            for attempt in range(5):
+                try:
+                    await a.post(f"{AUTH}/otp", json={"email": email, "create_user": False})
+                    r = await a.post(f"{AUTH}/verify", json={"email": email, "token": CODE, "type": "email"})
+                    break
+                except httpx.HTTPError:
+                    await asyncio.sleep(1 + attempt)
+        if r is None or r.status_code != 200:
             return None
         c = httpx.AsyncClient(base_url=API, timeout=240, headers={"Authorization": f"Bearer {r.json()['access_token']}"})
         return {"c": c, "id": "", "name": email, "role": rnd.choice(list(ROLES)), "skills": []}
