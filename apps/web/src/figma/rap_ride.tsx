@@ -171,8 +171,7 @@ export function Ride() {
             <>
               <h1 className="text-[32px] font-bold leading-9 text-slate-900">Hire a professional</h1>
               <p className="mt-3 text-sm text-slate-600">
-                Instant hiring is for company workspaces. Switch to your company workspace from the account menu to
-                request a professional.
+                Sign in to match with available professionals and send them an offer.
               </p>
             </>
           ) : step === 0 ? (

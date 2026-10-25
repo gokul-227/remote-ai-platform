@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Ic, Brand, cx, inputCls } from "./rap_kit";
+import { Ic, Brand, inputCls } from "./rap_kit";
 import {
   supabase,
   fetchBackendUser,

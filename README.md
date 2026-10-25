@@ -5,11 +5,18 @@
 [![Production canary](https://github.com/gokul-227/remote-ai-platform/actions/workflows/production-canary.yml/badge.svg)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/production-canary.yml)
 ![License: proprietary](https://img.shields.io/badge/license-proprietary-red)
 
-A remote-work marketplace for professionals and organisations: discover remote jobs, build a profile
-(optionally from a resume, with AI help), apply, get matched with explainable scores, message, and run
-contracted work — all on free-tier infrastructure.
+A remote-work platform with one account type: every member can find jobs and freelance work, hire, build a
+profile (optionally from a resume, with AI help), get matched with explainable scores, chat in direct messages,
+channels and communities, hold meetings and calls, plan projects on boards and sprints, write documents,
+spreadsheets and presentations, connect GitHub, browse demos in an in-app browser, and ask an AI assistant that
+can act across the product after confirmation — all on free-tier infrastructure.
 
-Live: <https://remoteaiplatform.com> · Contact: <contact@remoteaiplatform.com>
+| Environment | Product | Staff console |
+| --- | --- | --- |
+| Production | <https://remoteaiplatform.com> | <https://admin.remoteaiplatform.com> |
+| Development | <https://dev.remoteaiplatform.com> | <https://dev.admin.remoteaiplatform.com> |
+
+Contact: <contact@remoteaiplatform.com>
 
 ## Architecture
 
@@ -28,9 +35,15 @@ from the web app's routes, the API's routers and the user roles:
 [Open the editable draw.io diagram](docs/architecture/product.drawio) · model: [`product.yaml`](docs/architecture/product.yaml)
 
 - **apps/web** — Next.js 16 / React 19. The product UI is a client-rendered, hash-routed app in
-  `src/figma/*` (derived from the Figma design) inside a thin Next.js shell. Resource URLs are shareable
+  `src/figma/*` (derived from the Figma design) inside a thin Next.js shell. Navigation has seven sections
+  (Home, Network, Collaboration, Jobs, Freelancing, Projects, Account): the top-left menu lists them all and
+  the sidebar shows only the section in use; messages and notifications open from the top bar and the AI
+  assistant from the bottom-right. Resource URLs are shareable
   (`/#jobdetail/<id>`, `/#engineer/<id>`, …). Public job pages are server-rendered at `/jobs/<id>` (title,
   canonical, Open Graph), with a sitemap and real 404s; only production is indexable.
+- **apps/admin** — the staff console, a separate static Next.js export (eight sections: Dashboard, User
+  Management, Trust & Safety, Marketplace, Customer Support, AI & Automation, Platform Configuration,
+  Compliance & Audit). The API enforces the ADMIN role on every staff endpoint; the hostname is not a boundary.
 - **apps/api** — FastAPI modular monolith (`app/domains/*`: auth, engineers, companies, jobs, applications,
   matching, network/messaging, social, groups, projects, contracts, payments, trust, moderation, admin …).
   Async SQLAlchemy 2 + Alembic.

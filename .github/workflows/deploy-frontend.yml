@@ -210,23 +210,18 @@ jobs:
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           SERVICE_ID: ${{ vars.RENDER_SERVICE_ID_PROD }}
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          if [ -n "${RENDER_API_KEY:-}" ] && [ -n "${SERVICE_ID:-}" ]; then
-            code=$(curl -s -o deploy.json -w "%{http_code}" --max-time 60 -X POST \
-              "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
-              -H "Authorization: Bearer $RENDER_API_KEY" -H "Content-Type: application/json" \
-              -d "{\"commitId\":\"$SHA\"}")
-            python3 -c "import json; d=json.load(open('deploy.json')); print('Render deploy', d.get('id'), d.get('status'))" || true
-            [ "$code" = "201" ] || { echo "::error::Render API answered $code"; exit 1; }
-          elif [ -n "${HOOK:-}" ]; then
-            case "$HOOK" in *\?*) sep="&" ;; *) sep="?" ;; esac
-            curl -sf --max-time 60 -X POST "${HOOK}${sep}ref=$SHA"
-          else
-            echo "::error::No RENDER_API_KEY + RENDER_SERVICE_ID_PROD or RENDER_DEPLOY_HOOK_PROD configured"; exit 1
+          if [ -z "${RENDER_API_KEY:-}" ] || [ -z "${SERVICE_ID:-}" ]; then
+            echo "::error::RENDER_API_KEY and RENDER_SERVICE_ID_PROD must be configured"; exit 1
           fi
+          code=$(curl -s -o deploy.json -w "%{http_code}" --max-time 60 -X POST \
+            "https://api.render.com/v1/services/$SERVICE_ID/deploys" \
+            -H "Authorization: Bearer $RENDER_API_KEY" -H "Content-Type: application/json" \
+            -d "{\"commitId\":\"$SHA\"}")
+          python3 -c "import json; d=json.load(open('deploy.json')); print('Render deploy', d.get('id'), d.get('status'))" || true
+          [ "$code" = "201" ] || { echo "::error::Render API answered $code"; exit 1; }
 
       - name: Wait for the new commit to actually be live
         # A plain "is /health up" check would pass instantly against the OLD
@@ -240,7 +235,7 @@ jobs:
         # check was first written and it never moved without a real deploy
         # actually changing it. Note: RENDER_GIT_COMMIT reflects the FULL
         # commit SHA Render checked out, which is this workflow's own
-        # head_sha because the hook above is called with ref=head_sha).
+        # head_sha because the deploy above requests commitId=head_sha).
         run: |
           expected_sha="${{ github.event.workflow_run.head_sha }}"
           echo "Waiting for backend to report git_sha ${expected_sha}..."

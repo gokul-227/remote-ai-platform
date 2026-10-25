@@ -4,15 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Remote AI Platform is a remote-work marketplace for professionals and organisations: it aggregates
-remote jobs from external boards, builds profiles (optionally AI-assisted from a resume), computes
-explainable matches, and supports applications, invitations, messaging, groups, projects and contracts.
-Personas — professional (role `ENGINEER` internally), organisation (`COMPANY`), admin — share one
-frontend and one API. User-facing copy says "professional", never "engineer".
+Remote AI Platform is a remote-work platform: it aggregates remote jobs from external boards, builds
+profiles (optionally AI-assisted from a resume), computes explainable matches, and supports applications,
+hiring, freelancing contracts, messaging, channels, communities, meetings and calls, project boards,
+documents/sheets/slides, GitHub, an in-app browser and an AI assistant. There is **one member account**:
+roles `ENGINEER` and `COMPANY` both mean "member" and pass the same gates (`require_role` treats them
+alike); ownership checks (`!= ADMIN`, `require_project_owner`) decide who may act on a resource. Staff
+(`ADMIN`) use the separate console in `apps/admin`. User-facing copy says "professional", never "engineer".
 
 Monorepo layout: npm workspaces (`apps/*`, `tests/*`) orchestrated by Turborepo.
 - `apps/api` — FastAPI backend (Python 3.11, async SQLAlchemy 2, Alembic, LiteLLM)
 - `apps/web` — Next.js 16 / React 19 frontend; the product UI lives in `apps/web/src/figma`
+- `apps/admin` — staff console (static Next.js export, deployed to admin./dev.admin.remoteaiplatform.com)
 - `tests/e2e` — Playwright journeys against an isolated stack + mock Supabase Auth
 - `infra/docker/docker-compose.yml` — local infra (Postgres, Redis, MinIO, API, web)
 
@@ -55,8 +58,11 @@ tokens (JWKS) in `app/domains/auth/dependencies.py` and never issues tokens; rol
 allowances (`app/services/ai/metering.py`). There is no background worker: resume parsing is inline with a
 time budget and job sync is `.github/workflows/scheduled-job-sync.yml`. Money movement is gated off
 (`MARKETPLACE_PAYMENTS_ENABLED`); contract/milestone state rules live in `app/domains/contracts/lifecycle.py`.
-The frontend is a hash-routed client app in `apps/web/src/figma` (routes in `App.tsx`, role-aware shell in
-`rap_shell.tsx`), styled via its own CSS/Tailwind utilities — not a component library.
+The frontend is a hash-routed client app in `apps/web/src/figma` (routes in `App.tsx`; the navigation
+catalog — seven sections and their groups — and the shell live in `rap_shell.tsx`), styled via its own
+CSS/Tailwind utilities — not a component library. A new screen needs a route in `App.tsx`, an entry in the
+catalog, a feature in `tools/architecture/product.yaml`, and (if the assistant should open it) an entry in
+`SCREENS` in `apps/api/app/domains/assistant/tools.py`.
 
 Conventions that tests enforce: AI calls reserve then settle quota (`services/ai/metering.py`); the data
 export is an explicit list (`auth/export.py`, a test fails for unclassified user-linked tables); deleting an
