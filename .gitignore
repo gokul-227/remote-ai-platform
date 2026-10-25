@@ -97,4 +97,4 @@ screenshot-pages/README.md
 .postman/
 postman/
 *.postman_collection.json
-*.postman_environment.json
+*.postman_environment.jsontools/local/.logs/
