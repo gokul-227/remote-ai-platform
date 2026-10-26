@@ -124,6 +124,72 @@ class JobRepository:
         await self.db.flush()
         return job, True
 
+    async def bulk_upsert_external_jobs(
+        self, jobs: list[JobPostCreate]
+    ) -> tuple[list[uuid.UUID], int]:
+        """PostgreSQL only: insert-or-update a batch of imported jobs in one statement
+        (keyed on external_id). Returns (ids of newly inserted jobs, number updated).
+        Same rules as upsert_external_job: a re-listed job is refreshed and un-expired."""
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+        now = datetime.now(UTC)
+        rows: dict[str, dict[str, Any]] = {}
+        for d in jobs:
+            if not d.external_id:
+                continue
+            rows[d.external_id] = {  # last one wins within a batch
+                "id": uuid.uuid4(),
+                "company_id": d.company_id,
+                "title": d.title,
+                "slug": f"{slugify(f'{d.title}-{d.company_name}')}-{uuid.uuid4().hex[:6]}",
+                "description": d.description,
+                "company_name": d.company_name,
+                "company_logo": d.company_logo,
+                "location": d.location,
+                "is_remote": d.is_remote,
+                "job_type": d.job_type,
+                "experience_level": d.experience_level,
+                "budget_min": d.budget_min,
+                "budget_max": d.budget_max,
+                "timeline": d.timeline,
+                "remote_preference": d.remote_preference,
+                "salary_min": d.salary_min,
+                "salary_max": d.salary_max,
+                "salary_period": d.salary_period,
+                "currency": d.currency,
+                "skills": d.skills,
+                "external_id": d.external_id,
+                "external_url": d.external_url,
+                "source": d.source,
+                "last_seen_at": now,
+            }
+        if not rows:
+            return [], 0
+        insert = pg_insert(JobPost).values(list(rows.values()))
+        ex = insert.excluded
+        stmt = insert.on_conflict_do_update(
+            index_elements=[JobPost.external_id],
+            set_={
+                "title": ex.title,
+                "description": ex.description,
+                "company_name": func.coalesce(ex.company_name, JobPost.company_name),
+                "company_logo": func.coalesce(ex.company_logo, JobPost.company_logo),
+                "location": ex.location,
+                "is_remote": ex.is_remote,
+                "skills": ex.skills,
+                "external_url": func.coalesce(ex.external_url, JobPost.external_url),
+                "salary_min": func.coalesce(ex.salary_min, JobPost.salary_min),
+                "salary_max": func.coalesce(ex.salary_max, JobPost.salary_max),
+                "salary_period": func.coalesce(ex.salary_period, JobPost.salary_period),
+                "last_seen_at": ex.last_seen_at,
+                "expired_at": None,
+                "updated_at": func.now(),
+            },
+        ).returning(JobPost.id, text("(xmax = 0) AS inserted"))
+        result = (await self.db.execute(stmt)).all()
+        inserted = [r[0] for r in result if r[1]]
+        return inserted, len(result) - len(inserted)
+
     async def expire_unseen_jobs(self, source: str) -> int:
         """Take this source's imported jobs off the public list when no sync has
         seen them among the source's recent listings for JOB_UNSEEN_EXPIRY_DAYS

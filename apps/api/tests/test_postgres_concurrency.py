@@ -242,3 +242,39 @@ async def test_assistant_action_confirmed_twice_at_once_runs_once(sessions):
     async with sessions() as db:
         n = await db.scalar(select(func.count()).select_from(SupportTicket).where(SupportTicket.requester_id == user_id))
     assert n == 1
+
+
+@pytest.mark.asyncio
+async def test_bulk_job_upsert_inserts_then_updates_and_unexpires(sessions):
+    """Imports save 500 jobs per statement on PostgreSQL (ON CONFLICT on external_id)."""
+    import uuid
+    from datetime import UTC, datetime
+
+    from app.domains.jobs.models import JobPost
+    from app.domains.jobs.repository import JobRepository
+    from app.domains.jobs.schemas import JobPostCreate
+
+    ext = f"bulk_{uuid.uuid4().hex}"
+
+    def job(title: str) -> JobPostCreate:
+        return JobPostCreate(title=title, description="d", company_name="C", external_id=ext, source="TEST")
+
+    async with sessions() as db:
+        inserted, updated = await JobRepository(db).bulk_upsert_external_jobs([job("First")])
+        await db.commit()
+    assert (len(inserted), updated) == (1, 0)
+    async with sessions() as db:
+        row = await db.get(JobPost, inserted[0])
+        row.expired_at = datetime.now(UTC)
+        await db.commit()
+    async with sessions() as db:
+        # A duplicate within one batch is merged rather than failing the statement.
+        again, updated = await JobRepository(db).bulk_upsert_external_jobs([job("Renamed"), job("Renamed again")])
+        await db.commit()
+    assert (again, updated) == ([], 1)
+    async with sessions() as db:
+        row = await db.get(JobPost, inserted[0])
+        assert row.title == "Renamed again"
+        assert row.expired_at is None
+        await db.delete(row)
+        await db.commit()

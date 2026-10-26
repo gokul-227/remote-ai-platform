@@ -178,24 +178,42 @@ class JobService:
                 fetched_jobs = await aggregator.fetch_jobs(limit=limit_per_source)
                 inserted = updated = 0
                 skipped = 0
-                for job_data in fetched_jobs:
-                    # One bad posting (e.g. a field the database rejects) is skipped,
-                    # never allowed to roll back the whole source.
-                    try:
-                        async with self.repo.db.begin_nested():
-                            saved, created = await self.repo.upsert_external_job(job_data)
-                    except Exception as exc:
-                        skipped += 1
-                        if skipped <= 3:
+                bind = self.repo.db.bind
+                bulk = bind is not None and bind.dialect.name == "postgresql"
+                # PostgreSQL: 500 jobs per statement instead of a round trip per job.
+                step = 500 if bulk else max(1, len(fetched_jobs))
+                for start in range(0, len(fetched_jobs), step):
+                    batch = fetched_jobs[start : start + step]
+                    if bulk:
+                        try:
+                            async with self.repo.db.begin_nested():
+                                ids, n_updated = await self.repo.bulk_upsert_external_jobs(batch)
+                            new_job_ids.extend(ids)
+                            inserted += len(ids)
+                            updated += n_updated
+                            continue
+                        except Exception as exc:  # a bad row: fall back to one by one
                             logger.warning(
-                                f"Skipped one {aggregator.source_name} job: {type(exc).__name__}",
-                                external_id=job_data.external_id,
+                                f"{aggregator.source_name} batch failed ({type(exc).__name__}); saving one by one"
                             )
-                        continue
-                    if created:
-                        new_job_ids.append(saved.id)
-                    inserted += int(created)
-                    updated += int(not created)
+                    for job_data in batch:
+                        # One bad posting (e.g. a field the database rejects) is skipped,
+                        # never allowed to roll back the whole source.
+                        try:
+                            async with self.repo.db.begin_nested():
+                                saved, created = await self.repo.upsert_external_job(job_data)
+                        except Exception as exc:
+                            skipped += 1
+                            if skipped <= 3:
+                                logger.warning(
+                                    f"Skipped one {aggregator.source_name} job: {type(exc).__name__}",
+                                    external_id=job_data.external_id,
+                                )
+                            continue
+                        if created:
+                            new_job_ids.append(saved.id)
+                        inserted += int(created)
+                        updated += int(not created)
                 # Only after a successful, non-empty fetch: an outage or a feed that
                 # suddenly answers with nothing must not expire a whole source (ING-01).
                 expired = (

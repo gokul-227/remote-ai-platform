@@ -52,7 +52,7 @@ jobs:
           failed=0
           for src in $(python -m app.domains.jobs.runner --list); do
             echo "::group::$src"
-            if ! timeout 900 python -m app.domains.jobs.runner --source "$src"; then
+            if ! timeout 1800 python -m app.domains.jobs.runner --source "$src"; then
               echo "::warning::$src import failed"; failed=$((failed+1))
             fi
             echo "::endgroup::"
