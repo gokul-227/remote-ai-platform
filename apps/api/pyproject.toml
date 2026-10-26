@@ -16,24 +16,24 @@ requires-python = ">=3.11"
 
 dependencies = [
     # Web framework
-    "fastapi==0.142.2",
+    "fastapi==0.161.1",
     # Pinned explicitly (not just left to fastapi's own transitive range) to
     # force in the fix for several starlette CVEs (host-header/path request.url
     # reconstruction, unbounded urlencoded form parsing, HTTPEndpoint method
     # dispatch) that aren't closed until 1.0.1/1.1.0/1.3.0/1.3.1 respectively --
-    # fastapi==0.142.2 alone would still resolve to an older, vulnerable 0.5x.
-    "starlette==1.7.0",
+    # fastapi==0.161.1 alone would still resolve to an older, vulnerable 0.5x.
+    "starlette==1.9.0",
     "uvicorn[standard]==0.54.0",
     "python-multipart==0.0.32",
 
     # Database
-    "sqlalchemy[asyncio]==2.1.3",
-    "asyncpg==0.31.0",
-    "alembic==1.20.0",
+    "sqlalchemy[asyncio]==2.1.6",
+    "asyncpg==0.32.0",
+    "alembic==1.20.1",
 
     # Validation
-    "pydantic==2.13.5",
-    "pydantic-settings==2.15.0",
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.1",
     "email-validator==2.3.0",
 
     # Auth & Security
@@ -43,13 +43,13 @@ dependencies = [
     # Background tasks
 
     # Object storage
-    "boto3==1.43.108",
+    "boto3==1.43.118",
 
     # AI (litellm pulls in openai + aiohttp transitively)
-    "litellm==1.103.2",
+    "litellm==1.106.2",
 
     # Resume text extraction (PDF/DOCX -> plain text, ahead of AI parsing)
-    "pypdf==6.19.0",
+    "pypdf==6.21.2",
     "python-docx==1.2.0",
 
     # Caching
@@ -63,7 +63,7 @@ dependencies = [
     "stripe==11.6.0",
 
     # Error monitoring (no-op until SENTRY_DSN is configured -- see app/main.py)
-    "sentry-sdk[fastapi]==2.71.0",
+    "sentry-sdk[fastapi]==2.73.0",
 ]
 
 [project.optional-dependencies]
@@ -74,9 +74,9 @@ dev = [
     "httpx>=0.28.0",
     "factory-boy==3.3.3",
     "faker==33.3.1",
-    "ruff==0.16.10",
+    "ruff==0.17.2",
     "mypy==1.20.2",
-    "pre-commit==4.6.2",
+    "pre-commit==4.7.0",
     "asgi-lifespan==2.1.0",
     "aiosqlite==0.22.1",
 ]

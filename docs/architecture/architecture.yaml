@@ -78,7 +78,7 @@ components:
 - id: api
   name: Backend API
   type: application
-  technology: FastAPI 0.142 · Docker
+  technology: FastAPI 0.161 · Docker
   provider: Render web service
   group: render
   icon: fastapi
