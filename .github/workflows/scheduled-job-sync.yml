@@ -26,10 +26,10 @@ jobs:
       # database: parsing thousands of postings on the single free API instance
       # blocked it for users (health checks timed out). The API only does the
       # light maintenance step at the end.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: prod
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
