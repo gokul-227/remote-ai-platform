@@ -680,7 +680,7 @@ paths:
       tags:
       - Company Profiles
       summary: Get My Company
-      description: Get company profile of currently logged in user.
+      description: Get the organisation the user owns, else the first one they are an active member of.
       operationId: get_my_company_api_v1_companies_me_get
       responses:
         '200':
@@ -816,6 +816,217 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyProfileResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/organisations/memberships/me:
+    get:
+      tags:
+      - Organisation Members
+      summary: My Memberships
+      operationId: my_memberships_api_v1_organisations_memberships_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/MembershipOut'
+                type: array
+                title: Response My Memberships Api V1 Organisations Memberships Me Get
+      security:
+      - HTTPBearer: []
+  /api/v1/organisations/{company_id}/members:
+    get:
+      tags:
+      - Organisation Members
+      summary: List Members
+      operationId: list_members_api_v1_organisations__company_id__members_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberOut'
+                title: Response List Members Api V1 Organisations  Company Id  Members Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Organisation Members
+      summary: Invite Member
+      operationId: invite_member_api_v1_organisations__company_id__members_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/organisations/{company_id}/members/{member_id}:
+    patch:
+      tags:
+      - Organisation Members
+      summary: Change Role
+      operationId: change_role_api_v1_organisations__company_id__members__member_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      - name: member_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Member Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Organisation Members
+      summary: Remove Member
+      operationId: remove_member_api_v1_organisations__company_id__members__member_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      - name: member_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Member Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/organisations/invitations/{member_id}/accept:
+    post:
+      tags:
+      - Organisation Members
+      summary: Accept Invitation
+      operationId: accept_invitation_api_v1_organisations_invitations__member_id__accept_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: member_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Member Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/organisations/invitations/{member_id}/decline:
+    post:
+      tags:
+      - Organisation Members
+      summary: Decline Invitation
+      operationId: decline_invitation_api_v1_organisations_invitations__member_id__decline_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: member_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Member Id
+      responses:
+        '204':
+          description: Successful Response
         '422':
           description: Validation Error
           content:
@@ -12491,6 +12702,21 @@ components:
       required:
       - accept
       title: InvitationResponse
+    InviteIn:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        role:
+          type: string
+          pattern: ^(admin|recruiter|member)$
+          title: Role
+          default: member
+      type: object
+      required:
+      - email
+      title: InviteIn
     JobMatchResponse:
       properties:
         id:
@@ -13154,6 +13380,42 @@ components:
       required:
       - user_id
       title: MemberIn
+    MemberOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        role:
+          type: string
+          title: Role
+        status:
+          type: string
+          title: Status
+        full_name:
+          type: string
+          title: Full Name
+          default: ''
+        email:
+          type: string
+          title: Email
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - user_id
+      - role
+      - status
+      - created_at
+      title: MemberOut
     MemberRoleUpdate:
       properties:
         role:
@@ -13164,6 +13426,29 @@ components:
       required:
       - role
       title: MemberRoleUpdate
+    MembershipOut:
+      properties:
+        membership_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Membership Id
+        role:
+          type: string
+          title: Role
+        status:
+          type: string
+          title: Status
+        organisation:
+          $ref: '#/components/schemas/CompanyProfileResponse'
+      type: object
+      required:
+      - membership_id
+      - role
+      - status
+      - organisation
+      title: MembershipOut
     MembershipResponse:
       properties:
         id:
@@ -14082,6 +14367,16 @@ components:
       - full_name
       - role
       title: ReviewerSummary
+    RoleIn:
+      properties:
+        role:
+          type: string
+          pattern: ^(admin|recruiter|member)$
+          title: Role
+      type: object
+      required:
+      - role
+      title: RoleIn
     RunOut:
       properties:
         id:

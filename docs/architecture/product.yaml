@@ -158,6 +158,8 @@ features:
   api:
   - domain: companies
     prefix: /api/v1/companies
+  - domain: companies.members
+    prefix: /api/v1/organisations
   uses:
   - id: storage
     name: Object storage
@@ -439,6 +441,8 @@ api:
     prefix: /browser
   - domain: channels
     prefix: /channels
+  - domain: companies.members
+    prefix: /organisations
   - domain: companies
     prefix: /companies
   - domain: contracts

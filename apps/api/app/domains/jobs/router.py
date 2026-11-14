@@ -14,7 +14,8 @@ from app.core.database import get_db
 from app.domains.admin.repository import AdminRepository
 from app.domains.auth.dependencies import get_optional_user, require_role
 from app.domains.auth.models import User, UserRole
-from app.domains.companies.models import CompanyProfile
+from app.domains.companies.access import resolve_company_for
+from app.domains.companies.models import HIRING_ROLES, CompanyProfile
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import (
@@ -118,9 +119,7 @@ async def list_company_jobs(
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ) -> list[JobPostResponse]:
-    company = await service.repo.db.scalar(
-        select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
-    )
+    company = await resolve_company_for(service.repo.db, current_user, HIRING_ROLES)
     if not company and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=404, detail="Create your organisation profile first")
     query = select(JobPost).order_by(JobPost.posted_at.desc())
@@ -197,9 +196,7 @@ async def update_job(
             raise HTTPException(
                 status_code=403, detail="Aggregated jobs cannot be edited by a company"
             )
-        company = await service.repo.db.scalar(
-            select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
-        )
+        company = await resolve_company_for(service.repo.db, current_user, HIRING_ROLES)
         if not company or existing.company_id != company.id:
             raise HTTPException(status_code=403, detail="You can only edit your own company jobs")
     try:
@@ -217,9 +214,7 @@ async def create_job(
 ) -> JobPostResponse:
     """Post a new job (any member with an organisation profile, or an admin)."""
     if current_user.role != UserRole.ADMIN:
-        company = await service.repo.db.scalar(
-            select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
-        )
+        company = await resolve_company_for(service.repo.db, current_user, HIRING_ROLES)
         if not company:
             raise HTTPException(status_code=404, detail="Company profile required")
         if data.company_id and data.company_id != company.id:

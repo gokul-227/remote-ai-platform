@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
+from app.domains.companies.access import resolve_company_for
 from app.domains.companies.repository import CompanyRepository
 from app.domains.companies.schemas import (
     CompanyProfileCreate,
@@ -31,8 +32,8 @@ async def get_my_company(
     current_user: User = Depends(get_current_user),
     service: CompanyService = Depends(get_company_service),
 ) -> CompanyProfileResponse:
-    """Get company profile of currently logged in user."""
-    company = await service.get_by_user_id(current_user.id)
+    """Get the organisation the user owns, else the first one they are an active member of."""
+    company = await resolve_company_for(service.repo.db, current_user)
     if not company:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

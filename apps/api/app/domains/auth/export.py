@@ -40,6 +40,7 @@ SOURCES: tuple[Source, ...] = (
     Source("user_identities", ("user_id",), drop=frozenset({"subject"})),
     Source("engineer_profiles", ("user_id",)),
     Source("company_profiles", ("user_id",)),
+    Source("organisation_members", ("user_id",)),
     Source("user_skills", ("user_id",)),
     Source("user_trust_scores", ("user_id",)),
     Source("user_verifications", ("user_id",), drop=frozenset({"reviewed_by_id"})),
@@ -140,6 +141,10 @@ EXCLUDED: dict[tuple[str, str], str] = {
     ): "transient call connection data (network candidates), not content",
     ("github_oauth_states", "user_id"): "short-lived sign-in handshakes, not personal data",
     ("support_tickets", "assignee_id"): "tickets the user handled as staff belong to the requester",
+    (
+        "organisation_members",
+        "company_id",
+    ): "the user's own memberships are exported through user_id; other members are other people",
 }
 
 

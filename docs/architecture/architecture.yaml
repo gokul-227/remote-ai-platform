@@ -99,6 +99,7 @@ components:
     - auth
     - browser
     - channels
+    - companies.members
     - companies
     - contracts
     - deliverables

@@ -56,7 +56,7 @@ features:
     name: Organisation hiring
     personas: [organisation]
     screens: [codash, cojobs, postjob, candidates, talent, coprofile]
-    api: [companies]
+    api: [companies, companies.members]
     uses: [storage]
   - id: applications
     icon: concepts/briefcase

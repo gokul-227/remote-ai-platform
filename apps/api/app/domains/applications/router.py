@@ -13,7 +13,8 @@ from app.domains.analytics.service import emit_analytics_event
 from app.domains.applications.models import JobApplication
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
-from app.domains.companies.models import CompanyProfile
+from app.domains.companies.access import resolve_company_for
+from app.domains.companies.models import HIRING_ROLES, CompanyProfile
 from app.domains.engineers.models import EngineerProfile
 from app.domains.jobs.models import JobPost
 from app.domains.matching.models import JobMatch
@@ -167,9 +168,7 @@ async def list_company_applications(
 ):
     """List applications for jobs owned by the current company, with each
     candidate's AI match for that job when one has been computed."""
-    company = await db.scalar(
-        select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
-    )
+    company = await resolve_company_for(db, current_user, HIRING_ROLES)
     if not company and current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=404, detail="Create your organisation profile first")
     query = select(JobApplication, JobPost, User, EngineerProfile, JobMatch).join(
@@ -234,9 +233,7 @@ async def invite_engineer(
     """Invite a freelancer to a company-owned job using the application workflow."""
     stmt = select(JobPost).where(JobPost.id == job_id)
     if current_user.role != UserRole.ADMIN:
-        company = await db.scalar(
-            select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
-        )
+        company = await resolve_company_for(db, current_user, HIRING_ROLES)
         if not company:
             raise HTTPException(status_code=404, detail="Company profile not found")
         stmt = stmt.where(JobPost.company_id == company.id)
@@ -398,9 +395,7 @@ async def update_application_status(
     application = await db.get(JobApplication, application_id)
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    company = await db.scalar(
-        select(CompanyProfile).where(CompanyProfile.user_id == current_user.id)
-    )
+    company = await resolve_company_for(db, current_user, HIRING_ROLES)
     job = await db.get(JobPost, application.job_id)
     if current_user.role != UserRole.ADMIN and (
         not company or not job or job.company_id != company.id

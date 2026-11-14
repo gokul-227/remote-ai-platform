@@ -1388,6 +1388,7 @@ export function CoProfile() {
     logo_url: "",
   });
   const [exists, setExists] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [logoEdit, setLogoEdit] = useState(false);
@@ -1399,6 +1400,7 @@ export function CoProfile() {
       .then((r) => {
         const d = r.data;
         setExists(true);
+        setOrgId(d.id);
         setF({
           name: d.name || "",
           industry: d.industry || "",
@@ -1429,8 +1431,9 @@ export function CoProfile() {
       logo_url: f.logo_url.trim() || null,
     };
     try {
-      await (exists ? api.put("/companies/me", body) : api.post("/companies/me", body));
+      const saved = await (exists ? api.put("/companies/me", body) : api.post("/companies/me", body));
       setExists(true);
+      setOrgId(saved.data?.id ?? orgId);
       setMsg({ ok: true, text: "Company profile saved." });
     } catch (e) {
       setMsg({ ok: false, text: extractErrorMessage(e, "We couldn't save your company profile.") });
@@ -1522,7 +1525,188 @@ export function CoProfile() {
           </Btn>
         </Card>
       )}
+      <OrgInvitations />
+      {orgId && <OrgTeam orgId={orgId} />}
     </Wrap>
+  );
+}
+
+type Membership = {
+  membership_id: string | null;
+  role: string;
+  status: string;
+  organisation: { id: string; name: string };
+};
+/** Invitations to join other organisations (accept or decline). */
+export function OrgInvitations() {
+  const q = useApi<Membership[]>("/organisations/memberships/me");
+  const [busy, setBusy] = useState<string | null>(null);
+  const pending = (q.data ?? []).filter((m) => m.status === "invited" && m.membership_id);
+  if (!pending.length) return null;
+  const act = async (id: string, verb: "accept" | "decline") => {
+    setBusy(id);
+    try {
+      await api.post(`/organisations/invitations/${id}/${verb}`);
+      q.reload();
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <Card c="rounded-xl mt-4">
+      <h3>Organisation invitations</h3>
+      <ul className="mt-2 divide-y divide-slate-100">
+        {pending.map((m) => (
+          <li key={m.membership_id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+            <span>
+              <b>{m.organisation.name}</b> invited you as <Tag>{m.role}</Tag>
+            </span>
+            <span className="flex gap-2">
+              <Btn v="primary" onClick={() => act(m.membership_id!, "accept")} disabled={busy === m.membership_id}>
+                Accept
+              </Btn>
+              <Btn v="outline" onClick={() => act(m.membership_id!, "decline")} disabled={busy === m.membership_id}>
+                Decline
+              </Btn>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+type Member = { id: string; user_id: string; role: string; status: string; full_name: string; email: string };
+const ROLE_HELP: Record<string, string> = {
+  owner: "Owns the organisation page and every permission.",
+  admin: "Manages members and the page; can hire.",
+  recruiter: "Publishes jobs, reviews applicants, invites candidates.",
+  member: "Sees the organisation; cannot hire or manage.",
+};
+/** Team members and roles. Server-side rules decide who may change what. */
+export function OrgTeam({ orgId }: { orgId: string }) {
+  const { user } = useAuth();
+  const q = useApi<Member[]>(`/organisations/${orgId}/members`);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("recruiter");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const me = (q.data ?? []).find((m) => m.user_id === user?.id);
+  const canManage = me?.role === "owner" || me?.role === "admin";
+  const invite = async () => {
+    if (!email.trim()) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      await api.post(`/organisations/${orgId}/members`, { email: email.trim(), role });
+      setEmail("");
+      setMsg({ ok: true, text: "Invitation sent. They will see it on their organisation page." });
+      q.reload();
+    } catch (e) {
+      setMsg({ ok: false, text: extractErrorMessage(e, "Couldn’t send the invitation.") });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const change = async (m: Member, next: string) => {
+    setMsg(null);
+    try {
+      await api.patch(`/organisations/${orgId}/members/${m.id}`, { role: next });
+      q.reload();
+    } catch (e) {
+      setMsg({ ok: false, text: extractErrorMessage(e, "Couldn’t change the role.") });
+    }
+  };
+  const remove = async (m: Member) => {
+    setMsg(null);
+    try {
+      await api.delete(`/organisations/${orgId}/members/${m.id}`);
+      q.reload();
+    } catch (e) {
+      setMsg({ ok: false, text: extractErrorMessage(e, "Couldn’t remove the member.") });
+    }
+  };
+  return (
+    <Card c="rounded-xl mt-4">
+      <h3>Team</h3>
+      <p className="text-sm text-slate-500">
+        Roles decide who can publish jobs and review applicants. Changes apply immediately.
+      </p>
+      {!!q.error && (
+        <p role="alert" className="mt-2 text-sm text-red-600">
+          Couldn’t load the team.
+        </p>
+      )}
+      <ul className="mt-3 divide-y divide-slate-100">
+        {(q.data ?? []).map((m) => (
+          <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+            <span className="flex items-center gap-3">
+              <Av name={m.full_name || m.email} s={32} />
+              <span>
+                <b>{m.full_name || m.email}</b> <span className="text-xs text-slate-500">{m.email}</span>
+                {m.status === "invited" && <Tag>invited</Tag>}
+              </span>
+            </span>
+            <span className="flex items-center gap-2">
+              {m.role === "owner" || !canManage ? (
+                <Tag>{m.role}</Tag>
+              ) : (
+                <select
+                  aria-label={`Role for ${m.full_name || m.email}`}
+                  value={m.role}
+                  onChange={(e) => change(m, e.target.value)}
+                  className={cx(inputCls, "w-auto")}
+                >
+                  {["admin", "recruiter", "member"].map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {m.role !== "owner" && (canManage || m.user_id === user?.id) && (
+                <Btn v="outline" onClick={() => remove(m)}>
+                  {m.user_id === user?.id ? "Leave" : "Remove"}
+                </Btn>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {canManage && (
+        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+          <Field label="Invite by email (existing account)">
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputCls}
+              placeholder="name@company.com"
+            />
+          </Field>
+          <Field label="Role">
+            <select value={role} onChange={(e) => setRole(e.target.value)} className={inputCls}>
+              {["admin", "recruiter", "member"].map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Btn v="primary" onClick={invite} disabled={busy || !email.trim()}>
+            {busy ? "Inviting…" : "Invite"}
+          </Btn>
+        </div>
+      )}
+      <p className="mt-2 text-xs text-slate-500">{ROLE_HELP[role]}</p>
+      {msg && (
+        <p
+          role={msg.ok ? "status" : "alert"}
+          className={cx("mt-2 text-sm", msg.ok ? "text-green-700" : "text-red-600")}
+        >
+          {msg.text}
+        </p>
+      )}
+    </Card>
   );
 }
 
