@@ -10,9 +10,9 @@ works for any issuer: tokens whose `iat` is at or before it are rejected.
 Nullable and additive, so it is safe to deploy ahead of the code using it.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "033_user_sessions_revoked_at"
 down_revision = "032_stripe_webhook_events"

@@ -10,9 +10,9 @@ The tombstone now remembers the subject until the provider erasure succeeds so
 it can be retried. Nullable/defaulted columns only: safe ahead of the code.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "041_identity_erasure_state"
 down_revision = "040_user_blocks"

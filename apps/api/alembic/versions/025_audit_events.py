@@ -4,9 +4,10 @@ Revision ID: 025_audit_events
 Revises: 024_work_lifecycle_consolidation
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "025_audit_events"
 down_revision = "024_work_lifecycle_consolidation"

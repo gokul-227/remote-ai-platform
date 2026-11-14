@@ -7,10 +7,10 @@ Adds ai_usage_logs.user_id (nullable; background work has no user) and an
 index on created_at for the monthly/daily allowance sums. Additive only.
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision = "034_ai_usage_user"
 down_revision = "033_user_sessions_revoked_at"

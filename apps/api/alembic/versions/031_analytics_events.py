@@ -11,9 +11,10 @@ different purpose (admin-observable actions / security audit trail) and
 already have other consumers pattern-matching on their `action` column.
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "031_analytics_events"
 down_revision = "030_billing_entitlements"

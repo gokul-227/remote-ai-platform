@@ -4,9 +4,10 @@ Revision ID: 023_auth_security_tokens
 Revises: 022_groups
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "023_auth_security_tokens"
 down_revision = "022_groups"

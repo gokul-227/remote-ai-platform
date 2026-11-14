@@ -10,9 +10,9 @@ Production currently has zero payment_transactions rows (all test/demo
 data was removed in this same pass), so no backfill is needed.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "028_payment_idempotency_key"
 down_revision = "027_trust_verification_review"

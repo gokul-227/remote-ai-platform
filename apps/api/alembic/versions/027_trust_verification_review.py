@@ -4,10 +4,10 @@ Revision ID: 027_trust_verification_review
 Revises: 026_performance_and_soft_deletes
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision = "027_trust_verification_review"
 down_revision = "026_performance_and_soft_deletes"

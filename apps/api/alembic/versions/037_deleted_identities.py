@@ -9,9 +9,9 @@ get_or_create_user and silently provisioned a new blank account. A tombstone
 issued before the deletion. New table only: safe to deploy ahead of the code.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "037_deleted_identities"
 down_revision = "036_supabase_only_auth"

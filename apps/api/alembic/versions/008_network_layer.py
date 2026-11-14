@@ -4,10 +4,10 @@ Revision ID: 008_network_layer
 Revises: 007_marketplace_foundation
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision = "008_network_layer"
 down_revision = "007_marketplace_foundation"

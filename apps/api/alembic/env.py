@@ -5,42 +5,42 @@ Alembic migration environment — async SQLAlchemy 2.x.
 import asyncio
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from app.core.config import settings
-from app.core.database import Base
+import app.domains.admin.announcement_models  # noqa: F401
+import app.domains.admin.models  # noqa: F401
+import app.domains.applications.models  # noqa: F401
+import app.domains.assistant.models  # noqa: F401
 
 # All domain models must be imported here so Alembic can detect them
 import app.domains.auth.models  # noqa: F401
-import app.domains.engineers.models  # noqa: F401
+import app.domains.billing.models  # noqa: F401
+import app.domains.channels.models  # noqa: F401
 import app.domains.companies.models  # noqa: F401
-import app.domains.jobs.models  # noqa: F401
-import app.domains.matching.models  # noqa: F401
-import app.domains.projects.models  # noqa: F401
-import app.domains.marketplace.models  # noqa: F401
-import app.domains.network.models  # noqa: F401
-import app.domains.admin.models  # noqa: F401
-import app.domains.admin.announcement_models  # noqa: F401
-import app.domains.applications.models  # noqa: F401
-import app.domains.notifications.models  # noqa: F401
-import app.domains.saved_jobs.models  # noqa: F401
 import app.domains.contracts.models  # noqa: F401
 import app.domains.deliverables.models  # noqa: F401
-import app.domains.meetings.models  # noqa: F401
-import app.domains.support.models  # noqa: F401
-import app.domains.assistant.models  # noqa: F401
-import app.domains.channels.models  # noqa: F401
-import app.domains.endorsements.models  # noqa: F401
 import app.domains.documents.models  # noqa: F401
+import app.domains.endorsements.models  # noqa: F401
+import app.domains.engineers.models  # noqa: F401
 import app.domains.github.models  # noqa: F401
-import app.domains.social.models  # noqa: F401
-import app.domains.trust.models  # noqa: F401
 import app.domains.groups.models  # noqa: F401
-import app.domains.billing.models  # noqa: F401
+import app.domains.jobs.models  # noqa: F401
+import app.domains.marketplace.models  # noqa: F401
+import app.domains.matching.models  # noqa: F401
+import app.domains.meetings.models  # noqa: F401
+import app.domains.network.models  # noqa: F401
+import app.domains.notifications.models  # noqa: F401
 import app.domains.payments.models  # noqa: F401
+import app.domains.projects.models  # noqa: F401
+import app.domains.saved_jobs.models  # noqa: F401
+import app.domains.social.models  # noqa: F401
+import app.domains.support.models  # noqa: F401
+import app.domains.trust.models  # noqa: F401
+from alembic import context
+from app.core.config import settings
+from app.core.database import Base
 
 config = context.config
 

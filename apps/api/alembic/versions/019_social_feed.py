@@ -4,10 +4,10 @@ Revision ID: 019_social_feed
 Revises: 018_performance_indexes
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision = "019_social_feed"
 down_revision = "018_performance_indexes"

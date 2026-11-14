@@ -8,8 +8,9 @@ every other app table since 042, so the Supabase Data API cannot read it.
 """
 
 import sqlalchemy as sa
-from alembic import op
 from sqlalchemy.dialects.postgresql import UUID
+
+from alembic import op
 
 revision = "043_email_outbox"
 down_revision = "042_lock_supabase_data_api"

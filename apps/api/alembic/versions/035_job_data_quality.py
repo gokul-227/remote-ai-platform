@@ -12,9 +12,9 @@ Revises: 034_ai_usage_user
 - RemoteOK salaries are annual.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "035_job_data_quality"
 down_revision = "034_ai_usage_user"

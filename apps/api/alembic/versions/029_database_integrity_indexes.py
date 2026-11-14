@@ -35,7 +35,6 @@ to keep this migration focused and low-risk -- see the PR description.
 
 from alembic import op
 
-
 revision = "029_database_integrity_indexes"
 down_revision = "028_payment_idempotency_key"
 branch_labels = None

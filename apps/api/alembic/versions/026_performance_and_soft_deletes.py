@@ -4,8 +4,9 @@ Revision ID: 026_performance_and_soft_deletes
 Revises: 025_audit_events
 """
 
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision = "026_performance_and_soft_deletes"
 down_revision = "025_audit_events"

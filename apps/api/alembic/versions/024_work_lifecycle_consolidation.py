@@ -4,9 +4,10 @@ Revision ID: 024_work_lifecycle_consolidation
 Revises: 023_auth_security_tokens
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "024_work_lifecycle_consolidation"
 down_revision = "023_auth_security_tokens"

@@ -20,7 +20,6 @@ Plain PostgreSQL (local, CI, E2E) has no such roles: only the RLS flag is set.
 
 from alembic import op
 
-
 revision = "042_lock_supabase_data_api"
 down_revision = "041_identity_erasure_state"
 branch_labels = None

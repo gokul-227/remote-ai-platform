@@ -14,9 +14,9 @@ most advanced status) and deploy again.
 (post_likes needs nothing: its primary key is already (post_id, user_id).)
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "038_unique_applications"
 down_revision = "037_deleted_identities"

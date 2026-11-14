@@ -4,10 +4,10 @@ Revision ID: 007_marketplace_foundation
 Revises: 006_projects_notifications
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision = "007_marketplace_foundation"
 down_revision = "006_projects_notifications"

@@ -4,10 +4,10 @@ Revision ID: 021_trust_reputation
 Revises: 020_contracts
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 revision = "021_trust_reputation"
 down_revision = "020_contracts"

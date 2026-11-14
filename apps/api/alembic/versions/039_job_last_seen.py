@@ -9,9 +9,9 @@ among their source's recent listings for a while get expired_at (separate from i
 moderation switch). Additive; last_seen_at is backfilled from updated_at.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "039_job_last_seen"
 down_revision = "038_unique_applications"

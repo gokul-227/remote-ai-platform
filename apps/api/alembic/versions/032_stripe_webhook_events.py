@@ -16,9 +16,9 @@ event_id is the primary key, so inserting an already-seen event raises
 IntegrityError and is treated as an already-processed no-op.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "032_stripe_webhook_events"
 down_revision = "031_analytics_events"

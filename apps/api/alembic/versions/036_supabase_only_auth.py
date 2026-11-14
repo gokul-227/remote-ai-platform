@@ -15,9 +15,9 @@ data; they sign in with an email code, and the first Supabase sign-in links
 the row by verified email.
 """
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 revision = "036_supabase_only_auth"
 down_revision = "035_job_data_quality"
