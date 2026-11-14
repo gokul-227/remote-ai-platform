@@ -3,8 +3,8 @@ import { API, signIn, signUp, unique } from "./support";
 
 const tabs = (page: import("@playwright/test").Page) => page.getByRole("navigation", { name: "Main navigation" });
 
-test("visitors get public discovery and a way in, not a fake account", async ({ page }) => {
-  await page.goto("/");
+test("visitors in the app get public discovery and a way in, not a fake account", async ({ page }) => {
+  await page.goto("/#jobs");
   await expect(page).toHaveURL(/\/(#feed)?$|#jobs/);
   await expect(page.getByLabel("Search jobs")).toBeVisible();
   await expect(page.getByRole("button", { name: "Join" })).toBeVisible();

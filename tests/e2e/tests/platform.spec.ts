@@ -67,6 +67,31 @@ test("a spreadsheet calculates, saves and keeps its history", async ({ page, req
   expect(versions.length).toBeGreaterThanOrEqual(2);
 });
 
+test("a conflicting spreadsheet preserves a downloadable local draft", async ({ page, request }) => {
+  await signUp(page, { as: "professional", name: "Draft Recovery", email: unique("draft") });
+  await page.goto("/#sheets");
+  await page.getByRole("button", { name: "New spreadsheet" }).click();
+  await expect(page.getByLabel("Title", { exact: true })).toBeVisible();
+  const [doc] = await (await apiAs(request, page, "get", "/documents?kind=SHEET")).json();
+  const concurrent = await apiAs(request, page, "put", `/documents/${doc.id}`, {
+    expected_version: doc.version, title: "Saved by a collaborator",
+  });
+  expect(concurrent.ok()).toBeTruthy();
+  await page.getByLabel("Title", { exact: true }).fill("My recoverable draft");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText(/Someone saved a newer version/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+  const downloadEvent = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download draft", exact: true }).click();
+  const download = await downloadEvent;
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  expect(JSON.parse(Buffer.concat(chunks).toString())).toMatchObject({ kind: "SHEET", title: "My recoverable draft" });
+  const persisted = await (await apiAs(request, page, "get", `/documents/${doc.id}`)).json();
+  expect(persisted.title).toBe("Saved by a collaborator");
+});
+
 test("a document can be written and is private to its owner", async ({ browser, request }) => {
   const owner = await (await browser.newContext()).newPage();
   await signUp(owner, { as: "professional", name: "Doc Owner", email: unique("docowner") });

@@ -205,8 +205,21 @@ jobs:
           timeout 180 sh -c 'until curl -sf http://localhost:18000/health/ready; do sleep 3; done'
           timeout 120 sh -c 'until curl -sf http://localhost:13000/; do sleep 3; done'
 
+      - name: Build and serve isolated staff console
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:18000
+          NEXT_PUBLIC_SUPABASE_URL: http://localhost:9999
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: e2e-publishable-key
+          NEXT_PUBLIC_DEPLOY_ENV: development
+        run: |
+          npm run build --workspace admin
+          nohup python3 -m http.server 13001 --bind 127.0.0.1 --directory apps/admin/out > admin-e2e.log 2>&1 &
+          timeout 30 sh -c 'until curl -sf http://localhost:13001/; do sleep 1; done'
+
       - name: Run E2E suite
         working-directory: tests/e2e
+        env:
+          E2E_ADMIN_BASE_URL: http://localhost:13001
         run: npx playwright test
 
       # Keeping this permanently (not just for this investigation): it's what
@@ -228,6 +241,7 @@ jobs:
         run: |
           docker compose -p rap-e2e -f infra/docker/docker-compose.yml -f tests/e2e/docker-compose.e2e.yml logs --tail=200
           cat mock-supabase.log || true
+          cat admin-e2e.log || true
 
   migrations:
     name: Migration validation

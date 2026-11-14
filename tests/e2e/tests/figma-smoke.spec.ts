@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 
-// The frontend is the Figma Make app (hash-routed, sample data). These checks
-// guard that it renders and that legacy URLs still land on the right screen.
-test("Figma app shell renders on the home route", async ({ page }) => {
+// Public discovery is server-rendered; the member app uses hash routes. These
+// checks guard that both render and legacy URLs retain their destinations.
+test("public navigation renders on the home route", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("navigation", { name: /navigation$/i }).first()).toBeVisible({ timeout: 15_000 });
 });
