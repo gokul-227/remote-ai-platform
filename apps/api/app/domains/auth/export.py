@@ -158,6 +158,7 @@ EXCLUDED: dict[tuple[str, str], str] = {
     ("file_activity", "actor_id"): "actions on files that may belong to other people",
     ("file_nodes", "project_id"): "project-scoped files are exported through owner_id",
     ("file_nodes", "company_id"): "organisation-scoped files are exported through owner_id",
+    ("staff_roles", "user_id"): "staff permissions are operational records, not the user's personal data",
 }
 
 

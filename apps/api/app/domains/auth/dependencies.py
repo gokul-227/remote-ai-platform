@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import UTC
 
 import structlog
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
@@ -169,8 +169,13 @@ def require_role(*allowed_roles: UserRole) -> Callable:
     # that members never pass. Ownership checks in each endpoint still decide
     # *what* a member may change.
     member_ok = bool({UserRole.ENGINEER, UserRole.COMPANY} & set(allowed_roles))
+    staff_only = set(allowed_roles) == {UserRole.ADMIN}
 
-    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
+    async def role_checker(
+        request: Request,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db),
+    ) -> User:
         if member_ok and current_user.role in (UserRole.ENGINEER, UserRole.COMPANY, UserRole.ADMIN):
             return current_user
         if current_user.role not in allowed_roles:
@@ -178,6 +183,11 @@ def require_role(*allowed_roles: UserRole) -> Callable:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"User role '{current_user.role.value}' is not permitted to access this resource. Required: {[r.value for r in allowed_roles]}",
             )
+        if staff_only:
+            # Least privilege inside the staff console (app/domains/admin/staff.py).
+            from app.domains.admin.staff import enforce_staff_scope
+
+            await enforce_staff_scope(request, current_user.id, db)
         return current_user
 
     return role_checker

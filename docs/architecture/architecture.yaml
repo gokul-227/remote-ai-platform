@@ -95,6 +95,7 @@ components:
     - admin.operations
     - admin.portfolio
     - admin
+    - admin.staff
     - analytics
     - applications
     - assistant

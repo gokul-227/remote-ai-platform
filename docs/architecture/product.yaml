@@ -380,6 +380,8 @@ features:
     prefix: /api/v1/{admin,announcements}
   - domain: admin.portfolio
     prefix: /api/v1/admin/operations
+  - domain: admin.staff
+    prefix: /api/v1/admin
   - domain: admin.incident
     prefix: /api/v1/admin/incidents
   - domain: admin.inventory
@@ -446,6 +448,8 @@ api:
   - domain: admin.portfolio
     prefix: /admin/operations
   - domain: admin
+    prefix: /admin
+  - domain: admin.staff
     prefix: /admin
   - domain: analytics
     prefix: /analytics

@@ -45,7 +45,37 @@ def is_feature_enabled(flag_name: str) -> bool:
     attr = _FLAG_SETTINGS_ATTR.get(flag_name)
     if attr is None:
         return False
+    if flag_name in _overrides:
+        return _overrides[flag_name]
     return bool(getattr(settings, attr, False))
+
+
+# Staff overrides (feature_flag_overrides table), cached per process and refreshed
+# periodically by the API lifespan; an unset override falls back to the env value.
+_overrides: dict[str, bool] = {}
+
+
+def known_flags() -> list[str]:
+    return list(_FLAG_SETTINGS_ATTR)
+
+
+def env_value(flag_name: str) -> bool:
+    attr = _FLAG_SETTINGS_ATTR.get(flag_name)
+    return bool(getattr(settings, attr, False)) if attr else False
+
+
+def set_overrides(values: dict[str, bool]) -> None:
+    _overrides.clear()
+    _overrides.update({k: bool(v) for k, v in values.items() if k in _FLAG_SETTINGS_ATTR})
+
+
+async def refresh_overrides(db) -> None:  # noqa: ANN001 - AsyncSession, imported lazily
+    from sqlalchemy import select
+
+    from app.domains.admin.flag_models import FeatureFlagOverride
+
+    rows = (await db.execute(select(FeatureFlagOverride))).scalars().all()
+    set_overrides({r.name: r.enabled for r in rows})
 
 
 def get_all_flags() -> dict[str, bool]:

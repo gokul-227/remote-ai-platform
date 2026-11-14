@@ -1753,6 +1753,134 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/me/permissions:
+    get:
+      tags:
+      - Admin Staff
+      summary: My Permissions
+      operationId: my_permissions_api_v1_admin_me_permissions_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response My Permissions Api V1 Admin Me Permissions Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/staff-roles:
+    get:
+      tags:
+      - Admin Staff
+      summary: List Staff
+      operationId: list_staff_api_v1_admin_staff_roles_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response List Staff Api V1 Admin Staff Roles Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/staff-roles/{user_id}:
+    put:
+      tags:
+      - Admin Staff
+      summary: Set Staff Roles
+      operationId: set_staff_roles_api_v1_admin_staff_roles__user_id__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolesIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Set Staff Roles Api V1 Admin Staff Roles  User Id  Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/feature-flags/state:
+    get:
+      tags:
+      - Admin Staff
+      summary: Flag State
+      operationId: flag_state_api_v1_admin_feature_flags_state_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Flag State Api V1 Admin Feature Flags State Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/feature-flags/{name}:
+    put:
+      tags:
+      - Admin Staff
+      summary: Set Flag
+      operationId: set_flag_api_v1_admin_feature_flags__name__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlagIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Set Flag Api V1 Admin Feature Flags  Name  Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/admin/dashboard:
     get:
       tags:
@@ -14364,6 +14492,22 @@ components:
       required:
       - version
       title: FileReviewIn
+    FlagIn:
+      properties:
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Enabled
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+      type: object
+      required:
+      - reason
+      title: FlagIn
     FolderIn:
       properties:
         name:
@@ -17093,6 +17237,25 @@ components:
       required:
       - role
       title: RoleIn
+    RolesIn:
+      properties:
+        roles:
+          items:
+            type: string
+          type: array
+          maxItems: 6
+          minItems: 1
+          title: Roles
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+      type: object
+      required:
+      - roles
+      - reason
+      title: RolesIn
     RunOut:
       properties:
         id:

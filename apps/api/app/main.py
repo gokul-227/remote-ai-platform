@@ -29,6 +29,7 @@ from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.operations_router import router as admin_operations_router
 from app.domains.admin.portfolio_router import router as admin_portfolio_router
 from app.domains.admin.router import router as admin_router
+from app.domains.admin.staff_router import router as admin_staff_router
 from app.domains.analytics.router import router as analytics_router
 from app.domains.applications.router import router as applications_router
 from app.domains.assistant.router import router as assistant_router
@@ -228,9 +229,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     dispatcher = asyncio.create_task(run_dispatcher(AsyncSessionFactory)) if email_enabled() else None
 
+    async def _refresh_flag_overrides() -> None:
+        """Keep staff feature-flag overrides current on every API instance."""
+        from app.core.feature_flags import refresh_overrides
+
+        while True:
+            try:
+                async with AsyncSessionFactory() as flag_db:
+                    await refresh_overrides(flag_db)
+            except Exception as exc:  # table missing before migration, DB blip: keep env values
+                logger.debug("feature flag refresh skipped", error=type(exc).__name__)
+            await asyncio.sleep(60)
+
+    flag_refresher = asyncio.create_task(_refresh_flag_overrides())
+
     yield
 
     # Shutdown
+    flag_refresher.cancel()
     if dispatcher is not None:
         dispatcher.cancel()
     await engine.dispose()
@@ -304,6 +320,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs_router, prefix=prefix)
     app.include_router(search_router, prefix=prefix)
     app.include_router(matching_router, prefix=prefix)
+    app.include_router(admin_staff_router, prefix=prefix)
     app.include_router(admin_router, prefix=prefix)
     app.include_router(incident_router, prefix=prefix)
     app.include_router(admin_inventory_router, prefix=prefix)
