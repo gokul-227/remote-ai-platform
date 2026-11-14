@@ -16482,6 +16482,10 @@ components:
         tool:
           type: string
           title: Tool
+        effect:
+          type: string
+          title: Effect
+          default: CONSEQUENTIAL
         summary:
           type: string
           title: Summary
