@@ -150,6 +150,8 @@ async def test_folders_uploads_versions_and_trash(client: AsyncClient, storage: 
     trash = (await client.get("/api/v1/files?view=trash", headers=me)).json()
     assert [n["id"] for n in trash] == [fid]
     assert (await client.get(f"/api/v1/files/{nid}", headers=me)).json()["trashed_at"] is not None
+    assert (await client.get(f"/api/v1/files/{nid}/download", headers=me)).status_code == 404
+    assert (await client.get(f"/api/v1/files/{nid}/preview", headers=me)).status_code == 404
     assert (await client.delete(f"/api/v1/files/{nid}/permanent", headers=me)).status_code == 204
     assert (await client.get(f"/api/v1/files/{nid}", headers=me)).status_code == 404
     assert storage.objects == {}

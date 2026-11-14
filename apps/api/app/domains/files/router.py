@@ -609,6 +609,8 @@ async def download(
     node_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> DownloadLink:
     node, _ = await _node(db, node_id, user, "viewer")
+    if any(n.trashed_at is not None for n in await ancestors(db, node)):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     if node.kind != KIND_FILE or not node.object_key:
         raise HTTPException(status.HTTP_409_CONFLICT, "Folders cannot be downloaded")
     url = generate_presigned_url(
@@ -625,6 +627,8 @@ async def preview(
     node_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> dict[str, Any]:
     node, _ = await _node(db, node_id, user, "viewer")
+    if any(n.trashed_at is not None for n in await ancestors(db, node)):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     if node.kind != KIND_FILE or not node.object_key:
         raise HTTPException(status.HTTP_409_CONFLICT, "Nothing to preview")
     mime = node.mime or ""
@@ -795,6 +799,8 @@ async def copy_node(
     db: AsyncSession = Depends(get_db),
 ) -> NodeOut:
     node, _ = await _node(db, node_id, user, "viewer")
+    if any(n.trashed_at is not None for n in await ancestors(db, node)):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     if node.kind != KIND_FILE or not node.object_key:
         raise HTTPException(status.HTTP_409_CONFLICT, "Only files can be copied")
     parent, p_id, c_id, owner_id = await _space_for(db, user, body.parent_id, None, None)
