@@ -64,6 +64,7 @@ const P: Record<string, string> = {
   smile: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18|M8 14s1.5 2 4 2 4-2 4-2|M9 9h.01|M15 9h.01",
   paperclip: "M21 12l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8",
   download: "M12 3v12|M7 10l5 5 5-5|M4 21h16",
+  upload: "M12 21V9|M7 14l5-5 5 5|M5 3h14",
   external: "M14 3h7v7|M21 3l-9 9|M19 14v6H4V5h6",
   shieldcheck: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z|M9 12l2 2 4-4",
   building: "M4 21V4h11v17|M15 9h5v12|M8 8h3|M8 12h3|M8 16h3",

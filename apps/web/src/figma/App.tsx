@@ -51,6 +51,8 @@ const Support = lazy(() => import("./rap_collab").then((m) => ({ default: m.Supp
 const Channels = lazy(() => import("./rap_collab").then((m) => ({ default: m.Channels })));
 const Assistant = lazy(() => import("./rap_collab").then((m) => ({ default: m.Assistant })));
 const Office = lazy(() => import("./rap_office").then((m) => ({ default: m.Office })));
+const Files = lazy(() => import("./rap_files").then((m) => ({ default: m.Files })));
+const SharedFile = lazy(() => import("./rap_files").then((m) => ({ default: m.SharedFile })));
 const Browser = lazy(() => import("./rap_collab").then((m) => ({ default: m.Browser })));
 const GithubConnect = lazy(() => import("./rap_collab").then((m) => ({ default: m.GithubConnect })));
 const HelpCenter = lazy(() => import("./rap_enterprise").then((m) => ({ default: m.HelpCenter })));
@@ -81,7 +83,8 @@ export const REG: Record<string, any> = {
   support: Support,
   assistant: Assistant,
   channels: Channels,
-  files: Office,
+  files: Files,
+  sharedfile: () => <SharedFile token={readRoute().id} />,
   freelancework: () => <Recs kind="freelance" />,
   docs: () => <Office initial="DOC" />,
   sheets: () => <Office initial="SHEET" />,
@@ -161,6 +164,7 @@ export const ID_ROUTES: Record<string, { key: string; store: "local" | "session"
   company: { key: "rap-company-id", store: "session" },
   contractsign: { key: "rap-contract-id", store: "session" },
   group: { key: "rap-group-id", store: "session" },
+  sharedfile: { key: "rap-shared-file", store: "session" },
 };
 const storeOf = (s: "local" | "session") => (s === "local" ? localStorage : sessionStorage);
 

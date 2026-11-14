@@ -297,6 +297,8 @@ features:
     label: Work
   - route: files
     label: Files
+  - route: sharedfile
+    label: sharedfile
   - route: docs
     label: Documents
   - route: sheets
@@ -420,7 +422,7 @@ features:
 web:
   technology: Next.js 16 · OpenNext
   provider: Cloudflare Workers
-  screens: 64
+  screens: 65
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service

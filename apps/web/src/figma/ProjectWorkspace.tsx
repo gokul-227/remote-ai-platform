@@ -68,7 +68,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
   const openDocument = (id: string) => {
     try {
       sessionStorage.setItem("rap-doc-id", id);
-      goRoute("files");
+      goRoute("docs");
     } catch {
       setMessage("Browser storage is unavailable. Open the document from Files.");
     }
