@@ -135,8 +135,13 @@ async def export_my_data(
         **await build_export(db, current_user),
     }
     await record_audit_event(
-        db=db, action="DATA_EXPORTED", resource_type="USER", resource_id=str(current_user.id),
-        actor_id=current_user.id, actor_role=current_user.role.value, payload={},
+        db=db,
+        action="DATA_EXPORTED",
+        resource_type="USER",
+        resource_id=str(current_user.id),
+        actor_id=current_user.id,
+        actor_role=current_user.role.value,
+        payload={},
     )
     await db.commit()
     return JSONResponse(

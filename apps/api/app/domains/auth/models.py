@@ -8,7 +8,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -101,7 +101,6 @@ class User(Base):
         return f"<User id={self.id} email={self.email} role={self.role}>"
 
 
-
 class DeletedIdentity(Base):
     """An identity whose account was deleted by its owner.
 
@@ -121,10 +120,44 @@ class DeletedIdentity(Base):
     subject_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     deleted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     pending_subject: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    provider_erased_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    provider_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    provider_erased_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    provider_attempts: Mapped[int] = mapped_column(
+        Integer, default=0, server_default="0", nullable=False
+    )
     last_error: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 def identity_hash(subject: str) -> str:
     return hashlib.sha256(subject.encode()).hexdigest()
+
+
+class UserIdentity(Base):
+    """A verified sign-in identity from an additional provider linked to a user.
+
+    Supabase stays the primary identity (`users.auth_subject`, never overwritten).
+    When another issuer is allow-listed (AUTH_EXTRA_ISSUERS, e.g. WorkOS AuthKit in
+    staging), its subject is linked here on first sign-in: to an existing account
+    only through a verified matching email, otherwise to a new account. Removing
+    the issuer from the allow-list is the rollback; rows stay inert.
+    """
+
+    __tablename__ = "user_identities"
+    __table_args__ = (
+        UniqueConstraint("provider", "subject", name="uq_user_identities_provider_subject"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

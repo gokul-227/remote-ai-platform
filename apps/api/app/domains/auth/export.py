@@ -37,6 +37,7 @@ class Source:
 _ALWAYS_DROP = frozenset({"resume_url", "auth_subject", "idempotency_key", "provider_reference"})
 
 SOURCES: tuple[Source, ...] = (
+    Source("user_identities", ("user_id",), drop=frozenset({"subject"})),
     Source("engineer_profiles", ("user_id",)),
     Source("company_profiles", ("user_id",)),
     Source("user_skills", ("user_id",)),
@@ -93,9 +94,15 @@ SOURCES: tuple[Source, ...] = (
     Source("work_submissions", ("submitted_by_id",), drop=frozenset({"reviewed_by_id"})),
     Source("work_ledger_entries", ("worker_id",), drop=frozenset({"voided_by_id"})),
     Source("payment_transactions", ("payer_id", "payee_id")),
-    Source("subscriptions", ("user_id",), drop=frozenset({"stripe_customer_id", "stripe_subscription_id"})),
+    Source(
+        "subscriptions",
+        ("user_id",),
+        drop=frozenset({"stripe_customer_id", "stripe_subscription_id"}),
+    ),
     # Reports the user made; who reviewed them and the moderator's notes stay internal.
-    Source("moderation_reports", ("reporter_id",), drop=frozenset({"reviewed_by_id", "decision_note"})),
+    Source(
+        "moderation_reports", ("reporter_id",), drop=frozenset({"reviewed_by_id", "decision_note"})
+    ),
     Source("analytics_events", ("user_id",)),
     Source("audit_events", ("actor_id",), drop=frozenset({"payload"})),
     # The user's organisation's own postings and projects.
@@ -105,17 +112,32 @@ SOURCES: tuple[Source, ...] = (
 
 # User/profile-linked columns deliberately not used to select rows.
 EXCLUDED: dict[tuple[str, str], str] = {
-    ("user_verifications", "reviewed_by_id"): "verifications the user reviewed as staff are other people's data",
+    (
+        "user_verifications",
+        "reviewed_by_id",
+    ): "verifications the user reviewed as staff are other people's data",
     ("work_submissions", "reviewed_by_id"): "submissions the user reviewed belong to the submitter",
     ("work_ledger_entries", "voided_by_id"): "entries the user voided belong to the worker",
-    ("moderation_reports", "reviewed_by_id"): "reports the user moderated would identify other reporters",
-    ("task_assignment_offers", "offered_by_id"): "offers made as an organisation hold the candidate's match data",
+    (
+        "moderation_reports",
+        "reviewed_by_id",
+    ): "reports the user moderated would identify other reporters",
+    (
+        "task_assignment_offers",
+        "offered_by_id",
+    ): "offers made as an organisation hold the candidate's match data",
     ("recommendations", "engineer_id"): "already exported through user_id",
     ("messages", "sender_id"): "exported through the user's conversations, in both directions",
     ("user_blocks", "blocked_id"): "who blocked the user is never revealed",
     ("announcements", "created_by"): "platform-wide banners authored as staff, not personal data",
-    ("call_signals", "from_user_id"): "transient call connection data (network candidates), not content",
-    ("call_signals", "to_user_id"): "transient call connection data (network candidates), not content",
+    (
+        "call_signals",
+        "from_user_id",
+    ): "transient call connection data (network candidates), not content",
+    (
+        "call_signals",
+        "to_user_id",
+    ): "transient call connection data (network candidates), not content",
     ("github_oauth_states", "user_id"): "short-lived sign-in handshakes, not personal data",
     ("support_tickets", "assignee_id"): "tickets the user handled as staff belong to the requester",
 }
@@ -141,7 +163,10 @@ async def build_export(db: AsyncSession, user: User) -> dict[str, Any]:
         "engineer_profile": select(engineer.c.id).where(engineer.c.user_id == user.id),
         "company_profile": select(company.c.id).where(company.c.user_id == user.id),
         "conversation": select(conversations.c.id).where(
-            or_(conversations.c.participant_one_id == user.id, conversations.c.participant_two_id == user.id)
+            or_(
+                conversations.c.participant_one_id == user.id,
+                conversations.c.participant_two_id == user.id,
+            )
         ),
     }
     data: dict[str, Any] = {}
@@ -154,7 +179,9 @@ async def build_export(db: AsyncSession, user: User) -> dict[str, Any]:
         rows = (await db.execute(select(table).where(or_(*clauses)))).mappings().all()
         if rows:
             drop = _ALWAYS_DROP | source.drop
-            data[source.table] = [{k: _jsonable(v) for k, v in row.items() if k not in drop} for row in rows]
+            data[source.table] = [
+                {k: _jsonable(v) for k, v in row.items() if k not in drop} for row in rows
+            ]
     return data
 
 

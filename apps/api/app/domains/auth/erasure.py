@@ -35,7 +35,9 @@ async def erase_account(db: AsyncSession, user: User) -> None:
 
     profile = await db.scalar(select(EngineerProfile).where(EngineerProfile.user_id == user.id))
     if profile and profile.resume_url:
-        await get_storage().delete_file(settings.MINIO_BUCKET_RESUMES, _resume_object_key(profile.resume_url))
+        await get_storage().delete_file(
+            settings.MINIO_BUCKET_RESUMES, _resume_object_key(profile.resume_url)
+        )
 
     subject = user.auth_subject
     user_id = str(user.id)

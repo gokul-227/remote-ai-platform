@@ -40,7 +40,7 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
     """
     # Verification may fetch the JWKS over the network (synchronously); keep
     # that off the event loop so one slow fetch can't stall every request.
-    identity = await run_in_threadpool(supabase_auth.verify_supabase_token, token)
+    identity = await run_in_threadpool(supabase_auth.verify_access_token, token)
     repo = UserRepository(db)
     user = await AuthService(repo).get_or_create_user(identity)
     if not user.is_active:
@@ -65,7 +65,12 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
         previous = user.role
         user.role = UserRole.ADMIN
         await record_audit_event(
-            repo.db, "admin.bootstrap", "user", str(user.id), user.id, "SYSTEM",
+            repo.db,
+            "admin.bootstrap",
+            "user",
+            str(user.id),
+            user.id,
+            "SYSTEM",
             {"previous_role": getattr(previous, "value", str(previous)), "source": "ADMIN_EMAILS"},
         )
         await repo.db.flush()

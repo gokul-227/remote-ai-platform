@@ -116,6 +116,11 @@ class Settings(BaseSettings):
     # cache is ~10 minutes; matching that avoids re-fetching more often than
     # the keys could plausibly rotate).
     SUPABASE_JWKS_CACHE_SECONDS: int = 600
+    # Additional token issuers accepted next to Supabase (Phase 7 dual validation),
+    # as a JSON list: [{"provider":"workos","issuer":"https://api.workos.com/user_management/client_xxx",
+    # "jwks_url":"https://api.workos.com/sso/jwks/client_xxx","audience":"client_xxx"}].
+    # Empty (the default) means Supabase is the only identity provider.
+    AUTH_EXTRA_ISSUERS: str = ""
     # Optional. When set, deleting an account also deletes the Supabase Auth
     # user (email, OAuth links, sessions) through the Admin API. Server-side
     # secret: never exposed to the browser.
@@ -126,6 +131,25 @@ class Settings(BaseSettings):
         if not self.SUPABASE_URL:
             return None
         return f"{self.SUPABASE_URL.rstrip('/')}/auth/v1/.well-known/jwks.json"
+
+    @property
+    def extra_issuers(self) -> list[dict[str, str]]:
+        """Parsed AUTH_EXTRA_ISSUERS; malformed entries are dropped, never accepted."""
+        import json
+
+        if not self.AUTH_EXTRA_ISSUERS.strip():
+            return []
+        try:
+            raw = json.loads(self.AUTH_EXTRA_ISSUERS)
+        except ValueError:
+            return []
+        out: list[dict[str, str]] = []
+        for item in raw if isinstance(raw, list) else []:
+            if not isinstance(item, dict):
+                continue
+            if all(isinstance(item.get(k), str) and item[k] for k in ("provider", "issuer", "jwks_url", "audience")):
+                out.append({k: item[k] for k in ("provider", "issuer", "jwks_url", "audience")})
+        return out
 
     # ── AI / LiteLLM ─────────────────────────────────────────────────────────
     OLLAMA_BASE_URL: str = "http://localhost:11434"

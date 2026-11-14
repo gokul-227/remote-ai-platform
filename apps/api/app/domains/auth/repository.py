@@ -64,7 +64,9 @@ class UserRepository:
         stmt = select(User)
         if q:
             pattern = f"%{q.strip().lower()}%"
-            stmt = stmt.where(or_(func.lower(User.email).like(pattern), func.lower(User.full_name).like(pattern)))
+            stmt = stmt.where(
+                or_(func.lower(User.email).like(pattern), func.lower(User.full_name).like(pattern))
+            )
         if role is not None:
             stmt = stmt.where(User.role == role)
         if is_active is not None:
