@@ -4260,6 +4260,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/workspace:
+    get:
+      tags:
+      - Projects
+      summary: Get Project Workspace
+      description: Related resources visible to this project participant, with bounded lists.
+      operationId: get_project_workspace_api_v1_projects__project_id__workspace_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/notifications:
     get:
       tags:
@@ -5664,7 +5693,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DownloadLink'
+                $ref: '#/components/schemas/app__domains__deliverables__schemas__DownloadLink'
         '422':
           description: Validation Error
           content:
@@ -7565,7 +7594,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ShareIn'
+              $ref: '#/components/schemas/app__domains__documents__router__ShareIn'
       responses:
         '200':
           description: Successful Response
@@ -7720,6 +7749,654 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Resolve Comment Api V1 Documents  Doc Id  Comments  Comment Id  Resolve Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files:
+    get:
+      tags:
+      - Files
+      summary: List Nodes
+      operationId: list_nodes_api_v1_files_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: parent_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+      - name: view
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 60
+          default: mine
+          title: View
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(name|updated|size)$
+          default: name
+          title: Sort
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 200
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NodeOut'
+                title: Response List Nodes Api V1 Files Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/quota:
+    get:
+      tags:
+      - Files
+      summary: Quota
+      operationId: quota_api_v1_files_quota_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: integer
+                type: object
+                title: Response Quota Api V1 Files Quota Get
+      security:
+      - HTTPBearer: []
+  /api/v1/files/shared/{token}:
+    get:
+      tags:
+      - Files
+      summary: Open Link
+      operationId: open_link_api_v1_files_shared__token__get
+      parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Token
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Open Link Api V1 Files Shared  Token  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/folders:
+    post:
+      tags:
+      - Files
+      summary: Create Folder
+      operationId: create_folder_api_v1_files_folders_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FolderIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/files/upload:
+    post:
+      tags:
+      - Files
+      summary: Upload
+      operationId: upload_api_v1_files_upload_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_upload_api_v1_files_upload_post'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/files/{node_id}/content:
+    post:
+      tags:
+      - Files
+      summary: Upload New Version
+      operationId: upload_new_version_api_v1_files__node_id__content_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_upload_new_version_api_v1_files__node_id__content_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}:
+    get:
+      tags:
+      - Files
+      summary: Get Node
+      operationId: get_node_api_v1_files__node_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Files
+      summary: Update Node
+      operationId: update_node_api_v1_files__node_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodePatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Files
+      summary: Trash
+      operationId: trash_api_v1_files__node_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/download:
+    get:
+      tags:
+      - Files
+      summary: Download
+      operationId: download_api_v1_files__node_id__download_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/app__domains__files__router__DownloadLink'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/preview:
+    get:
+      tags:
+      - Files
+      summary: Preview
+      operationId: preview_api_v1_files__node_id__preview_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Preview Api V1 Files  Node Id  Preview Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/versions:
+    get:
+      tags:
+      - Files
+      summary: Versions
+      operationId: versions_api_v1_files__node_id__versions_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VersionOut'
+                title: Response Versions Api V1 Files  Node Id  Versions Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/versions/{version}/restore:
+    post:
+      tags:
+      - Files
+      summary: Restore Version
+      operationId: restore_version_api_v1_files__node_id__versions__version__restore_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      - name: version
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Version
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/copy:
+    post:
+      tags:
+      - Files
+      summary: Copy Node
+      operationId: copy_node_api_v1_files__node_id__copy_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NodePatch'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/restore:
+    post:
+      tags:
+      - Files
+      summary: Restore
+      operationId: restore_api_v1_files__node_id__restore_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/permanent:
+    delete:
+      tags:
+      - Files
+      summary: Delete Permanently
+      operationId: delete_permanently_api_v1_files__node_id__permanent_delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/star:
+    put:
+      tags:
+      - Files
+      summary: Star
+      operationId: star_api_v1_files__node_id__star_put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Files
+      summary: Unstar
+      operationId: unstar_api_v1_files__node_id__star_delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/shares:
+    get:
+      tags:
+      - Files
+      summary: List Shares
+      operationId: list_shares_api_v1_files__node_id__shares_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShareOut'
+                title: Response List Shares Api V1 Files  Node Id  Shares Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Files
+      summary: Add Share
+      operationId: add_share_api_v1_files__node_id__shares_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/app__domains__files__router__ShareIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/shares/{share_id}:
+    delete:
+      tags:
+      - Files
+      summary: Remove Share
+      operationId: remove_share_api_v1_files__node_id__shares__share_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      - name: share_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Share Id
+      responses:
+        '204':
+          description: Successful Response
         '422':
           description: Validation Error
           content:
@@ -8633,6 +9310,97 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/MemberRoleUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/groups/{group_id}/membership-requests:
+    get:
+      tags:
+      - groups
+      summary: Membership Requests
+      operationId: membership_requests_api_v1_groups__group_id__membership_requests_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Group Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: page_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Page Size
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipResponse'
+                title: Response Membership Requests Api V1 Groups  Group Id  Membership Requests Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/groups/{group_id}/members/{user_id}/status:
+    patch:
+      tags:
+      - groups
+      summary: Update Member Status
+      operationId: update_member_status_api_v1_groups__group_id__members__user_id__status_patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Group Id
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MemberStatusUpdate'
       responses:
         '200':
           description: Successful Response
@@ -10158,6 +10926,44 @@ components:
       required:
       - full_name
       title: Body_update_me_api_v1_auth_me_patch
+    Body_upload_api_v1_files_upload_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        company_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Company Id
+      type: object
+      required:
+      - file
+      title: Body_upload_api_v1_files_upload_post
+    Body_upload_new_version_api_v1_files__node_id__content_post:
+      properties:
+        file:
+          type: string
+          contentMediaType: application/octet-stream
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_upload_new_version_api_v1_files__node_id__content_post
     Body_upload_resume_api_v1_engineers_me_resume_post:
       properties:
         file:
@@ -11522,23 +12328,6 @@ components:
       - updated_at
       - my_role
       title: DocumentSummary
-    DownloadLink:
-      properties:
-        url:
-          type: string
-          title: Url
-        expires_in_seconds:
-          type: integer
-          title: Expires In Seconds
-        file_name:
-          type: string
-          title: File Name
-      type: object
-      required:
-      - url
-      - expires_in_seconds
-      - file_name
-      title: DownloadLink
     EditIn:
       properties:
         body:
@@ -12391,6 +13180,35 @@ components:
       - page_size
       - has_more
       title: FeedResponse
+    FolderIn:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        company_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Company Id
+      type: object
+      required:
+      - name
+      title: FolderIn
     FunnelSummaryRow:
       properties:
         event_name:
@@ -13681,6 +14499,16 @@ components:
       required:
       - role
       title: MemberRoleUpdate
+    MemberStatusUpdate:
+      properties:
+        status:
+          type: string
+          pattern: ^(active|banned)$
+          title: Status
+      type: object
+      required:
+      - status
+      title: MemberStatusUpdate
     MembershipOut:
       properties:
         membership_id:
@@ -13879,6 +14707,202 @@ components:
       required:
       - muted
       title: MuteIn
+    NodeDetail:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        company_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Company Id
+        kind:
+          type: string
+          title: Kind
+        name:
+          type: string
+          title: Name
+        mime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mime
+        size:
+          type: integer
+          title: Size
+        current_version:
+          type: integer
+          title: Current Version
+        trashed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Trashed At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        starred:
+          type: boolean
+          title: Starred
+          default: false
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+        breadcrumb:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Breadcrumb
+          default: []
+      type: object
+      required:
+      - id
+      - parent_id
+      - owner_id
+      - project_id
+      - company_id
+      - kind
+      - name
+      - mime
+      - size
+      - current_version
+      - trashed_at
+      - created_at
+      - updated_at
+      title: NodeDetail
+    NodeOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        owner_id:
+          type: string
+          format: uuid
+          title: Owner Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        company_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Company Id
+        kind:
+          type: string
+          title: Kind
+        name:
+          type: string
+          title: Name
+        mime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mime
+        size:
+          type: integer
+          title: Size
+        current_version:
+          type: integer
+          title: Current Version
+        trashed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Trashed At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        starred:
+          type: boolean
+          title: Starred
+          default: false
+        role:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Role
+      type: object
+      required:
+      - id
+      - parent_id
+      - owner_id
+      - project_id
+      - company_id
+      - kind
+      - name
+      - mime
+      - size
+      - current_version
+      - trashed_at
+      - created_at
+      - updated_at
+      title: NodeOut
+    NodePatch:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Name
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        move_to_root:
+          type: boolean
+          title: Move To Root
+          default: false
+      type: object
+      title: NodePatch
     NotifyIn:
       properties:
         level:
@@ -14835,24 +15859,49 @@ components:
       required:
       - reason
       title: SessionRevoke
-    ShareIn:
+    ShareOut:
       properties:
-        user_id:
+        id:
           type: string
           format: uuid
-          title: User Id
+          title: Id
+        principal_type:
+          type: string
+          title: Principal Type
+        principal_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Principal Id
         role:
           type: string
-          enum:
-          - VIEW
-          - COMMENT
-          - EDIT
           title: Role
+        token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Token
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
       type: object
       required:
-      - user_id
+      - id
+      - principal_type
+      - principal_id
       - role
-      title: ShareIn
+      - token
+      - expires_at
+      - created_at
+      title: ShareOut
     SignalIn:
       properties:
         kind:
@@ -15846,6 +16895,35 @@ components:
       required:
       - status
       title: VerificationReviewUpdate
+    VersionOut:
+      properties:
+        version:
+          type: integer
+          title: Version
+        size:
+          type: integer
+          title: Size
+        mime:
+          type: string
+          title: Mime
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - version
+      - size
+      - mime
+      - created_by
+      - created_at
+      title: VersionOut
     WalletBalanceResponse:
       properties:
         user_id:
@@ -16034,6 +17112,87 @@ components:
       - mentions
       - created_at
       title: MessageOut
+    app__domains__deliverables__schemas__DownloadLink:
+      properties:
+        url:
+          type: string
+          title: Url
+        expires_in_seconds:
+          type: integer
+          title: Expires In Seconds
+        file_name:
+          type: string
+          title: File Name
+      type: object
+      required:
+      - url
+      - expires_in_seconds
+      - file_name
+      title: DownloadLink
+    app__domains__documents__router__ShareIn:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        role:
+          type: string
+          enum:
+          - VIEW
+          - COMMENT
+          - EDIT
+          title: Role
+      type: object
+      required:
+      - user_id
+      - role
+      title: ShareIn
+    app__domains__files__router__DownloadLink:
+      properties:
+        url:
+          type: string
+          title: Url
+        expires_in:
+          type: integer
+          title: Expires In
+      type: object
+      required:
+      - url
+      - expires_in
+      title: DownloadLink
+    app__domains__files__router__ShareIn:
+      properties:
+        principal_type:
+          type: string
+          pattern: ^(user|project|organisation|link)$
+          title: Principal Type
+        principal_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Principal Id
+        email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Email
+        role:
+          type: string
+          pattern: ^(viewer|commenter|editor)$
+          title: Role
+          default: viewer
+        expires_in_days:
+          anyOf:
+          - type: integer
+            maximum: 365.0
+            minimum: 1.0
+          - type: 'null'
+          title: Expires In Days
+      type: object
+      required:
+      - principal_type
+      title: ShareIn
     app__domains__network__router__MessageCreate:
       properties:
         content:

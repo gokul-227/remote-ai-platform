@@ -150,6 +150,11 @@ EXCLUDED: dict[tuple[str, str], str] = {
         "organisation_members",
         "company_id",
     ): "the user's own memberships are exported through user_id; other members are other people",
+    ("file_versions", "created_by"): "versions belong to the file owner (exported through file_nodes)",
+    ("file_shares", "created_by"): "grants on files; the user's own files are exported through file_nodes",
+    ("file_activity", "actor_id"): "actions on files that may belong to other people",
+    ("file_nodes", "project_id"): "project-scoped files are exported through owner_id",
+    ("file_nodes", "company_id"): "organisation-scoped files are exported through owner_id",
 }
 
 

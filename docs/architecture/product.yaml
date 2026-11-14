@@ -279,6 +279,8 @@ features:
   screens:
   - route: workspace
     label: Workspace
+  - route: project
+    label: project
   - route: projects
     label: Boards
   - route: backlog
@@ -310,6 +312,8 @@ features:
     prefix: /api/v1/projects
   - domain: documents
     prefix: /api/v1/documents
+  - domain: files
+    prefix: /api/v1/files
   - domain: github
     prefix: /api/v1/github
   - domain: browser
@@ -416,7 +420,7 @@ features:
 web:
   technology: Next.js 16 · OpenNext
   provider: Cloudflare Workers
-  screens: 63
+  screens: 64
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service
@@ -457,6 +461,8 @@ api:
     prefix: /endorsements
   - domain: engineers
     prefix: /engineers
+  - domain: files
+    prefix: /files
   - domain: github
     prefix: /github
   - domain: groups

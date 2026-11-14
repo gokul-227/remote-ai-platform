@@ -55,9 +55,7 @@ def extra_issuer(monkeypatch):
     fake = SimpleNamespace(
         get_signing_key_from_jwt=lambda token: SimpleNamespace(key=_KEY.public_key())
     )
-    monkeypatch.setitem(supabase_auth._extra_jwks_clients, ISSUER, fake)
-    yield
-    supabase_auth._extra_jwks_clients.pop(ISSUER, None)
+    monkeypatch.setattr(supabase_auth, "_extra_client", lambda config: fake)
 
 
 async def _existing_user(email: str) -> User:

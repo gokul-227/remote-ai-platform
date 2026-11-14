@@ -106,6 +106,7 @@ components:
     - documents
     - endorsements
     - engineers
+    - files
     - github
     - groups
     - jobs.preferences
