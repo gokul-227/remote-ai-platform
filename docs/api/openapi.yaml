@@ -1033,6 +1033,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/preferences/me:
+    get:
+      tags:
+      - Job Preferences
+      summary: Get My Preferences
+      operationId: get_my_preferences_api_v1_jobs_preferences_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/JobPreferenceOut'
+                - type: 'null'
+                title: Response Get My Preferences Api V1 Jobs Preferences Me Get
+      security:
+      - HTTPBearer: []
+    put:
+      tags:
+      - Job Preferences
+      summary: Put My Preferences
+      operationId: put_my_preferences_api_v1_jobs_preferences_me_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobPreferenceIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPreferenceOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/jobs/preferences/me/summary:
+    get:
+      tags:
+      - Job Preferences
+      summary: My Preference Summary
+      operationId: my_preference_summary_api_v1_jobs_preferences_me_summary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  anyOf:
+                  - type: string
+                  - type: boolean
+                type: object
+                title: Response My Preference Summary Api V1 Jobs Preferences Me Summary Get
+      security:
+      - HTTPBearer: []
   /api/v1/jobs:
     get:
       tags:
@@ -1462,8 +1526,12 @@ paths:
       tags:
       - Global Search
       summary: Global Search
-      description: Unified search endpoint returning matched remote jobs and public engineer profiles.
+      description: |-
+        Unified search across public jobs, people and organisations, plus the caller's
+        own projects, documents and channels when signed in.
       operationId: global_search_api_v1_search_get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: q
         in: query
@@ -1471,9 +1539,10 @@ paths:
         schema:
           type: string
           minLength: 1
-          description: Keywords search across jobs and profiles
+          maxLength: 120
+          description: Keywords
           title: Q
-        description: Keywords search across jobs and profiles
+        description: Keywords
       - name: is_remote
         in: query
         required: false
@@ -4233,6 +4302,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/notifications/preferences:
+    get:
+      tags:
+      - Notifications
+      summary: Notification preferences
+      operationId: get_preferences_api_v1_notifications_preferences_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Preferences Api V1 Notifications Preferences Get
+      security:
+      - HTTPBearer: []
+    put:
+      tags:
+      - Notifications
+      summary: Update notification preferences
+      operationId: put_preferences_api_v1_notifications_preferences_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferencesIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Put Preferences Api V1 Notifications Preferences Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /api/v1/notifications/unread-count:
     get:
       tags:
@@ -10145,6 +10259,19 @@ components:
       - updated_at
       title: CandidateMatchResponse
       description: 'A match shown to a company: the engineer appears only as their public profile.'
+    CategoryPrefIn:
+      properties:
+        in_app:
+          type: boolean
+          title: In App
+          default: true
+        email:
+          type: string
+          pattern: ^(immediate|digest|off)$
+          title: Email
+          default: immediate
+      type: object
+      title: CategoryPrefIn
     ChannelCreate:
       properties:
         kind:
@@ -12296,6 +12423,18 @@ components:
           type: integer
           title: Total Companies
           default: 0
+        total_projects:
+          type: integer
+          title: Total Projects
+          default: 0
+        total_documents:
+          type: integer
+          title: Total Documents
+          default: 0
+        total_channels:
+          type: integer
+          title: Total Channels
+          default: 0
         jobs:
           items:
             $ref: '#/components/schemas/JobPostResponse'
@@ -12312,6 +12451,28 @@ components:
           type: array
           title: Companies
           default: []
+        projects:
+          items:
+            $ref: '#/components/schemas/SearchHit'
+          type: array
+          title: Projects
+          default: []
+        documents:
+          items:
+            $ref: '#/components/schemas/SearchHit'
+          type: array
+          title: Documents
+          default: []
+        channels:
+          items:
+            $ref: '#/components/schemas/SearchHit'
+          type: array
+          title: Channels
+          default: []
+        signed_in:
+          type: boolean
+          title: Signed In
+          default: false
       type: object
       required:
       - query
@@ -13179,6 +13340,100 @@ components:
           title: Is Active
       type: object
       title: JobPostUpdate
+    JobPreferenceIn:
+      properties:
+        titles:
+          items:
+            type: string
+          type: array
+          maxItems: 10
+          title: Titles
+        job_types:
+          items:
+            type: string
+          type: array
+          maxItems: 6
+          title: Job Types
+        remote_scope:
+          type: string
+          pattern: ^(remote|hybrid|any)$
+          title: Remote Scope
+          default: remote
+        locations:
+          items:
+            type: string
+          type: array
+          maxItems: 10
+          title: Locations
+        min_salary:
+          anyOf:
+          - type: number
+            maximum: 10000000.0
+            minimum: 0.0
+          - type: 'null'
+          title: Min Salary
+        currency:
+          type: string
+          maxLength: 10
+          minLength: 3
+          title: Currency
+          default: USD
+        notify_new_matches:
+          type: boolean
+          title: Notify New Matches
+          default: true
+      type: object
+      title: JobPreferenceIn
+    JobPreferenceOut:
+      properties:
+        titles:
+          items:
+            type: string
+          type: array
+          maxItems: 10
+          title: Titles
+        job_types:
+          items:
+            type: string
+          type: array
+          maxItems: 6
+          title: Job Types
+        remote_scope:
+          type: string
+          pattern: ^(remote|hybrid|any)$
+          title: Remote Scope
+          default: remote
+        locations:
+          items:
+            type: string
+          type: array
+          maxItems: 10
+          title: Locations
+        min_salary:
+          anyOf:
+          - type: number
+            maximum: 10000000.0
+            minimum: 0.0
+          - type: 'null'
+          title: Min Salary
+        currency:
+          type: string
+          maxLength: 10
+          minLength: 3
+          title: Currency
+          default: USD
+        notify_new_matches:
+          type: boolean
+          title: Notify New Matches
+          default: true
+        updated_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Updated At
+      type: object
+      title: JobPreferenceOut
     JobSitemapEntry:
       properties:
         id:
@@ -13983,6 +14238,22 @@ components:
           title: Visibility
       type: object
       title: PostUpdate
+    PreferencesIn:
+      properties:
+        categories:
+          additionalProperties:
+            $ref: '#/components/schemas/CategoryPrefIn'
+          type: object
+          title: Categories
+          default: {}
+        digest_minutes:
+          type: integer
+          maximum: 1440.0
+          minimum: 5.0
+          title: Digest Minutes
+          default: 15
+      type: object
+      title: PreferencesIn
     ProjectCreate:
       properties:
         title:
@@ -14460,6 +14731,29 @@ components:
       - result
       - created_at
       title: RunOut
+    SearchHit:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        subtitle:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subtitle
+        route:
+          type: string
+          title: Route
+      type: object
+      required:
+      - id
+      - title
+      - route
+      title: SearchHit
     SearchOut:
       properties:
         items:

@@ -108,6 +108,7 @@ components:
     - engineers
     - github
     - groups
+    - jobs.preferences
     - jobs
     - matching
     - meetings

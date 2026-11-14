@@ -103,6 +103,8 @@ features:
   api:
   - domain: jobs
     prefix: /api/v1/jobs
+  - domain: jobs.preferences
+    prefix: /api/v1/jobs/preferences
   - domain: saved_jobs
     prefix: /api/v1/saved-jobs
   - domain: search
@@ -459,6 +461,8 @@ api:
     prefix: /github
   - domain: groups
     prefix: /groups
+  - domain: jobs.preferences
+    prefix: /jobs/preferences
   - domain: jobs
     prefix: /jobs
   - domain: matching

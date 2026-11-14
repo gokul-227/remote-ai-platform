@@ -255,3 +255,14 @@ def worker_heartbeat(hostname: str = "") -> None:
             )
 
     runtime.run(go())
+
+
+@shared_task(name="notifications.send_digests")
+def send_digests() -> dict[str, Any]:
+    async def go() -> dict[str, Any]:
+        from app.domains.notifications.preferences import build_digests
+
+        async with runtime.session_factory()() as db:
+            return await build_digests(db)
+
+    return runtime.run(go())

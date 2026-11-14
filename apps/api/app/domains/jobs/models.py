@@ -105,3 +105,27 @@ class JobPost(Base):
 
     def __repr__(self) -> str:
         return f"<JobPost id={self.id} title='{self.title}' company='{self.company_name}' source='{self.source}'>"
+
+
+class JobPreference(Base):
+    """What a professional is looking for; drives recommendations and alerts.
+
+    Stated preferences, separate from the profile: titles, job types, remote scope,
+    locations and a salary floor. Shown as an editable sentence on the jobs home.
+    """
+
+    __tablename__ = "job_preferences"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    titles: Mapped[list[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False, default=list)
+    job_types: Mapped[list[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False, default=list)
+    remote_scope: Mapped[str] = mapped_column(String(20), nullable=False, default="remote")  # remote | hybrid | any
+    locations: Mapped[list[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False, default=list)
+    min_salary: Mapped[float | None] = mapped_column(Float, nullable=True)
+    currency: Mapped[str] = mapped_column(String(10), nullable=False, default="USD")
+    notify_new_matches: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

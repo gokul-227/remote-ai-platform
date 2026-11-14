@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -66,3 +67,58 @@ class EmailOutbox(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+# Notification kinds are grouped into categories by prefix (see notifications.preferences).
+NOTIFICATION_CATEGORIES = (
+    "application",
+    "project",
+    "contract",
+    "message",
+    "meeting",
+    "connection",
+    "group",
+    "support",
+    "organisation",
+    "system",
+)
+EMAIL_MODES = ("immediate", "digest", "off")
+
+
+class NotificationPreference(Base):
+    """Per-user delivery choices: in-app on/off and email immediate/digest/off per category."""
+
+    __tablename__ = "notification_preferences"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    # {"application": {"in_app": true, "email": "immediate"}, ...}; missing categories use defaults.
+    categories: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=False, default=dict
+    )
+    digest_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class NotificationDigestItem(Base):
+    """An email-worthy notification waiting for the user's next digest."""
+
+    __tablename__ = "notification_digest_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(50), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    link_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )

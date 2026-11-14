@@ -49,6 +49,7 @@ celery_app.conf.update(
             "schedule": 60.0,
         },
         "prune-runs": {"task": "tasks.prune_runs", "schedule": crontab(hour=4, minute=5)},
+        "send-digests": {"task": "notifications.send_digests", "schedule": 300.0},
     },
 )
 

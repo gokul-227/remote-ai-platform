@@ -4,7 +4,8 @@ Notifications Router — REST endpoints + WebSocket real-time delivery.
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +14,12 @@ from app.core.feature_flags import is_feature_enabled
 from app.core.ws_manager import ws_manager
 from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
-from app.domains.notifications.models import Notification
+from app.domains.notifications.models import (
+    NOTIFICATION_CATEGORIES,
+    Notification,
+    NotificationPreference,
+)
+from app.domains.notifications.preferences import normalise
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -45,6 +51,53 @@ async def list_notifications(
         }
         for n in notifications
     ]
+
+
+class CategoryPrefIn(BaseModel):
+    in_app: bool = True
+    email: str = Field(default="immediate", pattern="^(immediate|digest|off)$")
+
+
+class PreferencesIn(BaseModel):
+    categories: dict[str, CategoryPrefIn] = {}
+    digest_minutes: int = Field(default=15, ge=5, le=1440)
+
+
+@router.get("/preferences", summary="Notification preferences")
+async def get_preferences(
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> dict:
+    pref = await db.get(NotificationPreference, current_user.id)
+    return {
+        "categories": normalise(pref.categories if pref else None),
+        "digest_minutes": pref.digest_minutes if pref else 15,
+        "configured": pref is not None,
+    }
+
+
+@router.put("/preferences", summary="Update notification preferences")
+async def put_preferences(
+    body: PreferencesIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    unknown = set(body.categories) - set(NOTIFICATION_CATEGORIES)
+    if unknown:
+        raise HTTPException(
+            status_code=422, detail=f"Unknown categories: {', '.join(sorted(unknown))}"
+        )
+    pref = await db.get(NotificationPreference, current_user.id)
+    if pref is None:
+        pref = NotificationPreference(user_id=current_user.id, categories={})
+        db.add(pref)
+    pref.categories = normalise({k: v.model_dump() for k, v in body.categories.items()})
+    pref.digest_minutes = body.digest_minutes
+    await db.flush()
+    return {
+        "categories": pref.categories,
+        "digest_minutes": pref.digest_minutes,
+        "configured": True,
+    }
 
 
 @router.get("/unread-count", summary="Count unread notifications")
@@ -98,7 +151,9 @@ async def mark_all_read(
 
 
 @router.websocket("/ws/{user_id}")
-async def notification_websocket(websocket: WebSocket, user_id: uuid.UUID, token: str = Query(...)) -> None:
+async def notification_websocket(
+    websocket: WebSocket, user_id: uuid.UUID, token: str = Query(...)
+) -> None:
     """
     WebSocket endpoint for real-time notification delivery.
 

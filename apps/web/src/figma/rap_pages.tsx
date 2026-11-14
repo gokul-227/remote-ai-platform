@@ -1296,12 +1296,18 @@ export function Search() {
   }, []);
   const [t, setT] = useState("All");
   const r = useApi<any>(q0.trim().length > 1 ? "/search" : null, { q: q0.trim(), limit: 20 });
-  const d = r.data || { jobs: [], engineers: [], companies: [] };
+  const d = r.data || { jobs: [], engineers: [], companies: [], projects: [], documents: [], channels: [] };
   const show = (x: string) => t === "All" || t === x;
+  const mine: [string, string, { id: string; title: string; subtitle?: string | null; route: string }[]][] = [
+    ["Projects", "Project", d.projects || []],
+    ["Documents", "Document", d.documents || []],
+    ["Channels", "Channel", d.channels || []],
+  ];
+  const tabs = ["All", "Jobs", "People", "Companies", ...(d.signed_in ? ["Projects", "Documents", "Channels"] : [])];
   return (
     <Wrap w="max-w-[900px]">
       <h1 className="mb-3">{q0 ? `Results for "${q0}"` : "Search"}</h1>
-      <Tabs items={["All", "Jobs", "People", "Companies"]} v={t} set={setT} />
+      <Tabs items={tabs} v={t} set={setT} />
       <div className="mt-4 space-y-3">
         {r.loading && (
           <Card c="rounded-xl">
@@ -1366,11 +1372,33 @@ export function Search() {
               </button>
             </Card>
           ))}
-        {r.data && !d.jobs.length && !d.engineers.length && !(d.companies || []).length && (
-          <Card c="rounded-xl">
-            <p className="text-slate-500">No results for “{q0}”. Try a broader keyword.</p>
-          </Card>
+        {mine.map(([tabName, kind, hits]) =>
+          show(tabName)
+            ? hits.map((h) => (
+                <Card key={h.id} c="rounded-xl">
+                  <button
+                    className="flex w-full items-center gap-3 text-left"
+                    onClick={() => goRoute(h.route.replace(/^#/, ""))}
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-[#0552CC]">{h.title}</p>
+                      {h.subtitle && <p className="text-sm text-slate-500">{h.subtitle}</p>}
+                    </div>
+                    <Tag t="gray">{kind}</Tag>
+                  </button>
+                </Card>
+              ))
+            : null,
         )}
+        {r.data &&
+          !d.jobs.length &&
+          !d.engineers.length &&
+          !(d.companies || []).length &&
+          !mine.some(([, , hits]) => hits.length) && (
+            <Card c="rounded-xl">
+              <p className="text-slate-500">No results for “{q0}”. Try a broader keyword.</p>
+            </Card>
+          )}
       </div>
     </Wrap>
   );

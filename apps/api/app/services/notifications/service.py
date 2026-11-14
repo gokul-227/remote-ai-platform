@@ -48,6 +48,16 @@ async def notify_user(
     stable `email_event_key` (MAIL-01). The email is a durable outbox row in
     the caller's transaction, delivered by app.services.email.outbox; most
     notifications (a like, a new match) are in-app only."""
-    await InAppNotificationProvider(db).send(user_id, title, body, kind)
-    if email_event_key is not None:
-        await enqueue_email(db, user_id, email_event_key, kind, title, render_email(title, body, email_link))
+    from app.domains.notifications.preferences import decide, queue_digest
+
+    decision = await decide(db, user_id, kind, title, body)
+    if decision.duplicate:
+        return  # same event for the same user within the dedup window
+    if decision.in_app:
+        await InAppNotificationProvider(db).send(user_id, title, body, kind)
+    if email_event_key is None or decision.email == "off":
+        return
+    if decision.email == "digest":
+        await queue_digest(db, user_id, kind, title, body, email_link)
+        return
+    await enqueue_email(db, user_id, email_event_key, kind, title, render_email(title, body, email_link))

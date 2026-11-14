@@ -178,7 +178,11 @@ class MatchingService:
         }
 
     async def get_recommendations_for_engineer(
-        self, user_id: uuid.UUID, skip: int = 0, limit: int = 20, job_types: tuple[str, ...] | None = None
+        self,
+        user_id: uuid.UUID,
+        skip: int = 0,
+        limit: int = 20,
+        job_types: tuple[str, ...] | None = None,
     ) -> Sequence[JobMatch]:
         """Fetch or compute recommendations for logged in engineer; `job_types` narrows
         them (e.g. freelance/contract work) using the same explainable scores."""
@@ -205,8 +209,9 @@ class MatchingService:
                 )
                 jobs = list(rows.scalars())
             else:
-                # Score against the newest public jobs (previously only 30).
-                jobs = list(await self.job_repo.search(is_remote=None, skip=0, limit=RECOMMENDATION_JOB_POOL))
+                # Score against the newest public jobs (previously only 30),
+                # narrowed by the professional's stated preferences when present.
+                jobs = list(await self._preference_pool(user_id))
             for job in jobs:
                 await self.calculate_match(engineer, job)
             await self.db.commit()
@@ -275,7 +280,9 @@ class MatchingService:
             if len(page) < CANDIDATE_PAGE_SIZE:
                 break
         else:
-            logger.warning(f"Candidate pool reached {CANDIDATE_POOL_CEILING} profiles; the rest were not scored")
+            logger.warning(
+                f"Candidate pool reached {CANDIDATE_POOL_CEILING} profiles; the rest were not scored"
+            )
         persisted = {m["engineer_id"] for _, _, m in best}
         for _, _, match in best:
             await self.match_repo.upsert_match(**match)
@@ -285,3 +292,36 @@ class MatchingService:
         await self.db.commit()
 
         return await self.match_repo.list_top_candidates_for_job(job_id, skip=skip, limit=limit)
+
+    async def _preference_pool(self, user_id: uuid.UUID) -> Sequence[JobPost]:
+        from sqlalchemy import or_
+
+        from app.domains.jobs.models import JobPreference
+
+        pref = await self.db.get(JobPreference, user_id)
+        if pref is None:
+            return await self.job_repo.search(is_remote=None, skip=0, limit=RECOMMENDATION_JOB_POOL)
+        stmt = select(JobPost).where(
+            JobPost.is_active.is_(True), JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None)
+        )
+        if pref.job_types:
+            stmt = stmt.where(func.lower(JobPost.job_type).in_([t.lower() for t in pref.job_types]))
+        if pref.remote_scope == "remote":
+            stmt = stmt.where(JobPost.is_remote.is_(True))
+        if pref.titles:
+            stmt = stmt.where(
+                or_(*[func.lower(JobPost.title).like(f"%{t.lower()}%") for t in pref.titles])
+            )
+        if pref.min_salary:
+            stmt = stmt.where(
+                or_(JobPost.salary_max.is_(None), JobPost.salary_max >= pref.min_salary)
+            )
+        rows = await self.db.execute(
+            stmt.order_by(JobPost.posted_at.desc()).limit(RECOMMENDATION_JOB_POOL)
+        )
+        jobs = list(rows.scalars())
+        if len(jobs) < 5:  # preferences too narrow: fall back so the user still gets something
+            jobs = list(
+                await self.job_repo.search(is_remote=None, skip=0, limit=RECOMMENDATION_JOB_POOL)
+            )
+        return jobs

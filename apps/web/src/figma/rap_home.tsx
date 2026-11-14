@@ -847,7 +847,7 @@ export function Settings({ initial }: { initial?: string } = {}) {
     <Page title="Settings" sub="Manage your account and how your profile appears">
       <div className="grid gap-5 md:grid-cols-[180px_1fr]">
         <div>
-          {["Account", "Privacy", "Security", "Connected accounts"].map((t) => (
+          {["Account", "Notifications", "Privacy", "Security", "Connected accounts"].map((t) => (
             <button
               key={t}
               onClick={() => {
@@ -866,6 +866,8 @@ export function Settings({ initial }: { initial?: string } = {}) {
         <Card>
           {tab === "Connected accounts" ? (
             <GithubConnect />
+          ) : tab === "Notifications" ? (
+            <NotificationPreferences />
           ) : tab === "Account" ? (
             <>
               <h2>Account details</h2>
@@ -2131,5 +2133,108 @@ export function CoJobs() {
         </TableScroll>
       </Card>
     </Page>
+  );
+}
+
+const NOTIFY_CATEGORIES: [string, string][] = [
+  ["application", "Applications and invitations"],
+  ["project", "Projects and tasks"],
+  ["contract", "Contracts and milestones"],
+  ["message", "Messages and mentions"],
+  ["meeting", "Meetings"],
+  ["connection", "Connections"],
+  ["group", "Communities"],
+  ["organisation", "Organisation membership"],
+  ["support", "Support"],
+  ["system", "Platform"],
+];
+type CatPref = { in_app: boolean; email: "immediate" | "digest" | "off" };
+/** Live: /notifications/preferences. In-app on/off and email timing per category. */
+export function NotificationPreferences() {
+  const q = useApi<{ categories: Record<string, CatPref>; digest_minutes: number; configured: boolean }>(
+    "/notifications/preferences",
+  );
+  const [edited, setEdited] = useState<Record<string, CatPref> | null>(null);
+  const [digestEdited, setDigestEdited] = useState<number | null>(null);
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  // Edits start from the loaded values; no state is copied inside an effect.
+  const cats = edited ?? q.data?.categories ?? null;
+  const digest = digestEdited ?? q.data?.digest_minutes ?? 15;
+  const setDigest = (m: number) => setDigestEdited(m);
+  if (!cats)
+    return <p className="text-slate-500">{q.error ? "Couldn’t load your notification settings." : "Loading…"}</p>;
+  const set = (k: string, patch: Partial<CatPref>) =>
+    setEdited((c) => ({ ...(c ?? cats), [k]: { ...(c ?? cats)[k], ...patch } }));
+  const save = async () => {
+    setBusy(true);
+    setNotice("");
+    try {
+      await api.put("/notifications/preferences", { categories: cats, digest_minutes: digest });
+      setNotice("Notification settings saved.");
+    } catch (e) {
+      setNotice(extractErrorMessage(e, "Couldn’t save notification settings."));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <h2>Notifications</h2>
+      <p className="mb-3 text-sm text-slate-500">
+        Choose what reaches you in the app and by email. “Digest” bundles emails into one every{" "}
+        <select
+          aria-label="Digest frequency"
+          value={digest}
+          onChange={(e) => setDigest(Number(e.target.value))}
+          className="rounded border border-slate-300 px-1"
+        >
+          {[15, 30, 60, 240, 1440].map((m) => (
+            <option key={m} value={m}>
+              {m < 60 ? `${m} minutes` : m < 1440 ? `${m / 60} hours` : "day"}
+            </option>
+          ))}
+        </select>
+        .
+      </p>
+      <div className="divide-y divide-slate-100">
+        {NOTIFY_CATEGORIES.map(([k, label]) => (
+          <div key={k} className="flex flex-wrap items-center justify-between gap-3 py-2">
+            <span className="font-medium">{label}</span>
+            <span className="flex items-center gap-4 text-sm">
+              <label className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={cats[k]?.in_app ?? true}
+                  onChange={(e) => set(k, { in_app: e.target.checked })}
+                />
+                In app
+              </label>
+              <label className="flex items-center gap-1">
+                Email
+                <select
+                  aria-label={`Email for ${label}`}
+                  value={cats[k]?.email ?? "immediate"}
+                  onChange={(e) => set(k, { email: e.target.value as CatPref["email"] })}
+                  className="rounded border border-slate-300 px-1"
+                >
+                  <option value="immediate">immediately</option>
+                  <option value="digest">digest</option>
+                  <option value="off">off</option>
+                </select>
+              </label>
+            </span>
+          </div>
+        ))}
+      </div>
+      {notice && (
+        <p role="status" className="mt-3 text-sm text-slate-700">
+          {notice}
+        </p>
+      )}
+      <Btn v="primary" c="mt-4" onClick={save} disabled={busy}>
+        {busy ? "Saving…" : "Save notification settings"}
+      </Btn>
+    </>
   );
 }

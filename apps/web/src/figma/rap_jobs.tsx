@@ -94,6 +94,7 @@ export function Jobs() {
   const m = matchQ.data;
   return (
     <div className="bg-[#F0F2F5]">
+      {engineer && <PreferenceBar />}
       <div className="border-b border-slate-200 bg-white">
         <form
           onSubmit={(e) => {
@@ -1200,6 +1201,158 @@ export function Company() {
           </Card>
         </aside>
       </div>
+    </div>
+  );
+}
+
+type JobPref = {
+  titles: string[];
+  job_types: string[];
+  remote_scope: "remote" | "hybrid" | "any";
+  locations: string[];
+  min_salary: number | null;
+  currency: string;
+  notify_new_matches: boolean;
+};
+const EMPTY_PREF: JobPref = {
+  titles: [],
+  job_types: [],
+  remote_scope: "remote",
+  locations: [],
+  min_salary: null,
+  currency: "USD",
+  notify_new_matches: true,
+};
+/** Live: /jobs/preferences/me — the editable sentence that drives recommendations. */
+export function PreferenceBar() {
+  const summary = useApi<{ summary: string; configured: boolean }>("/jobs/preferences/me/summary");
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState<JobPref>(EMPTY_PREF);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const edit = async () => {
+    setErr("");
+    try {
+      const r = await api.get<JobPref | null>("/jobs/preferences/me");
+      setF(r.data ?? EMPTY_PREF);
+    } catch {
+      setF(EMPTY_PREF);
+    }
+    setOpen(true);
+  };
+  const list = (v: string) =>
+    v
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  const save = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      await api.put("/jobs/preferences/me", f);
+      setOpen(false);
+      summary.reload();
+    } catch (e) {
+      setErr(extractErrorMessage(e, "Couldn’t save your preferences."));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="border-b border-slate-200 bg-white">
+      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2 text-sm">
+        <Ic n="settings" s={16} c="text-slate-500" />
+        <span className="text-slate-700">{summary.data?.summary ?? "Jobs based on your preferences"}</span>
+        <button type="button" className="font-semibold text-[#0552CC]" onClick={edit}>
+          {summary.data?.configured ? "Edit preferences" : "Set preferences"}
+        </button>
+      </div>
+      <Modal open={open} onClose={() => setOpen(false)} title="Job preferences">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Job titles (comma separated)">
+            <input
+              className={inputCls}
+              value={f.titles.join(", ")}
+              onChange={(e) => setF({ ...f, titles: list(e.target.value) })}
+            />
+          </Field>
+          <Field label="Locations (comma separated)">
+            <input
+              className={inputCls}
+              value={f.locations.join(", ")}
+              onChange={(e) => setF({ ...f, locations: list(e.target.value) })}
+            />
+          </Field>
+          <Field label="Workplace">
+            <select
+              className={inputCls}
+              value={f.remote_scope}
+              onChange={(e) => setF({ ...f, remote_scope: e.target.value as JobPref["remote_scope"] })}
+            >
+              <option value="remote">Remote only</option>
+              <option value="hybrid">Hybrid or remote</option>
+              <option value="any">Any</option>
+            </select>
+          </Field>
+          <Field label="Minimum salary">
+            <div className="flex gap-2">
+              <input
+                className={inputCls}
+                type="number"
+                min={0}
+                value={f.min_salary ?? ""}
+                onChange={(e) => setF({ ...f, min_salary: e.target.value ? Number(e.target.value) : null })}
+              />
+              <input
+                className={cx(inputCls, "w-24")}
+                value={f.currency}
+                onChange={(e) => setF({ ...f, currency: e.target.value.toUpperCase() })}
+              />
+            </div>
+          </Field>
+        </div>
+        <fieldset className="mt-3">
+          <legend className="text-sm font-semibold text-slate-700">Job types</legend>
+          <div className="mt-1 flex flex-wrap gap-3 text-sm">
+            {["full-time", "part-time", "contract", "freelance", "internship", "temporary"].map((t) => (
+              <label key={t} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={f.job_types.includes(t)}
+                  onChange={(e) =>
+                    setF({
+                      ...f,
+                      job_types: e.target.checked ? [...f.job_types, t] : f.job_types.filter((x) => x !== t),
+                    })
+                  }
+                />
+                {t}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label className="mt-3 flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={f.notify_new_matches}
+            onChange={(e) => setF({ ...f, notify_new_matches: e.target.checked })}
+          />
+          Tell me about new matching jobs
+        </label>
+        {err && (
+          <p role="alert" className="mt-2 text-sm text-red-600">
+            {err}
+          </p>
+        )}
+        <div className="mt-4 flex justify-end gap-2">
+          <Btn v="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Btn>
+          <Btn v="primary" onClick={save} disabled={busy}>
+            {busy ? "Saving…" : "Save preferences"}
+          </Btn>
+        </div>
+      </Modal>
     </div>
   );
 }
