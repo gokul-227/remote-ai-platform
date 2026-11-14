@@ -20,7 +20,7 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import and_, delete, func, or_, select
+from sqlalchemy import and_, delete, false, func, or_, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -491,8 +491,7 @@ async def send_signal(
                         MeetingParticipant.response != "DECLINED",
                         or_(
                             and_(
-                                m.passcode_hash is None,
-                                not m.waiting_room,
+                                true() if m.passcode_hash is None and not m.waiting_room else false(),
                                 MeetingParticipant.admission != "DENIED",
                             ),
                             MeetingParticipant.admission == "ADMITTED",
@@ -555,8 +554,7 @@ async def receive_signals(
                             MeetingParticipant.response != "DECLINED",
                             or_(
                                 and_(
-                                    m.passcode_hash is None,
-                                    not m.waiting_room,
+                                    true() if m.passcode_hash is None and not m.waiting_room else false(),
                                     MeetingParticipant.admission != "DENIED",
                                 ),
                                 MeetingParticipant.admission == "ADMITTED",

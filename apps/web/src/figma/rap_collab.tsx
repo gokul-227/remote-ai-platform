@@ -111,7 +111,9 @@ export function Meetings({ calls = false }: { calls?: boolean } = {}) {
         .catch((e) => setMsg(extractErrorMessage(e, "You can’t join this meeting right now.")));
       return;
     }
-    api.get(`/meetings/${m.id}/join`).then(() => setInCall(m))
+    api
+      .get(`/meetings/${m.id}/join`)
+      .then(() => setInCall(m))
       .catch((e) => setMsg(extractErrorMessage(e, "Request admission before joining.")));
   };
   const rows = q.data ?? [];
