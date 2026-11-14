@@ -1,3 +1,4 @@
+import { MeetingAdmission } from "./MeetingAdmission";
 import { ChannelThreads } from "./ChannelThreads";
 import { AttachmentPicker, MessageAttachments, type Attachment } from "./ChannelAttachments";
 import { demoUrl } from "@/lib/demoUrl";
@@ -71,6 +72,8 @@ function openExternal(url: string | undefined) {
 interface Meeting {
   id: string;
   organizer_id: string;
+  waiting_room?: boolean;
+  passcode_required?: boolean;
   title: string;
   agenda: string | null;
   starts_at: string;
@@ -78,7 +81,7 @@ interface Meeting {
   provider: string;
   status: string;
   phase: "UPCOMING" | "JOINABLE" | "ENDED" | "CANCELLED";
-  participants: { user_id: string; full_name: string | null; response: string }[];
+  participants: { user_id: string; full_name: string | null; response: string; admission?: string }[];
 }
 
 const PHASE_TONE: Record<string, string> = { UPCOMING: "blue", JOINABLE: "green", ENDED: "gray", CANCELLED: "red" };
@@ -108,7 +111,8 @@ export function Meetings({ calls = false }: { calls?: boolean } = {}) {
         .catch((e) => setMsg(extractErrorMessage(e, "You can’t join this meeting right now.")));
       return;
     }
-    setInCall(m);
+    api.get(`/meetings/${m.id}/join`).then(() => setInCall(m))
+      .catch((e) => setMsg(extractErrorMessage(e, "Request admission before joining.")));
   };
   const rows = q.data ?? [];
   return (
@@ -224,6 +228,9 @@ export function Meetings({ calls = false }: { calls?: boolean } = {}) {
                     )}
                   </div>
                 </div>
+                {["UPCOMING", "JOINABLE"].includes(m.phase) && (
+                  <MeetingAdmission meeting={m} host={mine} onReload={q.reload} />
+                )}
                 {m.phase === "UPCOMING" && (
                   <p className="mt-2 text-xs text-slate-500">The join button appears 15 minutes before the start.</p>
                 )}
@@ -2113,7 +2120,13 @@ export function CallRoom({ meeting, onLeave }: { meeting: Meeting; onLeave: () =
         cursor = r.data.cursor;
         for (const s of r.data.signals) await handle(s).catch(() => undefined);
       } catch (e) {
-        if (statusOf(e) === 409) setProblem("This call has ended.");
+        if ([403, 404, 409].includes(statusOf(e) ?? 0)) {
+          live = false;
+          localRef.current?.getTracks().forEach((track) => track.stop());
+          Object.values(peers.current).forEach((peer) => peer.close());
+          setRemotes({});
+          setProblem("Meeting access ended. Leave and request admission again if needed.");
+        }
       }
       if (live) timer = window.setTimeout(poll, document.visibilityState === "visible" ? 1000 : 3000);
     };

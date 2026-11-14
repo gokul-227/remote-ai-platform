@@ -39,6 +39,9 @@ export async function signIn(page: Page, email: string, opts: { navigate?: boole
   await page.locator("#code").fill(OTP);
   await page.getByRole("button", { name: /verify/i }).click();
   await expect(page).not.toHaveURL(/#login/, { timeout: 20_000 });
+  // Wait for session hydration before another navigation can interrupt it.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("remote_ai_platform_token")), { timeout: 20_000 }).toBeTruthy();
+  await expect(page.getByRole("banner").getByRole("button", { name: "Sign in", exact: true })).toHaveCount(0);
 }
 
 /** The signed-in session's bearer token, as the app stored it. */

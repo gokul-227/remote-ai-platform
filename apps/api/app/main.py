@@ -24,6 +24,7 @@ from app.core.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
 from app.domains.admin.incident_router import router as incident_router
+from app.domains.admin.inventory_router import router as admin_inventory_router
 from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.operations_router import router as admin_operations_router
 from app.domains.admin.portfolio_router import router as admin_portfolio_router
@@ -305,6 +306,7 @@ def create_app() -> FastAPI:
     app.include_router(matching_router, prefix=prefix)
     app.include_router(admin_router, prefix=prefix)
     app.include_router(incident_router, prefix=prefix)
+    app.include_router(admin_inventory_router, prefix=prefix)
     app.include_router(project_demos_router, prefix=prefix)
     app.include_router(moderation_router, prefix=prefix)
     app.include_router(saved_jobs_router, prefix=prefix)

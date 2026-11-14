@@ -7,6 +7,7 @@ import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
 import { Ic } from "./icons";
 import { Incidents } from "./incidents";
+import { OperationsInventory } from "./inventory";
 import { Background } from "./background";
 import { PlatformOperations, ProjectPortfolio } from "./operations";
 import {
@@ -175,6 +176,7 @@ const SECTIONS: {
         items: [
           ["status", "System status", "zap"],
           ["incidents", "Incidents", "bell"],
+          ["inventory", "Operations inventory", "layers"],
           ["usage", "Usage & limits", "chart"],
           ["google", "Google search", "search"],
         ],
@@ -295,6 +297,7 @@ export default function Console() {
     sources: <JobSources />,
     background: <Background writable={writable} />,
     incidents: <Incidents writable={writable} />,
+    inventory: <OperationsInventory />,
     contracts: <Contracts />,
     operations: <PlatformOperations />,
     portfolio: <ProjectPortfolio writable={writable} />,

@@ -44,6 +44,8 @@ class Meeting(Base):
     # JITSI (room generated here) or EXTERNAL (organiser's own link)
     provider: Mapped[str] = mapped_column(String(20), nullable=False)
     join_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    passcode_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    waiting_room: Mapped[bool] = mapped_column(default=False, server_default="false", nullable=False)
     # SCHEDULED, CANCELLED
     status: Mapped[str] = mapped_column(String(20), default="SCHEDULED", nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -65,6 +67,8 @@ class MeetingParticipant(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    admission: Mapped[str] = mapped_column(String(16), default="NONE", server_default="NONE", nullable=False)
+    passcode_attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     # INVITED, ACCEPTED, DECLINED
     response: Mapped[str] = mapped_column(String(20), default="INVITED", nullable=False)
     created_at: Mapped[datetime] = mapped_column(

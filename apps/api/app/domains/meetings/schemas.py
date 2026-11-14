@@ -21,6 +21,8 @@ class MeetingCreate(BaseModel):
     contract_id: uuid.UUID | None = None
     # Omit to get a generated Jitsi Meet room.
     external_url: str | None = None
+    passcode: str | None = Field(default=None, min_length=6, max_length=64)
+    waiting_room: bool = False
 
     @field_validator("starts_at", "ends_at")
     @classmethod
@@ -61,6 +63,7 @@ class ParticipantOut(BaseModel):
     user_id: uuid.UUID
     full_name: str | None = None
     response: str
+    admission: str = "NONE"
 
 
 class MeetingResponse(BaseModel):
@@ -72,6 +75,8 @@ class MeetingResponse(BaseModel):
     starts_at: datetime
     ends_at: datetime
     provider: str
+    passcode_required: bool = False
+    waiting_room: bool = False
     status: str
     participants: list[ParticipantOut]
     # Lifecycle hint for the UI: UPCOMING, JOINABLE, ENDED, CANCELLED
@@ -108,3 +113,16 @@ class MeetingReschedule(BaseModel):
 
 class ParticipantIn(BaseModel):
     user_id: uuid.UUID
+
+
+class MeetingSecurity(BaseModel):
+    passcode: str | None = Field(default=None, min_length=6, max_length=64)
+    waiting_room: bool = False
+
+
+class AdmissionRequest(BaseModel):
+    passcode: str | None = Field(default=None, max_length=64)
+
+
+class AdmissionDecision(BaseModel):
+    admission: Literal["ADMITTED", "DENIED"]

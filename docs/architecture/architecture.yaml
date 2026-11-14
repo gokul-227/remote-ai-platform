@@ -90,6 +90,7 @@ components:
     routers:
     - health
     - admin.incident
+    - admin.inventory
     - admin.moderation
     - admin.operations
     - admin.portfolio

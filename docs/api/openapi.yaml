@@ -2614,6 +2614,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/operations/inventory:
+    get:
+      tags:
+      - Operations Inventory
+      summary: Operations Inventory
+      operationId: operations_inventory_api_v1_admin_operations_inventory_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Operations Inventory Api V1 Admin Operations Inventory Get
+      security:
+      - HTTPBearer: []
   /api/v1/projects/{project_id}/demos:
     get:
       tags:
@@ -6697,6 +6714,121 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Receive Signals Api V1 Meetings  Meeting Id  Signals Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/security:
+    put:
+      tags:
+      - Meetings
+      summary: Meeting Security
+      operationId: meeting_security_api_v1_meetings__meeting_id__security_put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeetingSecurity'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/admission:
+    post:
+      tags:
+      - Meetings
+      summary: Request Admission
+      operationId: request_admission_api_v1_meetings__meeting_id__admission_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdmissionRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Request Admission Api V1 Meetings  Meeting Id  Admission Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/meetings/{meeting_id}/admission/{user_id}:
+    post:
+      tags:
+      - Meetings
+      summary: Decide Admission
+      operationId: decide_admission_api_v1_meetings__meeting_id__admission__user_id__post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: meeting_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Meeting Id
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdmissionDecision'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeetingResponse'
         '422':
           description: Validation Error
           content:
@@ -11393,6 +11525,28 @@ components:
       - details
       - created_at
       title: ActivityLogResponse
+    AdmissionDecision:
+      properties:
+        admission:
+          type: string
+          enum:
+          - ADMITTED
+          - DENIED
+          title: Admission
+      type: object
+      required:
+      - admission
+      title: AdmissionDecision
+    AdmissionRequest:
+      properties:
+        passcode:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Passcode
+      type: object
+      title: AdmissionRequest
     AnalyticsEventCreate:
       properties:
         event_name:
@@ -15480,6 +15634,17 @@ components:
           - type: string
           - type: 'null'
           title: External Url
+        passcode:
+          anyOf:
+          - type: string
+            maxLength: 64
+            minLength: 6
+          - type: 'null'
+          title: Passcode
+        waiting_room:
+          type: boolean
+          title: Waiting Room
+          default: false
       type: object
       required:
       - title
@@ -15549,6 +15714,14 @@ components:
         provider:
           type: string
           title: Provider
+        passcode_required:
+          type: boolean
+          title: Passcode Required
+          default: false
+        waiting_room:
+          type: boolean
+          title: Waiting Room
+          default: false
         status:
           type: string
           title: Status
@@ -15579,6 +15752,21 @@ components:
       - phase
       - created_at
       title: MeetingResponse
+    MeetingSecurity:
+      properties:
+        passcode:
+          anyOf:
+          - type: string
+            maxLength: 64
+            minLength: 6
+          - type: 'null'
+          title: Passcode
+        waiting_room:
+          type: boolean
+          title: Waiting Room
+          default: false
+      type: object
+      title: MeetingSecurity
     MemberIn:
       properties:
         user_id:
@@ -16113,6 +16301,10 @@ components:
         response:
           type: string
           title: Response
+        admission:
+          type: string
+          title: Admission
+          default: NONE
       type: object
       required:
       - user_id
