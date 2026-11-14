@@ -1,3 +1,5 @@
+import { demoUrl } from "@/lib/demoUrl";
+import { ChannelSearch } from "./ChannelSearch";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Ic, Btn, Card, Tag, Modal, Field, inputCls, Notice, cx } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
@@ -1237,16 +1239,45 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
   const { user } = useAuth();
   const [thread, setThread] = useState<ChannelMsg | null>(null);
   const q = useApi<ChannelMsg[]>(`/channels/${channel.id}/messages`, thread ? { thread: thread.id } : undefined);
+  const scope = thread?.id ?? "channel";
+  const [history, setHistory] = useState<{ scope: string; messages: ChannelMsg[]; more: boolean } | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const viewingHistory = history?.scope === scope;
+  const messages = viewingHistory ? [...history.messages, ...(q.data ?? [])] : (q.data ?? []);
+  const returnToLatest = () => {
+    setHistory(null);
+    q.reload();
+  };
+  const loadOlder = async () => {
+    const first = messages[0];
+    if (!first || loadingHistory) return;
+    setLoadingHistory(true);
+    try {
+      const response = await api.get<ChannelMsg[]>(`/channels/${channel.id}/messages`, {
+        params: { before: first.created_at, before_id: first.id, thread: thread?.id, limit: 50 },
+      });
+      setHistory((previous) => ({
+        scope,
+        messages: [...response.data, ...(previous?.scope === scope ? previous.messages : [])],
+        more: response.data.length === 50,
+      }));
+      setErr("");
+    } catch (e) {
+      setErr(extractErrorMessage(e, "Earlier messages could not be loaded. Try again."));
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
   const [body, setBody] = useState("");
   const [err, setErr] = useState("");
   const { reload } = q;
   // Poll every 15 s while the tab is visible; nothing while hidden.
   useEffect(() => {
     const t = window.setInterval(() => {
-      if (document.visibilityState === "visible") reload();
+      if (document.visibilityState === "visible" && !viewingHistory) reload();
     }, 15000);
     return () => window.clearInterval(t);
-  }, [reload]);
+  }, [reload, viewingHistory]);
   useEffect(() => {
     api
       .post(`/channels/${channel.id}/read`)
@@ -1264,7 +1295,7 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
       });
       setBody("");
       setErr("");
-      q.reload();
+      returnToLatest();
     } catch (e) {
       setErr(extractErrorMessage(e, "Message not sent. Try again."));
     }
@@ -1275,7 +1306,7 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
     try {
       await fn();
       setErr("");
-      q.reload();
+      returnToLatest();
     } catch (e) {
       setErr(extractErrorMessage(e, "That didn’t work. Try again."));
     }
@@ -1318,14 +1349,35 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
           </Btn>
         </div>
       </div>
+      <ChannelSearch channelId={channel.id} />
       {thread && (
         <div className="mb-2 rounded-lg bg-slate-50 p-2 text-sm">
           <b>{thread.author_name || "Member"}</b>: {thread.body}
         </div>
       )}
       {!!q.error && !q.data && <Failed retry={q.reload} />}
+      <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+        {messages.length > 0 && (viewingHistory ? history.more : (q.data?.length ?? 0) === 50) && (
+          <button
+            type="button"
+            className="rounded-lg px-3 py-2 font-semibold text-[#0552CC] disabled:opacity-50"
+            onClick={loadOlder}
+            disabled={loadingHistory}
+          >
+            {loadingHistory ? "Loading earlier messages…" : "Load earlier messages"}
+          </button>
+        )}
+        {viewingHistory && (
+          <>
+            <span className="text-slate-500">Viewing history; live refresh is paused.</span>
+            <Btn sm v="ghost" onClick={returnToLatest}>
+              Return to latest messages
+            </Btn>
+          </>
+        )}
+      </div>
       <ol className="grid max-h-[50vh] gap-2 overflow-y-auto" aria-live="polite">
-        {(q.data ?? []).map((m) => (
+        {messages.map((m) => (
           <li
             key={m.id}
             className={`rounded-lg p-2 text-sm ${m.author_id === user?.id ? "bg-[#E8F0FC]" : "bg-slate-50"}`}
@@ -1431,7 +1483,7 @@ function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => v
             )}
           </li>
         ))}
-        {q.data?.length === 0 && <li className="text-sm text-slate-500">No messages yet.</li>}
+        {messages.length === 0 && <li className="text-sm text-slate-500">No messages yet.</li>}
       </ol>
       <form
         className="mt-3 flex gap-2"
@@ -2140,8 +2192,6 @@ export function CallRoom({ meeting, onLeave }: { meeting: Meeting; onLeave: () =
 
 /* ---------------- Web browser ---------------- */
 
-const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
-
 export function Browser() {
   const [address, setAddress] = useState("");
   const [stack, setStack] = useState<string[]>([]);
@@ -2151,36 +2201,21 @@ export function Browser() {
   const [err, setErr] = useState("");
   const frame = useRef<HTMLIFrameElement>(null);
   const current = pos >= 0 ? stack[pos] : "";
-  const load = useCallback(
-    async (raw: string, push = true) => {
-      setErr("");
-      setBusy(true);
-      try {
-        const r = await api.post<{ url: string; view_path: string }>("/browser/views", { url: raw });
-        setAddress(r.data.url);
-        setSrc(`${API_ORIGIN}${r.data.view_path}`);
-        if (push) {
-          setStack((s) => [...s.slice(0, pos + 1), r.data.url]);
-          setPos((p) => p + 1);
-        }
-      } catch (e) {
-        setErr(extractErrorMessage(e, "That page couldn’t be opened."));
-      } finally {
-        setBusy(false);
-      }
-    },
-    [pos],
-  );
-  // Links clicked inside the sandboxed page come back here so browsing stays in the app.
-  useEffect(() => {
-    const onMsg = (e: MessageEvent) => {
-      if (e.source !== frame.current?.contentWindow) return;
-      const d = e.data as { type?: string; url?: string };
-      if (d?.type === "rap-browser-nav" && typeof d.url === "string" && /^https?:\/\//.test(d.url)) void load(d.url);
-    };
-    window.addEventListener("message", onMsg);
-    return () => window.removeEventListener("message", onMsg);
-  }, [load]);
+  const load = (raw: string, push = true) => {
+    setErr("");
+    const url = demoUrl(raw);
+    if (!url) {
+      setErr("Only public websites can be opened. Enter an HTTPS address without credentials.");
+      return;
+    }
+    setBusy(false);
+    setAddress(url);
+    setSrc(url);
+    if (push) {
+      setStack((s) => [...s.slice(0, pos + 1), url]);
+      setPos(pos + 1);
+    }
+  };
   const step = (d: number) => {
     const n = pos + d;
     if (n < 0 || n >= stack.length) return;
@@ -2244,14 +2279,24 @@ export function Browser() {
             </a>
           )}
         </form>
-        {err && <p className="border-b border-slate-200 bg-red-50 px-4 py-2 text-sm text-red-700">{err}</p>}
+        {err && (
+          <p role="alert" className="border-b border-slate-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+            {err}
+          </p>
+        )}
+        {src && (
+          <p className="border-b border-slate-200 px-4 py-2 text-sm text-slate-600">
+            If this site blocks embedding or needs sign-in, use Open in new tab. The preview respects the site’s
+            security settings.
+          </p>
+        )}
         {src ? (
           <iframe
             ref={frame}
             key={src}
             title="Web page"
             src={src}
-            sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            sandbox="allow-scripts allow-forms allow-popups"
             referrerPolicy="no-referrer"
             className="h-[70vh] w-full bg-white"
           />
@@ -2260,7 +2305,7 @@ export function Browser() {
             <Empty
               icon="globe"
               title="Start browsing"
-              text="Type an address above. Pages open safely in an isolated sandbox. Sites that need their own sign-in (Google, Facebook, banks) work best in a new tab."
+              text="Enter a public HTTPS address. The preview respects each site’s embedding rules. For sign-in or a site that blocks embedding, open it in a new tab."
             />
           </div>
         )}

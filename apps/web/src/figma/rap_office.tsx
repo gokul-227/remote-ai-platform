@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Btn, Card, Field, Ic, Notice, Tag, cx, inputCls } from "./rap_kit";
@@ -6,6 +6,7 @@ import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { timeAgo, useApi } from "./live";
 import { colName, evaluateAll, type Cells } from "./sheet_formula";
+import { useDocumentDraft } from "./useDocumentDraft";
 
 /* Built-in Docs, Sheets and Slides. Content is saved to the API with the
    version it was edited from (a 409 means someone else saved first), every
@@ -195,39 +196,16 @@ function EditorShell({ id, onClose }: { id: string; onClose: () => void }) {
 }
 
 function LoadedEditor({ initial, onClose }: { initial: DocFull; onClose: () => void }) {
-  const [doc, setDoc] = useState<DocFull>(initial);
-  const [dirty, setDirty] = useState(false);
-  const [status, setStatus] = useState("");
+  const canEdit = ["OWNER", "EDIT"].includes(initial.my_role);
+  const { doc, dirty, status, saving, conflict, change, save, replace, draft } = useDocumentDraft(initial, canEdit);
   const [panel, setPanel] = useState<"" | "versions" | "share" | "comments">("");
-  const latest = useRef<{ title: string; content: any }>({ title: initial.title, content: initial.content });
-  const canEdit = ["OWNER", "EDIT"].includes(doc.my_role);
-  const save = useCallback(async () => {
-    if (!canEdit) return;
-    setStatus("Saving…");
-    try {
-      const r = await api.put<DocFull>(`/documents/${doc.id}`, { expected_version: doc.version, ...latest.current });
-      setDoc(r.data);
-      setDirty(false);
-      setStatus("All changes saved");
-    } catch (e) {
-      setStatus(extractErrorMessage(e, "Not saved. Try again."));
-    }
-  }, [doc.id, doc.version, canEdit]);
-  // Autosave 2 s after the last change.
-  useEffect(() => {
-    if (!dirty) return;
-    const t = window.setTimeout(save, 2000);
-    return () => window.clearTimeout(t);
-  }, [dirty, save, doc?.version]);
-  const change = (patch: Partial<{ title: string; content: any }>) => {
-    latest.current = { ...latest.current, ...patch };
-    setDirty(true);
-    setStatus("Unsaved changes");
-  };
+  const [editorGeneration, setEditorGeneration] = useState(0);
+  const recoverDraft = () => download(new Blob([JSON.stringify({ kind: doc.kind, ...draft() }, null, 2)],
+    { type: "application/json" }), `${doc.title}-draft.json`);
   return (
     <div className="v2-page">
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
-        <Btn sm v="ghost" onClick={onClose}>
+        <Btn sm v="ghost" onClick={() => { if (!dirty || window.confirm("Leave with unsaved changes? Download your draft first to keep a copy.")) onClose(); }}>
           Files
         </Btn>
         <Ic n={KIND_ICON[doc.kind]} s={18} />
@@ -236,6 +214,7 @@ function LoadedEditor({ initial, onClose }: { initial: DocFull; onClose: () => v
         </label>
         <input
           id="doc-title"
+          key={editorGeneration}
           className="min-w-0 flex-1 rounded px-2 py-1 text-lg font-bold hover:bg-slate-50 focus:bg-white"
           defaultValue={doc.title}
           readOnly={!canEdit}
@@ -246,7 +225,7 @@ function LoadedEditor({ initial, onClose }: { initial: DocFull; onClose: () => v
           {status || `Version ${doc.version}`}
         </span>
         {canEdit && (
-          <Btn sm onClick={save}>
+          <Btn sm disabled={saving || conflict} onClick={save}>
             Save
           </Btn>
         )}
@@ -274,13 +253,17 @@ function LoadedEditor({ initial, onClose }: { initial: DocFull; onClose: () => v
           </Btn>
         )}
       </div>
+      {(dirty || conflict) && <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">
+        <span>{conflict ? "Someone saved a newer version. Your draft is preserved here; download it before reopening the file." : "Changes are pending. Keep this file open until saved, or download your draft."}</span>
+        <Btn sm v="line" onClick={recoverDraft}>Download draft</Btn>
+      </div>}
       {!canEdit && (
         <p className="mb-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800">
           You have {doc.my_role.toLowerCase()} access. Changes can’t be saved.
         </p>
       )}
       <div className={cx("grid gap-3", panel && "lg:grid-cols-[1fr_320px]")}>
-        <div className="min-w-0">
+        <div className="min-w-0" key={editorGeneration}>
           {doc.kind === "DOC" && <DocEditor doc={doc} editable={canEdit} onChange={(content) => change({ content })} />}
           {doc.kind === "SHEET" && (
             <SheetEditor doc={doc} editable={canEdit} onChange={(content) => change({ content })} />
@@ -292,10 +275,10 @@ function LoadedEditor({ initial, onClose }: { initial: DocFull; onClose: () => v
         {panel === "versions" && (
           <VersionsPanel
             id={doc.id}
-            canRestore={canEdit}
+            canRestore={canEdit && !dirty && !saving}
             onRestored={(d) => {
-              setDoc(d);
-              latest.current = { title: d.title, content: d.content };
+              replace(d);
+              setEditorGeneration((n) => n + 1);
             }}
           />
         )}

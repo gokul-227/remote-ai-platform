@@ -1,0 +1,54 @@
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+const put = vi.fn();
+vi.mock("@/lib/api", () => ({ default: { put: (...args: unknown[]) => put(...args) }, extractErrorMessage: () => "Not saved. Try again." }));
+import { useDocumentDraft } from "./useDocumentDraft";
+const initial = { id: "file", version: 1, title: "Notes", content: { text: "original" } };
+describe("document draft recovery", () => {
+  beforeEach(() => { put.mockReset(); vi.useFakeTimers(); });
+  afterEach(() => vi.useRealTimers());
+  it("keeps edits made during a save pending and saves them against the new version", async () => {
+    let finish!: (value: unknown) => void;
+    put.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const { result } = renderHook(() => useDocumentDraft(initial, true));
+    act(() => result.current.change({ content: { text: "first" } }));
+    let saving!: Promise<void>;
+    act(() => { saving = result.current.save(); });
+    act(() => result.current.change({ content: { text: "second" } }));
+    await act(async () => { await result.current.save(); });
+    expect(put).toHaveBeenCalledTimes(1);
+    await act(async () => { finish({ data: { ...initial, version: 2, content: { text: "first" } } }); await saving; });
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.draft().content).toEqual({ text: "second" });
+    put.mockResolvedValue({ data: { ...initial, version: 3, content: { text: "second" } } });
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+    expect(put).toHaveBeenLastCalledWith("/documents/file", { expected_version: 2, title: "Notes", content: { text: "second" } });
+    expect(result.current.dirty).toBe(false);
+  });
+  it("pauses autosave on a version conflict and preserves the downloadable draft", async () => {
+    put.mockRejectedValue({ response: { status: 409 } });
+    const { result } = renderHook(() => useDocumentDraft(initial, true));
+    act(() => result.current.change({ title: "Local notes" }));
+    await act(async () => { await result.current.save(); });
+    expect(result.current.conflict).toBe(true);
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000); await result.current.save(); });
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(result.current.draft().title).toBe("Local notes");
+    expect(result.current.dirty).toBe(true);
+  });
+  it("debounces from the most recent edit and keeps a failed draft retryable", async () => {
+    put.mockRejectedValueOnce(new Error("offline"));
+    const { result } = renderHook(() => useDocumentDraft(initial, true));
+    act(() => result.current.change({ title: "One" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+    act(() => result.current.change({ title: "Two" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(1500); });
+    expect(put).not.toHaveBeenCalled();
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(result.current.dirty).toBe(true);
+    expect(result.current.status).toContain("Not saved");
+    put.mockResolvedValue({ data: { ...initial, title: "Two", version: 2 } });
+    await act(async () => { await result.current.save(); });
+    expect(result.current.dirty).toBe(false);
+  });
+});

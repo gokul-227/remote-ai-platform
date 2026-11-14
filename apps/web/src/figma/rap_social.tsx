@@ -19,7 +19,13 @@ export function Feed() {
   const me = user?.full_name || "You";
   const first = me.split(" ")[0];
   const [page, setPage] = useState(1);
-  const feed = useApi<any>(user ? "/social/feed" : "/social/posts/public", { page: 1, page_size: 20 * page });
+  const [scope, setScope] = useState("connections");
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("latest");
+  const feed = useApi<any>(user && scope === "connections" ? "/social/feed" : "/social/posts/public", {
+    page, page_size: 20, q: query, order: sort,
+  });
   const [local, setLocal] = useState<Record<string, any>>({});
   const posts = (feed.data?.posts ?? [])
     .map((p: any) => ({ ...p, ...(local[p.id] || {}) }))
@@ -34,7 +40,6 @@ export function Feed() {
   const [reason, setReason] = useState("Spam or misleading content");
   const [notice, setNotice] = useState("");
   const [audience, setAudience] = useState("Public");
-  const [sort, setSort] = useState("Latest");
   const patch = (id: string, v: any) => setLocal((l) => ({ ...l, [id]: { ...(l[id] || {}), ...v } }));
   const fail = (e: unknown, m: string) => setNotice(extractErrorMessage(e, m));
   const like = async (p: any) => {
@@ -128,7 +133,7 @@ export function Feed() {
     }
     setReport(null);
   };
-  const sorted = [...posts].sort((a: any, b: any) => (sort === "Most liked" ? b.like_count - a.like_count : 0));
+  const sorted = posts;
   return (
     <div className="space-y-5">
       {user && (
@@ -176,17 +181,28 @@ export function Feed() {
         </div>
       )}
       <div className="flex items-center justify-between text-sm">
-        <h3>{user ? "Your community" : "Community posts"}</h3>
+        <h3>{scope === "connections" ? "Your community" : "Discover public posts"}</h3>
+        {user && <select aria-label="Feed audience" value={scope} onChange={(e) => { setScope(e.target.value); setPage(1); }}>
+          <option value="connections">My connections</option>
+          <option value="public">Discover public posts</option>
+        </select>}
         <select
           aria-label="Feed order"
           value={sort}
-          onChange={(e) => setSort(e.target.value)}
+          onChange={(e) => { setSort(e.target.value); setPage(1); }}
           className="bg-transparent text-slate-500"
         >
-          <option>Latest</option>
-          <option>Most liked</option>
+          <option value="latest">Latest</option>
+          <option value="most_liked">Most liked</option>
         </select>
       </div>
+      <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); setQuery(search.trim()); setPage(1); }}>
+        <input aria-label="Search post content" maxLength={200} value={search} onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search post content" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2" />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-white">Search posts</button>
+        {query && <button type="button" className="text-blue-600" onClick={() => { setSearch(""); setQuery(""); setPage(1); }}>Clear search</button>}
+      </form>
+      {feed.error && <div role="alert">Couldn’t load posts. <button type="button" onClick={feed.reload}>Retry</button></div>}
       {feed.loading && !feed.data && <div className="rap-panel p-8 text-center text-slate-500">Loading your feed…</div>}
       {sorted.map((p: any) => {
         const by = p.author?.full_name || "Member";
@@ -333,22 +349,18 @@ export function Feed() {
           </article>
         );
       })}
-      {!feed.loading && !sorted.length && (
+      {!feed.loading && !feed.error && !sorted.length && (
         <div className="rap-panel v2-empty">
           <Ic n="users" s={36} c="mx-auto" />
-          <h3>Your feed is quiet</h3>
-          <p>Connect with people and share an update to get the conversation started.</p>
+          <h3>{query ? "No matching posts" : "Your feed is quiet"}</h3>
+          <p>{query ? "Try another search or discover public posts." : "Connect with people, discover public posts, or share an update."}</p>
         </div>
       )}
-      {feed.data?.has_more ? (
-        <p className="text-center py-5">
-          <button className="text-sm font-semibold text-blue-600" onClick={() => setPage(page + 1)}>
-            Show more posts
-          </button>
-        </p>
-      ) : (
-        sorted.length > 0 && <p className="text-center text-xs text-slate-400 py-5">You’re all caught up.</p>
-      )}
+      {(page > 1 || feed.data?.has_more) && <nav aria-label="Feed pages" className="flex items-center justify-center gap-4 py-5">
+        <button type="button" className="text-blue-600 disabled:text-slate-400" disabled={page === 1 || feed.loading} onClick={() => setPage(page - 1)}>Previous posts</button>
+        <span aria-live="polite">Page {page}</span>
+        <button type="button" className="text-blue-600 disabled:text-slate-400" disabled={!feed.data?.has_more || feed.loading} onClick={() => setPage(page + 1)}>Next posts</button>
+      </nav>}
       <Modal open={compose} onClose={() => setCompose(false)} title={edit ? "Edit post" : "Create a post"}>
         <div className="flex gap-3 items-center mb-5">
           <Av name={me} />
