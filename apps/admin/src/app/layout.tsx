@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Remote AI Platform — Staff console",
+  title: "Remote AI Platform — Operations console",
   robots: { index: false, follow: false },
 };
 

@@ -6,6 +6,7 @@ import { ApiError, api, publicGet, supabase } from "@/lib/client";
 import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
 import { Ic } from "./icons";
+import { PlatformOperations, ProjectPortfolio } from "./operations";
 import {
   Announcements,
   AssistantActivity,
@@ -39,7 +40,7 @@ interface Version {
   version: string;
 }
 
-// Eight sections, each with named groups of screens: the top bar shows a tab per
+// Nine sections, each with named groups of screens: the top bar shows a tab per
 // section (like the product), the sidebar shows only the section in use, and
 // every screen is addressable as #screen.
 type Screen = [key: string, label: string, icon: string];
@@ -104,6 +105,21 @@ const SECTIONS: {
         ],
       },
       { label: "Freelancing", items: [["contracts", "Contracts", "file"]] },
+    ],
+  },
+  {
+    name: "Delivery Operations",
+    tab: "Delivery",
+    icon: "layers",
+    blurb: "Projects, workload and collaboration",
+    groups: [
+      {
+        label: "Delivery",
+        items: [
+          ["portfolio", "Project portfolio", "briefcase"],
+          ["operations", "Platform operations", "chart"],
+        ],
+      },
     ],
   },
   {
@@ -274,6 +290,8 @@ export default function Console() {
     jobs: <Jobs writable={writable} />,
     sources: <JobSources />,
     contracts: <Contracts />,
+    operations: <PlatformOperations />,
+    portfolio: <ProjectPortfolio writable={writable} />,
     tickets: <Support writable={writable} meId={me.id} />,
     mytickets: <Support writable={writable} meId={me.id} initial="assignee=me" title="My assigned tickets" />,
     resolved: <Support writable={writable} meId={me.id} initial="status=RESOLVED" title="Resolved tickets" />,
@@ -295,7 +313,7 @@ export default function Console() {
     <div className="app">
       <header className="top">
         <div className="top-left">
-          <button className="logo" aria-label="Staff console home" onClick={() => open("overview")}>
+          <button className="logo" aria-label="Operations console home" onClick={() => open("overview")}>
             <Ic n="globe" s={22} />
           </button>
           <div className="top-search">

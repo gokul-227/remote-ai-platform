@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError } from "@/lib/client";
 
 /** Load an admin endpoint; keeps the last good data while reloading. */
@@ -15,7 +15,10 @@ export function useLoad<T>(path: string | null) {
     setState((s) => ({ ...s, loading: true }));
     api<T>(path)
       .then((r) => live && setState({ data: r.data, total: r.total, loading: false }))
-      .catch((e: unknown) => live && setState((s) => ({ ...s, loading: false, error: errText(e) })));
+      .catch((e: unknown) => live && setState((s) => ({
+        ...(e instanceof ApiError && [401, 403].includes(e.status) ? {} : s),
+        loading: false, error: errText(e),
+      })));
     return () => {
       live = false;
     };
@@ -89,6 +92,16 @@ export function ReasonDialog({
   onCancel: () => void;
   onConfirm: (reason: string) => Promise<void>;
 }) {
+  const dialog = useRef<HTMLDivElement>(null);
+  const [opener] = useState(() =>
+    typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null),
+  );
+  useEffect(
+    () => () => {
+      if (opener?.isConnected) opener.focus();
+    },
+    [opener],
+  );
   const [reason, setReason] = useState("");
   const [typed, setTyped] = useState("");
   const [err, setErr] = useState("");
@@ -96,11 +109,30 @@ export function ReasonDialog({
   const ok = reason.trim().length >= 3 && (!confirmWord || typed === confirmWord) && !busy;
   return (
     <div
+      ref={dialog}
       className="dialog"
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      onKeyDown={(e) => e.key === "Escape" && onCancel()}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          if (!busy) onCancel();
+        }
+        if (e.key !== "Tab") return;
+        const fields = dialog.current?.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]",
+        );
+        const first = fields?.[0];
+        const last = fields?.[fields.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }}
     >
       <div>
         <h3 style={{ marginTop: 0 }}>{title}</h3>
@@ -125,9 +157,13 @@ export function ReasonDialog({
             />
           </label>
         )}
-        {err && <p className="error">{err}</p>}
+        {err && (
+          <p role="alert" className="error">
+            {err}
+          </p>
+        )}
         <div className="row" style={{ justifyContent: "flex-end", marginTop: 12 }}>
-          <button className="btn" onClick={onCancel}>
+          <button className="btn" disabled={busy} onClick={onCancel}>
             Cancel
           </button>
           <button
