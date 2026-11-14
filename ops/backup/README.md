@@ -53,3 +53,11 @@ Set `BACKUP_REPORT_URL` (the API base URL) and `BACKUP_REPORT_TOKEN` (the same v
 counts, and for restores a label from `RESTORE_TARGET_LABEL`. The console's Backups view then shows the
 last backup and last verified restore; "ok" needs a backup within 26 hours and a verified restore within
 35 days. Reporting is optional and a failed report never fails the run.
+
+## Restore drill (2026-11-14)
+
+A full backup and restore of the isolated E2E stack into a fresh PostgreSQL 16 and MinIO verified
+93 tables (row counts equal), 16 objects (checksums equal) and no dangling file references. The drill
+found that a public-schema dump does not create extensions, so the search indexes (`pg_trgm`) failed to
+restore; backups now record `extensions.txt` and restores create those extensions first. Repeat the drill
+after any schema or provider change, and monthly against production backups (the console shows the date).

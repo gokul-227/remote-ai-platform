@@ -90,6 +90,15 @@ fi
 # 3. Restore (into the empty target; nothing is dropped).
 # The empty target already has a `public` schema: skip only that entry of the dump.
 # One transaction: a failed restore leaves the target empty and re-runnable.
+# Extensions first (a public-schema dump does not create them). Archives made
+# before extensions.txt existed fall back to pg_trgm, which search indexes need.
+exts="$work/backup/extensions.txt"
+[ -f "$exts" ] || echo "pg_trgm public" > "$exts"
+while read -r ext schema; do
+  [ -n "$ext" ] || continue
+  pg psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 -qc "CREATE SCHEMA IF NOT EXISTS \"$schema\"; CREATE EXTENSION IF NOT EXISTS \"$ext\" WITH SCHEMA \"$schema\""
+done < "$exts"
+echo "extensions: $(awk '{print $1}' "$exts" | paste -sd, -)"
 pg pg_restore --list "$work/backup/db.dump" | grep -Ev '^[0-9]+; [0-9]+ [0-9]+ SCHEMA - public ' > "$work/toc.list"
 pg pg_restore --no-owner --no-privileges --exit-on-error --single-transaction --use-list="$work/toc.list" \
   -d "$TARGET_DATABASE_URL" "$work/backup/db.dump"

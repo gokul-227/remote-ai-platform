@@ -38,8 +38,13 @@ pg pg_dump --format=custom --no-owner --no-privileges --schema=public \
 pg pg_restore --data-only --file=- "$work/backup/db.dump" | "$PYTHON" "$HERE/dumpcounts.py" > "$work/backup/row-counts.tsv"
 objects_listed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 objects="$("$PYTHON" "$HERE/objects.py" download "$work/backup/objects")"
+# A public-schema dump omits CREATE EXTENSION, yet indexes and defaults use them
+# (pg_trgm for search). Record name and schema so restore.sh can recreate them.
+pg psql "$SOURCE_DATABASE_URL" -Atc \
+  "SELECT e.extname || ' ' || n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace WHERE e.extname <> 'plpgsql' ORDER BY 1" \
+  > "$work/backup/extensions.txt"
 ( cd "$work/backup" && find . -type f ! -name SHA256SUMS | sort | while read -r f; do sha "$f"; done > SHA256SUMS )
-printf 'created_at=%s\ndump_started_at=%s\nobjects_listed_at=%s\ntables=%s\nobjects=%s\nsource_server_major=%s\ndump_client_major=%s\nincludes=public schema (tables, data, RLS policies); object bytes + content type/metadata\nexcludes=Supabase Auth users and sessions, grants/roles, storage bucket policies, provider configuration\n' \
+printf 'created_at=%s\ndump_started_at=%s\nobjects_listed_at=%s\ntables=%s\nobjects=%s\nsource_server_major=%s\ndump_client_major=%s\nincludes=public schema (tables, data, RLS policies), extension list; object bytes + content type/metadata\nexcludes=Supabase Auth users and sessions, grants/roles, storage bucket policies, provider configuration\n' \
   "$stamp" "$dump_started_at" "$objects_listed_at" \
   "$(wc -l < "$work/backup/row-counts.tsv" | tr -d ' ')" "$objects" "$(server_major "$SOURCE_DATABASE_URL")" "$(client_major pg_dump)" \
   > "$work/backup/MANIFEST"
