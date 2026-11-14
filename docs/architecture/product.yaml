@@ -312,6 +312,8 @@ features:
   api:
   - domain: projects
     prefix: /api/v1/projects
+  - domain: projects.demos
+    prefix: /api/v1/projects
   - domain: documents
     prefix: /api/v1/documents
   - domain: files
@@ -378,6 +380,8 @@ features:
     prefix: /api/v1/{admin,announcements}
   - domain: admin.portfolio
     prefix: /api/v1/admin/operations
+  - domain: admin.incident
+    prefix: /api/v1/admin/incidents
   - domain: analytics
     prefix: /api/v1/analytics
   - domain: health
@@ -429,6 +433,8 @@ api:
   domains:
   - domain: health
     prefix: /health
+  - domain: admin.incident
+    prefix: /admin/incidents
   - domain: admin.moderation
     prefix: /moderation
   - domain: admin.operations
@@ -483,6 +489,8 @@ api:
     prefix: /notifications
   - domain: payments
     prefix: /payments
+  - domain: projects.demos
+    prefix: /projects
   - domain: projects
     prefix: /projects
   - domain: quality

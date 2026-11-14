@@ -89,6 +89,7 @@ components:
     entrypoint: 'apps/api/app/main.py: app'
     routers:
     - health
+    - admin.incident
     - admin.moderation
     - admin.operations
     - admin.portfolio
@@ -116,6 +117,7 @@ components:
     - network
     - notifications
     - payments
+    - projects.demos
     - projects
     - quality
     - saved_jobs

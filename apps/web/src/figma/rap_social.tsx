@@ -1,8 +1,11 @@
+import { PrivateGroupAccess } from "./PrivateGroupAccess";
+import { AttachmentPicker, MessageAttachments } from "./ChannelAttachments";
+import { GroupModeration } from "./GroupModeration";
 import { useState, useEffect } from "react";
 import { Ic, Av, Btn, Card, Tag, Modal, cx, Notice } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { useApi, timeAgo, goRoute, safeHref } from "./live";
+import { useApi, timeAgo, goRoute, safeHref, statusOf } from "./live";
 const go = (r: string) => {
   goRoute(r);
 };
@@ -490,10 +493,16 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
   const [tab, setTab] = useState("Discover");
   const [q, setQ] = useState("");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<string | null>(initial || null);
+  const [selected, setSelected] = useState<string | null>(
+    () =>
+      initial ||
+      (typeof window !== "undefined" ? window.location.hash.match(/^#groups\/([a-f0-9-]{36})$/i)?.[1] : null) ||
+      null,
+  );
   const [create, setCreate] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [privateGroup, setPrivateGroup] = useState(false);
   const [detailTab, setDetailTab] = useState("Discussion");
   const [post, setPost] = useState("");
   const [notice, setNotice] = useState("");
@@ -506,7 +515,7 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
   const members = useApi<any[]>(selected && detailTab === "Members" ? `/groups/${selected}/members` : null, {
     page_size: 100,
   });
-  const g = gq.data;
+  const g = gq.error ? undefined : gq.data;
   const list = ((tab === "Your groups" ? joined.data?.groups : discover.data?.groups) ?? []).filter((x: any) =>
     x.name.toLowerCase().includes(q.toLowerCase()),
   );
@@ -540,7 +549,13 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
       {selected ? (
         !g ? (
           <div className="rap-panel p-10 text-center text-slate-500">
-            {gq.error ? "This group isn’t available." : "Loading group…"}
+            {statusOf(gq.error) === 403 ? (
+              <PrivateGroupAccess key={selected} groupId={selected} onApproved={gq.reload} />
+            ) : gq.error ? (
+              "This group isn’t available."
+            ) : (
+              "Loading group…"
+            )}
             <div className="mt-4">
               <button className="text-blue-600 text-sm" onClick={() => setSelected(null)}>
                 ← All groups
@@ -564,7 +579,7 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
                     {g.member_count === 1 ? "" : "s"}
                   </p>
                 </div>
-                {(g.my_role || "").toLowerCase() !== "owner" && (
+                {g.owner_id !== user?.id && (
                   <Btn
                     v={g.is_member ? "gray" : "primary"}
                     onClick={() =>
@@ -690,7 +705,21 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
                 </Card>
               ) : (
                 <Card c="!p-7">
-                  <h2>Group settings</h2>
+                  <GroupModeration key={g.id} groupId={g.id} ownerId={g.owner_id} onChange={gq.reload} />
+                  <h2 className="mt-6">Group settings</h2>
+                  <label className="v2-field">
+                    <span>
+                      <input
+                        type="checkbox"
+                        checked={g.is_private}
+                        onChange={(e) =>
+                          run(() => api.patch(`/groups/${g.id}`, { is_private: e.target.checked }), "Privacy updated")
+                        }
+                      />{" "}
+                      Private group
+                    </span>
+                  </label>
+                  <a href={`#groups/${g.id}`}>Group access link</a>
                   <label className="v2-field">
                     Name
                     <input
@@ -807,7 +836,11 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
           onSubmit={(e) => {
             e.preventDefault();
             run(async () => {
-              const r = await api.post("/groups", { name: name.trim(), description: desc.trim() || undefined });
+              const r = await api.post("/groups", {
+                name: name.trim(),
+                description: desc.trim() || undefined,
+                is_private: privateGroup,
+              });
               setCreate(false);
               setName("");
               setDesc("");
@@ -823,6 +856,12 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
             Description
             <textarea required value={desc} onChange={(e) => setDesc(e.target.value)} rows={4} />
           </label>
+          <label className="v2-field">
+            <span>
+              <input type="checkbox" checked={privateGroup} onChange={(e) => setPrivateGroup(e.target.checked)} />{" "}
+              Private group — requests require approval
+            </span>
+          </label>
           <button className="rap-button w-full">Create group</button>
         </form>
       </Modal>
@@ -836,14 +875,29 @@ export function Messenger() {
   const [who, setWho] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [draft, setDraft] = useState("");
-  const [msgs, setMsgs] = useState<any[]>([]);
+  const [selection, setSelection] = useState<{ conversation: string; ids: string[] } | null>(null);
+  const [sending, setSending] = useState(false);
+  const [messageState, setMessageState] = useState<{ conversation: string; messages: any[] } | null>(null);
   const [info, setInfo] = useState(false);
   const [err, setErr] = useState("");
   const list = (convs.data ?? []).filter((c: any) =>
     (c.other_participant?.full_name || "").toLowerCase().includes(q.toLowerCase()),
   );
   const cur = (convs.data ?? []).find((c: any) => c.id === who) || list[0];
+  const msgs = messageState?.conversation === cur?.id ? (messageState?.messages ?? []) : [];
+  const setMsgs = (value: any[] | ((previous: any[]) => any[])) => {
+    if (!cur) return;
+    setMessageState((previous) => ({
+      conversation: cur.id,
+      messages:
+        typeof value === "function"
+          ? value(previous && previous.conversation === cur.id ? previous.messages : [])
+          : value,
+    }));
+  };
   const name = cur?.other_participant?.full_name || "Member";
+  const attachmentIds = selection?.conversation === cur?.id ? (selection?.ids ?? []) : [];
+  const setAttachmentIds = (ids: string[]) => setSelection(cur ? { conversation: cur.id, ids } : null);
   useEffect(() => {
     const to = new URLSearchParams(window.location.search).get("to") || sessionStorage.getItem("rap-contact-id");
     if (to) {
@@ -873,15 +927,22 @@ export function Messenger() {
     };
   }, [cur?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const send = async () => {
-    if (!draft.trim() || !cur) return;
+    if (!draft.trim() || !cur || sending) return;
+    setSending(true);
     setErr("");
     try {
-      const r = await api.post(`/conversations/${cur.id}/messages`, { content: draft.trim() });
+      const r = await api.post(`/conversations/${cur.id}/messages`, {
+        content: draft.trim(),
+        attachment_ids: attachmentIds,
+      });
       setMsgs((m) => [...m, r.data]);
       setDraft("");
+      setAttachmentIds([]);
       convs.reload();
     } catch (e) {
       setErr(extractErrorMessage(e, "Message not sent. Try again."));
+    } finally {
+      setSending(false);
     }
   };
   return (
@@ -975,7 +1036,7 @@ export function Messenger() {
               {msgs.map((m: any) => {
                 const mine = m.sender_id === user?.id;
                 return (
-                  <div key={m.id} className={cx("flex", mine ? "justify-end" : "justify-start")}>
+                  <div key={m.id} className={cx("flex flex-col", mine ? "items-end" : "items-start")}>
                     <p
                       title={timeAgo(m.created_at)}
                       className={cx(
@@ -985,6 +1046,7 @@ export function Messenger() {
                     >
                       {m.content}
                     </p>
+                    <MessageAttachments conversationId={cur.id} messageId={m.id} attachments={m.attachments} />
                   </div>
                 );
               })}
@@ -995,6 +1057,7 @@ export function Messenger() {
                 {err}
               </p>
             )}
+            <AttachmentPicker key={cur.id} selected={attachmentIds} onChange={setAttachmentIds} disabled={sending} />
             <form
               className="p-5 flex gap-3 border-t border-slate-100"
               onSubmit={(e) => {
@@ -1010,7 +1073,7 @@ export function Messenger() {
                 onChange={(e) => setDraft(e.target.value)}
                 className="min-w-0 flex-1 rounded-full bg-slate-100 px-5 py-3"
               />
-              <button aria-label="Send message" className="text-blue-600 p-3">
+              <button disabled={sending || !draft.trim()} aria-label="Send message" className="text-blue-600 p-3">
                 <Ic n="send" s={24} />
               </button>
             </form>

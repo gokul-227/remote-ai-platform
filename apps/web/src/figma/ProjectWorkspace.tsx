@@ -1,3 +1,4 @@
+import { ProjectDemos } from "./ProjectDemos";
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -5,7 +6,7 @@ import { goRoute, useApi } from "./live";
 import { ChannelView, Deliverables } from "./rap_collab";
 import { Av, Btn, Card, Tabs, Tag } from "./rap_kit";
 
-const WORKSPACE_TABS = ["Overview", "Members", "Resources", "Activity", "Settings"];
+const WORKSPACE_TABS = ["Overview", "Members", "Resources", "Demos", "Activity", "Settings"];
 const PROJECT_STATUSES = ["CREATED", "PLANNING", "ACTIVE", "REVIEW", "COMPLETED", "CANCELLED"];
 type Detail = {
   project: { id: string; title: string; description: string; status: string; created_at: string; company_id: string };
@@ -160,6 +161,7 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
           </Card>
         </div>
       )}
+      {tab === "Demos" && <ProjectDemos projectId={projectId} />}
       {tab === "Members" && dd && (
         <Card>
           <h2 className="font-semibold">Members</h2>

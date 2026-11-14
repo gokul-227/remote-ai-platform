@@ -26,6 +26,7 @@ from app.domains.channels.models import (
     ChannelMessage,
     ChannelMessageReaction,
 )
+from app.domains.files.attachments import accessible_file as _file_for
 from app.domains.meetings.router import may_invite
 from app.domains.projects.models import Project
 from app.domains.projects.router import can_access
@@ -49,6 +50,7 @@ class MessageIn(BaseModel):
     parent_id: uuid.UUID | None = None
     mentions: list[uuid.UUID] = Field(default_factory=list, max_length=20)
     client_token: str | None = Field(default=None, min_length=8, max_length=64)
+    attachment_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
 
 
 class EditIn(BaseModel):
@@ -83,6 +85,13 @@ class ChannelOut(BaseModel):
     unread: int
 
 
+class AttachmentOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    size: int
+    mime: str | None
+
+
 class MessageOut(BaseModel):
     id: uuid.UUID
     channel_id: uuid.UUID
@@ -91,6 +100,7 @@ class MessageOut(BaseModel):
     parent_id: uuid.UUID | None
     body: str
     mentions: list[str]
+    attachments: list[AttachmentOut] = Field(default_factory=list)
     reply_count: int = 0
     reactions: dict[str, int] = Field(default_factory=dict)
     my_reactions: list[str] = Field(default_factory=list)
@@ -245,10 +255,22 @@ async def _messages_out(
     authors = {u.id: u.full_name for u in (await db.execute(
         select(User).where(User.id.in_({m.author_id for m in rows if m.author_id}))
     )).scalars()} if rows else {}
+    attachment_map: dict[uuid.UUID, list[AttachmentOut]] = {}
+    viewer_user = await db.get(User, viewer) if viewer else None
+    if viewer_user:
+        for m in rows:
+            if m.deleted_at:
+                continue
+            for node_id in m.attachment_ids or []:
+                node = await _file_for(db, uuid.UUID(node_id), viewer_user)
+                if node:
+                    attachment_map.setdefault(m.id, []).append(AttachmentOut(
+                        id=node.id, name=node.name, size=node.size, mime=node.mime,
+                    ))
     return [
         MessageOut(
             id=m.id, channel_id=m.channel_id, author_id=m.author_id, author_name=authors.get(m.author_id) if m.author_id else None,
-            parent_id=m.parent_id,
+            parent_id=m.parent_id, attachments=attachment_map.get(m.id, []),
             body="" if m.deleted_at else m.body,
             mentions=[] if m.deleted_at else list(m.mentions or []),
             reply_count=int(counts.get(m.id, 0)),
@@ -277,6 +299,10 @@ async def history(
     ch = await _channel(db, channel_id, current_user)
     if (after_id is not None and after is None) or (before_id is not None and before is None):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "A message-id cursor needs its paired timestamp")
+    if thread is not None:
+        root = await _message_in(db, ch, thread)
+        if root.parent_id is not None:
+            raise HTTPException(422, "Thread must refer to a root message")
     q = select(ChannelMessage).where(ChannelMessage.channel_id == ch.id)
     q = q.where(ChannelMessage.parent_id == thread) if thread else q.where(ChannelMessage.parent_id.is_(None))
     if after is not None:
@@ -295,6 +321,44 @@ async def history(
             q.order_by(ChannelMessage.created_at.desc(), ChannelMessage.id.desc()).limit(limit)
         )).scalars().all()))
     return await _messages_out(db, list(rows), current_user.id)
+
+
+@router.get("/{channel_id}/threads", response_model=list[MessageOut])
+async def threads(
+    channel_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[MessageOut]:
+    ch = await _channel(db, channel_id, current_user)
+    activity = select(
+        ChannelMessage.parent_id.label("root_id"),
+        func.max(ChannelMessage.created_at).label("latest"),
+    ).where(ChannelMessage.channel_id == ch.id, ChannelMessage.parent_id.is_not(None)).group_by(
+        ChannelMessage.parent_id
+    ).subquery()
+    rows = (await db.scalars(select(ChannelMessage).join(
+        activity, activity.c.root_id == ChannelMessage.id
+    ).where(ChannelMessage.channel_id == ch.id).order_by(
+        activity.c.latest.desc(), ChannelMessage.id.desc()
+    ).offset((page - 1) * limit).limit(limit))).all()
+    return await _messages_out(db, list(rows), current_user.id)
+
+
+@router.get("/{channel_id}/messages/{message_id}/attachments/{node_id}/download")
+async def download_attachment(
+    channel_id: uuid.UUID, message_id: uuid.UUID, node_id: uuid.UUID,
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+):
+    ch = await _channel(db, channel_id, current_user)
+    message = await _message_in(db, ch, message_id)
+    if message.deleted_at or str(node_id) not in (message.attachment_ids or []):
+        raise HTTPException(404, "Attachment not found")
+    if not await _file_for(db, node_id, current_user):
+        raise HTTPException(404, "Attachment not found")
+    from app.domains.files.router import download
+    return await download(node_id, current_user, db)
 
 
 @router.get("/{channel_id}/search", response_model=SearchOut)
@@ -351,6 +415,10 @@ async def post_message(
         parent = await db.get(ChannelMessage, payload.parent_id)
         if parent is None or parent.channel_id != ch.id or parent.parent_id is not None:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Replies go on a top-level message in this channel")
+    attachment_ids = list(dict.fromkeys(payload.attachment_ids))
+    for node_id in attachment_ids:
+        if not await _file_for(db, node_id, current_user):
+            raise HTTPException(404, "Attachment not found")
     mentioned: list[uuid.UUID] = []
     for uid in dict.fromkeys(payload.mentions):
         user = await db.get(User, uid)
@@ -358,7 +426,7 @@ async def post_message(
             mentioned.append(uid)
     msg = ChannelMessage(
         channel_id=ch.id, author_id=current_user.id, parent_id=payload.parent_id, body=payload.body,
-        mentions=[str(u) for u in mentioned], client_token=payload.client_token, created_at=_now(),
+        mentions=[str(u) for u in mentioned], attachment_ids=[str(n) for n in attachment_ids], client_token=payload.client_token, created_at=_now(),
     )
     try:
         async with db.begin_nested():
@@ -395,7 +463,7 @@ async def post_message(
                 member = await db.get(User, uid)
                 if member is not None and await _has_access(db, ch, member):
                     await notify_user(db, uid, f"New in #{ch.name}", preview, "channel")
-    return (await _messages_out(db, [msg]))[0]
+    return (await _messages_out(db, [msg], current_user.id))[0]
 
 
 async def _message_in(db: AsyncSession, ch: Channel, message_id: uuid.UUID) -> ChannelMessage:

@@ -635,6 +635,26 @@ async def preview(
         if not url:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Storage is unavailable")
         return {"kind": "url", "mime": mime, "url": url, "expires_in": DOWNLOAD_TTL_SECONDS}
+    from app.domains.files.office_preview import (
+        MAX_ARCHIVE_BYTES,
+        OFFICE_MIMES,
+        OfficePreviewError,
+        extract_office_preview,
+    )
+
+    if mime in OFFICE_MIMES:
+        data = await get_storage().read_file(_bucket(), node.object_key, MAX_ARCHIVE_BYTES + 1)
+        if data is None:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Storage is unavailable")
+        try:
+            office = await asyncio.to_thread(extract_office_preview, data, mime)
+        except OfficePreviewError:
+            return {
+                "kind": "none",
+                "mime": mime,
+                "reason": "This file cannot be previewed safely. Download it to open it.",
+            }
+        return {"kind": "text", "mime": mime, "text": office.text, "truncated": office.truncated}
     if mime.startswith("text/") or mime == "application/json":
         data = await get_storage().read_file(_bucket(), node.object_key, PREVIEW_MAX_BYTES)
         if data is None:
@@ -1122,7 +1142,8 @@ async def add_file_comment(
 
 
 class FileReviewIn(BaseModel):
-    reviewer_id: uuid.UUID
+    reviewer_id: uuid.UUID | None = None
+    reviewer_email: str | None = Field(default=None, max_length=255)
     version: int = Field(ge=1)
 
 
@@ -1176,9 +1197,17 @@ async def request_file_review(
         raise HTTPException(409, "Choose an active file")
     if body.version != node.current_version:
         raise HTTPException(409, "The file changed; refresh before requesting review")
-    if body.reviewer_id == user.id:
+    reviewer = (
+        await db.get(User, body.reviewer_id)
+        if body.reviewer_id
+        else await db.scalar(
+            select(User).where(
+                func.lower(User.email) == (body.reviewer_email or "").strip().lower()
+            )
+        )
+    )
+    if reviewer is not None and reviewer.id == user.id:
         raise HTTPException(422, "Choose another person to review your file")
-    reviewer = await db.get(User, body.reviewer_id)
     if (
         reviewer is None
         or not reviewer.is_active
@@ -1189,7 +1218,7 @@ async def request_file_review(
         node_id=node_id,
         actor_id=user.id,
         action="review.requested",
-        payload={"reviewer_id": str(body.reviewer_id), "version": body.version},
+        payload={"reviewer_id": str(reviewer.id), "version": body.version},
     )
     db.add(row)
     await db.flush()

@@ -1,4 +1,5 @@
 """Bounded incident operations. Every mutation and its audit event commit atomically."""
+
 import uuid
 from datetime import UTC, datetime
 from typing import Literal
@@ -90,16 +91,33 @@ async def get_incident(db, item_id):
 
 
 async def audit(db, admin, request, item, action, payload):
-    await record_audit_event(db, actor_id=admin.id, actor_role="ADMIN", request=request,
-                            action=f"admin.incident.{action}", resource_type="incident",
-                            resource_id=str(item.id), payload=payload)
+    await record_audit_event(
+        db,
+        actor_id=admin.id,
+        actor_role="ADMIN",
+        request=request,
+        action=f"admin.incident.{action}",
+        resource_type="incident",
+        resource_id=str(item.id),
+        payload=payload,
+    )
 
 
 @router.get("", response_model=list[IncidentOut])
-async def list_incidents(status: Status | None = None, severity: Severity | None = None,
-                         limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0),
-                         admin: User = Depends(staff), db: AsyncSession = Depends(get_db)):
-    q = select(Incident).order_by(Incident.created_at.desc(), Incident.id).limit(limit).offset(offset)
+async def list_incidents(
+    status: Status | None = None,
+    severity: Severity | None = None,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+):
+    q = (
+        select(Incident)
+        .order_by(Incident.created_at.desc(), Incident.id)
+        .limit(limit)
+        .offset(offset)
+    )
     if status:
         q = q.where(Incident.status == status)
     if severity:
@@ -108,26 +126,39 @@ async def list_incidents(status: Status | None = None, severity: Severity | None
 
 
 @router.post("", response_model=IncidentOut, status_code=201)
-async def create_incident(body: IncidentIn, request: Request, admin: User = Depends(staff),
-                          db: AsyncSession = Depends(get_db)):
+async def create_incident(
+    body: IncidentIn,
+    request: Request,
+    admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+):
     await assigned_staff(db, body.assignee_id)
     item = Incident(**body.model_dump(exclude={"reason"}), created_by=admin.id)
     db.add(item)
     await db.flush()
-    await audit(db, admin, request, item, "create", {"reason": body.reason, "severity": item.severity})
+    await audit(
+        db, admin, request, item, "create", {"reason": body.reason, "severity": item.severity}
+    )
     await db.commit()
     await db.refresh(item)
     return item
 
 
 @router.get("/{item_id}", response_model=IncidentOut)
-async def detail(item_id: uuid.UUID, admin: User = Depends(staff), db: AsyncSession = Depends(get_db)):
+async def detail(
+    item_id: uuid.UUID, admin: User = Depends(staff), db: AsyncSession = Depends(get_db)
+):
     return await get_incident(db, item_id)
 
 
 @router.patch("/{item_id}", response_model=IncidentOut)
-async def change(item_id: uuid.UUID, body: IncidentPatch, request: Request,
-                 admin: User = Depends(staff), db: AsyncSession = Depends(get_db)):
+async def change(
+    item_id: uuid.UUID,
+    body: IncidentPatch,
+    request: Request,
+    admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+):
     item = await get_incident(db, item_id)
     if item.version != body.version:
         raise HTTPException(409, "Incident changed; reload before updating")
@@ -141,31 +172,65 @@ async def change(item_id: uuid.UUID, body: IncidentPatch, request: Request,
     values.update(version=body.version + 1, updated_at=datetime.now(UTC))
     if body.status:
         values["resolved_at"] = datetime.now(UTC) if body.status == "RESOLVED" else None
-    result = await db.execute(update(Incident).where(Incident.id == item_id, Incident.version == body.version)
-                              .values(**values).execution_options(synchronize_session=False))
+    result = await db.execute(
+        update(Incident)
+        .where(Incident.id == item_id, Incident.version == body.version)
+        .values(**values)
+        .execution_options(synchronize_session=False)
+    )
     if result.rowcount != 1:  # type: ignore[attr-defined]
         raise HTTPException(409, "Incident changed; reload before updating")
-    await audit(db, admin, request, item, "update", {"reason": body.reason, "before": before, "after": changes})
+    await audit(
+        db,
+        admin,
+        request,
+        item,
+        "update",
+        {"reason": body.reason, "before": before, "after": changes},
+    )
     await db.commit()
     await db.refresh(item)
     return item
 
 
 @router.get("/{item_id}/activity")
-async def activity(item_id: uuid.UUID, limit: int = Query(50, ge=1, le=100),
-                   offset: int = Query(0, ge=0), admin: User = Depends(staff),
-                   db: AsyncSession = Depends(get_db)):
+async def activity(
+    item_id: uuid.UUID,
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+):
     await get_incident(db, item_id)
-    events = (await db.scalars(select(AuditEvent).where(AuditEvent.resource_type == "incident",
-              AuditEvent.resource_id == str(item_id)).order_by(AuditEvent.created_at.desc(), AuditEvent.id)
-              .limit(limit).offset(offset))).all()
-    return [{"id": e.id, "actor_id": e.actor_id, "action": e.action,
-             "created_at": e.created_at, "payload": e.payload} for e in events]
+    events = (
+        await db.scalars(
+            select(AuditEvent)
+            .where(AuditEvent.resource_type == "incident", AuditEvent.resource_id == str(item_id))
+            .order_by(AuditEvent.created_at.desc(), AuditEvent.id)
+            .limit(limit)
+            .offset(offset)
+        )
+    ).all()
+    return [
+        {
+            "id": e.id,
+            "actor_id": e.actor_id,
+            "action": e.action,
+            "created_at": e.created_at,
+            "payload": e.payload,
+        }
+        for e in events
+    ]
 
 
 @router.post("/{item_id}/notes", status_code=201)
-async def note(item_id: uuid.UUID, body: IncidentNote, request: Request,
-               admin: User = Depends(staff), db: AsyncSession = Depends(get_db)):
+async def note(
+    item_id: uuid.UUID,
+    body: IncidentNote,
+    request: Request,
+    admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+):
     item = await get_incident(db, item_id)
     await audit(db, admin, request, item, "note", body.model_dump())
     await db.commit()

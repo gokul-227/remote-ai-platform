@@ -39,8 +39,11 @@ def _slugify(name: str) -> str:
     return _SLUG_RE.sub("-", name.lower()).strip("-")
 
 
-async def _get_group_or_404(group_id: uuid.UUID, db: AsyncSession) -> Group:
-    result = await db.execute(select(Group).where(Group.id == group_id))
+async def _get_group_or_404(
+    group_id: uuid.UUID, db: AsyncSession, *, lock: bool = False
+) -> Group:
+    query = select(Group).where(Group.id == group_id)
+    result = await db.execute(query.with_for_update() if lock else query)
     group = result.scalar_one_or_none()
     if not group:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
@@ -221,7 +224,7 @@ async def join_group(
     current_user: User = Depends(get_current_user),
 ):
     """Join a group. Private groups create a pending membership."""
-    group = await _get_group_or_404(group_id, db)
+    group = await _get_group_or_404(group_id, db, lock=True)
     existing = await _get_membership(group_id, current_user.id, db)
     if existing:
         if existing.status == "banned":
@@ -255,7 +258,7 @@ async def leave_group(
     current_user: User = Depends(get_current_user),
 ):
     """Leave a group."""
-    group = await _get_group_or_404(group_id, db)
+    group = await _get_group_or_404(group_id, db, lock=True)
     membership = await _get_membership(group_id, current_user.id, db)
     if not membership:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not a member")
@@ -280,8 +283,9 @@ async def list_members(
     current_user: User = Depends(get_current_user),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    member_status: str = Query("active", pattern="^(active|banned)$"),
 ):
-    """List all active members of a group."""
+    """List active members; administrators may inspect banned memberships."""
     group = await _get_group_or_404(group_id, db)
     membership = await _get_membership(group_id, current_user.id, db)
     if group.is_private and (not membership or membership.status != "active"):
@@ -289,11 +293,15 @@ async def list_members(
             status_code=status.HTTP_403_FORBIDDEN, detail="Must be a member to view"
         )
 
+    if member_status != "active" and (
+        not membership or membership.status != "active" or membership.role != "admin"
+    ):
+        raise HTTPException(403, "Admin access required")
     result = await db.execute(
         select(GroupMembership)
         .where(
             GroupMembership.group_id == group_id,
-            GroupMembership.status == "active",
+            GroupMembership.status == member_status,
         )
         .order_by(GroupMembership.joined_at)
         .offset((page - 1) * page_size)
@@ -318,7 +326,7 @@ async def update_member_role(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    group = await _get_group_or_404(group_id, db)
+    group = await _get_group_or_404(group_id, db, lock=True)
     caller_mem = await _get_membership(group_id, current_user.id, db)
     if not caller_mem or caller_mem.role != "admin" or caller_mem.status != "active":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
@@ -533,3 +541,31 @@ async def delete_group_post(
     if group.post_count > 0:
         group.post_count -= 1
     await db.commit()
+
+
+@router.delete("/{group_id}/membership-requests/{user_id}", status_code=204)
+async def reject_membership_request(
+    group_id: uuid.UUID, user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    await _get_group_or_404(group_id, db, lock=True)
+    caller = await _get_membership(group_id, current_user.id, db)
+    if not caller or caller.status != "active" or caller.role != "admin":
+        raise HTTPException(403, "Admin access required")
+    target = await _get_membership(group_id, user_id, db)
+    if not target:
+        raise HTTPException(404, "Request not found")
+    if target.status != "pending":
+        raise HTTPException(409, "Only pending requests can be declined")
+    await db.delete(target)
+    await db.commit()
+
+
+@router.get("/{group_id}/membership")
+async def my_membership(
+    group_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await _get_group_or_404(group_id, db)
+    membership = await _get_membership(group_id, current_user.id, db)
+    return {"status": membership.status if membership else None}

@@ -95,7 +95,7 @@ features:
     step: 8
     personas: [professional, organisation]
     screens: [workspace, project, projects, backlog, timeline, taskmarket, submissions, worklog, work, files, sharedfile, docs, sheets, slides, repos, browser]
-    api: [projects, documents, files, github, browser]
+    api: [projects, projects.demos, documents, files, github, browser]
     uses: [storage]
   - id: trust
     icon: concepts/star
@@ -117,7 +117,7 @@ features:
     name: Platform operations & moderation (staff console app)
     personas: [admin]
     screens: [admin]
-    api: [admin, admin.moderation, admin.operations, admin.portfolio, analytics, health, tasks]
+    api: [admin, admin.moderation, admin.operations, admin.portfolio, admin.incident, analytics, health, tasks]
     uses: [job-boards, ai-providers, sentry]
   - id: help
     icon: concepts/life-buoy

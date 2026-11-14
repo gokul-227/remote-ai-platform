@@ -880,7 +880,7 @@ function FileReviews({ node }: { node: Node }) {
           );
         })}
       <label className="mt-3 block text-sm">
-        Reviewer account ID
+        Reviewer email
         <input className={inputCls} value={reviewer} onChange={(e) => setReviewer(e.target.value)} />
       </label>
       <p className="text-xs text-slate-500">
@@ -889,7 +889,7 @@ function FileReviews({ node }: { node: Node }) {
       <Btn
         disabled={busy || !reviewer.trim()}
         onClick={() =>
-          run(`/files/${node.id}/reviews`, { reviewer_id: reviewer.trim(), version: node.current_version })
+          run(`/files/${node.id}/reviews`, { reviewer_email: reviewer.trim(), version: node.current_version })
         }
       >
         Request review

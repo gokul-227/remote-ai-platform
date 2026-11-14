@@ -33,7 +33,14 @@ def acquire_or_exit(timeout_seconds: float = 15.0) -> None:
 
     def _hold() -> None:
         async def _run() -> None:
-            engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+            engine = create_async_engine(
+                settings.DATABASE_URL,
+                poolclass=NullPool,
+                isolation_level="AUTOCOMMIT",
+                connect_args={"statement_cache_size": 0, "command_timeout": 10, "timeout": 10}
+                if "asyncpg" in settings.DATABASE_URL
+                else {},
+            )
             async with engine.connect() as conn:
                 row = await conn.execute(
                     text("SELECT pg_try_advisory_lock(:k)"), {"k": BEAT_LOCK_KEY}
@@ -45,8 +52,8 @@ def acquire_or_exit(timeout_seconds: float = 15.0) -> None:
                     return
                 # Hold the connection (and the lock) until the process ends.
                 while True:
-                    await asyncio.sleep(60)
-                    await conn.execute(text("SELECT 1"))
+                    await asyncio.sleep(10)
+                    await verify_lock(conn)
 
         try:
             asyncio.run(_run())
@@ -64,3 +71,23 @@ def acquire_or_exit(timeout_seconds: float = 15.0) -> None:
         logger.error("Another scheduler already holds the Beat lock; exiting")
         sys.exit(3)
     logger.info("Scheduler lock acquired")
+
+
+async def verify_lock(conn) -> None:
+    """Never permit SQLAlchemy to reconnect without the session lock.
+
+    Requires a direct PostgreSQL connection or session-mode pooler. Transaction
+    pooling cannot preserve session advisory locks.
+    """
+    if conn.invalidated:
+        raise RuntimeError("Scheduler lock connection invalidated")
+    owned = await conn.scalar(
+        text(
+            "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' "
+            "AND pid = pg_backend_pid() AND granted AND classid = :high "
+            "AND objid = :low AND objsubid = 1)"
+        ),
+        {"high": BEAT_LOCK_KEY >> 32, "low": BEAT_LOCK_KEY & 0xFFFFFFFF},
+    )
+    if not owned:
+        raise RuntimeError("Scheduler advisory lock lost")

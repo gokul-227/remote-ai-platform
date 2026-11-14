@@ -257,6 +257,7 @@ ignore:
     - litellm          # drawn as the API -> AI providers edge
     - pypdf
     - python-docx
+    - lxml             # bounded passive Office preview XML parsing
     - croniter         # cron parsing for the scheduler (part of the worker component)
     - prometheus-fastapi-instrumentator   # /metrics, not scraped by a hosted service
     - structlog

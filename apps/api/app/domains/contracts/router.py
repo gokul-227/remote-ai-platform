@@ -16,6 +16,7 @@ from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
+from app.domains.contracts.engagement import activate_workspace, ensure_engagement_complete
 from app.domains.contracts.lifecycle import (
     SIGNABLE_CONTRACT_STATUSES,
     TERMINAL_CONTRACT_STATUSES,
@@ -109,12 +110,15 @@ async def create_contract(
 ) -> ContractResponse:
     """Create a new work contract (Client or Admin)."""
     worker = await db.get(User, data.worker_id)
-    if not worker:
+    if not worker or not worker.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Worker user not found")
+
+    if data.worker_id == current_user.id:
+        raise HTTPException(status_code=422, detail="A contract requires two different parties")
 
     if data.project_id:
         project = await db.get(Project, data.project_id)
-        if not project:
+        if not project or project.is_deleted:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
         if current_user.role != UserRole.ADMIN:
             company = await db.scalar(
@@ -219,7 +223,7 @@ async def get_contract(
     db: AsyncSession = Depends(get_db),
 ) -> ContractResponse:
     contract = await db.get(Contract, contract_id)
-    if not contract or current_user.id not in (contract.client_id, contract.worker_id):
+    if not contract or contract.is_deleted or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
     return await _enrich_contract(contract, db)
 
@@ -232,7 +236,7 @@ async def update_contract(
     db: AsyncSession = Depends(get_db),
 ) -> ContractResponse:
     contract = await db.get(Contract, contract_id)
-    if not contract or current_user.id != contract.client_id:
+    if not contract or contract.is_deleted or current_user.id != contract.client_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found or access denied"
         )
@@ -266,8 +270,10 @@ async def sign_contract(
     db: AsyncSession = Depends(get_db),
 ) -> ContractResponse:
     """Digitally sign contract. Transitions status to ACTIVE when both parties sign."""
-    contract = await db.get(Contract, contract_id)
-    if not contract or current_user.id not in (contract.client_id, contract.worker_id):
+    contract = await db.scalar(
+        select(Contract).where(Contract.id == contract_id).with_for_update()
+    )
+    if not contract or contract.is_deleted or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
     if contract.status not in SIGNABLE_CONTRACT_STATUSES:
         raise HTTPException(
@@ -285,6 +291,7 @@ async def sign_contract(
 
     # If both signed, activate contract
     if contract.client_signed_at and contract.worker_signed_at:
+        await activate_workspace(db, contract)
         contract.status = "ACTIVE"
         recipient = (
             contract.worker_id if current_user.id == contract.client_id else contract.client_id
@@ -311,8 +318,10 @@ async def terminate_contract(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ContractResponse:
-    contract = await db.get(Contract, contract_id)
-    if not contract or current_user.id not in (contract.client_id, contract.worker_id):
+    contract = await db.scalar(
+        select(Contract).where(Contract.id == contract_id).with_for_update()
+    )
+    if not contract or contract.is_deleted or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
     if contract.status in TERMINAL_CONTRACT_STATUSES:
         raise HTTPException(
@@ -348,7 +357,7 @@ async def add_milestone(
     db: AsyncSession = Depends(get_db),
 ) -> ContractMilestoneResponse:
     contract = await db.get(Contract, contract_id)
-    if not contract or current_user.id not in (contract.client_id, contract.worker_id):
+    if not contract or contract.is_deleted or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
     if current_user.id != contract.client_id:
         raise HTTPException(
@@ -381,7 +390,7 @@ async def update_contract_milestone_status(
     db: AsyncSession = Depends(get_db),
 ) -> ContractMilestoneResponse:
     contract = await db.get(Contract, contract_id)
-    if not contract or current_user.id not in (contract.client_id, contract.worker_id):
+    if not contract or contract.is_deleted or current_user.id not in (contract.client_id, contract.worker_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Contract not found")
 
     milestone = await db.get(ContractMilestone, milestone_id)
@@ -428,3 +437,27 @@ async def update_contract_milestone_status(
     )
 
     return ContractMilestoneResponse.model_validate(milestone)
+
+
+@router.post("/{contract_id}/complete", response_model=ContractResponse)
+async def complete_contract(
+    contract_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ContractResponse:
+    """Client closes approved work; this records completion, never settlement."""
+    contract = await db.scalar(
+        select(Contract).where(Contract.id == contract_id).with_for_update()
+    )
+    if not contract or contract.is_deleted or party_of(contract, current_user.id) is None:
+        raise HTTPException(404, "Contract not found")
+    if current_user.id != contract.client_id:
+        raise HTTPException(403, "Only the client can complete the contract")
+    if contract.status == "COMPLETED":
+        return await _enrich_contract(contract, db)
+    await ensure_engagement_complete(db, contract)
+    contract.status = "COMPLETED"
+    await notify_user(db, contract.worker_id, "Contract completed",
+                      f"Contract '{contract.title}' is completed.", "contract_completed")
+    await db.flush()
+    return await _enrich_contract(contract, db)

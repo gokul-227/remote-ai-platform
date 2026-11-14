@@ -152,8 +152,15 @@ async def confirm_action(
         if action.status == "EXECUTING":
             raise HTTPException(status.HTTP_409_CONFLICT, "This action is already running")
         return ActionOut(id=action.id, tool=action.tool, status=action.status, result=action.result)
-    tool = TOOLS[action.tool]
-    result = await execute(tool, validate_args(tool, action.args), current_user, db)
+    tool = TOOLS.get(action.tool)
+    try:
+        if tool is None or tool.kind != WRITE:
+            raise ValueError("Unavailable action")
+        args = validate_args(tool, action.args)
+    except ValueError:
+        result = {"ok": False, "error": "This action is no longer valid; ask the assistant again"}
+    else:
+        result = await execute(tool, args, current_user, db)
     action.status = "EXECUTED" if result.get("ok") else "FAILED"
     action.result = result
     action.executed_at = _now()
@@ -166,6 +173,12 @@ async def cancel_action(
     action_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> ActionOut:
     action = await _own_action(db, action_id, current_user)
-    if action.status == "PENDING":
-        action.status = "CANCELLED"
+    await db.execute(
+        update(AssistantAction)
+        .where(AssistantAction.id == action.id, AssistantAction.user_id == current_user.id,
+               AssistantAction.status == "PENDING")
+        .values(status="CANCELLED")
+        .execution_options(synchronize_session=False)
+    )
+    await db.refresh(action)
     return ActionOut(id=action.id, tool=action.tool, status=action.status, result=action.result)

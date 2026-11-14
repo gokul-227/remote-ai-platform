@@ -23,6 +23,7 @@ from app.core.exceptions import register_exception_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
+from app.domains.admin.incident_router import router as incident_router
 from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.operations_router import router as admin_operations_router
 from app.domains.admin.portfolio_router import router as admin_portfolio_router
@@ -52,6 +53,7 @@ from app.domains.meetings.router import router as meetings_router
 from app.domains.network.router import router as network_router
 from app.domains.notifications.router import router as notifications_router
 from app.domains.payments.router import router as payments_router
+from app.domains.projects.demos import router as project_demos_router
 from app.domains.projects.router import router as projects_router
 from app.domains.quality.router import router as quality_router
 from app.domains.saved_jobs.router import router as saved_jobs_router
@@ -302,6 +304,8 @@ def create_app() -> FastAPI:
     app.include_router(search_router, prefix=prefix)
     app.include_router(matching_router, prefix=prefix)
     app.include_router(admin_router, prefix=prefix)
+    app.include_router(incident_router, prefix=prefix)
+    app.include_router(project_demos_router, prefix=prefix)
     app.include_router(moderation_router, prefix=prefix)
     app.include_router(saved_jobs_router, prefix=prefix)
     app.include_router(applications_router, prefix=prefix)

@@ -286,6 +286,8 @@ async def review_deliverable(
     contract, party, d = await _deliverable_for_party(db, contract_id, deliverable_id, current_user)
     if party != "client":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the client reviews deliverables")
+    if contract.status != "ACTIVE":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only active contracts accept deliverable reviews")
     if d.status != "SUBMITTED":
         raise HTTPException(status.HTTP_409_CONFLICT, f"Deliverable is {d.status.lower().replace('_', ' ')}")
     if payload.decision == "CHANGES_REQUESTED" and not (payload.note or "").strip():

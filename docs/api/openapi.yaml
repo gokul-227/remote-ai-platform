@@ -2377,6 +2377,439 @@ paths:
                 $ref: '#/components/schemas/SystemHealthDetailResponse'
       security:
       - HTTPBearer: []
+  /api/v1/admin/incidents:
+    get:
+      tags:
+      - Admin Incidents
+      summary: List Incidents
+      operationId: list_incidents_api_v1_admin_incidents_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - OPEN
+            - ACKNOWLEDGED
+            - INVESTIGATING
+            - MONITORING
+            - RESOLVED
+            type: string
+          - type: 'null'
+          title: Status
+      - name: severity
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - SEV1
+            - SEV2
+            - SEV3
+            - SEV4
+            type: string
+          - type: 'null'
+          title: Severity
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IncidentOut'
+                title: Response List Incidents Api V1 Admin Incidents Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Admin Incidents
+      summary: Create Incident
+      operationId: create_incident_api_v1_admin_incidents_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/incidents/{item_id}:
+    get:
+      tags:
+      - Admin Incidents
+      summary: Detail
+      operationId: detail_api_v1_admin_incidents__item_id__get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Item Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - Admin Incidents
+      summary: Change
+      operationId: change_api_v1_admin_incidents__item_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Item Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/incidents/{item_id}/activity:
+    get:
+      tags:
+      - Admin Incidents
+      summary: Activity
+      operationId: activity_api_v1_admin_incidents__item_id__activity_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Item Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/incidents/{item_id}/notes:
+    post:
+      tags:
+      - Admin Incidents
+      summary: Note
+      operationId: note_api_v1_admin_incidents__item_id__notes_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: item_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Item Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentNote'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/demos:
+    get:
+      tags:
+      - Project demos
+      summary: List Demos
+      operationId: list_demos_api_v1_projects__project_id__demos_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliverableResponse'
+                title: Response List Demos Api V1 Projects  Project Id  Demos Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Project demos
+      summary: Register Demo
+      operationId: register_demo_api_v1_projects__project_id__demos_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoRegistration'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/demos/{demo_id}/view:
+    get:
+      tags:
+      - Project demos
+      summary: View Demo
+      operationId: view_demo_api_v1_projects__project_id__demos__demo_id__view_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: demo_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Demo Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/demos/{demo_id}/review:
+    post:
+      tags:
+      - Project demos
+      summary: Review Demo
+      operationId: review_demo_api_v1_projects__project_id__demos__demo_id__review_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: demo_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Demo Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverableReview'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/projects/{project_id}/demos/{demo_id}/withdraw:
+    post:
+      tags:
+      - Project demos
+      summary: Withdraw Demo
+      operationId: withdraw_demo_api_v1_projects__project_id__demos__demo_id__withdraw_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: demo_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Demo Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverableResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/moderation/reports:
     get:
       tags:
@@ -4779,6 +5212,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/conversations/{conversation_id}/messages/{message_id}/attachments/{node_id}/download:
+    get:
+      tags:
+      - Network
+      summary: Download Message Attachment
+      operationId: download_message_attachment_api_v1_conversations__conversation_id__messages__message_id__attachments__node_id__download_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: conversation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Conversation Id
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Message Id
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/social/feed:
     get:
       tags:
@@ -5512,6 +5987,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContractMilestoneResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contracts/{contract_id}/complete:
+    post:
+      tags:
+      - Contracts
+      summary: Complete Contract
+      description: Client closes approved work; this records completion, never settlement.
+      operationId: complete_contract_api_v1_contracts__contract_id__complete_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: contract_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Contract Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResponse'
         '422':
           description: Validation Error
           content:
@@ -6796,6 +7301,97 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/channels/{channel_id}/threads:
+    get:
+      tags:
+      - Channels
+      summary: Threads
+      operationId: threads_api_v1_channels__channel_id__threads_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+                title: Response Threads Api V1 Channels  Channel Id  Threads Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/channels/{channel_id}/messages/{message_id}/attachments/{node_id}/download:
+    get:
+      tags:
+      - Channels
+      summary: Download Attachment
+      operationId: download_attachment_api_v1_channels__channel_id__messages__message_id__attachments__node_id__download_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      - name: message_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Message Id
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
         '422':
           description: Validation Error
           content:
@@ -9420,7 +10016,7 @@ paths:
       tags:
       - groups
       summary: List Members
-      description: List all active members of a group.
+      description: List active members; administrators may inspect banned memberships.
       operationId: list_members_api_v1_groups__group_id__members_get
       security:
       - HTTPBearer: []
@@ -9449,6 +10045,14 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
+      - name: member_status
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(active|banned)$
+          default: active
+          title: Member Status
       responses:
         '200':
           description: Successful Response
@@ -9747,6 +10351,66 @@ paths:
       responses:
         '204':
           description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/groups/{group_id}/membership-requests/{user_id}:
+    delete:
+      tags:
+      - groups
+      summary: Reject Membership Request
+      operationId: reject_membership_request_api_v1_groups__group_id__membership_requests__user_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Group Id
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: User Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/groups/{group_id}/membership:
+    get:
+      tags:
+      - groups
+      summary: My Membership
+      operationId: my_membership_api_v1_groups__group_id__membership_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: group_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Group Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
         '422':
           description: Validation Error
           content:
@@ -10938,6 +11602,30 @@ components:
       required:
       - status
       title: ApplicationStatusUpdate
+    AttachmentOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        size:
+          type: integer
+          title: Size
+        mime:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Mime
+      type: object
+      required:
+      - id
+      - name
+      - size
+      - mime
+      title: AttachmentOut
     AuditEventResponse:
       properties:
         id:
@@ -12317,6 +13005,49 @@ components:
       - title
       - demo_url
       title: DemoDeliverableCreate
+    DemoRegistration:
+      properties:
+        milestone_id:
+          type: string
+          format: uuid
+          title: Milestone Id
+        title:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Title
+        notes:
+          anyOf:
+          - type: string
+            maxLength: 10000
+          - type: 'null'
+          title: Notes
+        demo_url:
+          type: string
+          title: Demo Url
+        environment:
+          anyOf:
+          - type: string
+            maxLength: 50
+          - type: 'null'
+          title: Environment
+        supersedes_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Supersedes Id
+        contract_id:
+          type: string
+          format: uuid
+          title: Contract Id
+      type: object
+      required:
+      - milestone_id
+      - title
+      - demo_url
+      - contract_id
+      title: DemoRegistration
     DirectEscrowCreate:
       properties:
         project_id:
@@ -13394,16 +14125,23 @@ components:
     FileReviewIn:
       properties:
         reviewer_id:
-          type: string
-          format: uuid
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
           title: Reviewer Id
+        reviewer_email:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Reviewer Email
         version:
           type: integer
           minimum: 1.0
           title: Version
       type: object
       required:
-      - reviewer_id
       - version
       title: FileReviewIn
     FolderIn:
@@ -13881,6 +14619,178 @@ components:
       - environment
       - timestamp
       title: HealthVersionResponse
+    IncidentIn:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+        title:
+          type: string
+          maxLength: 160
+          minLength: 1
+          title: Title
+        description:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Description
+        service:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Service
+        severity:
+          type: string
+          enum:
+          - SEV1
+          - SEV2
+          - SEV3
+          - SEV4
+          title: Severity
+          default: SEV3
+        assignee_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Assignee Id
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      - title
+      - description
+      - service
+      title: IncidentIn
+    IncidentNote:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+        body:
+          type: string
+          maxLength: 4000
+          minLength: 1
+          title: Body
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      - body
+      title: IncidentNote
+    IncidentOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          type: string
+          title: Description
+        service:
+          type: string
+          title: Service
+        severity:
+          type: string
+          title: Severity
+        status:
+          type: string
+          title: Status
+        assignee_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Assignee Id
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+        version:
+          type: integer
+          title: Version
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        resolved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Resolved At
+      type: object
+      required:
+      - id
+      - title
+      - description
+      - service
+      - severity
+      - status
+      - assignee_id
+      - created_by
+      - version
+      - created_at
+      - updated_at
+      - resolved_at
+      title: IncidentOut
+    IncidentPatch:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+        severity:
+          anyOf:
+          - type: string
+            enum:
+            - SEV1
+            - SEV2
+            - SEV3
+            - SEV4
+          - type: 'null'
+          title: Severity
+        status:
+          anyOf:
+          - type: string
+            enum:
+            - OPEN
+            - ACKNOWLEDGED
+            - INVESTIGATING
+            - MONITORING
+            - RESOLVED
+          - type: 'null'
+          title: Status
+        assignee_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Assignee Id
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      - version
+      title: IncidentPatch
     InvitationResponse:
       properties:
         accept:
@@ -14824,6 +15734,13 @@ components:
             minLength: 8
           - type: 'null'
           title: Client Token
+        attachment_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 10
+          title: Attachment Ids
       type: object
       required:
       - body
@@ -17301,6 +18218,11 @@ components:
             type: string
           type: array
           title: Mentions
+        attachments:
+          items:
+            $ref: '#/components/schemas/AttachmentOut'
+          type: array
+          title: Attachments
         reply_count:
           type: integer
           title: Reply Count
@@ -17426,6 +18348,13 @@ components:
           maxLength: 10000
           minLength: 1
           title: Content
+        attachment_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 10
+          title: Attachment Ids
       type: object
       required:
       - content

@@ -1,3 +1,5 @@
+import { ChannelThreads } from "./ChannelThreads";
+import { AttachmentPicker, MessageAttachments, type Attachment } from "./ChannelAttachments";
 import { demoUrl } from "@/lib/demoUrl";
 import { ChannelSearch } from "./ChannelSearch";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
@@ -1157,6 +1159,7 @@ interface ChannelRow {
   unread: number;
 }
 interface ChannelMsg {
+  attachments?: Attachment[];
   id: string;
   author_id: string | null;
   author_name: string | null;
@@ -1238,8 +1241,15 @@ export function Channels() {
 export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => void }) {
   const { user } = useAuth();
   const [thread, setThread] = useState<ChannelMsg | null>(null);
+  const [showThreads, setShowThreads] = useState(false);
+  const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
+  const [sending, setSending] = useState(false);
+  const sendToken = useRef<string | null>(null);
   const q = useApi<ChannelMsg[]>(`/channels/${channel.id}/messages`, thread ? { thread: thread.id } : undefined);
   const scope = thread?.id ?? "channel";
+  useEffect(() => {
+    sendToken.current = null;
+  }, [scope]);
   const [history, setHistory] = useState<{ scope: string; messages: ChannelMsg[]; more: boolean } | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const viewingHistory = history?.scope === scope;
@@ -1286,18 +1296,25 @@ export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: 
   }, [channel.id, q.data?.length, onRead]);
   const send = async () => {
     const text = body.trim();
-    if (!text) return;
+    if (!text || sending) return;
+    setSending(true);
+    sendToken.current ||= token();
     try {
       await api.post(`/channels/${channel.id}/messages`, {
         body: text,
         parent_id: thread?.id ?? null,
-        client_token: token(),
+        client_token: sendToken.current,
+        attachment_ids: attachmentIds,
       });
       setBody("");
+      setAttachmentIds([]);
+      sendToken.current = null;
       setErr("");
       returnToLatest();
     } catch (e) {
       setErr(extractErrorMessage(e, "Message not sent. Try again."));
+    } finally {
+      setSending(false);
     }
   };
   const [editing, setEditing] = useState<string | null>(null);
@@ -1349,162 +1366,200 @@ export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: 
           </Btn>
         </div>
       </div>
-      <ChannelSearch channelId={channel.id} />
-      {thread && (
-        <div className="mb-2 rounded-lg bg-slate-50 p-2 text-sm">
-          <b>{thread.author_name || "Member"}</b>: {thread.body}
-        </div>
-      )}
-      {!!q.error && !q.data && <Failed retry={q.reload} />}
-      <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
-        {messages.length > 0 && (viewingHistory ? history.more : (q.data?.length ?? 0) === 50) && (
-          <button
-            type="button"
-            className="rounded-lg px-3 py-2 font-semibold text-[#0552CC] disabled:opacity-50"
-            onClick={loadOlder}
-            disabled={loadingHistory}
-          >
-            {loadingHistory ? "Loading earlier messages…" : "Load earlier messages"}
-          </button>
-        )}
-        {viewingHistory && (
-          <>
-            <span className="text-slate-500">Viewing history; live refresh is paused.</span>
-            <Btn sm v="ghost" onClick={returnToLatest}>
-              Return to latest messages
-            </Btn>
-          </>
-        )}
+      <div className="mb-3 flex gap-3">
+        <button aria-pressed={!showThreads} onClick={() => setShowThreads(false)}>
+          Messages
+        </button>
+        <button aria-pressed={showThreads} onClick={() => setShowThreads(true)}>
+          Threads
+        </button>
       </div>
-      <ol className="grid max-h-[50vh] gap-2 overflow-y-auto" aria-live="polite">
-        {messages.map((m) => (
-          <li
-            key={m.id}
-            className={`rounded-lg p-2 text-sm ${m.author_id === user?.id ? "bg-[#E8F0FC]" : "bg-slate-50"}`}
-          >
-            <p className="text-xs text-slate-500">
-              <b className="text-slate-700">{m.author_name || "Former member"}</b> · {timeAgo(m.created_at)}
-            </p>
-            {m.deleted ? (
-              <p className="italic text-slate-400">This message was deleted.</p>
-            ) : editing === m.id ? (
-              <form
-                className="mt-1 flex gap-2"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  await msgAction(() => api.patch(`/channels/${channel.id}/messages/${m.id}`, { body: draft }));
-                  setEditing(null);
-                }}
+      {showThreads ? (
+        <ChannelThreads
+          channelId={channel.id}
+          onOpen={(root) => {
+            setThread(root);
+            setShowThreads(false);
+          }}
+        />
+      ) : (
+        <>
+          <ChannelSearch channelId={channel.id} />
+          {thread && (
+            <div className="mb-2 rounded-lg bg-slate-50 p-2 text-sm">
+              <b>{thread.author_name || "Member"}</b>: {thread.deleted ? "This message was deleted." : thread.body}
+              <MessageAttachments channelId={channel.id} messageId={thread.id} attachments={thread.attachments} />
+            </div>
+          )}
+          {!!q.error && !q.data && <Failed retry={q.reload} />}
+          <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+            {messages.length > 0 && (viewingHistory ? history.more : (q.data?.length ?? 0) === 50) && (
+              <button
+                type="button"
+                className="rounded-lg px-3 py-2 font-semibold text-[#0552CC] disabled:opacity-50"
+                onClick={loadOlder}
+                disabled={loadingHistory}
               >
-                <label className="sr-only" htmlFor={`edit-${m.id}`}>
-                  Edit message
-                </label>
-                <input
-                  id={`edit-${m.id}`}
-                  className={inputCls}
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                />
-                <Btn sm>Save</Btn>
-                <Btn sm v="ghost" onClick={() => setEditing(null)}>
-                  Cancel
-                </Btn>
-              </form>
-            ) : (
-              <p className="whitespace-pre-line">
-                {m.body} {m.edited && <span className="text-xs text-slate-400">(edited)</span>}
-              </p>
-            )}
-            {!m.deleted && (
-              <div className="mt-1 flex flex-wrap items-center gap-1">
-                {Object.entries(m.reactions).map(([emoji, n]) => (
-                  <button
-                    key={emoji}
-                    aria-pressed={m.my_reactions.includes(emoji)}
-                    className={`rounded-full border px-2 text-xs ${m.my_reactions.includes(emoji) ? "border-[#0552CC] bg-white" : "border-slate-200"}`}
-                    onClick={() =>
-                      msgAction(() =>
-                        m.my_reactions.includes(emoji)
-                          ? api.delete(
-                              `/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(emoji)}`,
-                            )
-                          : api.put(`/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(emoji)}`),
-                      )
-                    }
-                  >
-                    {emoji} {n}
-                  </button>
-                ))}
-                <select
-                  aria-label="Add a reaction"
-                  className="rounded bg-transparent text-xs text-slate-500"
-                  value=""
-                  onChange={(e) =>
-                    e.target.value &&
-                    msgAction(() =>
-                      api.put(
-                        `/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(e.target.value)}`,
-                      ),
-                    )
-                  }
-                >
-                  <option value="">+ react</option>
-                  {QUICK_EMOJI.map((e) => (
-                    <option key={e} value={e}>
-                      {e}
-                    </option>
-                  ))}
-                </select>
-                {m.author_id === user?.id && (
-                  <button
-                    className="text-xs text-slate-500 underline"
-                    onClick={() => {
-                      setDraft(m.body);
-                      setEditing(m.id);
-                    }}
-                  >
-                    edit
-                  </button>
-                )}
-                {(m.author_id === user?.id || channel.owner_id === user?.id) && (
-                  <button
-                    className="text-xs text-red-600 underline"
-                    onClick={() => msgAction(() => api.delete(`/channels/${channel.id}/messages/${m.id}`))}
-                  >
-                    delete
-                  </button>
-                )}
-              </div>
-            )}
-            {!thread && (
-              <button className="mt-1 text-xs text-[#0552CC] underline" onClick={() => setThread(m)}>
-                {m.reply_count ? `${m.reply_count} repl${m.reply_count === 1 ? "y" : "ies"}` : "Reply in thread"}
+                {loadingHistory ? "Loading earlier messages…" : "Load earlier messages"}
               </button>
             )}
-          </li>
-        ))}
-        {messages.length === 0 && <li className="text-sm text-slate-500">No messages yet.</li>}
-      </ol>
-      <form
-        className="mt-3 flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          send();
-        }}
-      >
-        <label htmlFor="channel-input" className="sr-only">
-          Message
-        </label>
-        <input
-          id="channel-input"
-          className={inputCls}
-          value={body}
-          maxLength={10000}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder={thread ? "Reply in thread…" : `Message #${channel.name}`}
-        />
-        <Btn>Send</Btn>
-      </form>
+            {viewingHistory && (
+              <>
+                <span className="text-slate-500">Viewing history; live refresh is paused.</span>
+                <Btn sm v="ghost" onClick={returnToLatest}>
+                  Return to latest messages
+                </Btn>
+              </>
+            )}
+          </div>
+          <ol className="grid max-h-[50vh] gap-2 overflow-y-auto" aria-live="polite">
+            {messages.map((m) => (
+              <li
+                key={m.id}
+                className={`rounded-lg p-2 text-sm ${m.author_id === user?.id ? "bg-[#E8F0FC]" : "bg-slate-50"}`}
+              >
+                <p className="text-xs text-slate-500">
+                  <b className="text-slate-700">{m.author_name || "Former member"}</b> · {timeAgo(m.created_at)}
+                </p>
+                {m.deleted ? (
+                  <p className="italic text-slate-400">This message was deleted.</p>
+                ) : editing === m.id ? (
+                  <form
+                    className="mt-1 flex gap-2"
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      await msgAction(() => api.patch(`/channels/${channel.id}/messages/${m.id}`, { body: draft }));
+                      setEditing(null);
+                    }}
+                  >
+                    <label className="sr-only" htmlFor={`edit-${m.id}`}>
+                      Edit message
+                    </label>
+                    <input
+                      id={`edit-${m.id}`}
+                      className={inputCls}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                    />
+                    <Btn sm>Save</Btn>
+                    <Btn sm v="ghost" onClick={() => setEditing(null)}>
+                      Cancel
+                    </Btn>
+                  </form>
+                ) : (
+                  <p className="whitespace-pre-line">
+                    {m.body} {m.edited && <span className="text-xs text-slate-400">(edited)</span>}
+                  </p>
+                )}
+                {!m.deleted && (
+                  <MessageAttachments channelId={channel.id} messageId={m.id} attachments={m.attachments} />
+                )}
+                {!m.deleted && (
+                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                    {Object.entries(m.reactions).map(([emoji, n]) => (
+                      <button
+                        key={emoji}
+                        aria-pressed={m.my_reactions.includes(emoji)}
+                        className={`rounded-full border px-2 text-xs ${m.my_reactions.includes(emoji) ? "border-[#0552CC] bg-white" : "border-slate-200"}`}
+                        onClick={() =>
+                          msgAction(() =>
+                            m.my_reactions.includes(emoji)
+                              ? api.delete(
+                                  `/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(emoji)}`,
+                                )
+                              : api.put(
+                                  `/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(emoji)}`,
+                                ),
+                          )
+                        }
+                      >
+                        {emoji} {n}
+                      </button>
+                    ))}
+                    <select
+                      aria-label="Add a reaction"
+                      className="rounded bg-transparent text-xs text-slate-500"
+                      value=""
+                      onChange={(e) =>
+                        e.target.value &&
+                        msgAction(() =>
+                          api.put(
+                            `/channels/${channel.id}/messages/${m.id}/reactions/${encodeURIComponent(e.target.value)}`,
+                          ),
+                        )
+                      }
+                    >
+                      <option value="">+ react</option>
+                      {QUICK_EMOJI.map((e) => (
+                        <option key={e} value={e}>
+                          {e}
+                        </option>
+                      ))}
+                    </select>
+                    {m.author_id === user?.id && (
+                      <button
+                        className="text-xs text-slate-500 underline"
+                        onClick={() => {
+                          setDraft(m.body);
+                          setEditing(m.id);
+                        }}
+                      >
+                        edit
+                      </button>
+                    )}
+                    {(m.author_id === user?.id || channel.owner_id === user?.id) && (
+                      <button
+                        className="text-xs text-red-600 underline"
+                        onClick={() => msgAction(() => api.delete(`/channels/${channel.id}/messages/${m.id}`))}
+                      >
+                        delete
+                      </button>
+                    )}
+                  </div>
+                )}
+                {!thread && (
+                  <button className="mt-1 text-xs text-[#0552CC] underline" onClick={() => setThread(m)}>
+                    {m.reply_count ? `${m.reply_count} repl${m.reply_count === 1 ? "y" : "ies"}` : "Reply in thread"}
+                  </button>
+                )}
+              </li>
+            ))}
+            {messages.length === 0 && <li className="text-sm text-slate-500">No messages yet.</li>}
+          </ol>
+          <AttachmentPicker
+            selected={attachmentIds}
+            disabled={sending}
+            onChange={(ids) => {
+              setAttachmentIds(ids);
+              sendToken.current = null;
+            }}
+          />
+          <form
+            className="mt-3 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              send();
+            }}
+          >
+            <label htmlFor="channel-input" className="sr-only">
+              Message
+            </label>
+            <input
+              id="channel-input"
+              className={inputCls}
+              value={body}
+              maxLength={10000}
+              disabled={sending}
+              onChange={(e) => {
+                setBody(e.target.value);
+                sendToken.current = null;
+              }}
+              placeholder={thread ? "Reply in thread…" : `Message #${channel.name}`}
+            />
+            <Btn disabled={sending || !body.trim()}>{sending ? "Sending…" : "Send"}</Btn>
+          </form>
+        </>
+      )}
       {err && (
         <p role="alert" className="mt-1 text-sm text-red-600">
           {err}

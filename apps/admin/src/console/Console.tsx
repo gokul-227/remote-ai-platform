@@ -6,6 +6,7 @@ import { ApiError, api, publicGet, supabase } from "@/lib/client";
 import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
 import { Ic } from "./icons";
+import { Incidents } from "./incidents";
 import { Background } from "./background";
 import { PlatformOperations, ProjectPortfolio } from "./operations";
 import {
@@ -173,6 +174,7 @@ const SECTIONS: {
         label: "Health",
         items: [
           ["status", "System status", "zap"],
+          ["incidents", "Incidents", "bell"],
           ["usage", "Usage & limits", "chart"],
           ["google", "Google search", "search"],
         ],
@@ -292,6 +294,7 @@ export default function Console() {
     jobs: <Jobs writable={writable} />,
     sources: <JobSources />,
     background: <Background writable={writable} />,
+    incidents: <Incidents writable={writable} />,
     contracts: <Contracts />,
     operations: <PlatformOperations />,
     portfolio: <ProjectPortfolio writable={writable} />,

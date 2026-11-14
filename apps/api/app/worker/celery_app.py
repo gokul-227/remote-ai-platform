@@ -38,7 +38,6 @@ celery_app.conf.update(
     beat_schedule={
         "tick-schedule": {"task": "tasks.tick_schedule", "schedule": 60.0},
         "dispatch-outbox": {"task": "tasks.dispatch_outbox", "schedule": 10.0},
-        "heartbeat": {"task": "tasks.scheduler_heartbeat", "schedule": 30.0},
         "requeue-stale": {"task": "tasks.requeue_stale", "schedule": 300.0},
         "maintain-catalogue": {
             "task": "jobs.maintain_catalogue_scheduled",
@@ -60,17 +59,23 @@ def _acquire_beat_lock(**_: object) -> None:
     from app.worker.beat_lock import acquire_or_exit
 
     acquire_or_exit()
+    from app.worker.monitoring import start_monitor
+
+    start_monitor("scheduler")
 
 
 @worker_ready.connect
 def _worker_ready(sender=None, **_: object) -> None:  # noqa: ANN001
-    from app.worker.tasks import worker_heartbeat
+    from app.worker.monitoring import start_monitor
 
-    worker_heartbeat.apply(kwargs={"hostname": getattr(sender, "hostname", "")})
+    queues = sorted(sender.task_consumer.queues) if sender is not None else []
+    start_monitor("worker", queues)
 
 
 @worker_shutdown.connect
 def _worker_shutdown(**_: object) -> None:
+    from app.worker.monitoring import stop_monitor
     from app.worker.runtime import shutdown
 
+    stop_monitor()
     shutdown()

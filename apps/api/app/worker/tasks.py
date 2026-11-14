@@ -237,26 +237,6 @@ def prune_runs() -> dict[str, Any]:
     return runtime.run(go())
 
 
-@shared_task(name="tasks.scheduler_heartbeat")
-def scheduler_heartbeat() -> None:
-    async def go() -> None:
-        async with runtime.session_factory()() as db:
-            await TaskService(db).heartbeat(f"beat:{runtime.worker_id()}", "scheduler", [])
-
-    runtime.run(go())
-
-
-@shared_task(name="tasks.worker_heartbeat")
-def worker_heartbeat(hostname: str = "") -> None:
-    async def go() -> None:
-        async with runtime.session_factory()() as db:
-            await TaskService(db).heartbeat(
-                f"worker:{hostname or runtime.worker_id()}", "worker", ["default", "imports"]
-            )
-
-    runtime.run(go())
-
-
 @shared_task(name="notifications.send_digests")
 def send_digests() -> dict[str, Any]:
     async def go() -> dict[str, Any]:

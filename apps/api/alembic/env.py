@@ -10,6 +10,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 import app.domains.admin.announcement_models  # noqa: F401
+import app.domains.admin.incident_models  # noqa: F401
 import app.domains.admin.models  # noqa: F401
 import app.domains.applications.models  # noqa: F401
 import app.domains.assistant.models  # noqa: F401

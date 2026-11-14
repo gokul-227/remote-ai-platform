@@ -75,6 +75,7 @@ class ChannelMessage(Base):
         UUID(as_uuid=True), ForeignKey("channel_messages.id", ondelete="CASCADE"), nullable=True, index=True
     )
     body: Mapped[str] = mapped_column(Text, nullable=False)
+    attachment_ids: Mapped[list[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
     mentions: Mapped[list[str]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False)
     edited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Deleted messages keep their row (threads and ordering stay intact) but lose their text.

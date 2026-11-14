@@ -118,6 +118,8 @@ SOURCES: tuple[Source, ...] = (
 
 # User/profile-linked columns deliberately not used to select rows.
 EXCLUDED: dict[tuple[str, str], str] = {
+    ("incidents", "assignee_id"): "Internal operations assigned to staff, not member data",
+    ("incidents", "created_by"): "Internal operations authored by staff, not member data",
     (
         "user_verifications",
         "reviewed_by_id",

@@ -16,6 +16,9 @@ test("files: create a folder, upload, preview, trash and restore; Office lives i
   await expect(page.getByText("1 file uploaded.")).toBeVisible();
   await page.getByRole("button", { name: "brief.txt", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "brief.txt" })).toContainText("Scope: build the thing.");
+  await page.getByLabel("File comment", { exact: true }).fill("Please review the scope.");
+  await page.getByRole("button", { name: "Add comment", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "brief.txt" })).toContainText("Please review the scope.");
   await page.getByRole("button", { name: "Close", exact: true }).first().click();
 
   // Executables are refused server-side with a readable message.

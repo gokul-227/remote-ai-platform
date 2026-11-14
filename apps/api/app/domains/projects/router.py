@@ -1273,7 +1273,9 @@ async def submit_task_work(
         raise HTTPException(status_code=404, detail="Task not found")
     if task.assigned_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only the assigned worker can submit work")
-    project = await get_project(task.project_id, db)
+    project = await require_project_access(task.project_id, current_user, db)
+    if task.status == "COMPLETED" or project.status in {"COMPLETED", "CANCELLED"}:
+        raise HTTPException(409, "This work item is already closed")
     latest = await db.scalar(
         select(WorkSubmission)
         .where(WorkSubmission.task_id == task.id)
@@ -1357,7 +1359,7 @@ async def review_task_submission(
         raise HTTPException(
             status_code=422, detail="Review status must be APPROVED or CHANGES_REQUESTED"
         )
-    if submission.status not in {"SUBMITTED", "CHANGES_REQUESTED"}:
+    if submission.status != "SUBMITTED":
         raise HTTPException(status_code=409, detail="Submission is no longer reviewable")
     if data.status == "APPROVED":
         dependencies = (
@@ -1462,6 +1464,15 @@ async def update_task(
         raise HTTPException(
             status_code=409, detail="This work item was changed by someone else; reload and try again"
         )
+    owner = current_user.role == UserRole.ADMIN or await _owns_project(db, current_user, project)
+    if "assigned_user_id" in updates and not owner:
+        raise HTTPException(403, "Only the client can change task assignment")
+    if updates.get("status") and updates["status"] != task.status:
+        latest_submission = await db.scalar(select(WorkSubmission).where(
+            WorkSubmission.task_id == task.id
+        ).order_by(WorkSubmission.version.desc()))
+        if latest_submission is not None:
+            raise HTTPException(409, "Use submission and review actions to change submitted work")
     if updates.get("assigned_user_id") is not None:
         assignee = await db.get(User, updates["assigned_user_id"])
         if assignee is None or not assignee.is_active or not await can_access(project, assignee, db):

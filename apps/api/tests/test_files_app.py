@@ -420,13 +420,12 @@ async def test_review_binds_to_version_and_assigned_reviewer(
 ):
     owner = await _signup(client, "review-owner@example.com")
     reviewer = await _signup(client, "reviewer@example.com")
-    reviewer_id = (await client.get("/api/v1/auth/me", headers=reviewer)).json()["id"]
     uploaded = await client.post(
         "/api/v1/files/upload", headers=owner, files=_file("deliverable.txt", b"v1", "text/plain")
     )
     node_id = uploaded.json()["id"]
     path = f"/api/v1/files/{node_id}"
-    payload = {"reviewer_id": reviewer_id, "version": 1}
+    payload = {"reviewer_email": " REVIEWER@example.com ", "version": 1}
     assert (await client.post(path + "/reviews", headers=owner, json=payload)).status_code == 422
     await client.post(
         path + "/shares",

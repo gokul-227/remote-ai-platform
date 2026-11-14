@@ -17,6 +17,7 @@ from app.domains.analytics.service import emit_analytics_event
 from app.domains.auth.dependencies import authenticate_bearer_token, get_current_user
 from app.domains.auth.models import User
 from app.domains.engineers.models import EngineerProfile
+from app.domains.files.attachments import accessible_file
 from app.domains.network.models import Connection, Conversation, Message, UserBlock
 from app.services.notifications import notify_user as send_notification
 
@@ -37,6 +38,7 @@ class ConversationCreate(BaseModel):
 
 class MessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=10000)
+    attachment_ids: list[uuid.UUID] = Field(default_factory=list, max_length=10)
 
 
 async def notify(
@@ -420,7 +422,7 @@ async def message_history(
         .offset(skip)
         .limit(limit)
     )
-    return list(reversed(result.scalars().all()))
+    return [await _message_out(db, m, current_user) for m in reversed(result.scalars().all())]
 
 
 @router.post("/conversations/{conversation_id}/messages", status_code=status.HTTP_201_CREATED)
@@ -438,7 +440,12 @@ async def send_message(
     )
     if await _blocked_between(db, current_user.id, other):
         raise _BLOCKED
+    attachment_ids = list(dict.fromkeys(data.attachment_ids))
+    for node_id in attachment_ids:
+        if not await accessible_file(db, node_id, current_user):
+            raise HTTPException(404, "Attachment not found")
     message = Message(
+        attachment_ids=[str(n) for n in attachment_ids],
         conversation_id=conversation.id,
         sender_id=current_user.id,
         content=data.content,
@@ -472,7 +479,36 @@ async def send_message(
             "created_at": message.created_at.isoformat(),
         },
     )
-    return message
+    return await _message_out(db, message, current_user)
+
+
+async def _message_out(db: AsyncSession, message: Message, viewer: User) -> dict[str, Any]:
+    attachments = []
+    for node_id in message.attachment_ids or []:
+        node = await accessible_file(db, uuid.UUID(node_id), viewer)
+        if node:
+            attachments.append({"id": node.id, "name": node.name, "size": node.size, "mime": node.mime})
+    return {"id": message.id, "conversation_id": message.conversation_id,
+            "sender_id": message.sender_id, "content": message.content,
+            "is_read": message.is_read, "created_at": message.created_at,
+            "attachments": attachments}
+
+
+@router.get("/conversations/{conversation_id}/messages/{message_id}/attachments/{node_id}/download")
+async def download_message_attachment(
+    conversation_id: uuid.UUID, message_id: uuid.UUID, node_id: uuid.UUID,
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db),
+):
+    conversation = await get_conversation(conversation_id, current_user.id, db)
+    if await _blocked_between(db, conversation.participant_one_id, conversation.participant_two_id):
+        raise _BLOCKED
+    message = await db.get(Message, message_id)
+    if not message or message.conversation_id != conversation_id or str(node_id) not in (message.attachment_ids or []):
+        raise HTTPException(404, "Attachment not found")
+    if not await accessible_file(db, node_id, current_user):
+        raise HTTPException(404, "Attachment not found")
+    from app.domains.files.router import download
+    return await download(node_id, current_user, db)
 
 
 class ConnectionManager:

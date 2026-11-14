@@ -18,7 +18,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, Response
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +31,7 @@ from app.domains.companies.models import CompanyProfile
 from app.domains.contracts.models import Contract
 from app.domains.documents.router import DocumentCreate, create_document, list_documents
 from app.domains.endorsements.router import EndorseIn, endorse
+from app.domains.files.router import FolderIn, create_folder, get_node, list_nodes
 from app.domains.groups.models import Group, GroupMembership
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
@@ -46,6 +47,7 @@ from app.domains.network.router import ConnectionCreate, send_connection
 from app.domains.notifications.models import Notification
 from app.domains.projects.models import Project, ProjectMember
 from app.domains.projects.router import TaskCreate, create_task
+from app.domains.projects.workspace import project_workspace
 from app.domains.saved_jobs.models import SavedJob
 from app.domains.saved_jobs.router import save_job
 from app.domains.social.router import create_post
@@ -57,42 +59,66 @@ from app.domains.support.schemas import TicketCreate
 READ, DRAFT, WRITE = "READ", "DRAFT", "WRITE"
 
 
-class _NoArgs(BaseModel):
+class ToolArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class _NoArgs(ToolArgs):
     pass
 
 
-class SearchJobsArgs(BaseModel):
+class SearchJobsArgs(ToolArgs):
     query: str = Field(min_length=1, max_length=100)
 
 
-class DraftArgs(BaseModel):
+class DraftArgs(ToolArgs):
     topic: str = Field(min_length=1, max_length=500)
     text: str = Field(min_length=1, max_length=5000)
 
 
-class CreateTaskArgs(BaseModel):
+class CreateTaskArgs(ToolArgs):
     project_id: uuid.UUID
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=5000)
     priority: str = "MEDIUM"
 
 
-class ScheduleMeetingArgs(BaseModel):
+class ScheduleMeetingArgs(ToolArgs):
     title: str = Field(min_length=1, max_length=255)
     starts_at: datetime
     duration_minutes: int = Field(default=30, ge=5, le=480)
     participant_ids: list[uuid.UUID] = Field(min_length=1, max_length=25)
 
 
-class SupportTicketArgs(BaseModel):
+class SupportTicketArgs(ToolArgs):
     subject: str = Field(min_length=3, max_length=255)
     category: str = "OTHER"
     body: str = Field(min_length=1, max_length=5000)
 
 
-class CreateDocArgs(BaseModel):
+class CreateDocArgs(ToolArgs):
     kind: str = Field(pattern="^(DOC|SHEET|SLIDES)$")
     title: str = Field(min_length=1, max_length=255)
+
+
+class FileListArgs(ToolArgs):
+    parent_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+
+
+class FileArgs(ToolArgs):
+    node_id: uuid.UUID
+
+
+class WorkspaceArgs(ToolArgs):
+    project_id: uuid.UUID
+
+
+class FolderArgs(ToolArgs):
+    name: str = Field(min_length=1, max_length=255)
+    parent_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    company_id: uuid.UUID | None = None
 
 
 # Every screen the assistant can take you to (route -> what it is).
@@ -124,7 +150,7 @@ SCREENS: dict[str, str] = {
 }
 
 
-class NavigateArgs(BaseModel):
+class NavigateArgs(ToolArgs):
     screen: str
 
     @field_validator("screen")
@@ -136,30 +162,30 @@ class NavigateArgs(BaseModel):
         return v
 
 
-class PostArgs(BaseModel):
+class PostArgs(ToolArgs):
     content: str = Field(min_length=1, max_length=3000)
     visibility: str = Field(default="PUBLIC", pattern="^(PUBLIC|CONNECTIONS|PRIVATE)$")
 
 
-class UserArgs(BaseModel):
+class UserArgs(ToolArgs):
     user_id: uuid.UUID
 
 
-class JobArgs(BaseModel):
+class JobArgs(ToolArgs):
     job_id: uuid.UUID
 
 
-class EndorseArgs(BaseModel):
+class EndorseArgs(ToolArgs):
     user_id: uuid.UUID
     skill: str = Field(min_length=1, max_length=100)
 
 
-class ApplyArgs(BaseModel):
+class ApplyArgs(ToolArgs):
     job_id: uuid.UUID
     cover_note: str | None = Field(default=None, max_length=5000)
 
 
-class ChannelPostArgs(BaseModel):
+class ChannelPostArgs(ToolArgs):
     channel_id: uuid.UUID
     body: str = Field(min_length=1, max_length=4000)
 
@@ -306,6 +332,37 @@ async def _my_files(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any
     return {"items": [{"title": d.title, "status": d.kind.lower(), "link": _link("files")} for d in docs[:15]]}
 
 
+async def _list_files(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, FileListArgs)
+    nodes = await list_nodes(user=user, db=db, parent_id=a.parent_id,
+                             view=f"project:{a.project_id}" if a.project_id else "mine", sort="name", limit=50)
+    return {"items": [{"id": str(n.id), "title": n.name, "kind": n.kind,
+                       "role": n.role, "link": _link("files")} for n in nodes]}
+
+
+async def _file_details(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, FileArgs)
+    node = await get_node(a.node_id, user=user, db=db)
+    return {"id": str(node.id), "title": node.name, "kind": node.kind,
+            "role": node.role, "link": _link("files")}
+
+
+async def _workspace(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, WorkspaceArgs)
+    workspace = await project_workspace(a.project_id, user, db)
+    return {"project_id": str(a.project_id), "items": [
+        {"id": str(item.id), "title": item.title, "link": _link("files")}
+        for item in workspace["documents"]
+    ], "counts": {key: len(workspace[key]) for key in ("contracts", "documents", "channels", "meetings")},
+        "link": _link("workspace")}
+
+
+async def _create_folder(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
+    assert isinstance(a, FolderArgs)
+    node = await create_folder(FolderIn(**a.model_dump()), user=user, db=db)
+    return {"id": str(node.id), "title": node.name, "link": _link("files")}
+
+
 async def _my_tickets(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     rows = await db.execute(
         select(SupportTicket).where(SupportTicket.requester_id == user.id).order_by(SupportTicket.updated_at.desc()).limit(10)
@@ -389,6 +446,11 @@ TOOLS: dict[str, Tool] = {
         Tool("my_notifications", READ, "My latest notifications.", _NoArgs, _notifications),
         Tool("my_connections", READ, "People I'm connected with, with their ids.", _NoArgs, _connections),
         Tool("my_groups", READ, "Groups I belong to.", _NoArgs, _my_groups),
+        Tool("list_files", READ, "List my files or children of an accessible folder.", FileListArgs, _list_files),
+        Tool("file_details", READ, "Read file metadata using current permissions.", FileArgs, _file_details),
+        Tool("project_workspace", READ, "Read authorized project workspace summaries.", WorkspaceArgs, _workspace),
+        Tool("create_folder", WRITE, "Create a folder in an authorized space.", FolderArgs, _create_folder,
+             lambda a: f"Create folder “{a.name}”"),  # type: ignore[attr-defined]
         Tool("my_files", READ, "My Docs, Sheets and Slides.", _NoArgs, _my_files),
         Tool("my_support_tickets", READ, "My support tickets and their status.", _NoArgs, _my_tickets),
         Tool("saved_jobs", READ, "Jobs I saved.", _NoArgs, _saved_jobs),
@@ -425,7 +487,7 @@ def catalog() -> list[dict[str, Any]]:
 
 def validate_args(tool: Tool, raw: object) -> BaseModel:
     if not isinstance(raw, dict):
-        raw = {}
+        raise ValueError("arguments must be an object")
     try:
         return tool.args.model_validate(raw)
     except ValidationError as exc:

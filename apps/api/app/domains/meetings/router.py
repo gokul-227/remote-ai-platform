@@ -60,16 +60,18 @@ def _utc(dt: datetime) -> datetime:
     return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
-async def may_invite(db: AsyncSession, organizer: uuid.UUID, invitee: uuid.UUID, contract: Contract | None) -> bool:
-    blocked = await db.scalar(
-        select(UserBlock.id).where(
-            or_(
-                and_(UserBlock.blocker_id == organizer, UserBlock.blocked_id == invitee),
-                and_(UserBlock.blocker_id == invitee, UserBlock.blocked_id == organizer),
-            )
+def _blocked_pair(first, second):
+    """A live, bidirectional block check, also usable for queued signal senders."""
+    return select(UserBlock.id).where(
+        or_(
+            and_(UserBlock.blocker_id == first, UserBlock.blocked_id == second),
+            and_(UserBlock.blocker_id == second, UserBlock.blocked_id == first),
         )
-    )
-    if blocked:
+    ).exists()
+
+
+async def may_invite(db: AsyncSession, organizer: uuid.UUID, invitee: uuid.UUID, contract: Contract | None) -> bool:
+    if await db.scalar(select(_blocked_pair(organizer, invitee))):
         return False
     if contract is not None and party_of(contract, invitee) is not None:
         return True
@@ -244,6 +246,7 @@ async def join_meeting(
     db: AsyncSession = Depends(get_db),
 ) -> JoinLink:
     m, p = await _visible_meeting(db, meeting_id, current_user)
+    await _check_meeting_block(db, m, current_user.id)
     if p is not None and p.response == "DECLINED":
         raise HTTPException(status.HTTP_409_CONFLICT, "You declined this meeting; accept it to join")
     phase = _phase(m, datetime.now(UTC))
@@ -353,9 +356,16 @@ class SignalIn(BaseModel):
     payload: dict[str, Any] | None = None
 
 
+async def _check_meeting_block(db: AsyncSession, m: Meeting, user_id: uuid.UUID) -> None:
+    # Invitation eligibility is not a permanent grant after either party blocks.
+    if user_id != m.organizer_id and await db.scalar(select(_blocked_pair(m.organizer_id, user_id))):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Meeting not found")
+
+
 async def _in_call(db: AsyncSession, meeting_id: uuid.UUID, user: User) -> Meeting:
     """Only the organiser and non-declined invitees, and only while the meeting is joinable."""
     m, p = await _visible_meeting(db, meeting_id, user)
+    await _check_meeting_block(db, m, user.id)
     if p is not None and p.response == "DECLINED":
         raise HTTPException(status.HTTP_409_CONFLICT, "You declined this meeting; accept it to join")
     if _phase(m, datetime.now(UTC)) != "JOINABLE":
@@ -377,9 +387,16 @@ async def send_signal(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Say who the signal is for")
     if payload.to_user_id is not None:
         allowed = {m.organizer_id} | set(
-            (await db.execute(select(MeetingParticipant.user_id).where(MeetingParticipant.meeting_id == m.id))).scalars()
+            (await db.execute(select(MeetingParticipant.user_id).where(
+                MeetingParticipant.meeting_id == m.id,
+                MeetingParticipant.response != "DECLINED",
+            ))).scalars()
         )
-        if payload.to_user_id not in allowed:
+        if (
+            payload.to_user_id not in allowed
+            or await db.scalar(select(_blocked_pair(m.organizer_id, payload.to_user_id)))
+            or await db.scalar(select(_blocked_pair(current_user.id, payload.to_user_id)))
+        ):
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "That person isn't in this meeting")
     count = await db.scalar(select(func.count()).select_from(CallSignal).where(CallSignal.meeting_id == m.id))
     if (count or 0) >= MAX_SIGNALS_PER_MEETING:
@@ -409,6 +426,16 @@ async def receive_signals(
                 CallSignal.id > after,
                 CallSignal.from_user_id != current_user.id,
                 or_(CallSignal.to_user_id == current_user.id, CallSignal.to_user_id.is_(None)),
+                or_(
+                    CallSignal.from_user_id == m.organizer_id,
+                    select(MeetingParticipant.id).where(
+                        MeetingParticipant.meeting_id == m.id,
+                        MeetingParticipant.user_id == CallSignal.from_user_id,
+                        MeetingParticipant.response != "DECLINED",
+                    ).exists(),
+                ),
+                ~_blocked_pair(m.organizer_id, CallSignal.from_user_id),
+                ~_blocked_pair(current_user.id, CallSignal.from_user_id),
             )
             .order_by(CallSignal.id)
             .limit(200)
