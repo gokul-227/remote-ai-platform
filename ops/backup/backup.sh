@@ -48,3 +48,5 @@ archive="$OUT_DIR/remote-ai-platform-$stamp.tar.enc"
 tar -C "$work" -cf - backup | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:BACKUP_PASSPHRASE -out "$archive"
 ( cd "$OUT_DIR" && sha "$(basename "$archive")" > "$(basename "$archive").sha256" )
 echo "backup: $archive ($(du -h "$archive" | cut -f1), $(wc -l < "$work/backup/row-counts.tsv" | tr -d ' ') tables, $objects objects) in $(( $(date +%s) - start ))s"
+REPORT_TABLES="$(wc -l < "$work/backup/row-counts.tsv" | tr -d ' ')" REPORT_OBJECTS="$objects" REPORT_STARTED_AT="$dump_started_at" \
+  "$PYTHON" "$HERE/report.py" backup success "$archive" || true

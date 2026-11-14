@@ -9,6 +9,8 @@ import { Ic } from "./icons";
 import { Incidents } from "./incidents";
 import { OperationsInventory } from "./inventory";
 import { Background } from "./background";
+import { Backups, ServiceCatalogue } from "./catalogue";
+import { FeatureFlags, StaffRoles } from "./staff";
 import { PlatformOperations, ProjectPortfolio } from "./operations";
 import {
   Announcements,
@@ -16,7 +18,6 @@ import {
   Audit,
   AiUsage,
   Contracts,
-  Flags,
   GoogleSearch,
   Integrations,
   JobSources,
@@ -177,6 +178,8 @@ const SECTIONS: {
           ["status", "System status", "zap"],
           ["incidents", "Incidents", "bell"],
           ["inventory", "Operations inventory", "layers"],
+          ["catalogue", "Service catalogue", "layers"],
+          ["backups", "Backups", "shield"],
           ["usage", "Usage & limits", "chart"],
           ["google", "Google search", "search"],
         ],
@@ -287,7 +290,7 @@ export default function Console() {
   const view: Record<string, ReactNode> = {
     overview: <Overview version={version} />,
     users: <People writable={writable} meId={me.id} />,
-    staff: <People writable={writable} meId={me.id} preset="&role=ADMIN" title="Staff & roles" />,
+    staff: <StaffRoles writable={writable} meId={me.id} />,
     companies: <Organisations />,
     verifications: <Verifications writable={writable} />,
     reports: <Moderation writable={writable} />,
@@ -298,6 +301,8 @@ export default function Console() {
     background: <Background writable={writable} />,
     incidents: <Incidents writable={writable} />,
     inventory: <OperationsInventory />,
+    catalogue: <ServiceCatalogue />,
+    backups: <Backups />,
     contracts: <Contracts />,
     operations: <PlatformOperations />,
     portfolio: <ProjectPortfolio writable={writable} />,
@@ -306,7 +311,7 @@ export default function Console() {
     resolved: <Support writable={writable} meId={me.id} initial="status=RESOLVED" title="Resolved tickets" />,
     ai: <AiUsage />,
     assistant: <AssistantActivity />,
-    flags: <Flags />,
+    flags: <FeatureFlags writable={writable} />,
     integrations: <Integrations />,
     announcements: <Announcements writable={writable} />,
     status: <SystemStatus />,

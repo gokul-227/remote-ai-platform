@@ -1881,6 +1881,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/backups:
+    get:
+      tags:
+      - Admin Backups & Catalogue
+      summary: List Backups
+      operationId: list_backups_api_v1_admin_backups_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 30
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response List Backups Api V1 Admin Backups Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/catalogue:
+    get:
+      tags:
+      - Admin Backups & Catalogue
+      summary: Catalogue
+      operationId: catalogue_api_v1_admin_catalogue_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Catalogue Api V1 Admin Catalogue Get
+      security:
+      - HTTPBearer: []
   /api/v1/admin/dashboard:
     get:
       tags:

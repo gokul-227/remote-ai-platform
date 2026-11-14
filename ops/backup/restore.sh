@@ -127,3 +127,5 @@ else
   echo "object references: ok"
 fi
 echo "restore verified in $(( $(date +%s) - start ))s"
+REPORT_TARGET_LABEL="${RESTORE_TARGET_LABEL:-separate empty database}" REPORT_TABLES="$(wc -l < "$work/expected.tsv" | tr -d ' ')" \
+  "$PYTHON" "$HERE/report.py" restore_verify success "$BACKUP_FILE" || true

@@ -44,3 +44,12 @@ DRY_RUN=1 ops/backup/restore.sh
   (the `deleted_identities` rows and the admin activity log of the live database list them).
 - The restore never drops anything (`pg_restore` without `--clean`, single transaction).
   Object keys from the store are refused if they would write outside the backup folder.
+
+## Run evidence in the staff console
+
+Set `BACKUP_REPORT_URL` (the API base URL) and `BACKUP_REPORT_TOKEN` (the same value as the API's
+`BACKUP_REPORT_TOKEN`, kept in Infisical) and both scripts report each successful run to
+`POST /api/v1/ops/backups/report`. Only metadata is sent: archive name, SHA-256, size, table and object
+counts, and for restores a label from `RESTORE_TARGET_LABEL`. The console's Backups view then shows the
+last backup and last verified restore; "ok" needs a backup within 26 hours and a verified restore within
+35 days. Reporting is optional and a failed report never fails the run.

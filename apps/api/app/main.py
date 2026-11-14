@@ -23,6 +23,8 @@ from app.core.exceptions import register_exception_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
+from app.domains.admin.backup_router import ops_router as backup_ops_router
+from app.domains.admin.backup_router import router as admin_backup_router
 from app.domains.admin.incident_router import router as incident_router
 from app.domains.admin.inventory_router import router as admin_inventory_router
 from app.domains.admin.moderation_router import router as moderation_router
@@ -109,8 +111,7 @@ def _sentry_before_send(event: Event, hint: Hint) -> Event | None:
     def _scrub(value: object) -> object:
         if isinstance(value, dict):
             return {
-                k: ("[Filtered]" if _is_sensitive_key(k) else _scrub(v))
-                for k, v in value.items()
+                k: ("[Filtered]" if _is_sensitive_key(k) else _scrub(v)) for k, v in value.items()
             }
         if isinstance(value, list):
             return [_scrub(v) for v in value]
@@ -227,7 +228,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Durable email delivery (MAIL-01): only when a provider is configured.
     from app.services.email.outbox import email_enabled, run_dispatcher
 
-    dispatcher = asyncio.create_task(run_dispatcher(AsyncSessionFactory)) if email_enabled() else None
+    dispatcher = (
+        asyncio.create_task(run_dispatcher(AsyncSessionFactory)) if email_enabled() else None
+    )
 
     async def _refresh_flag_overrides() -> None:
         """Keep staff feature-flag overrides current on every API instance."""
@@ -321,6 +324,8 @@ def create_app() -> FastAPI:
     app.include_router(search_router, prefix=prefix)
     app.include_router(matching_router, prefix=prefix)
     app.include_router(admin_staff_router, prefix=prefix)
+    app.include_router(admin_backup_router, prefix=prefix)
+    app.include_router(backup_ops_router, prefix=prefix)
     app.include_router(admin_router, prefix=prefix)
     app.include_router(incident_router, prefix=prefix)
     app.include_router(admin_inventory_router, prefix=prefix)

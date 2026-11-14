@@ -131,6 +131,8 @@ class Settings(BaseSettings):
     FCM_PROJECT_ID: str = ""
     FCM_CREDENTIALS_B64: str = ""  # base64 of the service-account JSON
     FCM_VAPID_KEY: str = ""  # public key, given to browsers
+    # Shared with ops/backup scripts so they can report run evidence (never a user credential).
+    BACKUP_REPORT_TOKEN: str = ""
     PUSH_MAX_PER_USER_PER_HOUR: int = 20
 
     # ── Supabase Auth (the only identity provider) ──────────────────────────────

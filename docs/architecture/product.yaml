@@ -382,6 +382,8 @@ features:
     prefix: /api/v1/admin/operations
   - domain: admin.staff
     prefix: /api/v1/admin
+  - domain: admin.backup
+    prefix: /api/v1/ops
   - domain: admin.incident
     prefix: /api/v1/admin/incidents
   - domain: admin.inventory
@@ -437,6 +439,8 @@ api:
   domains:
   - domain: health
     prefix: /health
+  - domain: admin.backup
+    prefix: /ops
   - domain: admin.incident
     prefix: /admin/incidents
   - domain: admin.inventory

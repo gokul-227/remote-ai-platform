@@ -56,7 +56,7 @@ async def test_inventory_reports_only_mounted_routes_and_no_backup_success(
     assert data["read_views"] == [
         {"name": "Usage", "path": "/api/v1/admin/usage", "screen": "usage"}
     ]
-    assert data["backup"]["status"] == "evidence_unavailable"
+    assert data["backup"]["status"] == "no_evidence"
     assert data["backup"]["last_backup_at"] is None
     assert data["backup"]["last_restore_verified_at"] is None
     assert "Auth users and sessions" in data["backup"]["excludes"]

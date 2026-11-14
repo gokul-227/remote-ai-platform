@@ -305,6 +305,7 @@ ignore:
   settings:
     # Matches the external-service pattern but is not a separate component.
     - API_URL                   # this API's own URL
+    - BACKUP_REPORT_TOKEN       # shared secret for ops/backup run reports to this API
     - GITHUB_CALLBACK_URL       # this API's own OAuth callback
     - GITHUB_CLIENT_SECRET      # credential for the github component
     - JOOBLE_API_KEY            # credential for the Jooble job board (job_boards)

@@ -48,6 +48,8 @@ AREA_ROLES: dict[str, frozenset[str]] = {
     "analytics": frozenset({"ops_admin", "eng_operator"}),
     "assistant-actions": frozenset({"ops_admin", "eng_operator"}),
     "jobs": frozenset({"ops_admin", "eng_operator"}),
+    "backups": frozenset({"ops_admin", "eng_operator"}),
+    "catalogue": frozenset({"ops_admin", "eng_operator"}),
     "feature-flags": frozenset({"ops_admin"}),
     "announcements": frozenset({"ops_admin"}),
 }
