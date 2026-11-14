@@ -91,6 +91,7 @@ components:
     - health
     - admin.moderation
     - admin.operations
+    - admin.portfolio
     - admin
     - analytics
     - applications

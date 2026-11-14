@@ -352,7 +352,7 @@ features:
     name: AI providers
     status: active
 - id: admin
-  name: Administration & moderation (staff console app)
+  name: Platform operations & moderation (staff console app)
   icon: concepts/shield-check
   personas:
   - admin
@@ -366,6 +366,8 @@ features:
     prefix: /api/v1/moderation
   - domain: admin.operations
     prefix: /api/v1/{admin,announcements}
+  - domain: admin.portfolio
+    prefix: /api/v1/admin/operations
   - domain: analytics
     prefix: /api/v1/analytics
   - domain: health
@@ -419,6 +421,8 @@ api:
     prefix: /moderation
   - domain: admin.operations
     prefix: /{admin,announcements}
+  - domain: admin.portfolio
+    prefix: /admin/operations
   - domain: admin
     prefix: /admin
   - domain: analytics
@@ -762,9 +766,6 @@ stack:
   - name: TanStack Query
     icon: reactquery
     evidence: 'package.json: @tanstack/react-query'
-  - name: Zod
-    icon: zod
-    evidence: 'package.json: zod'
   - name: supabase-js
     icon: supabase
     evidence: 'package.json: @supabase/supabase-js'

@@ -114,10 +114,10 @@ features:
     uses: [ai-providers]
   - id: admin
     icon: concepts/shield-check
-    name: Administration & moderation (staff console app)
+    name: Platform operations & moderation (staff console app)
     personas: [admin]
     screens: [admin]
-    api: [admin, admin.moderation, admin.operations, analytics, health]
+    api: [admin, admin.moderation, admin.operations, admin.portfolio, analytics, health]
     uses: [job-boards, ai-providers, sentry]
   - id: help
     icon: concepts/life-buoy

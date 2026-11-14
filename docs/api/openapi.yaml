@@ -4457,6 +4457,24 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          default: ''
+          title: Q
+      - name: order
+        in: query
+        required: false
+        schema:
+          enum:
+          - latest
+          - most_liked
+          type: string
+          default: latest
+          title: Order
       responses:
         '200':
           description: Successful Response
@@ -4497,6 +4515,24 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          default: ''
+          title: Q
+      - name: order
+        in: query
+        required: false
+        schema:
+          enum:
+          - latest
+          - most_liked
+          type: string
+          default: latest
+          title: Order
       responses:
         '200':
           description: Successful Response
@@ -4758,6 +4794,24 @@ paths:
           minimum: 1
           default: 20
           title: Page Size
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          default: ''
+          title: Q
+      - name: order
+        in: query
+        required: false
+        schema:
+          enum:
+          - latest
+          - most_liked
+          type: string
+          default: latest
+          title: Order
       responses:
         '200':
           description: Successful Response
@@ -6302,6 +6356,28 @@ paths:
           description: Only messages older than this (scroll back)
           title: Before
         description: Only messages older than this (scroll back)
+      - name: after_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Last message id paired with after for equal-timestamp pagination
+          title: After Id
+        description: Last message id paired with after for equal-timestamp pagination
+      - name: before_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: First message id paired with before for equal-timestamp pagination
+          title: Before Id
+        description: First message id paired with before for equal-timestamp pagination
       - name: thread
         in: query
         required: false
@@ -6366,6 +6442,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/channels/{channel_id}/search:
+    get:
+      tags:
+      - Channels
+      summary: Search Messages
+      operationId: search_messages_api_v1_channels__channel_id__search_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: channel_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Channel Id
+      - name: q
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Literal text in messages and thread replies
+          title: Q
+        description: Literal text in messages and thread replies
+      - name: before
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Before
+      - name: before_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Before Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 25
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchOut'
         '422':
           description: Validation Error
           content:
@@ -8518,25 +8660,13 @@ paths:
       - Browser
       summary: Create View
       operationId: create_view_api_v1_browser_views_post
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ViewRequest'
-        required: true
       responses:
         '200':
           description: Successful Response
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/ViewToken'
-        '422':
-          description: Validation Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
+              schema: {}
+      deprecated: true
       security:
       - HTTPBearer: []
   /api/v1/announcements/active:
@@ -8768,6 +8898,121 @@ paths:
                 title: Response Search Status Api V1 Admin Search Status Get
       security:
       - HTTPBearer: []
+  /api/v1/admin/operations/summary:
+    get:
+      tags:
+      - Platform Operations
+      summary: Operations Summary
+      description: Measured workload across delivery, collaboration and service queues.
+      operationId: operations_summary_api_v1_admin_operations_summary_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Operations Summary Api V1 Admin Operations Summary Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/operations/projects:
+    get:
+      tags:
+      - Platform Operations
+      summary: Project Portfolio
+      operationId: project_portfolio_api_v1_admin_operations_projects_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          default: ''
+          title: Query
+      - name: project_status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Project Status
+      - name: skip
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Skip
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 30
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Project Portfolio Api V1 Admin Operations Projects Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/operations/projects/{project_id}/status:
+    patch:
+      tags:
+      - Platform Operations
+      summary: Project Status Update
+      operationId: project_status_update_api_v1_admin_operations_projects__project_id__status_patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectOperationsUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Project Status Update Api V1 Admin Operations Projects  Project Id  Status Patch
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/public/posts/{post_id}:
     get:
       tags:
@@ -8845,6 +9090,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/public/sitemap-counts:
+    get:
+      tags:
+      - Public pages
+      summary: Sitemap Counts
+      description: |-
+        Counts use the same visibility rules as the public sitemap entry pages.
+
+        No content or private identities are returned. The frontend uses these
+        counts to discover bounded sitemap shards instead of truncating inventory.
+      operationId: sitemap_counts_api_v1_public_sitemap_counts_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: integer
+                type: object
+                title: Response Sitemap Counts Api V1 Public Sitemap Counts Get
 components:
   schemas:
     AIUsageStatsResponse:
@@ -13219,6 +13485,34 @@ components:
       - description
       title: ProjectItemIn
       description: 'ProjectItem as submitted by the user: links must be http(s).'
+    ProjectOperationsUpdate:
+      properties:
+        status:
+          type: string
+          enum:
+          - CREATED
+          - PLANNING
+          - ACTIVE
+          - REVIEW
+          - COMPLETED
+          - CANCELLED
+          title: Status
+        expected_status:
+          type: string
+          maxLength: 30
+          minLength: 1
+          title: Expected Status
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+      type: object
+      required:
+      - status
+      - expected_status
+      - reason
+      title: ProjectOperationsUpdate
     ProjectReviewCreate:
       properties:
         reviewee_id:
@@ -13461,6 +13755,21 @@ components:
       - full_name
       - role
       title: ReviewerSummary
+    SearchOut:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/app__domains__channels__router__MessageOut'
+          type: array
+          title: Items
+        has_more:
+          type: boolean
+          title: Has More
+      type: object
+      required:
+      - items
+      - has_more
+      title: SearchOut
     ServiceCheckResult:
       properties:
         service:
@@ -14445,34 +14754,6 @@ components:
       required:
       - status
       title: VerificationReviewUpdate
-    ViewRequest:
-      properties:
-        url:
-          type: string
-          maxLength: 2048
-          minLength: 1
-          title: Url
-      type: object
-      required:
-      - url
-      title: ViewRequest
-    ViewToken:
-      properties:
-        url:
-          type: string
-          title: Url
-        view_path:
-          type: string
-          title: View Path
-        expires_in:
-          type: integer
-          title: Expires In
-      type: object
-      required:
-      - url
-      - view_path
-      - expires_in
-      title: ViewToken
     WalletBalanceResponse:
       properties:
         user_id:

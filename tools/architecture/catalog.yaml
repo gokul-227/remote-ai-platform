@@ -302,6 +302,7 @@ ignore:
     - REMOTIVE_API_URL
     - USAJOBS_API_URL
     - USAJOBS_AUTH_KEY
+    - THEMUSE_API_KEY          # The Muse registered-app credential; board from aggregator
     - THEMUSE_API_URL
     - JOB_SYNC_TOKEN            # gha-job-sync credential
     - STRIPE_SECRET_KEY         # stripe
