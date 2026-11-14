@@ -602,7 +602,7 @@ interface ChatOut {
   tool: string | null;
   kind: "READ" | "DRAFT" | "WRITE" | null;
   result: Record<string, any> | null;
-  pending_action: { id: string; summary: string; expires_at: string } | null;
+  pending_action: { id: string; summary: string; expires_at: string; effect?: string } | null;
 }
 interface Turn {
   role: "user" | "assistant";
@@ -688,6 +688,13 @@ export function AssistantChat({ go, compact }: { go?: (r: string) => void; compa
               {t.out?.pending_action && (
                 <div className="mt-2 rounded border border-amber-300 bg-white p-2">
                   <p className="font-semibold">Confirm: {t.out.pending_action.summary}</p>
+                  {t.out.pending_action.effect === "CONSEQUENTIAL" ? (
+                    <p className="mt-1 text-xs text-amber-800">
+                      Other people will see this or it can’t be quietly undone. Check it before you confirm.
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500">You can change or remove this afterwards.</p>
+                  )}
                   {t.actionState ? (
                     <p className="mt-1">
                       {t.actionState}{" "}

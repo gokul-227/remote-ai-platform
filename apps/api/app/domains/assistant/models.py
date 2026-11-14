@@ -25,7 +25,9 @@ class AssistantAction(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     tool: Mapped[str] = mapped_column(String(60), nullable=False)
-    args: Mapped[dict[str, Any]] = mapped_column(JSON().with_variant(JSONB, "postgresql"), nullable=False)
+    args: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=False
+    )
     summary: Mapped[str] = mapped_column(String(500), nullable=False)
     # PENDING, EXECUTED, CANCELLED, FAILED
     status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False, index=True)
