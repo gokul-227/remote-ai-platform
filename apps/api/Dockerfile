@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 FROM base AS deps
 
 COPY pyproject.toml ./
-RUN pip install hatchling && pip install -e ".[dev]"
+RUN python -m pip install --upgrade pip==26.2 setuptools==84.1.0 hatchling && pip install -e ".[dev]"
 
 # ─── Development ──────────────────────────────────────────────────────────────
 FROM deps AS development
@@ -57,7 +57,7 @@ CMD ["python", "-m", "pytest", "-v", "--cov=app", "--cov-report=term", "--cov-fa
 FROM base AS production-deps
 
 COPY pyproject.toml ./
-RUN pip install hatchling && pip install -e "."
+RUN python -m pip install --upgrade pip==26.2 setuptools==84.1.0 hatchling && pip install -e "."
 
 FROM production-deps AS production
 
