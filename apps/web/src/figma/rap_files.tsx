@@ -536,6 +536,8 @@ function Preview({ node, onClose, onDownload }: { node: Node; onClose: () => voi
       ) : (
         <p className="text-sm text-slate-600">{d.reason ?? "Preview is not available for this file type."}</p>
       )}
+      <FileComments node={node} />
+      <FileReviews node={node} />
       <div className="mt-4 flex justify-end gap-2">
         <Btn v="line" onClick={onClose}>
           Close
@@ -763,5 +765,136 @@ export function SharedFile({ token }: { token: string | null }) {
         )}
       </Card>
     </div>
+  );
+}
+
+function FileComments({ node }: { node: Node }) {
+  const q = useApi<{ id: string; body: string; version: number }[]>(`/files/${node.id}/comments`);
+  const [body, setBody] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await api.post(`/files/${node.id}/comments`, { body });
+      setBody("");
+      q.reload();
+    } catch (e) {
+      setError(extractErrorMessage(e, "Couldn’t add your comment."));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="mt-4 border-t border-slate-200 pt-3">
+      <h3>Comments</h3>
+      {!!q.error && <p role="alert">Couldn’t load comments.</p>}
+      {(q.data ?? []).map((c) => (
+        <p key={c.id} className="mt-2 whitespace-pre-wrap break-words text-sm">
+          <span className="text-xs text-slate-500">Version {c.version}: </span>
+          {c.body}
+        </p>
+      ))}
+      <textarea
+        aria-label="File comment"
+        value={body}
+        maxLength={4000}
+        onChange={(e) => setBody(e.target.value)}
+        className={cx(inputCls, "mt-3")}
+      />
+      {error && <p role="alert">{error}</p>}
+      <Btn onClick={submit} disabled={busy || !body.trim()}>
+        {busy ? "Adding…" : "Add comment"}
+      </Btn>
+    </section>
+  );
+}
+
+function FileReviews({ node }: { node: Node }) {
+  const { user } = useAuth();
+  const q = useApi<
+    {
+      id: string;
+      action: string;
+      reviewer_id?: string;
+      review_id?: string;
+      version: number;
+      decision?: string;
+      comment?: string;
+    }[]
+  >(`/files/${node.id}/reviews`);
+  const [reviewer, setReviewer] = useState("");
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const run = async (path: string, data: unknown) => {
+    setBusy(true);
+    setError("");
+    try {
+      await api.post(path, data);
+      q.reload();
+    } catch (e) {
+      setError(extractErrorMessage(e, "Couldn’t save the review."));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="mt-4 border-t border-slate-200 pt-3">
+      <h3>Review and approval</h3>
+      {!!q.error && <p role="alert">Couldn’t load reviews.</p>}
+      {(q.data ?? [])
+        .filter((r) => r.action === "review.requested")
+        .map((r) => {
+          const decision = q.data?.find((d) => d.review_id === r.id);
+          return (
+            <div key={r.id} className="mt-2 text-sm">
+              <p>
+                Version {r.version}: {decision?.decision ?? "Awaiting review"}
+              </p>
+              {decision?.comment && <p className="whitespace-pre-wrap break-words">{decision.comment}</p>}
+              {!decision && r.reviewer_id === user?.id && (
+                <>
+                  <textarea
+                    aria-label="Review comment"
+                    className={inputCls}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    maxLength={4000}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {["approved", "changes_requested"].map((d) => (
+                      <Btn
+                        key={d}
+                        disabled={busy || !comment.trim()}
+                        onClick={() => run(`/files/${node.id}/reviews/${r.id}/decision`, { decision: d, comment })}
+                      >
+                        {d === "approved" ? "Approve" : "Request changes"}
+                      </Btn>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      <label className="mt-3 block text-sm">
+        Reviewer account ID
+        <input className={inputCls} value={reviewer} onChange={(e) => setReviewer(e.target.value)} />
+      </label>
+      <p className="text-xs text-slate-500">
+        Choose a person with comment access. Approval applies only to this version.
+      </p>
+      <Btn
+        disabled={busy || !reviewer.trim()}
+        onClick={() =>
+          run(`/files/${node.id}/reviews`, { reviewer_id: reviewer.trim(), version: node.current_version })
+        }
+      >
+        Request review
+      </Btn>
+      {error && <p role="alert">{error}</p>}
+    </section>
   );
 }

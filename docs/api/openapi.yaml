@@ -8403,6 +8403,190 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/comments:
+    get:
+      tags:
+      - Files
+      summary: File Comments
+      operationId: file_comments_api_v1_files__node_id__comments_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response File Comments Api V1 Files  Node Id  Comments Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Files
+      summary: Add File Comment
+      operationId: add_file_comment_api_v1_files__node_id__comments_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileCommentIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: boolean
+                title: Response Add File Comment Api V1 Files  Node Id  Comments Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/reviews:
+    get:
+      tags:
+      - Files
+      summary: File Reviews
+      operationId: file_reviews_api_v1_files__node_id__reviews_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response File Reviews Api V1 Files  Node Id  Reviews Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Files
+      summary: Request File Review
+      operationId: request_file_review_api_v1_files__node_id__reviews_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileReviewIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Request File Review Api V1 Files  Node Id  Reviews Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/files/{node_id}/reviews/{review_id}/decision:
+    post:
+      tags:
+      - Files
+      summary: Decide File Review
+      operationId: decide_file_review_api_v1_files__node_id__reviews__review_id__decision_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: node_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Node Id
+      - name: review_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Review Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileDecisionIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+                title: Response Decide File Review Api V1 Files  Node Id  Reviews  Review Id  Decision Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/github/status:
     get:
       tags:
@@ -13180,6 +13364,48 @@ components:
       - page_size
       - has_more
       title: FeedResponse
+    FileCommentIn:
+      properties:
+        body:
+          type: string
+          maxLength: 4000
+          minLength: 1
+          title: Body
+      type: object
+      required:
+      - body
+      title: FileCommentIn
+    FileDecisionIn:
+      properties:
+        decision:
+          type: string
+          pattern: ^(approved|changes_requested)$
+          title: Decision
+        comment:
+          type: string
+          maxLength: 4000
+          minLength: 1
+          title: Comment
+      type: object
+      required:
+      - decision
+      - comment
+      title: FileDecisionIn
+    FileReviewIn:
+      properties:
+        reviewer_id:
+          type: string
+          format: uuid
+          title: Reviewer Id
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+      type: object
+      required:
+      - reviewer_id
+      - version
+      title: FileReviewIn
     FolderIn:
       properties:
         name:

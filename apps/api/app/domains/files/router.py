@@ -1064,3 +1064,188 @@ async def sweep_trash(db: AsyncSession, retention_days: int = 30) -> dict[str, i
 
 # Referenced by workers/tests; keeps the Project import meaningful for type checkers.
 __all__ = ["router", "sweep_trash", "purge_node", "Project"]
+
+
+class FileCommentIn(BaseModel):
+    body: str = Field(min_length=1, max_length=4000)
+
+
+@router.get("/{node_id}/comments")
+async def file_comments(
+    node_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, Any]]:
+    node, _ = await _node(db, node_id, user, "viewer")
+    if node.trashed_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    rows = (
+        (
+            await db.execute(
+                select(FileActivity)
+                .where(FileActivity.node_id == node_id, FileActivity.action == "comment.added")
+                .order_by(FileActivity.created_at.desc(), FileActivity.id.desc())
+                .limit(100)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "id": str(row.id),
+            "author_id": str(row.actor_id) if row.actor_id else None,
+            "body": row.payload.get("body", ""),
+            "version": row.payload.get("version"),
+            "created_at": row.created_at,
+        }
+        for row in reversed(rows)
+    ]
+
+
+@router.post("/{node_id}/comments", status_code=status.HTTP_201_CREATED)
+async def add_file_comment(
+    node_id: uuid.UUID,
+    body: FileCommentIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, bool]:
+    node, _ = await _node(db, node_id, user, "commenter")
+    if node.trashed_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    text = body.body.strip()
+    if not text:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Enter a comment")
+    await _log(db, node, user, "comment.added", {"body": text, "version": node.current_version})
+    await db.flush()
+    return {"created": True}
+
+
+class FileReviewIn(BaseModel):
+    reviewer_id: uuid.UUID
+    version: int = Field(ge=1)
+
+
+class FileDecisionIn(BaseModel):
+    decision: str = Field(pattern="^(approved|changes_requested)$")
+    comment: str = Field(min_length=1, max_length=4000)
+
+
+@router.get("/{node_id}/reviews")
+async def file_reviews(
+    node_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> list[dict[str, Any]]:
+    node, _ = await _node(db, node_id, user, "viewer")
+    if node.trashed_at is not None:
+        raise HTTPException(404, "Not found")
+    rows = (
+        (
+            await db.execute(
+                select(FileActivity)
+                .where(
+                    FileActivity.node_id == node_id,
+                    FileActivity.action.in_(["review.requested", "review.decided"]),
+                )
+                .order_by(FileActivity.created_at, FileActivity.id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "id": str(r.id),
+            "actor_id": str(r.actor_id),
+            "action": r.action,
+            "created_at": r.created_at,
+            **r.payload,
+        }
+        for r in rows
+    ]
+
+
+@router.post("/{node_id}/reviews", status_code=201)
+async def request_file_review(
+    node_id: uuid.UUID,
+    body: FileReviewIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    node, _ = await _node(db, node_id, user, "editor")
+    if node.kind != KIND_FILE or node.trashed_at is not None:
+        raise HTTPException(409, "Choose an active file")
+    if body.version != node.current_version:
+        raise HTTPException(409, "The file changed; refresh before requesting review")
+    if body.reviewer_id == user.id:
+        raise HTTPException(422, "Choose another person to review your file")
+    reviewer = await db.get(User, body.reviewer_id)
+    if (
+        reviewer is None
+        or not reviewer.is_active
+        or not can(await effective_role(db, node, reviewer), "commenter")
+    ):
+        raise HTTPException(422, "Reviewer needs comment access to this file")
+    row = FileActivity(
+        node_id=node_id,
+        actor_id=user.id,
+        action="review.requested",
+        payload={"reviewer_id": str(body.reviewer_id), "version": body.version},
+    )
+    db.add(row)
+    await db.flush()
+    return {"id": str(row.id), **row.payload}
+
+
+@router.post("/{node_id}/reviews/{review_id}/decision")
+async def decide_file_review(
+    node_id: uuid.UUID,
+    review_id: uuid.UUID,
+    body: FileDecisionIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    node, _ = await _node(db, node_id, user, "commenter")
+    row = await db.scalar(
+        select(FileActivity)
+        .where(
+            FileActivity.id == review_id,
+            FileActivity.node_id == node_id,
+            FileActivity.action == "review.requested",
+        )
+        .with_for_update()
+    )
+    if row is None or row.payload.get("reviewer_id") != str(user.id):
+        raise HTTPException(404, "Review not found")
+    if node.trashed_at is not None or row.payload.get("version") != node.current_version:
+        raise HTTPException(409, "This review is outdated; request review of the current version")
+    decisions = (
+        (
+            await db.execute(
+                select(FileActivity).where(
+                    FileActivity.node_id == node_id,
+                    FileActivity.action == "review.decided",
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if any(d.payload.get("review_id") == str(review_id) for d in decisions):
+        raise HTTPException(409, "This review already has a decision")
+    comment = body.comment.strip()
+    if not comment:
+        raise HTTPException(422, "Enter a review comment")
+    await _log(
+        db,
+        node,
+        user,
+        "review.decided",
+        {
+            "review_id": str(review_id),
+            "version": node.current_version,
+            "decision": body.decision,
+            "comment": comment,
+        },
+    )
+    await db.flush()
+    return {"decision": body.decision}

@@ -383,3 +383,68 @@ async def test_preview_signing_failure_is_retryable(
     monkeypatch.setattr(files_router, "generate_presigned_url", lambda *a, **kw: None)
     response = await client.get(f"/api/v1/files/{node_id}/preview", headers=me)
     assert response.status_code == 503
+
+
+@pytest.mark.asyncio
+async def test_file_comments_require_comment_permission(client: AsyncClient, storage: FakeStorage):
+    owner = await _signup(client, "comments-owner@example.com")
+    viewer = await _signup(client, "comments-viewer@example.com")
+    uploaded = await client.post(
+        "/api/v1/files/upload", headers=owner, files=_file("notes.txt", b"notes", "text/plain")
+    )
+    assert uploaded.status_code == 201
+    node_id = uploaded.json()["id"]
+    path = f"/api/v1/files/{node_id}"
+    assert (await client.get(path + "/comments", headers=viewer)).status_code == 404
+    shared = await client.post(
+        path + "/shares",
+        headers=owner,
+        json={"principal_type": "user", "email": "comments-viewer@example.com", "role": "viewer"},
+    )
+    assert shared.status_code == 201, shared.text
+    assert (await client.get(path + "/comments", headers=viewer)).json() == []
+    assert (
+        await client.post(path + "/comments", headers=viewer, json={"body": "No"})
+    ).status_code == 403
+    assert (
+        await client.post(path + "/comments", headers=owner, json={"body": "Review version one"})
+    ).status_code == 201
+    rows = (await client.get(path + "/comments", headers=viewer)).json()
+    assert rows[0]["body"] == "Review version one"
+    assert rows[0]["version"] == 1
+
+
+@pytest.mark.asyncio
+async def test_review_binds_to_version_and_assigned_reviewer(
+    client: AsyncClient, storage: FakeStorage
+):
+    owner = await _signup(client, "review-owner@example.com")
+    reviewer = await _signup(client, "reviewer@example.com")
+    reviewer_id = (await client.get("/api/v1/auth/me", headers=reviewer)).json()["id"]
+    uploaded = await client.post(
+        "/api/v1/files/upload", headers=owner, files=_file("deliverable.txt", b"v1", "text/plain")
+    )
+    node_id = uploaded.json()["id"]
+    path = f"/api/v1/files/{node_id}"
+    payload = {"reviewer_id": reviewer_id, "version": 1}
+    assert (await client.post(path + "/reviews", headers=owner, json=payload)).status_code == 422
+    await client.post(
+        path + "/shares",
+        headers=owner,
+        json={"principal_type": "user", "email": "reviewer@example.com", "role": "commenter"},
+    )
+    request = await client.post(path + "/reviews", headers=owner, json=payload)
+    assert request.status_code == 201, request.text
+    decision_path = path + "/reviews/" + request.json()["id"] + "/decision"
+    decision = {"decision": "approved", "comment": "Accepted version one"}
+    assert (await client.post(decision_path, headers=owner, json=decision)).status_code == 404
+    assert (await client.post(decision_path, headers=reviewer, json=decision)).status_code == 200
+    assert (await client.post(decision_path, headers=reviewer, json=decision)).status_code == 409
+    pending = await client.post(path + "/reviews", headers=owner, json=payload)
+    await client.post(
+        path + "/content", headers=owner, files=_file("deliverable.txt", b"v2", "text/plain")
+    )
+    stale_path = path + "/reviews/" + pending.json()["id"] + "/decision"
+    assert (await client.post(stale_path, headers=reviewer, json=decision)).status_code == 409
+    history = (await client.get(path + "/reviews", headers=owner)).json()
+    assert any(r.get("decision") == "approved" and r["version"] == 1 for r in history)
