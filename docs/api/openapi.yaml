@@ -9013,6 +9013,243 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/background/overview:
+    get:
+      tags:
+      - Admin Background
+      summary: Overview
+      operationId: overview_api_v1_admin_background_overview_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverviewOut'
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/background/runs:
+    get:
+      tags:
+      - Admin Background
+      summary: List Runs
+      operationId: list_runs_api_v1_admin_background_runs_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 16
+          - type: 'null'
+          title: Status
+      - name: task
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Task
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RunOut'
+                title: Response List Runs Api V1 Admin Background Runs Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/background/dead-letters:
+    get:
+      tags:
+      - Admin Background
+      summary: List Dead Letters
+      operationId: list_dead_letters_api_v1_admin_background_dead_letters_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: include_retried
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Include Retried
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeadLetterOut'
+                title: Response List Dead Letters Api V1 Admin Background Dead Letters Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/background/dead-letters/{dead_id}/retry:
+    post:
+      tags:
+      - Admin Background
+      summary: Retry Dead Letter
+      operationId: retry_dead_letter_api_v1_admin_background_dead_letters__dead_id__retry_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: dead_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Dead Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reason'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/background/sources:
+    get:
+      tags:
+      - Admin Background
+      summary: List Sources
+      operationId: list_sources_api_v1_admin_background_sources_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SourceOut'
+                type: array
+                title: Response List Sources Api V1 Admin Background Sources Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/background/sources/{name}:
+    patch:
+      tags:
+      - Admin Background
+      summary: Patch Source
+      operationId: patch_source_api_v1_admin_background_sources__name__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SourcePatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SourceOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/background/sources/{name}/run:
+    post:
+      tags:
+      - Admin Background
+      summary: Run Source Now
+      operationId: run_source_now_api_v1_admin_background_sources__name__run_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reason'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/public/posts/{post_id}:
     get:
       tags:
@@ -10522,6 +10759,55 @@ components:
       - total_spent
       - total_released
       title: CurrencyBalance
+    DeadLetterOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        task_run_id:
+          type: string
+          format: uuid
+          title: Task Run Id
+        task_name:
+          type: string
+          title: Task Name
+        args:
+          additionalProperties: true
+          type: object
+          title: Args
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        retried_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Retried At
+        retried_run_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Retried Run Id
+      type: object
+      required:
+      - id
+      - task_run_id
+      - task_name
+      - args
+      - error
+      - created_at
+      - retried_at
+      - retried_run_id
+      title: DeadLetterOut
     DeliverableResponse:
       properties:
         id:
@@ -13066,6 +13352,36 @@ components:
       required:
       - level
       title: NotifyIn
+    OverviewOut:
+      properties:
+        runs_by_status:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Runs By Status
+        dead_letters_open:
+          type: integer
+          title: Dead Letters Open
+        undispatched_outbox:
+          type: integer
+          title: Undispatched Outbox
+        liveness:
+          additionalProperties:
+            additionalProperties: true
+            type: object
+          type: object
+          title: Liveness
+        dispatch_disabled:
+          type: boolean
+          title: Dispatch Disabled
+      type: object
+      required:
+      - runs_by_status
+      - dead_letters_open
+      - undispatched_outbox
+      - liveness
+      - dispatch_disabled
+      title: OverviewOut
     ParticipantIn:
       properties:
         user_id:
@@ -13693,6 +14009,17 @@ components:
       required:
       - reaction
       title: ReactionIn
+    Reason:
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+      type: object
+      required:
+      - reason
+      title: Reason
     ResumeUploadResponse:
       properties:
         resume_url:
@@ -13755,6 +14082,89 @@ components:
       - full_name
       - role
       title: ReviewerSummary
+    RunOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        task_name:
+          type: string
+          title: Task Name
+        status:
+          type: string
+          title: Status
+        attempts:
+          type: integer
+          title: Attempts
+        max_attempts:
+          type: integer
+          title: Max Attempts
+        args:
+          additionalProperties: true
+          type: object
+          title: Args
+        scheduled_for:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Scheduled For
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+        finished_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Finished At
+        next_retry_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Next Retry At
+        worker_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Worker Id
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+        result:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - task_name
+      - status
+      - attempts
+      - max_attempts
+      - args
+      - scheduled_for
+      - started_at
+      - finished_at
+      - next_retry_at
+      - worker_id
+      - error
+      - result
+      - created_at
+      title: RunOut
     SearchOut:
       properties:
         items:
@@ -13913,6 +14323,99 @@ components:
       - count
       - endorsed_by_me
       title: SkillCount
+    SourceOut:
+      properties:
+        name:
+          type: string
+          title: Name
+        enabled:
+          type: boolean
+          title: Enabled
+        cron:
+          type: string
+          title: Cron
+        max_per_run:
+          type: integer
+          title: Max Per Run
+        rate_limit_per_minute:
+          type: integer
+          title: Rate Limit Per Minute
+        permission_confirmed:
+          type: boolean
+          title: Permission Confirmed
+        last_enqueued_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Enqueued At
+        last_success_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Success At
+        last_error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Error
+        consecutive_failures:
+          type: integer
+          title: Consecutive Failures
+          default: 0
+      type: object
+      required:
+      - name
+      - enabled
+      - cron
+      - max_per_run
+      - rate_limit_per_minute
+      - permission_confirmed
+      - last_enqueued_at
+      title: SourceOut
+    SourcePatch:
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+        enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Enabled
+        cron:
+          anyOf:
+          - type: string
+            maxLength: 64
+            minLength: 9
+          - type: 'null'
+          title: Cron
+        max_per_run:
+          anyOf:
+          - type: integer
+            maximum: 50000.0
+            minimum: 1.0
+          - type: 'null'
+          title: Max Per Run
+        rate_limit_per_minute:
+          anyOf:
+          - type: integer
+            maximum: 6000.0
+            minimum: 1.0
+          - type: 'null'
+          title: Rate Limit Per Minute
+        permission_confirmed:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Permission Confirmed
+      type: object
+      required:
+      - reason
+      title: SourcePatch
     SprintCreate:
       properties:
         name:

@@ -19,6 +19,10 @@ permissions: {}
 
 jobs:
   sync:
+    # Transitional: the Celery scheduler/worker (app/worker) take over imports once
+    # they run in production. Set repository variable JOB_SYNC_GITHUB_ENABLED=false
+    # to stop this workflow without deleting it (rollback = delete the variable).
+    if: ${{ vars.JOB_SYNC_GITHUB_ENABLED != 'false' }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:

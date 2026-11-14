@@ -1,0 +1,21 @@
+{
+	# Cloudflare proxies the hostname; Caddy still terminates TLS with its own
+	# certificate so traffic between Cloudflare and the VM is encrypted.
+	email contact@remoteaiplatform.com
+}
+
+{$API_HOST} {
+	encode zstd gzip
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+	}
+	reverse_proxy api:8000 {
+		health_uri /health/live
+		health_interval 30s
+		transport http {
+			read_timeout 90s
+		}
+	}
+}

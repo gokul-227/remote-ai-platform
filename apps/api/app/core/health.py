@@ -276,6 +276,29 @@ async def health_readiness(
         "database": db_result,
         "redis": redis_result,
     }
+    # Informational: background worker/scheduler liveness from PostgreSQL heartbeats.
+    # Never changes the overall verdict (the API serves without workers).
+    try:
+        from app.domains.tasks.service import TaskService
+
+        liveness = await TaskService(db).liveness()
+        for kind in ("worker", "scheduler"):
+            entry = liveness.get(kind)
+            if entry is None:
+                hb_status, detail = "UNKNOWN", {"heartbeats": 0}
+            elif entry["fresh"] > 0:
+                hb_status, detail = "HEALTHY", entry
+            else:
+                hb_status, detail = "DEGRADED", entry
+            services[kind] = ServiceCheckResult(
+                service=f"Background {kind}",
+                status=hb_status,
+                latency_ms=0.0,
+                checked_at=datetime.now(UTC).isoformat(),
+                details=detail,
+            )
+    except Exception as exc:  # table missing before migration, etc.
+        logger.debug("worker liveness unavailable", error=type(exc).__name__)
 
     if db_result.status == "DOWN":
         overall = "DOWN"

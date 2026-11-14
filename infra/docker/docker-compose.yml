@@ -157,6 +157,68 @@ services:
       retries: 5
       start_period: 40s
 
+  # ─── Background worker + scheduler (Celery) ──────────────────────────────────
+  # Same image as the API. The worker consumes the `default` and `imports`
+  # queues; the scheduler (Beat) enqueues imports from the job_sources table and
+  # holds a PostgreSQL advisory lock so a second scheduler exits instead of
+  # double-scheduling. Both write their heartbeats to PostgreSQL (see
+  # /health/ready -> services.worker / services.scheduler).
+  worker:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+      target: production
+    container_name: remote-ai-platform-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "default,imports", "--concurrency", "2", "--loglevel", "INFO"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
+      REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin_dev_password}
+      MINIO_SECURE: "false"
+      APP_ENV: ${APP_ENV:-development}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy   # migrations have run
+    networks:
+      - remote_ai_platform
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d celery@$$HOSTNAME --timeout 10 >/dev/null 2>&1 || exit 1"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
+
+  scheduler:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile
+      target: production
+    container_name: remote-ai-platform-scheduler
+    restart: unless-stopped
+    command: ["celery", "-A", "app.worker.celery_app", "beat", "--loglevel", "INFO", "--schedule", "/tmp/celerybeat-schedule"]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-remote_ai_platform}:${POSTGRES_PASSWORD:-remote_ai_platform_dev_password}@postgres:5432/${POSTGRES_DB:-remote_ai_platform}
+      REDIS_URL: redis://redis:6379/0
+      APP_ENV: ${APP_ENV:-development}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    networks:
+      - remote_ai_platform
+
   # ─── Web (Next.js) ────────────────────────────────────────────────────────────
   web:
     build:

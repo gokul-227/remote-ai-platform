@@ -372,6 +372,8 @@ features:
     prefix: /api/v1/analytics
   - domain: health
     prefix: /health
+  - domain: tasks
+    prefix: /api/v1/admin/background
   uses:
   - id: job-boards
     name: Job boards
@@ -479,6 +481,8 @@ api:
     prefix: /social
   - domain: support
     prefix: /support/tickets
+  - domain: tasks
+    prefix: /admin/background
   - domain: trust
     prefix: /trust
 platform:
@@ -572,6 +576,11 @@ infrastructure:
     name: Backend API
     technology: FastAPI 0.142 · Docker
     icon: fastapi
+    group: render
+    status: active
+  - id: worker
+    name: Background worker + scheduler
+    technology: Celery 5 · Beat (PostgreSQL lock) · task history in PostgreSQL
     group: render
     status: active
   - id: auth

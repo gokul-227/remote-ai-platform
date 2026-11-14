@@ -57,6 +57,7 @@ from app.domains.seo.router import router as seo_router
 from app.domains.social.router import router as social_router
 from app.domains.support.router import router as support_router
 from app.domains.support.router import staff_router as support_staff_router
+from app.domains.tasks.router import router as background_router
 from app.domains.trust.router import router as trust_router
 
 logger = structlog.get_logger(__name__)
@@ -321,6 +322,7 @@ def create_app() -> FastAPI:
     app.include_router(browser_router, prefix=prefix)
     app.include_router(admin_operations_router, prefix=prefix)
     app.include_router(admin_portfolio_router, prefix=prefix)
+    app.include_router(background_router, prefix=prefix)
     app.include_router(seo_router, prefix=prefix)
 
     return app

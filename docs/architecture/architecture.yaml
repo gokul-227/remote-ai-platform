@@ -120,7 +120,16 @@ components:
     - seo
     - social
     - support
+    - tasks
     - trust
+- id: worker
+  name: Background worker + scheduler
+  type: worker
+  technology: Celery 5 · Beat (PostgreSQL lock) · task history in PostgreSQL
+  group: render
+  status: active
+  evidence:
+  - 'apps/api/pyproject.toml: celery'
 - id: auth
   name: Supabase Auth
   type: identity
@@ -425,6 +434,9 @@ connections:
 - from: api
   to: redis
   label: RESP
+- from: api
+  to: worker
+  label: Enqueue
 - from: api
   to: ai-providers
   label: LiteLLM

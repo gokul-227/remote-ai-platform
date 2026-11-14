@@ -32,6 +32,8 @@ python3.11 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/uvicorn app.main:app --reload     # API on :8000
 .venv/bin/alembic upgrade head              # apply migrations
 .venv/bin/pytest                            # tests (SQLite, Supabase-style test tokens)
+.venv/bin/celery -A app.worker.celery_app worker -Q default,imports   # background worker
+.venv/bin/celery -A app.worker.celery_app beat                       # scheduler (one instance; PG advisory lock)
 .venv/bin/ruff check . && .venv/bin/mypy app
 
 # Frontend (apps/web)
@@ -55,8 +57,12 @@ make postman-sync DRY_RUN=1   # OpenAPI -> Postman collection; CI pushes it to t
 tokens (JWKS) in `app/domains/auth/dependencies.py` and never issues tokens; role lives in the app's own
 `users` table. AI calls go through LiteLLM only (`app/agents/*` → `app/services/ai/service.py` →
 `app/agents/llm_client.py`), using the free-tier chain in `AI_FREE_TIER_CHAIN` with per-user token
-allowances (`app/services/ai/metering.py`). There is no background worker: resume parsing is inline with a
-time budget and job sync is `.github/workflows/scheduled-job-sync.yml`. Money movement is gated off
+allowances (`app/services/ai/metering.py`). Background work runs on Celery (`app/worker/`: worker +
+Beat scheduler, Redis as broker only) with every run, retry, dead letter, import checkpoint and heartbeat
+recorded in PostgreSQL (`app/domains/tasks/`); job imports are scheduled from the `job_sources` table and
+operated from the staff console (`/admin/background/*`). `.github/workflows/scheduled-job-sync.yml` is the
+transitional import path until the worker runs in production (gate: repo variable
+`JOB_SYNC_GITHUB_ENABLED=false`). Resume parsing is still inline with a time budget. Money movement is gated off
 (`MARKETPLACE_PAYMENTS_ENABLED`); contract/milestone state rules live in `app/domains/contracts/lifecycle.py`.
 The frontend is a hash-routed client app in `apps/web/src/figma` (routes in `App.tsx`; the navigation
 catalog — seven sections and their groups — and the shell live in `rap_shell.tsx`), styled via its own

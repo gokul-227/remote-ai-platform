@@ -67,9 +67,9 @@ components:
       - file_contains: {glob: infra/deploy/render.yaml, regex: 'type:\s*web'}
 
   - id: worker
-    name: Background worker
+    name: Background worker + scheduler
     type: worker
-    technology: Task queue
+    technology: "Celery {python_dep_major:celery} · Beat (PostgreSQL lock) · task history in PostgreSQL"
     group: render
     detect:
       - python_dep: celery
@@ -257,6 +257,7 @@ ignore:
     - litellm          # drawn as the API -> AI providers edge
     - pypdf
     - python-docx
+    - croniter         # cron parsing for the scheduler (part of the worker component)
     - prometheus-fastapi-instrumentator   # /metrics, not scraped by a hosted service
     - structlog
   node_deps:
@@ -286,7 +287,7 @@ ignore:
     - JOOBLE_API_KEY            # credential for the Jooble job board (job_boards)
     - DATABASE_URL              # postgres
     - REDIS_URL                 # redis
-    - CELERY_BROKER_URL         # legacy alias of REDIS_URL; no Celery dependency
+    - CELERY_BROKER_URL         # legacy alias of REDIS_URL (the worker reads REDIS_URL)
     - SUPABASE_SERVICE_ROLE_KEY # auth (Admin API)
     - AI_API_KEY                # generic LiteLLM override, unset in deploys
     - LITELLM_BASE_URL          # optional LiteLLM proxy, unset in deploys

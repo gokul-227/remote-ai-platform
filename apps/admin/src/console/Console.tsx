@@ -6,6 +6,7 @@ import { ApiError, api, publicGet, supabase } from "@/lib/client";
 import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
 import { Ic } from "./icons";
+import { Background } from "./background";
 import { PlatformOperations, ProjectPortfolio } from "./operations";
 import {
   Announcements,
@@ -102,6 +103,7 @@ const SECTIONS: {
         items: [
           ["jobs", "Job listings", "briefcase"],
           ["sources", "Job sources", "globe"],
+          ["background", "Background processing", "layers"],
         ],
       },
       { label: "Freelancing", items: [["contracts", "Contracts", "file"]] },
@@ -289,6 +291,7 @@ export default function Console() {
     restricted: <People writable={writable} meId={me.id} preset="&is_active=false" title="Restricted accounts" />,
     jobs: <Jobs writable={writable} />,
     sources: <JobSources />,
+    background: <Background writable={writable} />,
     contracts: <Contracts />,
     operations: <PlatformOperations />,
     portfolio: <ProjectPortfolio writable={writable} />,

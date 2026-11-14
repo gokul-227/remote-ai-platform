@@ -263,6 +263,12 @@ class Settings(BaseSettings):
     # this long are taken off the public list; they may still be open.
     JOB_UNSEEN_EXPIRY_DAYS: int = 30
 
+    # Background processing (Celery + PostgreSQL task history, app/domains/tasks)
+    TASKS_ALWAYS_EAGER: bool = False  # run tasks inline (tests/local without a worker)
+    TASKS_DISPATCH_DISABLED: bool = False  # record runs but never contact the broker
+    WORKER_HEARTBEAT_STALE_SECONDS: int = 180
+    TASK_RUN_RETENTION_DAYS: int = 30
+
     # ── Payments ──────────────────────────────────────────────────────────────
     # "sandbox" (default, no real payment network contact) or "stripe". Never
     # flips to real money processing just because STRIPE_SECRET_KEY is set --
