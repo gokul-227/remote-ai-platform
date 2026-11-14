@@ -89,8 +89,10 @@ async def build_digests(
 
     A user's items are sent when the oldest is older than their digest window.
     """
-    from app.services.email.outbox import enqueue_email, render_email
+    from app.services.email.outbox import email_enabled, enqueue_email, render_email
 
+    if not email_enabled():
+        return {"emails": 0, "items": 0}
     now = now or datetime.now(UTC)
     rows = (
         (
@@ -116,14 +118,15 @@ async def build_digests(
             oldest = oldest.replace(tzinfo=UTC)
         if now - oldest < window:
             continue
-        lines = "".join(f"<li><b>{i.title}</b> — {i.body}</li>" for i in items[:50])
-        more = f"<p>…and {len(items) - 50} more.</p>" if len(items) > 50 else ""
+        lines = "\n".join(f"{i.title} — {i.body}" for i in items[:50])
+        more = f"\n…and {len(items) - 50} more." if len(items) > 50 else ""
         html = render_email(
             f"{len(items)} new notification{'s' if len(items) != 1 else ''}",
-            f"<ul>{lines}</ul>{more}",
+            f"{lines}{more}",
             "#notifications",
         )
-        slot = now.strftime("%Y%m%d%H%M")
+        # Tie deduplication to this batch, not wall-clock minute.
+        slot = str(items[0].id)
         sent = await enqueue_email(
             db,
             user_id,

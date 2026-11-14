@@ -166,3 +166,29 @@ async def test_preferences_endpoints(client: AsyncClient, engineer_token: str):
     assert body["categories"]["message"] == {"in_app": True, "email": "digest"}
     assert body["categories"]["system"] == {"in_app": True, "email": "immediate"}
     assert body["digest_minutes"] == 60
+
+
+@pytest.mark.asyncio
+async def test_disabled_email_preserves_digest_for_recovery(monkeypatch):
+    from app.core.config import settings
+
+    u = await _user("recover-digest@example.com")
+    async with TestingSessionLocal() as db:
+        item = NotificationDigestItem(
+            user_id=u.id,
+            kind="message",
+            title="<b>Untrusted</b>",
+            body="Still pending",
+            created_at=datetime.now(UTC) - timedelta(hours=1),
+        )
+        db.add(item)
+        await db.commit()
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "none")
+        assert await build_digests(db) == {"emails": 0, "items": 0}
+        await db.refresh(item)
+        assert item.sent_at is None
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "resend")
+        assert await build_digests(db) == {"emails": 1, "items": 1}
+        mail = await db.scalar(select(EmailOutbox).where(EmailOutbox.user_id == u.id))
+        assert "&lt;b&gt;Untrusted&lt;/b&gt;" in mail.html
+        assert "&lt;ul&gt;" not in mail.html

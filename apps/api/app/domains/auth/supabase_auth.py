@@ -11,6 +11,8 @@ Supabase secret and never calls back into Supabase on the request path
 """
 
 import time
+
+from pydantic import EmailStr, TypeAdapter, ValidationError
 from dataclasses import dataclass
 
 import jwt
@@ -109,31 +111,58 @@ def verify_supabase_token(token: str) -> SupabaseIdentity:
                 + (["iss"] if settings.SUPABASE_URL else []),
             },
         )
-    except jwt.PyJWTError as exc:
+    except (jwt.PyJWTError, TypeError, ValueError, OverflowError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         ) from exc
 
+    _validate_claims(payload)
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return SupabaseIdentity(user_id=sub, email=payload.get("email"), issued_at=payload.get("iat"))
 
 
+def _validate_claims(payload: dict) -> None:
+    """Reject coercible or structured claims before they reach account logic."""
+    sub = payload.get("sub")
+    if not isinstance(sub, str) or not sub.strip() or len(sub) > 255:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    for name in ("iat", "exp", "nbf"):
+        if name in payload and type(payload[name]) is not int:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    email = payload.get("email")
+    if email is not None:
+        if not isinstance(email, str) or len(email) > 255:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        try:
+            payload["email"] = TypeAdapter(EmailStr).validate_python(email)
+        except ValidationError as exc:
+            raise HTTPException(status_code=401, detail="Invalid token") from exc
+
+
 # ── Additional issuers (dual validation) ──────────────────────────────────────
 
-_extra_jwks_clients: dict[str, PyJWKClient] = {}
+_extra_jwks_clients: dict[tuple[str, str, str, str], PyJWKClient] = {}
 
 
 def _extra_issuer_config(issuer: str) -> dict[str, str] | None:
-    for item in settings.extra_issuers:
-        if item["issuer"] == issuer:
+    entries = settings.extra_issuers
+    matches = [item for item in entries if item["issuer"] == issuer]
+    if len(matches) == 1:
+        item = matches[0]
+        if (
+            item["provider"] != "supabase"
+            and len(item["provider"]) <= 32
+            and sum(entry["provider"] == item["provider"] for entry in entries) == 1
+        ):
             return item
     return None
 
 
 def _extra_client(config: dict[str, str]) -> PyJWKClient:
-    client = _extra_jwks_clients.get(config["issuer"])
+    cache_key = tuple(config[k] for k in ("issuer", "jwks_url", "audience", "provider"))
+    client = _extra_jwks_clients.get(cache_key)
     if client is None:
         client = PyJWKClient(
             config["jwks_url"],
@@ -141,7 +170,7 @@ def _extra_client(config: dict[str, str]) -> PyJWKClient:
             lifespan=settings.SUPABASE_JWKS_CACHE_SECONDS,
             timeout=5,
         )
-        _extra_jwks_clients[config["issuer"]] = client
+        _extra_jwks_clients[cache_key] = client
     return client
 
 
@@ -156,19 +185,20 @@ def _verify_extra_issuer_token(token: str, config: dict[str, str]) -> SupabaseId
             issuer=config["issuer"],
             options={"require": ["exp", "iat", "sub", "aud", "iss"]},
         )
-    except jwt.PyJWTError as exc:
+    except (jwt.PyJWTError, TypeError, ValueError, OverflowError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         ) from exc
+    _validate_claims(payload)
     sub = payload.get("sub")
     if not sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     return SupabaseIdentity(
-        user_id=str(sub),
+        user_id=sub,
         email=payload.get("email"),
         issued_at=payload.get("iat"),
         provider=config["provider"],
-        email_verified=bool(payload.get("email_verified", False)),
+        email_verified=payload.get("email_verified") is True,
     )
 
 
@@ -184,14 +214,16 @@ def verify_access_token(token: str) -> SupabaseIdentity:
         return verify_supabase_token(token)
     try:
         issuer = jwt.decode(token, options={"verify_signature": False}).get("iss")
-    except jwt.PyJWTError as exc:
+    except (jwt.PyJWTError, TypeError, ValueError, OverflowError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
         ) from exc
     supabase_issuer = (
         f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1" if settings.SUPABASE_URL else None
     )
-    if issuer == supabase_issuer or issuer is None:
+    if not isinstance(issuer, str) or not issuer:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if issuer == supabase_issuer:
         return verify_supabase_token(token)
     config = _extra_issuer_config(str(issuer))
     if config is None:

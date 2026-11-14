@@ -48,7 +48,9 @@ class AuthService:
         if identity.email:
             user = await self.user_repo.get_by_email(identity.email)
             if user:
-                if user.auth_subject:
+                if user.auth_subject or await self.user_repo.db.scalar(
+                    select(UserIdentity.id).where(UserIdentity.user_id == user.id).limit(1)
+                ):
                     # A different identity claims this email. Supabase does not
                     # link identities whose email a provider hasn't verified, so
                     # this can be someone else: never move the account to it.
@@ -92,6 +94,8 @@ class AuthService:
         email never links to anyone else's account.
         """
         db = self.user_repo.db
+        if await db.get(DeletedIdentity, identity_hash(identity.user_id, identity.provider)):
+            raise HTTPException(status_code=401, detail="This account was deleted. Sign up again.")
         linked = (
             await db.execute(
                 select(UserIdentity).where(
@@ -117,6 +121,8 @@ class AuthService:
                         "sign-in provider or sign in the way you did before."
                     ),
                 )
+        if identity.email_verified is not True:
+            raise HTTPException(status_code=409, detail="Verify your email with your sign-in provider.")
         if user is None:
             user = await self.user_repo.create(
                 UserCreate(

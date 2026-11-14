@@ -109,6 +109,7 @@ export const REG: Record<string, any> = {
   jobdetail: JobDetail,
   contractsign: ContractSign,
   workspace: Workspace,
+  project: () => <Projects initial="workspace" />,
   quality: Quality,
   security: Security,
   search: Search,

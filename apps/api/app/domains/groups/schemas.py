@@ -90,6 +90,10 @@ class MembershipResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MemberStatusUpdate(BaseModel):
+    status: str = Field(..., pattern="^(active|banned)$")
+
+
 class MemberRoleUpdate(BaseModel):
     role: str = Field(..., pattern="^(member|moderator|admin)$")
 

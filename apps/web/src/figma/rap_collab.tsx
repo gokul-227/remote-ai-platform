@@ -1235,7 +1235,7 @@ export function Channels() {
   );
 }
 
-function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => void }) {
+export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: () => void }) {
   const { user } = useAuth();
   const [thread, setThread] = useState<ChannelMsg | null>(null);
   const q = useApi<ChannelMsg[]>(`/channels/${channel.id}/messages`, thread ? { thread: thread.id } : undefined);

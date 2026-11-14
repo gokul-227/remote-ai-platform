@@ -23,6 +23,7 @@ from app.domains.groups.schemas import (
     GroupResponse,
     GroupUpdate,
     MemberRoleUpdate,
+    MemberStatusUpdate,
     MembershipResponse,
 )
 from app.domains.network.router import user_summaries
@@ -264,8 +265,10 @@ async def leave_group(
             detail="Owner cannot leave. Transfer ownership first.",
         )
 
+    if membership.status == "banned":
+        raise HTTPException(status_code=403, detail="A banned membership cannot be removed by leaving")
     await db.delete(membership)
-    if group.member_count > 0:
+    if membership.status == "active" and group.member_count > 0:
         group.member_count -= 1
     await db.commit()
 
@@ -315,19 +318,75 @@ async def update_member_role(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _ = await _get_group_or_404(group_id, db)
+    group = await _get_group_or_404(group_id, db)
     caller_mem = await _get_membership(group_id, current_user.id, db)
-    if not caller_mem or caller_mem.role != "admin":
+    if not caller_mem or caller_mem.role != "admin" or caller_mem.status != "active":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     target_mem = await _get_membership(group_id, user_id, db)
     if not target_mem:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
 
+    if target_mem.status != "active":
+        raise HTTPException(status_code=409, detail="Only active members can hold roles")
+    if user_id == group.owner_id and body.role != "admin":
+        raise HTTPException(status_code=409, detail="The owner must remain an admin")
     target_mem.role = body.role
     await db.commit()
     await db.refresh(target_mem)
     return MembershipResponse.model_validate(target_mem)
+
+
+@router.get("/{group_id}/membership-requests", response_model=list[MembershipResponse])
+async def membership_requests(
+    group_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    await _get_group_or_404(group_id, db)
+    caller = await _get_membership(group_id, current_user.id, db)
+    if not caller or caller.status != "active" or caller.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    members = (await db.scalars(select(GroupMembership).where(
+        GroupMembership.group_id == group_id, GroupMembership.status == "pending"
+    ).order_by(GroupMembership.joined_at, GroupMembership.id)
+        .offset((page - 1) * page_size).limit(page_size))).all()
+    people = await user_summaries(db, {m.user_id for m in members})
+    return [MembershipResponse.model_validate(m).model_copy(update={"member": people.get(m.user_id)})
+            for m in members]
+
+
+@router.patch("/{group_id}/members/{user_id}/status", response_model=MembershipResponse)
+async def update_member_status(
+    group_id: uuid.UUID,
+    user_id: uuid.UUID,
+    body: MemberStatusUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Serialize moderation transitions so retries cannot double-count members.
+    group = await db.scalar(select(Group).where(Group.id == group_id).with_for_update())
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    caller = await _get_membership(group_id, current_user.id, db)
+    if not caller or caller.status != "active" or caller.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    target = await _get_membership(group_id, user_id, db)
+    if target is None:
+        raise HTTPException(status_code=404, detail="Member not found")
+    if user_id == group.owner_id and body.status != "active":
+        raise HTTPException(status_code=409, detail="The owner must remain active")
+    if target.status != body.status:
+        delta = int(body.status == "active") - int(target.status == "active")
+        group.member_count = max(0, group.member_count + delta)
+        target.status = body.status
+        # Restoring a banned account never restores its former admin powers.
+        target.role = "member"
+    await db.commit()
+    await db.refresh(target)
+    return MembershipResponse.model_validate(target)
 
 
 # ── My Groups ─────────────────────────────────────────────────────────────────

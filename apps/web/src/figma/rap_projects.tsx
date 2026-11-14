@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { ProjectWorkspace } from "./ProjectWorkspace";
 import { SprintBar } from "./rap_collab";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -83,6 +84,7 @@ const days = (iso?: string) => (iso ? (Date.now() - new Date(iso).getTime()) / 8
 
 function Side({ page, setPage, projects, pid, setPid, risk, onRisk, busy }: any) {
   const items = [
+    ["workspace", "Workspace", "layers"],
     ["summary", "Summary", "chart"],
     ["timeline", "Timeline", "timeline"],
     ["backlog", "Backlog", "list"],
@@ -150,12 +152,15 @@ function Side({ page, setPage, projects, pid, setPid, risk, onRisk, busy }: any)
   );
 }
 
-export function Projects({ initial = "board" }: { initial?: string } = {}) {
+export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
   const { user } = useAuth();
   const company = isMember(user);
   const list = useApi<any[]>(user ? "/projects" : null);
   const projects = list.data ?? [];
-  const [pidSel, setPid] = useState<string | null>(null);
+  const [pidSel, setPid] = useState<string | null>(() => {
+    const id = window.location.hash.split("/")[1]?.split("?")[0];
+    return id && /^[0-9a-f-]{36}$/i.test(id) ? id : null;
+  });
   const pid = pidSel || projects[0]?.id || null;
   const dq = useApi<any>(pid ? `/projects/${pid}` : null);
   const sprintsQ = useApi<any[]>(pid ? `/projects/${pid}/sprints` : null);
@@ -275,7 +280,7 @@ export function Projects({ initial = "board" }: { initial?: string } = {}) {
   };
   const share = async () => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/#projects`);
+      await navigator.clipboard.writeText(`${window.location.origin}/#projects/${pid}`);
       setNotice("Board link copied");
     } catch {
       setNotice("Copy the page address to share this board");
@@ -361,6 +366,7 @@ export function Projects({ initial = "board" }: { initial?: string } = {}) {
           className="h-9 w-full rounded-md border border-slate-300 px-2 text-sm"
         >
           {[
+            ["workspace", "Workspace"],
             ["summary", "Summary"],
             ["timeline", "Timeline"],
             ["backlog", "Backlog"],
@@ -411,6 +417,8 @@ export function Projects({ initial = "board" }: { initial?: string } = {}) {
           </div>
         </div>
         {dq.loading && !d && <p className="mt-6 text-sm text-slate-500">Loading board…</p>}
+
+        {page === "workspace" && pid && <ProjectWorkspace key={pid} projectId={pid} />}
 
         {page === "board" && d && (
           <>

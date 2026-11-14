@@ -58,7 +58,9 @@ async def authenticate_bearer_token(token: str, db: AsyncSession) -> User:
             headers={"WWW-Authenticate": "Bearer"},
         )
     if (
-        identity.email
+        identity.email_verified is True
+        and identity.email
+        and identity.email.strip().lower() == user.email.strip().lower()
         and identity.email.strip().lower() in settings.ADMIN_EMAILS
         and user.role != UserRole.ADMIN
     ):

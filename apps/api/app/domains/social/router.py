@@ -175,7 +175,7 @@ async def get_feed(
     # Author IDs to include in feed
     feed_author_ids = list(connected_ids | {current_user.id})
 
-    filters: list[ColumnElement[bool]] = [Post.author_id.in_(feed_author_ids), Post.visibility.in_(["PUBLIC", "CONNECTIONS"])]
+    filters: list[ColumnElement[bool]] = [Post.author_id.in_(feed_author_ids), or_(Post.author_id == current_user.id, Post.visibility.in_(["PUBLIC", "CONNECTIONS"]))]
     if q.strip():
         filters.append(Post.content.icontains(q.strip(), autoescape=True))
     total = await db.scalar(select(func.count(Post.id)).where(*filters)) or 0

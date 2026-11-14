@@ -1945,3 +1945,15 @@ async def list_project_activity(
         .scalars()
         .all()
     )
+
+
+@router.get("/{project_id}/workspace")
+async def get_project_workspace(
+    project_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Related resources visible to this project participant, with bounded lists."""
+    from app.domains.projects.workspace import project_workspace
+
+    return await project_workspace(project_id, current_user, db)

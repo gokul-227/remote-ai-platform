@@ -9,6 +9,7 @@ On SQLite (tests) the lock is skipped.
 """
 
 import asyncio
+import os
 import sys
 import threading
 
@@ -47,7 +48,13 @@ def acquire_or_exit(timeout_seconds: float = 15.0) -> None:
                     await asyncio.sleep(60)
                     await conn.execute(text("SELECT 1"))
 
-        asyncio.run(_run())
+        try:
+            asyncio.run(_run())
+        except Exception:
+            # A dead lock-holder thread must not leave Beat scheduling without
+            # exclusivity. Exit the entire process so its supervisor can retry.
+            logger.error("Scheduler lock connection lost; stopping scheduler")
+            os._exit(4)
 
     threading.Thread(target=_hold, name="beat-lock", daemon=True).start()
     if not ready.wait(timeout_seconds):

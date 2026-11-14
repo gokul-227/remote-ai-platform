@@ -129,7 +129,12 @@ class DeletedIdentity(Base):
     last_error: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
-def identity_hash(subject: str) -> str:
+def identity_hash(subject: str, provider: str = "supabase") -> str:
+    # Preserve primary tombstones; domain-separate additional provider identities.
+    if provider != "supabase":
+        import json
+
+        subject = json.dumps([provider, subject], separators=(",", ":"))
     return hashlib.sha256(subject.encode()).hexdigest()
 
 

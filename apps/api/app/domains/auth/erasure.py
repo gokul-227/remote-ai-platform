@@ -20,7 +20,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.storage import get_storage
 from app.domains.auth import supabase_admin
-from app.domains.auth.models import DeletedIdentity, User, identity_hash
+from app.domains.auth.models import DeletedIdentity, User, UserIdentity, identity_hash
 from app.domains.engineers.models import EngineerProfile
 
 logger = get_logger("auth.erasure")
@@ -53,6 +53,17 @@ async def erase_account(db: AsyncSession, user: User) -> None:
                 last_error=None,
             )
         )
+    links = (await db.scalars(select(UserIdentity).where(UserIdentity.user_id == user.id))).all()
+    for link in links:
+        await db.merge(
+            DeletedIdentity(
+                subject_hash=identity_hash(link.subject, link.provider),
+                deleted_at=datetime.now(UTC),
+                # Extra identities are blocked locally, never sent to Supabase erasure.
+                pending_subject=None,
+            )
+        )
+        await db.delete(link)
     await db.delete(user)
     await db.commit()
     logger.info("Account deleted", user_id=user_id)

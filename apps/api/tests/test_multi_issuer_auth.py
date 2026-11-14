@@ -26,7 +26,7 @@ _KEY = ec.generate_private_key(ec.SECP256R1())
 
 
 def _extra_token(
-    sub: str, email: str | None, *, verified: bool = True, aud: str = AUDIENCE, iss: str = ISSUER
+    sub: str, email: str | None, *, verified: object = True, aud: str = AUDIENCE, iss: str = ISSUER
 ) -> str:
     now = int(time.time())
     claims = {"sub": sub, "aud": aud, "iss": iss, "iat": now, "exp": now + 600}
@@ -115,11 +115,12 @@ async def test_verified_email_links_to_the_existing_account_without_touching_aut
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("verified", [False, "false", "true", 1, 0, None, [], {"verified": True}])
 async def test_unverified_email_never_links_to_someone_elses_account(
-    client: AsyncClient, extra_issuer
+    client: AsyncClient, extra_issuer, verified
 ):
     await _existing_user("victim@example.com")
-    token = _extra_token("wos-attacker", "victim@example.com", verified=False)
+    token = _extra_token("wos-attacker", "victim@example.com", verified=verified)
     me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert me.status_code == 409
     async with TestingSessionLocal() as db:
