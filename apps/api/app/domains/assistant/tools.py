@@ -27,6 +27,7 @@ from app.domains.applications.models import JobApplication
 from app.domains.applications.router import ApplicationCreate, apply_to_job
 from app.domains.auth.models import User, UserRole
 from app.domains.channels.router import MessageIn, my_channels, post_message
+from app.domains.companies.models import CompanyProfile
 from app.domains.contracts.models import Contract
 from app.domains.documents.router import DocumentCreate, create_document, list_documents
 from app.domains.endorsements.router import EndorseIn, endorse
@@ -43,6 +44,7 @@ from app.domains.meetings.schemas import MeetingCreate
 from app.domains.network.models import Connection
 from app.domains.network.router import ConnectionCreate, send_connection
 from app.domains.notifications.models import Notification
+from app.domains.projects.models import Project, ProjectMember
 from app.domains.projects.router import TaskCreate, create_task
 from app.domains.saved_jobs.models import SavedJob
 from app.domains.saved_jobs.router import save_job
@@ -191,7 +193,14 @@ async def _search_jobs(a: BaseModel, user: User, db: AsyncSession) -> dict[str, 
 
 async def _my_tasks(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     rows = await db.execute(
-        select(ProjectTask).where(ProjectTask.assigned_user_id == user.id, ProjectTask.status != "COMPLETED")
+        select(ProjectTask).join(Project, Project.id == ProjectTask.project_id).where(
+            ProjectTask.assigned_user_id == user.id, ProjectTask.status != "COMPLETED",
+            Project.is_deleted.is_(False),
+            # Assignment history is not an access grant after membership removal.
+            (Project.id.in_(select(ProjectMember.project_id).where(ProjectMember.user_id == user.id)))
+            | (Project.company_id.in_(select(CompanyProfile.id).where(CompanyProfile.user_id == user.id)))
+            | (user.role == UserRole.ADMIN),
+        )
         .order_by(ProjectTask.deadline.is_(None), ProjectTask.deadline).limit(10)
     )
     return {"items": [{"title": t.title, "status": t.status, "priority": t.priority, "link": _link("projects")} for t in rows.scalars()]}
@@ -287,7 +296,7 @@ async def _connections(_: BaseModel, user: User, db: AsyncSession) -> dict[str, 
 async def _my_groups(_: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     rows = await db.execute(
         select(Group).join(GroupMembership, GroupMembership.group_id == Group.id)
-        .where(GroupMembership.user_id == user.id).limit(20)
+        .where(GroupMembership.user_id == user.id, GroupMembership.status == "active").limit(20)
     )
     return {"items": [{"title": g.name, "link": _link(f"group/{g.id}")} for g in rows.scalars()]}
 

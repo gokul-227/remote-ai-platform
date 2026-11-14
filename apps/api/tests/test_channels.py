@@ -90,3 +90,72 @@ async def test_polling_after_cursor(client: AsyncClient, db: AsyncSession):
     await client.post(f"/api/v1/channels/{cid}/messages", json={"body": "2"}, headers=ah)
     newer = (await client.get(f"/api/v1/channels/{cid}/messages", params={"after": first["created_at"]}, headers=ah)).json()
     assert [m["body"] for m in newer] == ["2"]
+
+
+@pytest.mark.asyncio
+async def test_retry_token_cannot_return_content_from_another_channel(client: AsyncClient, db: AsyncSession):
+    owner, owner_headers = await _user(client)
+    author, author_headers = await _user(client)
+    await _connect(db, owner, author)
+    private = (await client.post("/api/v1/channels", headers=owner_headers,
+                                json={"kind": "GROUP", "name": "private", "member_ids": [str(author)]})).json()["id"]
+    other = (await client.post("/api/v1/channels", headers=author_headers,
+                              json={"kind": "GROUP", "name": "other"})).json()["id"]
+    token = "retry-token-0001"
+    message = await client.post(f"/api/v1/channels/{private}/messages", headers=author_headers,
+                                json={"body": "private project history", "client_token": token})
+    assert message.status_code == 201
+    assert (await client.delete(f"/api/v1/channels/{private}/members/{author}", headers=owner_headers)).status_code == 200
+    assert (await client.get(f"/api/v1/channels/{private}/messages", headers=author_headers)).status_code == 404
+    retry = await client.post(f"/api/v1/channels/{other}/messages", headers=author_headers,
+                              json={"body": "unrelated message", "client_token": token})
+    assert retry.status_code == 409
+    assert "private project history" not in retry.text
+    assert (await client.get(f"/api/v1/channels/{other}/messages", headers=author_headers)).json() == []
+
+
+@pytest.mark.asyncio
+async def test_composite_cursors_cover_tied_timestamps_across_pages(client: AsyncClient, db: AsyncSession):
+    from datetime import UTC, datetime
+
+    from app.domains.channels.models import ChannelMessage
+
+    author, headers = await _user(client)
+    channel = (await client.post("/api/v1/channels", headers=headers,
+                                json={"kind": "GROUP", "name": "tied messages"})).json()["id"]
+    stamp = datetime(2026, 11, 5, 12, 0, tzinfo=UTC)
+    ids = [uuid.UUID(int=i) for i in range(1, 8)]
+    db.add_all([ChannelMessage(id=mid, channel_id=uuid.UUID(channel), author_id=author,
+                              body=f"message {i}", created_at=stamp) for i, mid in enumerate(ids)])
+    await db.commit()
+    endpoint = f"/api/v1/channels/{channel}/messages"
+    newest = (await client.get(endpoint, headers=headers, params={"limit": 3})).json()
+    assert [m["id"] for m in newest] == [str(mid) for mid in ids[-3:]]
+    older = (await client.get(endpoint, headers=headers,
+                             params={"limit": 3, "before": newest[0]["created_at"], "before_id": newest[0]["id"]})).json()
+    assert [m["id"] for m in older] == [str(mid) for mid in ids[1:4]]
+    oldest = (await client.get(endpoint, headers=headers,
+                              params={"limit": 3, "before": older[0]["created_at"], "before_id": older[0]["id"]})).json()
+    assert [m["id"] for m in oldest] == [str(ids[0])]
+    assert len({m["id"] for m in oldest + older + newest}) == len(ids)
+    cursor = oldest[-1]
+    polled = []
+    while True:
+        batch = (await client.get(endpoint, headers=headers,
+                                  params={"limit": 2, "after": cursor["created_at"], "after_id": cursor["id"]})).json()
+        if not batch:
+            break
+        polled.extend(batch)
+        cursor = batch[-1]
+    assert [m["id"] for m in polled] == [str(mid) for mid in ids[1:]]
+
+
+@pytest.mark.asyncio
+async def test_message_id_cursor_requires_its_timestamp(client: AsyncClient):
+    _, headers = await _user(client)
+    channel = (await client.post("/api/v1/channels", headers=headers,
+                                json={"kind": "GROUP", "name": "cursor validation"})).json()["id"]
+    for key in ("after_id", "before_id"):
+        res = await client.get(f"/api/v1/channels/{channel}/messages", headers=headers,
+                               params={key: str(uuid.uuid4())})
+        assert res.status_code == 422

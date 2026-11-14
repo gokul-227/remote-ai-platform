@@ -83,7 +83,9 @@ async def test_refreshed_old_session_cannot_recreate_the_account_when_supabase_e
     assert (await _delete(client, mint_token(sub, email, issued_at=int(time.time()) - 5))).status_code == 204
     async with TestingSessionLocal() as db:
         row = await db.get(DeletedIdentity, identity_hash(sub))
-        assert row.pending_subject == sub and row.provider_attempts == 1 and row.last_error == "RuntimeError"
+        assert row.pending_subject == sub
+        assert row.provider_attempts == 1
+        assert row.last_error == 'RuntimeError'
         row.deleted_at = datetime.now(UTC) - timedelta(minutes=5)
         await db.commit()
 
@@ -124,7 +126,9 @@ async def test_failed_supabase_erasure_is_retried_until_it_succeeds(client: Asyn
     async with TestingSessionLocal() as db:
         row = await db.get(DeletedIdentity, identity_hash(sub))
         # The raw subject is dropped once the provider user is gone; only the hash stays.
-        assert row.pending_subject is None and row.provider_erased_at is not None and row.provider_attempts == 3
+        assert row.pending_subject is None
+        assert row.provider_erased_at is not None
+        assert row.provider_attempts == 3
 
 
 @pytest.mark.asyncio
@@ -255,7 +259,8 @@ async def test_admin_delete_call(monkeypatch, status, ok):
     req = seen[0]
     assert req.method == "DELETE"
     assert str(req.url) == f"https://proj.supabase.co/auth/v1/admin/users/{subject}"
-    assert req.headers["apikey"] == "svc" and req.headers["authorization"] == "Bearer svc"
+    assert req.headers['apikey'] == 'svc'
+    assert req.headers['authorization'] == 'Bearer svc'
 
 
 @pytest.mark.asyncio
@@ -263,7 +268,7 @@ async def test_admin_delete_refuses_a_non_uuid_subject(monkeypatch):
     from app.domains.auth import supabase_admin
 
     monkeypatch.setattr(settings, "SUPABASE_URL", "https://proj.supabase.co")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="badly formed hexadecimal UUID string"):
         await supabase_admin.delete_identity("../../admin/users")
 
 

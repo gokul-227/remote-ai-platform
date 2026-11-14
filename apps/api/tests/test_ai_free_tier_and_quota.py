@@ -206,7 +206,8 @@ async def test_usage_survives_a_request_that_rolls_back(auto_chain, monkeypatch)
         await request_db.rollback()  # the request fails after the AI call
     rows = await _usage_rows()
     assert len(rows) == before + 1
-    assert rows[-1].status == "SUCCESS" and rows[-1].total_tokens == 120
+    assert rows[-1].status == 'SUCCESS'
+    assert rows[-1].total_tokens == 120
 
 
 @pytest.mark.asyncio

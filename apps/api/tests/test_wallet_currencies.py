@@ -31,7 +31,11 @@ async def test_wallet_totals_are_per_currency(client: AsyncClient, test_user: Us
 
     w = (await client.get("/api/v1/payments/wallet", headers=auth_headers)).json()
     by = {b["currency"]: b for b in w["by_currency"]}
-    assert by["EUR"]["escrow_held"] == 100 and by["EUR"]["total_spent"] == 150 and by["EUR"]["total_released"] == 50
-    assert by["USD"]["escrow_held"] == 100 and by["USD"]["total_spent"] == 100
+    assert by['EUR']['escrow_held'] == 100
+    assert by['EUR']['total_spent'] == 150
+    assert by['EUR']['total_released'] == 50
+    assert by['USD']['escrow_held'] == 100
+    assert by['USD']['total_spent'] == 100
     # Mixed currencies: no single total is claimed.
-    assert w["currency"] is None and w["escrow_held"] is None
+    assert w['currency'] is None
+    assert w['escrow_held'] is None

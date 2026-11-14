@@ -74,7 +74,8 @@ async def test_concurrent_duplicate_applies_make_one_row(sessions):
         *[_request(sessions, apply_to_job, job_id, ApplicationCreate(), user) for _ in range(5)]
     )
     conflicts = [r for r in results if isinstance(r, HTTPException)]
-    assert len(conflicts) == 4 and all(r.status_code == 409 for r in conflicts)
+    assert len(conflicts) == 4
+    assert all(r.status_code == 409 for r in conflicts)
     async with sessions() as db:
         n = await db.scalar(
             select(func.count()).select_from(JobApplication).where(
@@ -278,3 +279,65 @@ async def test_bulk_job_upsert_inserts_then_updates_and_unexpires(sessions):
         assert row.expired_at is None
         await db.delete(row)
         await db.commit()
+
+
+@pytest.mark.asyncio
+async def test_concurrent_document_saves_return_one_conflict(sessions):
+    from app.domains.documents.models import Document, DocumentVersion
+    from app.domains.documents.router import (
+        DocumentCreate,
+        DocumentSave,
+        create_document,
+        save_document,
+    )
+
+    (user,), _, _ = await _seed(sessions, 1)
+    document = await _request(sessions, create_document, DocumentCreate(kind="DOC", title="Original"), user)
+    results = await asyncio.gather(
+        *[_request(sessions, save_document, document.id,
+                   DocumentSave(expected_version=1, title=f"Edit {i}"), user) for i in range(2)]
+    )
+    conflicts = [r for r in results if isinstance(r, HTTPException)]
+    assert len(conflicts) == 1
+    assert conflicts[0].status_code == 409
+    winners = [r for r in results if not isinstance(r, HTTPException)]
+    assert len(winners) == 1
+    assert winners[0].version == 2
+    async with sessions() as db:
+        saved = await db.get(Document, document.id)
+        versions = (await db.execute(
+            select(DocumentVersion).where(DocumentVersion.document_id == document.id)
+            .order_by(DocumentVersion.version)
+        )).scalars().all()
+        assert saved.version == 2
+        assert [v.version for v in versions] == [1, 2]
+        assert versions[-1].title == saved.title == winners[0].title
+
+
+@pytest.mark.asyncio
+async def test_concurrent_document_restores_create_distinct_revisions(sessions):
+    from app.domains.documents.models import Document, DocumentVersion
+    from app.domains.documents.router import (
+        DocumentCreate,
+        DocumentSave,
+        create_document,
+        restore_version,
+        save_document,
+    )
+
+    (user,), _, _ = await _seed(sessions, 1)
+    document = await _request(sessions, create_document, DocumentCreate(kind="DOC", title="Original"), user)
+    await _request(sessions, save_document, document.id, DocumentSave(expected_version=1, title="Edited"), user)
+    results = await asyncio.gather(
+        *[_request(sessions, restore_version, document.id, 1, user) for _ in range(2)]
+    )
+    assert all(not isinstance(r, HTTPException) for r in results)
+    async with sessions() as db:
+        saved = await db.get(Document, document.id)
+        versions = list((await db.execute(
+            select(DocumentVersion.version).where(DocumentVersion.document_id == document.id)
+            .order_by(DocumentVersion.version)
+        )).scalars())
+        assert saved.version == 4
+        assert saved.title == "Original"
+        assert versions == [1, 2, 3, 4]

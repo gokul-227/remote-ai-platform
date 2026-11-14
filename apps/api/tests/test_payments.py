@@ -1,4 +1,5 @@
 import pytest
+from conftest import engine
 from httpx import AsyncClient
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,8 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
 from app.domains.projects.models import Project
-from conftest import engine
-
 
 pytestmark = pytest.mark.usefixtures("marketplace_payments_enabled")
 

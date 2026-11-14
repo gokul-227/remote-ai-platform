@@ -48,7 +48,7 @@ async def _google_token(client: httpx.AsyncClient, scope: str = GOOGLE_SCOPE) ->
     assertion = jwt.encode(
         {
             "iss": info["client_email"],
-            "scope": GOOGLE_SCOPE,
+            "scope": scope,
             "aud": info["token_uri"],
             "iat": now,
             "exp": now + 3600,

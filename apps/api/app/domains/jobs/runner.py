@@ -29,6 +29,7 @@ async def run(source: str | None, maintenance: bool) -> dict[str, int]:
             admin_repo=AdminRepository(db),
             source_name=source,
             run_maintenance=False,
+            raise_on_failure=True,
         )
 
 

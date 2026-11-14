@@ -2,12 +2,12 @@
 Tests for Job domain and Aggregators.
 """
 
-import pytest
 import uuid
+
+import pytest
 from httpx import AsyncClient
+
 from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
-from app.domains.jobs.aggregators.arbeitnow import ArbeitnowAggregator
-from app.domains.jobs.aggregators.remotive import RemotiveAggregator
 from app.domains.jobs.models import JobPost
 
 

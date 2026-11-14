@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.domains.applications.models import JobApplication
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate
+from app.domains.jobs.source_policy import SEARCH_SYNDICATION_BLOCKED_SOURCES
 
 
 def slugify(text: str) -> str:
@@ -283,9 +284,18 @@ class JobRepository:
     ) -> list[tuple[uuid.UUID, datetime, datetime]]:
         """id/posted/updated of every publicly listed job (any location), oldest
         first so pages stay stable while new jobs arrive."""
-        stmt = self._filtered(select(JobPost.id, JobPost.posted_at, JobPost.updated_at))
+        stmt = self._filtered(select(JobPost.id, JobPost.posted_at, JobPost.updated_at)).where(
+            JobPost.source.not_in(SEARCH_SYNDICATION_BLOCKED_SOURCES)
+        )
         stmt = stmt.order_by(JobPost.posted_at.asc(), JobPost.id.asc()).offset(skip).limit(limit)
         return [(r[0], r[1], r[2]) for r in (await self.db.execute(stmt)).all()]
+
+    async def sitemap_count(self) -> int:
+        """Count the same public, syndication-eligible rows as sitemap_entries."""
+        stmt = self._filtered(select(func.count(JobPost.id))).where(
+            JobPost.source.not_in(SEARCH_SYNDICATION_BLOCKED_SOURCES)
+        )
+        return int((await self.db.scalar(stmt)) or 0)
 
     def _filtered(
         self,

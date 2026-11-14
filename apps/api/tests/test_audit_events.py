@@ -3,12 +3,8 @@ Tests for Centralized Immutable Audit Logging Subsystem.
 Verifies audit trail persistence, payload sanitization, and admin retrieval.
 """
 
-import pytest
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import sanitize_payload
-from app.domains.auth.models import User, UserRole
 
 
 def test_sanitize_payload_redaction():

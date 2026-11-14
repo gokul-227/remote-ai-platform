@@ -352,7 +352,13 @@ async def list_my_assigned_tasks(
     result = await db.execute(
         select(ProjectTask, Project)
         .join(Project, ProjectTask.project_id == Project.id)
-        .where(ProjectTask.assigned_user_id == current_user.id)
+        .where(
+            ProjectTask.assigned_user_id == current_user.id,
+            Project.is_deleted.is_(False),
+            # Old assignments survive removal for history, not continued access.
+            (Project.id.in_(select(ProjectMember.project_id).where(ProjectMember.user_id == current_user.id)))
+            | (Project.company_id.in_(select(CompanyProfile.id).where(CompanyProfile.user_id == current_user.id))),
+        )
         .order_by(ProjectTask.created_at.desc())
     )
     rows = result.all()

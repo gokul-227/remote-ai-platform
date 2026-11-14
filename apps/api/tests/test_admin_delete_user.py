@@ -16,9 +16,10 @@ async def test_delete_user_requires_admin_role(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_admin_cannot_delete_own_account(client: AsyncClient):
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
 
     async with TestingSessionLocal() as db:
         admin = User(email="self-delete-admin@example.com", full_name="Self Delete Admin", role=UserRole.ADMIN)
@@ -35,9 +36,10 @@ async def test_admin_cannot_delete_own_account(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_admin_can_delete_user_and_cascades_dependent_data(client: AsyncClient):
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
     from app.domains.engineers.models import EngineerProfile
 
     async with TestingSessionLocal() as db:

@@ -3,14 +3,13 @@ Tests for Soft Deletion and Composite Indexing Support.
 Verifies entities preserve data integrity when marked as deleted.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 import pytest
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.models import CompanyProfile
-from app.domains.contracts.models import Contract
 from app.domains.jobs.models import JobPost
 from app.domains.projects.models import Project
 
@@ -40,7 +39,7 @@ async def test_soft_delete_preserves_records(test_user: User, db: AsyncSession):
 
     # 2. Soft delete JobPost
     job.is_deleted = True
-    job.deleted_at = datetime.now(timezone.utc)
+    job.deleted_at = datetime.now(UTC)
     await db.commit()
 
     # 3. Assert row still exists in database
@@ -61,7 +60,7 @@ async def test_soft_delete_preserves_records(test_user: User, db: AsyncSession):
     await db.flush()
 
     project.is_deleted = True
-    project.deleted_at = datetime.now(timezone.utc)
+    project.deleted_at = datetime.now(UTC)
     await db.commit()
 
     retrieved_proj = await db.get(Project, project.id)

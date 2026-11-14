@@ -1,17 +1,19 @@
 """Tests for the Groups & Communities domain."""
 
 import uuid
+from datetime import UTC
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.domains.groups.schemas import (
     GroupCreate,
-    GroupUpdate,
     GroupPostCreate,
+    GroupUpdate,
     MemberRoleUpdate,
 )
-
 
 # ── Schema validation tests ───────────────────────────────────────────────────
 
@@ -27,11 +29,11 @@ class TestGroupCreate:
         assert g.name == "Rust Engineers"
 
     def test_blank_name_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="name"):
             GroupCreate(name="   ")
 
     def test_name_too_short_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="name"):
             GroupCreate(name="A")
 
     def test_tags_default_empty(self):
@@ -66,7 +68,7 @@ class TestGroupPostCreate:
         assert len(p.media_urls) == 1
 
     def test_empty_content_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="content"):
             GroupPostCreate(content="")
 
 
@@ -77,7 +79,7 @@ class TestMemberRoleUpdate:
             assert r.role == role
 
     def test_invalid_role_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="role"):
             MemberRoleUpdate(role="superadmin")
 
 
@@ -121,8 +123,8 @@ class TestGroupRouter:
         g.member_count = kwargs.get("member_count", 0)
         g.post_count = kwargs.get("post_count", 0)
         g.owner_id = kwargs.get("owner_id", uuid.uuid4())
-        from datetime import datetime, timezone
-        g.created_at = datetime.now(timezone.utc)
+        from datetime import datetime
+        g.created_at = datetime.now(UTC)
         return g
 
     def _make_membership(self, group_id, user_id, role="member", status="active") -> MagicMock:
@@ -132,8 +134,8 @@ class TestGroupRouter:
         m.user_id = user_id
         m.role = role
         m.status = status
-        from datetime import datetime, timezone
-        m.joined_at = datetime.now(timezone.utc)
+        from datetime import datetime
+        m.joined_at = datetime.now(UTC)
         return m
 
     def _make_user(self, role="ENGINEER"):
@@ -169,13 +171,13 @@ class TestGroupRouter:
             if hasattr(obj, 'id') and obj.id is None:
                 obj.id = uuid.uuid4()
             if hasattr(obj, 'joined_at') and obj.joined_at is None:
-                from datetime import datetime, timezone
-                obj.joined_at = datetime.now(timezone.utc)
+                from datetime import datetime
+                obj.joined_at = datetime.now(UTC)
 
         db.refresh = mock_refresh
 
         from app.domains.groups.router import join_group
-        result = await join_group(group_id=group.id, db=db, current_user=user)
+        await join_group(group_id=group.id, db=db, current_user=user)
 
         assert len(added) == 1
         membership = added[0]
@@ -206,13 +208,13 @@ class TestGroupRouter:
             if hasattr(obj, 'id') and obj.id is None:
                 obj.id = uuid.uuid4()
             if hasattr(obj, 'joined_at') and obj.joined_at is None:
-                from datetime import datetime, timezone
-                obj.joined_at = datetime.now(timezone.utc)
+                from datetime import datetime
+                obj.joined_at = datetime.now(UTC)
 
         db.refresh = mock_refresh
 
         from app.domains.groups.router import join_group
-        result = await join_group(group_id=group.id, db=db, current_user=user)
+        await join_group(group_id=group.id, db=db, current_user=user)
 
         membership = added[0]
         assert membership.status == "pending"
@@ -359,6 +361,7 @@ async def test_members_and_posts_embed_public_person_summaries(client):
     assert post.status_code == 201
     assert post.json()["author"]["full_name"] == "Group Owner"
     [m] = (await client.get(f"/api/v1/groups/{g['id']}/members", headers=h)).json()
-    assert m["member"]["full_name"] == "Group Owner" and "email" not in m["member"]
+    assert m['member']['full_name'] == 'Group Owner'
+    assert 'email' not in m['member']
     [p] = (await client.get(f"/api/v1/groups/{g['id']}/posts", headers=h)).json()["posts"]
     assert p["author"]["full_name"] == "Group Owner"

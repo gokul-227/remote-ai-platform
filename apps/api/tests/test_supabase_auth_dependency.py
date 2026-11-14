@@ -116,9 +116,8 @@ async def test_second_identity_with_same_email_cannot_take_over_account(client: 
     """API-01: a different Supabase identity (e.g. an OAuth account whose
     provider did not verify the email) must not be relinked onto an existing
     user just because the email matches."""
-    from sqlalchemy import func, select
-
     from conftest import TestingSessionLocal
+    from sqlalchemy import func, select
 
     from app.domains.auth.models import User
 

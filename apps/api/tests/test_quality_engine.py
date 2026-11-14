@@ -1,14 +1,15 @@
 """Tests for the AI Quality Engine domain."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.domains.quality.schemas import (
-    SubmissionEvaluationRequest,
-    CodeReviewRequest,
-    BatchEvaluationRequest,
-)
+import pytest
+from pydantic import ValidationError
 
+from app.domains.quality.schemas import (
+    BatchEvaluationRequest,
+    CodeReviewRequest,
+    SubmissionEvaluationRequest,
+)
 
 # ── Schema validation ─────────────────────────────────────────────────────────
 
@@ -32,7 +33,7 @@ class TestSubmissionEvaluationRequest:
         assert len(req.requirements) == 2
 
     def test_empty_title_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="task_title"):
             SubmissionEvaluationRequest(
                 task_title="",
                 task_description="desc",
@@ -72,7 +73,7 @@ class TestBatchEvaluationRequest:
         assert len(req.submissions) == 3
 
     def test_empty_batch_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="submissions"):
             BatchEvaluationRequest(submissions=[])
 
 
@@ -271,8 +272,8 @@ class TestQualityRouterEndpoints:
             "revision_notes": None,
         }
 
-        with patch("app.domains.quality.router.QualityEngineAgent") as MockAgent:
-            instance = MockAgent.return_value
+        with patch("app.domains.quality.router.QualityEngineAgent") as mock_agent:
+            instance = mock_agent.return_value
             instance.evaluate_submission = AsyncMock(return_value=expected_report)
 
             body = SubmissionEvaluationRequest(

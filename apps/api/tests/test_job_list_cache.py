@@ -44,7 +44,8 @@ async def test_repeated_requests_are_served_from_cache_and_writes_invalidate(cli
     monkeypatch.setattr(JobService, "search_jobs", counting)
     first = await client.get("/api/v1/jobs", params={"limit": 5})
     second = await client.get("/api/v1/jobs", params={"limit": 5})
-    assert first.json() == second.json() and first.headers["X-Total-Count"] == second.headers["X-Total-Count"]
+    assert first.json() == second.json()
+    assert first.headers['X-Total-Count'] == second.headers['X-Total-Count']
     assert calls == 1
 
     await client.get("/api/v1/jobs", params={"limit": 6})  # different query, different entry

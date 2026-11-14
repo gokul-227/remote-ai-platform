@@ -28,15 +28,15 @@ from unittest.mock import patch
 
 import jwt
 import pytest
+from conftest import TestingSessionLocal
 from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi import WebSocketDisconnect
 from httpx import AsyncClient
 
 from app.core.config import settings
 from app.domains.auth import supabase_auth
-from app.domains.notifications.router import notification_websocket
 from app.domains.network.router import websocket_messages
-from conftest import TestingSessionLocal
+from app.domains.notifications.router import notification_websocket
 
 _PRIVATE_KEY = ec.generate_private_key(ec.SECP256R1())
 _PUBLIC_KEY = _PRIVATE_KEY.public_key()
@@ -129,7 +129,8 @@ async def test_notification_ws_accepts_own_token(client: AsyncClient):
     await notification_websocket(ws, uuid.UUID(user_a_id), token=token_a)
 
     assert ws.accepted is True
-    assert ws.sent and ws.sent[0]["type"] == "ping"
+    assert ws.sent
+    assert ws.sent[0]['type'] == 'ping'
 
 
 @pytest.mark.asyncio
@@ -198,4 +199,5 @@ async def test_websockets_are_closed_while_realtime_is_off(client: AsyncClient, 
     for endpoint, target in ((notification_websocket, uuid.UUID(user_id)), (websocket_messages, uuid.uuid4())):
         ws = FakeWebSocket()
         await endpoint(ws, target, token=token)
-        assert ws.closed_with == 1008 and not ws.accepted
+        assert ws.closed_with == 1008
+        assert not ws.accepted

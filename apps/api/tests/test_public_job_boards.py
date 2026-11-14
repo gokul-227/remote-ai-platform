@@ -308,3 +308,93 @@ async def test_hacker_news_who_is_hiring_posts_become_jobs(monkeypatch):
         "Berlin, Germany",
     )
     assert j.external_url == "https://news.ycombinator.com/item?id=1"
+
+@pytest.mark.asyncio
+async def test_explicit_onsite_flag_wins_over_remote_words_and_missing_location(feeds, monkeypatch):
+    import copy
+
+    payload = copy.deepcopy(FEEDS["api.ashbyhq.com"])
+    payload["jobs"][0].update(location="Remote office", isRemote=False)
+    # feeds already wraps AsyncClient, so replace the payload returned by its handler.
+    monkeypatch.setitem(FEEDS, "api.ashbyhq.com", payload)
+    job = (await pb.AshbyAggregator().fetch_jobs())[0]
+    assert job.is_remote is False
+    unknown = pb.GreenhouseAggregator()._job(
+        ext_id="unknown", title="Designer", company="Acme", url=None, description="D", location=None
+    )
+    assert unknown.is_remote is False
+    assert unknown.location == "Not specified"
+
+
+@pytest.mark.asyncio
+async def test_cursor_feeds_follow_opaque_cursor_once_and_respect_limit(monkeypatch):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        start = 100 if request.url.params.get("cursor") else 0
+        return httpx.Response(200, json={
+            "jobs": [{"id": i, "jobTitle": "Role", "companyName": "Acme", "url": f"https://jobicy.com/jobs/{i}"} for i in range(start, start + 100)],
+            "nextCursor": "opaque+/token=" if not start else None,
+        })
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(pb.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    jobs = await pb.JobicyAggregator().fetch_jobs(limit=120)
+    assert len(jobs) == 120
+    assert calls[0].url.path == "/api/jobs"
+    assert calls[1].url.params["cursor"] == "opaque+/token="
+    assert len(calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_repeated_cursor_is_a_failure_not_an_infinite_fetch(monkeypatch):
+    from app.domains.jobs.aggregators.base import SourceFetchError
+
+    def handler(request):
+        return httpx.Response(200, json={"jobs": [{"title": "T"}], "nextCursor": "same"})
+
+    real = httpx.AsyncClient
+    monkeypatch.setattr(pb.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))
+    with pytest.raises(SourceFetchError, match="repeated"):
+        await pb.HimalayasAggregator().fetch_jobs(limit=100)
+
+
+@pytest.mark.asyncio
+async def test_valid_empty_company_board_is_not_reported_as_an_outage(monkeypatch):
+    real = httpx.AsyncClient
+    monkeypatch.setattr(pb.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(lambda req: httpx.Response(200, json={"jobs": []})), **kw))
+    monkeypatch.setattr(settings, "GREENHOUSE_BOARDS", "empty-company")
+    monkeypatch.setattr(settings, "ATS_BOARD_SHARDS", 1)
+    assert await pb.GreenhouseAggregator().fetch_jobs() == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("source", ["REMOTIVE", "HIMALAYAS", "WORKINGNOMADS", "ADZUNA"])
+async def test_restricted_source_imports_are_never_notified_to_search_engines(db, monkeypatch, source):
+    from unittest.mock import AsyncMock
+
+    from app.domains.jobs import service as svc
+    from app.domains.jobs.schemas import JobPostCreate
+
+    service = svc.JobService(JobRepository(db))
+    service.aggregators = [type("Fixture", (), {"source_name": source, "fetch_jobs": AsyncMock(return_value=[JobPostCreate(title="Role", description="D", company_name="Acme", source=source, external_id=f"{source.lower()}_1")])})()]
+    notify = AsyncMock(return_value={})
+    monkeypatch.setattr(svc, "notify_new_jobs", notify)
+    assert await service.sync_all_job_sources(source_name=source, run_maintenance=False) == {source: 1}
+    notify.assert_awaited_once_with([])
+
+@pytest.mark.asyncio
+async def test_sources_requiring_permission_are_disabled_even_with_reachable_endpoints(monkeypatch):
+    from app.domains.jobs.aggregators.base import SourceDisabledError
+    from app.domains.jobs.aggregators.themuse import TheMuseAggregator
+
+    monkeypatch.setattr(settings, "WORKINGNOMADS_PERMISSION_CONFIRMED", False)
+    monkeypatch.setattr(settings, "ADZUNA_LICENSE_CONFIRMED", False)
+    monkeypatch.setattr(settings, "ADZUNA_APP_ID", "configured")
+    monkeypatch.setattr(settings, "ADZUNA_APP_KEY", "configured")
+    monkeypatch.setattr(settings, "APP_ENV", "production")
+    monkeypatch.setattr(settings, "THEMUSE_API_KEY", None)
+    for adapter in (pb.WorkingNomadsAggregator, pb.AdzunaAggregator, TheMuseAggregator):
+        with pytest.raises(SourceDisabledError):
+            await adapter().fetch_jobs()

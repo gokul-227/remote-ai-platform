@@ -27,9 +27,9 @@ def test_docx_zip_bomb_is_rejected_before_parsing():
 
 
 def test_zip_that_is_not_a_word_document_is_rejected():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="DOCX resume content could not be verified"):
         validate_resume_upload("cv.docx", DOCX, _zip({"hello.txt": b"hi"}), MAX)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="DOCX resume content could not be verified"):
         validate_resume_upload("cv.docx", DOCX, b"PK\x03\x04 not really a zip", MAX)
 
 

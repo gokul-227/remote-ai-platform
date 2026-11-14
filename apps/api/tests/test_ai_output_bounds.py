@@ -18,7 +18,8 @@ def test_hostile_or_malformed_ai_output_is_bounded():
     clean = clean_ai_profile_fields(parsed)
     assert len(clean["headline"]) == 255
     assert len(clean["bio"]) == 5000
-    assert clean["skills"][0] == "Python" and "python" not in clean["skills"]
+    assert clean['skills'][0] == 'Python'
+    assert 'python' not in clean['skills']
     assert all(isinstance(s, str) and 0 < len(s) <= 60 for s in clean["skills"])
     assert len(clean["skills"]) <= 50
 

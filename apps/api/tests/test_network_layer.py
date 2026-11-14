@@ -50,7 +50,8 @@ async def test_lists_embed_other_user_summary_unread_and_last_message(client: As
     assert conn["sender"]["full_name"] == "summary-a"
     assert conn["receiver"]["id"] == b_id
     # Other users' emails must never leak through these summaries.
-    assert "email" not in conn["sender"] and "email" not in conn["receiver"]
+    assert 'email' not in conn['sender']
+    assert 'email' not in conn['receiver']
     assert (await client.get("/api/v1/connections", headers=b, params={"status": "ACCEPTED"})).json() == []
 
     conv_id = (await client.post("/api/v1/conversations", headers=a, json={"participant_id": b_id})).json()["id"]

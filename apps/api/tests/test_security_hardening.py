@@ -8,7 +8,7 @@ from app.domains.engineers.service import EngineerService
 
 
 def test_resume_validation_rejects_traversal_and_invalid_content():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="PDF resume content could not be verified"):
         validate_resume_upload("../../resume.pdf", "application/pdf", b"not-a-pdf", 1024)
 
     assert validate_resume_upload("resume.pdf", "application/pdf", b"%PDF-1.7 body", 1024) == ".pdf"
@@ -19,12 +19,12 @@ def test_resume_validation_rejects_oversized_file():
     uploaded to object storage -- otherwise an attacker can exhaust storage
     with a handful of huge "resumes"."""
     oversized = b"%PDF-1.7 " + b"A" * 2048
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Resume must be non-empty"):
         validate_resume_upload("resume.pdf", "application/pdf", oversized, max_bytes=1024)
 
 
 def test_resume_validation_rejects_empty_file():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Resume must be non-empty"):
         validate_resume_upload("resume.pdf", "application/pdf", b"", max_bytes=1024)
 
 
@@ -32,14 +32,14 @@ def test_resume_validation_rejects_content_type_mismatch_with_extension():
     """A .docx filename whose bytes are actually a PDF (or vice versa) must
     be rejected -- trusting the filename/extension alone would let an
     attacker disguise arbitrary content as a "resume"."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="DOCX resume content could not be verified"):
         validate_resume_upload(
             "resume.docx",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             b"%PDF-1.7 this is actually a PDF",
             max_bytes=1024,
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="PDF resume content could not be verified"):
         validate_resume_upload(
             "resume.pdf",
             "application/pdf",
@@ -51,7 +51,7 @@ def test_resume_validation_rejects_content_type_mismatch_with_extension():
 def test_resume_validation_rejects_disguised_executable():
     """Magic-byte check must reject content that doesn't match either
     allowed format even when filename/extension/content-type all claim PDF."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="PDF resume content could not be verified"):
         validate_resume_upload("resume.pdf", "application/pdf", b"MZ\x90\x00fake-exe-payload", max_bytes=1024)
 
 

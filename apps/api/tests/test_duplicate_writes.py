@@ -107,7 +107,8 @@ async def test_like_count_matches_likes(client: AsyncClient):
     # concurrency is exercised on PostgreSQL in test_postgres_concurrency.py.
     for u in likers:
         r = await client.post(f"/api/v1/social/posts/{post_id}/like", headers=_h(u))
-        assert r.status_code == 200 and r.json()["liked"]
+        assert r.status_code == 200
+        assert r.json()['liked']
     async with TestingSessionLocal() as db:
         rows = await db.scalar(select(func.count()).select_from(PostLike).where(PostLike.post_id == uuid.UUID(post_id)))
         stored = (await db.get(Post, uuid.UUID(post_id))).like_count

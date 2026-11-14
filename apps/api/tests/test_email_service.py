@@ -9,7 +9,6 @@ from app.services.email.service import (
     ResendEmailProvider,
     get_email_provider,
 )
-from app.services.notifications.service import notify_user
 
 
 @pytest.mark.asyncio

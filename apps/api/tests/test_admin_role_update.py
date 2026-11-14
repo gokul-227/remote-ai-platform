@@ -20,9 +20,10 @@ async def test_update_role_requires_admin(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_admin_can_promote_user_to_admin(client: AsyncClient):
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
 
     async with TestingSessionLocal() as db:
         admin = User(email="role-admin@example.com", full_name="Role Admin", role=UserRole.ADMIN)

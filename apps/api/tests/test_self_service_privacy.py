@@ -30,7 +30,8 @@ async def test_export_contains_my_data_and_not_secrets(client: AsyncClient):
     assert [p["headline"] for p in data["engineer_profiles"]] == ["Translator"]
     text = resp.text
     assert "Someone else" not in text
-    assert "auth_subject" not in text and "resume_url" not in text
+    assert 'auth_subject' not in text
+    assert 'resume_url' not in text
 
 
 @pytest.mark.asyncio

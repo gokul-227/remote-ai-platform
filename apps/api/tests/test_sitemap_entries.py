@@ -64,3 +64,15 @@ async def test_deleted_job_is_not_in_the_public_list(client: AsyncClient):
     deleted = await _jobs(is_deleted=True)
     body = (await client.get("/api/v1/jobs?limit=100")).json()
     assert str(deleted[0]) not in {j["id"] for j in body}
+
+@pytest.mark.asyncio
+async def test_sources_that_prohibit_search_syndication_are_not_in_sitemap(db):
+    from app.domains.jobs.models import JobPost
+    from app.domains.jobs.repository import JobRepository
+
+    db.add_all([JobPost(title="Restricted", slug=f"restricted-{uuid.uuid4().hex}", description="D", company_name="C", source=source) for source in ("REMOTIVE", "HIMALAYAS", "WORKINGNOMADS", "ADZUNA")])
+    db.add(JobPost(title="Public", slug=f"public-{uuid.uuid4().hex}", description="D", company_name="C", source="DIRECT"))
+    await db.commit()
+    repo = JobRepository(db)
+    rows = await repo.sitemap_entries(0, 5000)
+    assert len(rows) == await repo.sitemap_count() == 1

@@ -28,9 +28,12 @@ async def test_reports_last_success_and_failures_since_per_source(client: AsyncC
 
     body = (await client.get("/health/ingestion")).json()
     a, b = body["sources"]["OBS_A"], body["sources"]["OBS_B"]
-    assert a["failures_since_success"] == 2 and a["last_success_fetched"] == 7
+    assert a['failures_since_success'] == 2
+    assert a['last_success_fetched'] == 7
     assert 29 < a["hours_since_success"] < 31
-    assert b["failures_since_success"] == 0 and b["last_success_fetched"] == 25 and b["hours_since_success"] < 3
+    assert b['failures_since_success'] == 0
+    assert b['last_success_fetched'] == 25
+    assert b['hours_since_success'] < 3
 
 
 @pytest.mark.asyncio
@@ -65,7 +68,8 @@ async def test_every_configured_source_is_listed_even_without_logs(client: Async
     for cls in AGGREGATORS:
         entry = body["sources"][cls.source_name]
         assert entry["configured"] is True
-        assert "last_success_at" in entry and "last_status" in entry
+        assert 'last_success_at' in entry
+        assert 'last_status' in entry
 
 
 @pytest.mark.asyncio
@@ -76,11 +80,13 @@ async def test_success_older_than_window_is_still_reported(client: AsyncClient):
     await _log("ARBEITNOW", "FAILED", 2)
     entry = (await client.get("/health/ingestion")).json()["sources"]["ARBEITNOW"]
     assert entry["hours_since_success"] > 24 * 14
-    assert entry["last_status"] == "FAILED" and entry["failures_since_success"] == 1
+    assert entry['last_status'] == 'FAILED'
+    assert entry['failures_since_success'] == 1
 
 
 @pytest.mark.asyncio
 async def test_disabled_runs_are_not_failures(client: AsyncClient):
     await _log("OBS_DISABLED", "DISABLED", 1, fetched=0)
     entry = (await client.get("/health/ingestion")).json()["sources"]["OBS_DISABLED"]
-    assert entry["last_status"] == "DISABLED" and entry["failures_since_success"] == 0
+    assert entry['last_status'] == 'DISABLED'
+    assert entry['failures_since_success'] == 0

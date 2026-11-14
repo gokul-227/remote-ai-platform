@@ -7,6 +7,7 @@ import httpx
 from app.core.config import settings
 from app.domains.jobs.aggregators.base import (
     BaseAggregator,
+    SourceDisabledError,
     SourceFetchError,
     require_list,
 )
@@ -18,10 +19,14 @@ class TheMuseAggregator(BaseAggregator):
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         jobs: list[JobPostCreate] = []
+        if settings.APP_ENV == "production" and not settings.THEMUSE_API_KEY:
+            raise SourceDisabledError("The Muse requires a registered application API key in production")
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
-                url = f"{settings.THEMUSE_API_URL}?page=1"
-                response = await client.get(url)
+                params: dict[str, str | int] = {"page": 0}
+                if settings.THEMUSE_API_KEY:
+                    params["api_key"] = settings.THEMUSE_API_KEY
+                response = await client.get(settings.THEMUSE_API_URL, params=params)
                 if response.status_code != 200:
                     raise SourceFetchError(f"HTTP {response.status_code}")
 

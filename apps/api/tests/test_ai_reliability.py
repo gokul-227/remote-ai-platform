@@ -110,7 +110,6 @@ async def test_complete_succeeds_via_fallback_and_clears_prior_error(monkeypatch
     later fallback model succeeds -- otherwise success gets misreported as failure."""
     import litellm
 
-    from app.agents import model_config as model_config_module
     from app.core.config import settings
 
     monkeypatch.setattr(settings, "AI_PROVIDER", "groq")
@@ -313,7 +312,7 @@ async def test_cost_estimation_failure_does_not_fail_the_completion(monkeypatch)
 
 
 @pytest.mark.parametrize(
-    "method,path",
+    ("method", "path"),
     [
         ("POST", "/api/v1/engineers/me/resume"),
         ("POST", "/api/v1/engineers/me/ai-enhance"),

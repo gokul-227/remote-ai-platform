@@ -35,6 +35,7 @@ from app.domains.jobs.aggregators.usajobs import USAJobsAggregator
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import JobPostCreate, JobPostResponse, JobPostUpdate, JobSearchQuery
+from app.domains.jobs.source_policy import SEARCH_SYNDICATION_BLOCKED_SOURCES
 from app.domains.marketplace.models import AIReport
 from app.services.search.indexing import notify_new_jobs
 
@@ -154,6 +155,7 @@ class JobService:
         admin_repo: AdminRepository | None = None,
         source_name: str | None = None,
         run_maintenance: bool = True,
+        raise_on_failure: bool = False,
     ) -> dict[str, int]:
         """
         Runs job aggregation across every configured source, saving/upserting jobs to DB.
@@ -165,6 +167,7 @@ class JobService:
         logger.info(f"Starting job aggregation sync across {len(self.aggregators)} sources...")
         stats: dict[str, int] = {}
         new_job_ids: list[uuid.UUID] = []
+        failed_sources: list[str] = []
 
         aggregators = self.aggregators
         if source_name is not None:
@@ -177,6 +180,7 @@ class JobService:
             try:
                 fetched_jobs = await aggregator.fetch_jobs(limit=limit_per_source)
                 inserted = updated = 0
+                source_new_ids: list[uuid.UUID] = []
                 skipped = 0
                 bind = self.repo.db.bind
                 bulk = bind is not None and bind.dialect.name == "postgresql"
@@ -188,7 +192,7 @@ class JobService:
                         try:
                             async with self.repo.db.begin_nested():
                                 ids, n_updated = await self.repo.bulk_upsert_external_jobs(batch)
-                            new_job_ids.extend(ids)
+                            source_new_ids.extend(ids)
                             inserted += len(ids)
                             updated += n_updated
                             continue
@@ -211,17 +215,19 @@ class JobService:
                                 )
                             continue
                         if created:
-                            new_job_ids.append(saved.id)
+                            source_new_ids.append(saved.id)
                         inserted += int(created)
                         updated += int(not created)
                 # Only after a successful, non-empty fetch: an outage or a feed that
                 # suddenly answers with nothing must not expire a whole source (ING-01).
                 expired = (
                     await self.repo.expire_unseen_jobs(aggregator.source_name)
-                    if fetched_jobs
+                    if fetched_jobs and not skipped
                     else 0
                 )
                 await self.repo.db.commit()
+                if aggregator.source_name not in SEARCH_SYNDICATION_BLOCKED_SOURCES:
+                    new_job_ids.extend(source_new_ids)
                 stats[aggregator.source_name] = inserted + updated
                 if expired:
                     logger.info(f"Expired {expired} {aggregator.source_name} jobs no longer listed")
@@ -232,7 +238,9 @@ class JobService:
                 logger.info(
                     f"Aggregated {aggregator.source_name}: {inserted} new, {updated} updated"
                 )
-                status, error = "SUCCESS", None
+                # A partial save must not look healthy or expire unseen rows.
+                status = "FAILED" if skipped else "SUCCESS"
+                error = f"{skipped} job(s) could not be saved" if skipped else None
             except SourceDisabledError as e:
                 logger.info(f"{aggregator.source_name} not configured, skipped: {e}")
                 stats[aggregator.source_name] = 0
@@ -249,6 +257,8 @@ class JobService:
                 inserted = updated = 0
                 fetched_jobs = []
                 status = "FAILED"
+            if status == "FAILED":
+                failed_sources.append(aggregator.source_name)
             if admin_repo:
                 await admin_repo.log_sync(
                     source=aggregator.source_name,
@@ -268,4 +278,6 @@ class JobService:
         sent = await notify_new_jobs(list(reversed(new_job_ids)))
         if any(sent.values()):
             logger.info(f"Search engines notified: {sent}")
+        if raise_on_failure and failed_sources:
+            raise SourceFetchError(f"Job source sync failed: {', '.join(failed_sources)}")
         return stats

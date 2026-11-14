@@ -44,7 +44,7 @@ def _usajobs_key(monkeypatch):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("adapter,_", ADAPTERS)
+@pytest.mark.parametrize(("adapter", "_"), ADAPTERS)
 async def test_non_200_is_a_failure_not_an_empty_feed(monkeypatch, adapter, _):
     _serve(monkeypatch, lambda req: httpx.Response(503, text="secret upstream body"))
     with pytest.raises(SourceFetchError) as exc:
@@ -53,7 +53,7 @@ async def test_non_200_is_a_failure_not_an_empty_feed(monkeypatch, adapter, _):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("adapter,_", ADAPTERS)
+@pytest.mark.parametrize(("adapter", "_"), ADAPTERS)
 async def test_malformed_json_and_wrong_shape_are_failures(monkeypatch, adapter, _):
     _serve(monkeypatch, lambda req: httpx.Response(200, text="<html>not json"))
     with pytest.raises(SourceFetchError):
@@ -64,7 +64,7 @@ async def test_malformed_json_and_wrong_shape_are_failures(monkeypatch, adapter,
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("adapter,_", ADAPTERS)
+@pytest.mark.parametrize(("adapter", "_"), ADAPTERS)
 async def test_timeout_is_a_failure(monkeypatch, adapter, _):
     def boom(req):
         raise httpx.ReadTimeout("timed out", request=req)
@@ -75,7 +75,7 @@ async def test_timeout_is_a_failure(monkeypatch, adapter, _):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("adapter,empty", ADAPTERS)
+@pytest.mark.parametrize(("adapter", "empty"), ADAPTERS)
 async def test_valid_empty_feed_is_an_empty_list(monkeypatch, adapter, empty):
     _serve(monkeypatch, lambda req: httpx.Response(200, json=empty))
     assert await adapter().fetch_jobs(limit=5) == []
@@ -133,21 +133,24 @@ async def _sync_one(fetch: AsyncMock, source: str):
 async def test_failed_fetch_logs_failed_and_expires_nothing():
     job, log = await _sync_one(AsyncMock(side_effect=SourceFetchError("HTTP 500")), "ARBEITNOW")
     assert job.expired_at is None
-    assert log.status == "FAILED" and log.error_message == "HTTP 500"
+    assert log.status == "FAILED"
+    assert log.error_message == "HTTP 500"
 
 
 @pytest.mark.asyncio
 async def test_unexpected_error_message_is_redacted_to_class_name():
     job, log = await _sync_one(AsyncMock(side_effect=RuntimeError("postgres://user:pw@host/db")), "REMOTIVE")
     assert job.expired_at is None
-    assert log.status == "FAILED" and log.error_message == "RuntimeError"
+    assert log.status == "FAILED"
+    assert log.error_message == "RuntimeError"
 
 
 @pytest.mark.asyncio
 async def test_empty_feed_is_success_but_skips_expiry():
     job, log = await _sync_one(AsyncMock(return_value=[]), "THEMUSE")
     assert job.expired_at is None
-    assert log.status == "SUCCESS" and log.jobs_fetched == 0
+    assert log.status == "SUCCESS"
+    assert log.jobs_fetched == 0
 
 
 @pytest.mark.asyncio
@@ -167,4 +170,29 @@ async def test_non_empty_success_still_expires_long_unseen_jobs():
     )
     job, log = await _sync_one(AsyncMock(return_value=[fresh]), "REMOTEOK")
     assert job.expired_at is not None
-    assert log.status == "SUCCESS" and log.jobs_fetched == 1
+    assert log.status == "SUCCESS"
+    assert log.jobs_fetched == 1
+
+@pytest.mark.asyncio
+async def test_failed_saves_do_not_expire_existing_inventory_or_report_success(monkeypatch):
+    from app.domains.jobs.repository import JobRepository
+    from app.domains.jobs.schemas import JobPostCreate
+
+    monkeypatch.setattr(JobRepository, "upsert_external_job", AsyncMock(side_effect=ValueError("bad row")))
+    fresh = JobPostCreate(title="Bad row", description="D", company_name="C", source="REMOTEOK", external_id="bad_row")
+    job, log = await _sync_one(AsyncMock(return_value=[fresh]), "REMOTEOK")
+    assert job.expired_at is None
+    assert log.status == "FAILED"
+    assert log.error_message == "1 job(s) could not be saved"
+
+@pytest.mark.asyncio
+async def test_scheduled_runner_strict_mode_surfaces_failed_sources(db, monkeypatch):
+    from app.domains.jobs import service as svc
+    from app.domains.jobs.repository import JobRepository
+
+    service = svc.JobService(JobRepository(db))
+    target = next(a for a in service.aggregators if a.source_name == "REMOTEOK")
+    target.fetch_jobs = AsyncMock(side_effect=SourceFetchError("HTTP 503"))
+    monkeypatch.setattr(svc, "notify_new_jobs", AsyncMock(return_value={}))
+    with pytest.raises(SourceFetchError, match="Job source sync failed: REMOTEOK"):
+        await service.sync_all_job_sources(source_name="REMOTEOK", run_maintenance=False, raise_on_failure=True)

@@ -189,6 +189,11 @@ class Settings(BaseSettings):
     USAJOBS_USER_AGENT: str = "RemoteAIPlatform/0.1 (contact@remoteaiplatform.com)"
     USAJOBS_AUTH_KEY: str | None = None
     THEMUSE_API_URL: str = "https://www.themuse.com/api/public/jobs"
+    THEMUSE_API_KEY: str | None = None
+    # Public endpoints do not establish redistribution rights. Enable only
+    # after the operator has the applicable written permission/licence.
+    ADZUNA_LICENSE_CONFIRMED: bool = False
+    WORKINGNOMADS_PERMISSION_CONFIRMED: bool = False
     # Arbeitnow serves 100 jobs per page; read this many pages per sync.
     ARBEITNOW_MAX_PAGES: int = 50
     # Public company career boards (comma-separated board names), verified live.

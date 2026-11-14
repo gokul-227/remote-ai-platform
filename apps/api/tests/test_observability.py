@@ -33,4 +33,6 @@ async def test_request_ids_from_clients_are_validated(client):
     for bad in ["x" * 200, "id\ninjected=1", "a b", "<script>"]:
         resp = await client.get("/health/live", headers={"X-Request-ID": bad})
         rid = resp.headers["X-Request-ID"]
-        assert rid != bad and len(rid) <= 64 and rid.replace("-", "").isalnum()
+        assert rid != bad
+        assert len(rid) <= 64
+        assert rid.replace('-', '').isalnum()

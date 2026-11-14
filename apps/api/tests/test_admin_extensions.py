@@ -1,4 +1,5 @@
 import uuid
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -141,4 +142,5 @@ async def test_admin_verification_queue_and_job_list(client: AsyncClient, test_u
     db.add(JobPost(title="Hidden role", slug="hidden-role", description="x", company_name="Hidden Co", is_active=False))
     await db.commit()
     jobs = (await client.get("/api/v1/admin/jobs", headers=auth_headers, params={"q": "hidden"})).json()
-    assert [j["title"] for j in jobs] == ["Hidden role"] and jobs[0]["is_active"] is False
+    assert [j['title'] for j in jobs] == ['Hidden role']
+    assert jobs[0]['is_active'] is False

@@ -108,8 +108,15 @@ async def _role(db: AsyncSession, doc: Document, user: User) -> str | None:
     return next((k for k, v in RANK.items() if v == best), None) if best else None
 
 
-async def _doc(db: AsyncSession, doc_id: uuid.UUID, user: User, need: str = "VIEW") -> tuple[Document, str]:
-    doc = await db.get(Document, doc_id)
+async def _doc(
+    db: AsyncSession, doc_id: uuid.UUID, user: User, need: str = "VIEW", *, lock: bool = False,
+) -> tuple[Document, str]:
+    # Serialize revision creation in PostgreSQL. Re-read after acquiring the lock,
+    # even when this session already cached the document, so expected_version is
+    # checked against the winner's committed revision rather than stale state.
+    doc = await db.scalar(
+        select(Document).where(Document.id == doc_id).with_for_update().execution_options(populate_existing=True)
+    ) if lock else await db.get(Document, doc_id)
     role = await _role(db, doc, user) if doc and not doc.is_deleted else None
     if doc is None or role is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Document not found")
@@ -204,7 +211,7 @@ async def get_document(doc_id: uuid.UUID, current_user: User = Depends(get_curre
 async def save_document(
     doc_id: uuid.UUID, payload: DocumentSave, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> DocumentOut:
-    doc, role = await _doc(db, doc_id, current_user, "EDIT")
+    doc, role = await _doc(db, doc_id, current_user, "EDIT", lock=True)
     if payload.expected_version != doc.version:
         raise HTTPException(status.HTTP_409_CONFLICT, "Someone else saved a newer version; reload to see it")
     if payload.title is not None:
@@ -239,7 +246,7 @@ async def list_versions(doc_id: uuid.UUID, current_user: User = Depends(get_curr
 async def restore_version(
     doc_id: uuid.UUID, version: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ) -> DocumentOut:
-    doc, role = await _doc(db, doc_id, current_user, "EDIT")
+    doc, role = await _doc(db, doc_id, current_user, "EDIT", lock=True)
     v = await db.scalar(select(DocumentVersion).where(DocumentVersion.document_id == doc.id, DocumentVersion.version == version))
     if v is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Version not found")

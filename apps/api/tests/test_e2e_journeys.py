@@ -21,6 +21,7 @@ async def test_worker_company_marketplace_journey(client: AsyncClient):
     assert profile.status_code == 201
 
     from conftest import TestingSessionLocal
+
     from app.domains.jobs.models import JobPost
 
     async with TestingSessionLocal() as db:
@@ -42,9 +43,10 @@ async def test_worker_company_marketplace_journey(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_admin_control_and_moderation_journey(client: AsyncClient):
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
 
     target = await client.post("/api/v1/auth/register", json={
         "email": "e2e-target@example.com", "password": "secure-pass", "full_name": "E2E Target", "role": "ENGINEER",

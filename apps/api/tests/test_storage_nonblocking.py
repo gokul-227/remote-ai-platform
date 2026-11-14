@@ -40,12 +40,14 @@ async def test_upload_and_delete_run_off_the_event_loop(monkeypatch):
     assert await service.delete_file("b", "k") is True
     t.cancel()
 
-    assert seen and all(tid != loop_thread for tid in seen)
+    assert seen
+    assert all(tid != loop_thread for tid in seen)
     assert ticks >= 10  # the loop kept running during the 0.4 s of blocking IO
 
 
 def test_client_has_bounded_timeouts():
     storage.get_s3_client.cache_clear()
     cfg = storage.get_s3_client().meta.config
-    assert cfg.connect_timeout <= 10 and cfg.read_timeout <= 30
+    assert cfg.connect_timeout <= 10
+    assert cfg.read_timeout <= 30
     assert cfg.retries["total_max_attempts"] <= 3

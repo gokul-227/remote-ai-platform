@@ -30,4 +30,5 @@ def test_mojibake_and_entities_are_repaired():
 
 
 def test_empty():
-    assert clean(None) == "" and clean("   ") == ""
+    assert clean(None) == ''
+    assert clean('   ') == ''

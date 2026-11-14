@@ -54,9 +54,11 @@ async def test_unseen_imported_jobs_expire_and_reappearing_ones_come_back(client
         assert (await db.get(JobPost, ids[2])).expired_at is None  # other sources untouched
 
     listed = {j["id"] for j in (await client.get("/api/v1/jobs", params={"limit": 100})).json()}
-    assert str(ids[0]) not in listed and str(ids[1]) in listed
+    assert str(ids[0]) not in listed
+    assert str(ids[1]) in listed
     detail = await client.get(f"/api/v1/jobs/{ids[0]}")
-    assert detail.status_code == 200 and detail.json()["expired_at"] is not None
+    assert detail.status_code == 200
+    assert detail.json()['expired_at'] is not None
 
     async with TestingSessionLocal() as db:  # listed again by its source
         await JobRepository(db).upsert_external_job(_create(f"remoteok_stale_{tag}"))

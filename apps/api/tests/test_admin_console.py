@@ -1,13 +1,15 @@
 import uuid
+
 import pytest
 from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
 async def test_admin_console_exposes_metrics_and_audit_logs(client: AsyncClient):
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
 
     async with TestingSessionLocal() as db:
         admin = User(email="console-admin@example.com", full_name="Console Admin", role=UserRole.ADMIN)

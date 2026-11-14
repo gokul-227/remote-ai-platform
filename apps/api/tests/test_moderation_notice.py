@@ -41,8 +41,11 @@ async def test_removed_post_owner_is_told_why_and_how_to_appeal(client: AsyncCli
     notes = (await client.get("/api/v1/notifications", headers=_h(author))).json()
     notice = next(n for n in (notes if isinstance(notes, list) else notes["items"]) if n["kind"] == "moderation")
     text = f"{notice['title']} {notice['body']}"
-    assert "removed" in text.lower() and "appeal" in text.lower() and "contact@" in text
-    assert "Reporter Person" not in text and "repeat offender" not in text
+    assert 'removed' in text.lower()
+    assert 'appeal' in text.lower()
+    assert 'contact@' in text
+    assert 'Reporter Person' not in text
+    assert 'repeat offender' not in text
 
 
 @pytest.mark.asyncio
@@ -54,4 +57,5 @@ async def test_suspended_member_is_told_how_to_appeal(client: AsyncClient):
                        json={"status": "RESOLVED", "decision": "SUSPEND_USER"})
     resp = await client.get("/api/v1/auth/me", headers=_h(member))
     assert resp.status_code == 403
-    assert "suspended" in resp.json()["detail"].lower() and "appeal" in resp.json()["detail"].lower()
+    assert 'suspended' in resp.json()['detail'].lower()
+    assert 'appeal' in resp.json()['detail'].lower()

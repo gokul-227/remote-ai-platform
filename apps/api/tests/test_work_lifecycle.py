@@ -57,7 +57,6 @@ async def test_complete_work_lifecycle(client: AsyncClient, test_user: User, aut
     contract_data = contract_res.json()
     contract_id = contract_data["id"]
     assert len(contract_data["milestones"]) == 2
-    cm_id_1 = contract_data["milestones"][0]["id"]
 
     # 4. Sign the contract (Client + Worker)
     sign_client = await client.post(f"/api/v1/contracts/{contract_id}/sign", headers=auth_headers)
@@ -94,7 +93,6 @@ async def test_complete_work_lifecycle(client: AsyncClient, test_user: User, aut
         headers=auth_headers,
     )
     assert milestone_res.status_code == 201, f"Milestone create failed: {milestone_res.text}"
-    milestone_id = milestone_res.json()["id"]
 
     # 7. Create Task under Project
     # Endpoint is flat: POST /projects/tasks (not /projects/{id}/tasks)

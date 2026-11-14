@@ -16,9 +16,10 @@ async def test_reclean_requires_admin(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_reclean_fixes_stale_html_entities(client: AsyncClient):
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
     from app.domains.jobs.models import JobPost
 
     async with TestingSessionLocal() as db:

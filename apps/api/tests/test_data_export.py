@@ -79,8 +79,11 @@ async def test_reports_stay_private_to_the_reporter(client: AsyncClient):
         await db.commit()
 
     mine = (await _export(client, reporter))["moderation_reports"]
-    assert len(mine) == 1 and mine[0]["reason"] == "spam" and mine[0]["decision"] == "WARNED"
-    assert "reviewed_by_id" not in mine[0] and "decision_note" not in mine[0]
+    assert len(mine) == 1
+    assert mine[0]['reason'] == 'spam'
+    assert mine[0]['decision'] == 'WARNED'
+    assert 'reviewed_by_id' not in mine[0]
+    assert 'decision_note' not in mine[0]
     # Neither the reported person nor the moderator gets the reporter's report.
     assert "moderation_reports" not in await _export(client, subject)
     assert "moderation_reports" not in await _export(client, admin)

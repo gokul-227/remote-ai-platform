@@ -63,3 +63,37 @@ async def test_private_profile_author_is_shown_by_name_only(client: AsyncClient)
     pid = await _post(user, "PUBLIC")
     author = (await client.get(f"/api/v1/public/posts/{pid}")).json()["author"]
     assert author == {"name": "Pat Public", "headline": None, "profile_id": None}
+
+
+@pytest.mark.asyncio
+async def test_sitemap_counts_match_public_entry_visibility(client: AsyncClient):
+    from datetime import UTC, datetime
+
+    from app.domains.companies.models import CompanyProfile
+    from app.domains.jobs.models import JobPost
+
+    public, _ = await _member()
+    private, _ = await _member(public=False)
+    suspended, _ = await _member(active=False)
+    await _post(public, "PUBLIC")
+    await _post(public, "CONNECTIONS")
+    await _post(private, "PUBLIC")
+    await _post(suspended, "PUBLIC")
+    async with TestingSessionLocal() as db:
+        db.add_all([
+            CompanyProfile(user_id=public.id, name="Visible"),
+            CompanyProfile(user_id=suspended.id, name="Suspended"),
+        ])
+        for flags in ({}, {"is_active": False}, {"is_deleted": True}, {"expired_at": datetime.now(UTC)}):
+            db.add(JobPost(title="Role", slug=uuid.uuid4().hex, description="D", company_name="C", source="DIRECT", **flags))
+        await db.commit()
+    response = await client.get("/api/v1/public/sitemap-counts")
+    assert response.status_code == 200
+    counts = response.json()
+    assert counts == {"jobs": 1, "people": 1, "companies": 1, "posts": 2}
+    assert response.headers["cache-control"] == "public, max-age=900"
+    for kind in ("people", "companies", "posts"):
+        entries = (await client.get(f"/api/v1/public/sitemap-entries?kind={kind}")).json()
+        assert len(entries) == counts[kind]
+    jobs = (await client.get("/api/v1/jobs/sitemap-entries")).json()
+    assert len(jobs) == counts["jobs"]

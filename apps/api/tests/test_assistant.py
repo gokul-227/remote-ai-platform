@@ -183,3 +183,46 @@ async def test_connection_tool_respects_rules(client: AsyncClient, monkeypatch):
     pending = (await client.post("/api/v1/assistant/chat", json={"message": "connect"}, headers=h)).json()["pending_action"]
     res = (await client.post(f"/api/v1/assistant/actions/{pending['id']}/confirm", headers=h)).json()
     assert res["status"] == "FAILED"
+
+
+@pytest.mark.asyncio
+async def test_read_tasks_rechecks_project_access_after_membership_removal(client: AsyncClient, db: AsyncSession, monkeypatch):
+    from sqlalchemy import delete
+
+    from app.domains.auth.models import User
+    from app.domains.marketplace.models import ProjectTask
+    from app.domains.projects.models import ProjectMember
+
+    _, pid = await _company_with_project(client)
+    worker_headers, _ = await _company_with_project(client)
+    worker_id = uuid.UUID((await client.get("/api/v1/auth/me", headers=worker_headers)).json()["id"])
+    worker = await db.get(User, worker_id)
+    db.add(ProjectMember(project_id=uuid.UUID(pid), user_id=worker.id))
+    db.add(ProjectTask(project_id=uuid.UUID(pid), title="Restricted work item", assigned_user_id=worker.id))
+    await db.commit()
+    _model_says(monkeypatch, {"reply": "Tasks", "tool": "my_tasks", "args": {}})
+    visible = (await client.post("/api/v1/assistant/chat", json={"message": "my tasks"}, headers=worker_headers)).json()
+    assert [item["title"] for item in visible["result"]["items"]] == ["Restricted work item"]
+    assert len((await client.get("/api/v1/projects/my-tasks", headers=worker_headers)).json()) == 1
+    await db.execute(delete(ProjectMember).where(ProjectMember.project_id == uuid.UUID(pid), ProjectMember.user_id == worker.id))
+    await db.commit()
+    hidden = (await client.post("/api/v1/assistant/chat", json={"message": "my tasks"}, headers=worker_headers)).json()
+    assert hidden["result"] == {"ok": True, "items": []}
+    assert (await client.get("/api/v1/projects/my-tasks", headers=worker_headers)).json() == []
+
+
+@pytest.mark.asyncio
+async def test_read_groups_excludes_pending_and_banned_memberships(client: AsyncClient, db: AsyncSession, monkeypatch):
+    from app.domains.groups.models import Group, GroupMembership
+
+    h, _ = await _company_with_project(client)
+    user_id = uuid.UUID((await client.get("/api/v1/auth/me", headers=h)).json()["id"])
+    for membership_status in ("active", "pending", "banned"):
+        group = Group(name=membership_status, slug=f"as-{uuid.uuid4().hex}", is_private=True)
+        db.add(group)
+        await db.flush()
+        db.add(GroupMembership(group_id=group.id, user_id=user_id, status=membership_status))
+    await db.commit()
+    _model_says(monkeypatch, {"reply": "Groups", "tool": "my_groups", "args": {}})
+    res = (await client.post("/api/v1/assistant/chat", json={"message": "my groups"}, headers=h)).json()
+    assert [item["title"] for item in res["result"]["items"]] == ["active"]

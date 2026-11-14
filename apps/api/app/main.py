@@ -25,6 +25,7 @@ from app.core.logging import configure_logging
 from app.core.middleware import RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
 from app.domains.admin.moderation_router import router as moderation_router
 from app.domains.admin.operations_router import router as admin_operations_router
+from app.domains.admin.portfolio_router import router as admin_portfolio_router
 from app.domains.admin.router import router as admin_router
 from app.domains.analytics.router import router as analytics_router
 from app.domains.applications.router import router as applications_router
@@ -319,6 +320,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics_router, prefix=prefix)
     app.include_router(browser_router, prefix=prefix)
     app.include_router(admin_operations_router, prefix=prefix)
+    app.include_router(admin_portfolio_router, prefix=prefix)
     app.include_router(seo_router, prefix=prefix)
 
     return app

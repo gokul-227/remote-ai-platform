@@ -50,7 +50,8 @@ async def test_signed_contract_blocks_self_and_admin_deletion(client: AsyncClien
     await _contract(org.id, pro.id, signed=True)
 
     refused = await _self_delete(client, pro)
-    assert refused.status_code == 409 and "@" in refused.json()["detail"]  # says where to write
+    assert refused.status_code == 409
+    assert '@' in refused.json()['detail']
     assert (await client.delete(f"/api/v1/admin/users/{pro.id}", headers=_h(admin))).status_code == 409
     from conftest import TestingSessionLocal
 
@@ -77,4 +78,5 @@ async def test_admin_deletion_audit_keeps_no_email(client: AsyncClient):
     assert (await client.delete(f"/api/v1/admin/users/{target.id}", headers=_h(admin))).status_code == 204
     async with TestingSessionLocal() as db:
         rows = (await db.scalars(select(ActivityLog).where(ActivityLog.entity_id == str(target.id)))).all()
-    assert rows and all(target.email not in str(r.details) for r in rows)
+    assert rows
+    assert all(target.email not in str(r.details) for r in rows)

@@ -6,8 +6,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.auth.models import User
 from app.core.ws_manager import ConnectionManager
+from app.domains.auth.models import User
 
 
 @pytest.mark.asyncio
@@ -85,11 +85,6 @@ async def test_ws_manager_connect_disconnect():
     """Unit test the ConnectionManager without a real WebSocket."""
     manager = ConnectionManager()
 
-    class FakeWS:
-        async def send_json(self, data):
-            self.sent = data
-
-    ws = FakeWS()
     user_id_str = "00000000-0000-0000-0000-000000000001"
     import uuid
     user_id = uuid.UUID(user_id_str)

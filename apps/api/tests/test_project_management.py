@@ -1,4 +1,5 @@
 import uuid
+
 import pytest
 from httpx import AsyncClient
 
@@ -67,6 +68,7 @@ async def test_project_plan_requires_approval_before_activation(client: AsyncCli
     assert no_plan.status_code == 409
 
     from conftest import TestingSessionLocal
+
     from app.domains.marketplace.models import AIReport
 
     async with TestingSessionLocal() as db:
@@ -279,6 +281,8 @@ async def test_project_detail_embeds_comments_and_people(client: AsyncClient):
     assert (await client.post(f"/api/v1/projects/tasks/{task_id}/comments", headers=headers, json={"content": "Started"})).status_code == 201
     detail = (await client.get(f"/api/v1/projects/{project_id}", headers=headers)).json()
     [comment] = detail["comments"]
-    assert comment["content"] == "Started" and comment["task_id"] == task_id
+    assert comment['content'] == 'Started'
+    assert comment['task_id'] == task_id
     author = detail["people"][comment["author_id"]]
-    assert author["full_name"] == "Board Owner" and "email" not in author
+    assert author['full_name'] == 'Board Owner'
+    assert 'email' not in author

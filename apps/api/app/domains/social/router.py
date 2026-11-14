@@ -7,11 +7,13 @@ can be introduced later via the feed algorithm abstraction.
 """
 
 import uuid
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user
@@ -142,6 +144,8 @@ async def _enrich_posts(
 async def get_feed(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=50),
+    q: str = Query(default="", max_length=200),
+    order: Literal["latest", "most_liked"] = "latest",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> FeedResponse:
@@ -171,28 +175,16 @@ async def get_feed(
     # Author IDs to include in feed
     feed_author_ids = list(connected_ids | {current_user.id})
 
-    # Total count
-    total = (
-        await db.scalar(
-            select(func.count(Post.id)).where(
-                Post.author_id.in_(feed_author_ids),
-                Post.visibility.in_(["PUBLIC", "CONNECTIONS"]),
-            )
-        )
-        or 0
-    )
-
-    # Paginated posts
+    filters: list[ColumnElement[bool]] = [Post.author_id.in_(feed_author_ids), Post.visibility.in_(["PUBLIC", "CONNECTIONS"])]
+    if q.strip():
+        filters.append(Post.content.icontains(q.strip(), autoescape=True))
+    total = await db.scalar(select(func.count(Post.id)).where(*filters)) or 0
     offset = (page - 1) * page_size
+    ordering: list[ColumnElement[Any]] = [Post.created_at.desc(), Post.id.desc()]
+    if order == "most_liked":
+        ordering.insert(0, Post.like_count.desc())
     posts_result = await db.execute(
-        select(Post)
-        .where(
-            Post.author_id.in_(feed_author_ids),
-            Post.visibility.in_(["PUBLIC", "CONNECTIONS"]),
-        )
-        .order_by(Post.created_at.desc())
-        .offset(offset)
-        .limit(page_size)
+        select(Post).where(*filters).order_by(*ordering).offset(offset).limit(page_size)
     )
     posts = posts_result.scalars().all()
 
@@ -211,19 +203,22 @@ async def get_feed(
 async def get_public_feed(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=50),
+    q: str = Query(default="", max_length=200),
+    order: Literal["latest", "most_liked"] = "latest",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> FeedResponse:
     """Return public posts from all users, newest first."""
-    total = await db.scalar(select(func.count(Post.id)).where(Post.visibility == "PUBLIC")) or 0
-
+    filters: list[ColumnElement[bool]] = [Post.visibility == "PUBLIC"]
+    if q.strip():
+        filters.append(Post.content.icontains(q.strip(), autoescape=True))
+    total = await db.scalar(select(func.count(Post.id)).where(*filters)) or 0
     offset = (page - 1) * page_size
+    ordering: list[ColumnElement[Any]] = [Post.created_at.desc(), Post.id.desc()]
+    if order == "most_liked":
+        ordering.insert(0, Post.like_count.desc())
     posts_result = await db.execute(
-        select(Post)
-        .where(Post.visibility == "PUBLIC")
-        .order_by(Post.created_at.desc())
-        .offset(offset)
-        .limit(page_size)
+        select(Post).where(*filters).order_by(*ordering).offset(offset).limit(page_size)
     )
     posts = posts_result.scalars().all()
     enriched = await _enrich_posts(list(posts), current_user.id, db)
@@ -425,6 +420,8 @@ async def list_comments(
     post_id: uuid.UUID,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=50),
+    q: str = Query(default="", max_length=200),
+    order: Literal["latest", "most_liked"] = "latest",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[CommentResponse]:

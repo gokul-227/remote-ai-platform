@@ -88,7 +88,8 @@ async def test_milestone_transition_graph_and_roles(client: AsyncClient):
     assert (await _set(client, company, contract_id, ms_id, "IN_PROGRESS")).status_code == 200
     assert (await _set(client, engineer, contract_id, ms_id, "DELIVERED")).status_code == 200
     approved = await _set(client, company, contract_id, ms_id, "APPROVED")
-    assert approved.status_code == 200 and approved.json()["status"] == "APPROVED"
+    assert approved.status_code == 200
+    assert approved.json()['status'] == 'APPROVED'
 
     # Retrying the same transition is a harmless no-op.
     assert (await _set(client, company, contract_id, ms_id, "APPROVED")).status_code == 200
@@ -132,7 +133,8 @@ async def test_terms_frozen_after_first_signature(client: AsyncClient):
     )
     assert added.status_code == 409
     detail = (await client.get(f"/api/v1/contracts/{contract_id}", headers=company)).json()
-    assert detail["rate_amount"] == 1000 and len(detail["milestones"]) == 1
+    assert detail['rate_amount'] == 1000
+    assert len(detail['milestones']) == 1
 
 
 @pytest.mark.asyncio
@@ -172,4 +174,5 @@ async def test_money_movement_is_gated_by_default(client: AsyncClient):
     assert (await client.patch(f"/api/v1/projects/payments/{fake}/refund", headers=company)).status_code == 404
 
     wallet = await client.get("/api/v1/payments/wallet", headers=company)
-    assert wallet.status_code == 200 and wallet.json()["payments_enabled"] is False
+    assert wallet.status_code == 200
+    assert wallet.json()['payments_enabled'] is False

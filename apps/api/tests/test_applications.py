@@ -27,6 +27,7 @@ async def test_application_status_lifecycle(client: AsyncClient):
     assert company.status_code == 201
 
     from conftest import TestingSessionLocal
+
     from app.domains.jobs.models import JobPost
 
     async with TestingSessionLocal() as db:
@@ -84,9 +85,10 @@ async def test_company_can_review_owned_job_application(client: AsyncClient):
     profile_id = profile.json()["id"]
 
     from conftest import TestingSessionLocal
+    from sqlalchemy import select
+
     from app.domains.companies.models import CompanyProfile
     from app.domains.jobs.models import JobPost
-    from sqlalchemy import select
 
     async with TestingSessionLocal() as db:
         company = await db.scalar(select(CompanyProfile).where(CompanyProfile.name == "Hiring Labs"))
@@ -141,6 +143,7 @@ async def _company_job_and_engineer(client: AsyncClient, tag: str):
 
     from conftest import TestingSessionLocal
     from sqlalchemy import select
+
     from app.domains.companies.models import CompanyProfile
     from app.domains.jobs.models import JobPost
 

@@ -10,15 +10,16 @@ import uuid
 from datetime import datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.domains.auth.models import User
 from app.domains.companies.models import CompanyProfile
 from app.domains.engineers.models import EngineerProfile
+from app.domains.jobs.repository import JobRepository
 from app.domains.social.models import Post
 
 router = APIRouter(prefix="/public", tags=["Public pages"])
@@ -83,6 +84,12 @@ async def sitemap_entries(
     limit: int = Query(5000, ge=1, le=10000),
     db: AsyncSession = Depends(get_db),
 ) -> list[SitemapEntry]:
+    stmt = _sitemap_query(kind)
+    rows = (await db.execute(stmt.offset(skip).limit(limit))).all()
+    return [SitemapEntry(id=r[0], updated_at=r[1]) for r in rows]
+
+
+def _sitemap_query(kind: Literal["people", "companies", "posts"]) -> Select:
     if kind == "people":
         stmt = (
             select(EngineerProfile.id, EngineerProfile.updated_at)
@@ -104,5 +111,23 @@ async def sitemap_entries(
             .where(Post.visibility == "PUBLIC", User.is_active.is_(True))
             .order_by(Post.created_at, Post.id)
         )
-    rows = (await db.execute(stmt.offset(skip).limit(limit))).all()
-    return [SitemapEntry(id=r[0], updated_at=r[1]) for r in rows]
+    return stmt
+
+
+@router.get("/sitemap-counts", response_model=dict[str, int])
+async def sitemap_counts(
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """Counts use the same visibility rules as the public sitemap entry pages.
+
+    No content or private identities are returned. The frontend uses these
+    counts to discover bounded sitemap shards instead of truncating inventory.
+    """
+    counts = {"jobs": await JobRepository(db).sitemap_count()}
+    kinds: tuple[Literal["people", "companies", "posts"], ...] = ("people", "companies", "posts")
+    for kind in kinds:
+        query = _sitemap_query(kind).order_by(None).subquery()
+        counts[kind] = int(await db.scalar(select(func.count()).select_from(query)) or 0)
+    response.headers["Cache-Control"] = "public, max-age=900"
+    return counts

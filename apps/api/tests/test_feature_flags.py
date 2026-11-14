@@ -38,9 +38,10 @@ async def test_feature_flags_endpoint_requires_admin(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_feature_flags_endpoint_returns_current_state(client: AsyncClient):
-    from conftest import TestingSessionLocal
-    from app.domains.auth.models import User, UserRole
     from auth_support import token_for as create_access_token
+    from conftest import TestingSessionLocal
+
+    from app.domains.auth.models import User, UserRole
 
     async with TestingSessionLocal() as db:
         admin = User(

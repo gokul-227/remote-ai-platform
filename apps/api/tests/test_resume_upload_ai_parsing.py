@@ -78,7 +78,8 @@ async def test_resume_upload_succeeds_and_stores_url(client: AsyncClient, monkey
     # overwrites what the engineer wrote themselves ("Junior Engineer").
     assert profile["headline"] == "Junior Engineer"
     assert profile["bio"] == "8 years Python/Go"
-    assert "Go" in profile["skills"] and "Python" in profile["skills"]
+    assert 'Go' in profile['skills']
+    assert 'Python' in profile['skills']
     assert profile["parsed_resume_data"]["headline"] == "Senior Backend Engineer"
 
 

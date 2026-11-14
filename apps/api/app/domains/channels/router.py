@@ -99,6 +99,11 @@ class MessageOut(BaseModel):
     created_at: datetime
 
 
+class SearchOut(BaseModel):
+    items: list[MessageOut]
+    has_more: bool
+
+
 def _now() -> datetime:
     return datetime.now(UTC)
 
@@ -262,24 +267,66 @@ async def history(
     channel_id: uuid.UUID,
     after: datetime | None = Query(None, description="Only messages newer than this (polling)"),
     before: datetime | None = Query(None, description="Only messages older than this (scroll back)"),
+    after_id: uuid.UUID | None = Query(None, description="Last message id paired with after for equal-timestamp pagination"),
+    before_id: uuid.UUID | None = Query(None, description="First message id paired with before for equal-timestamp pagination"),
     thread: uuid.UUID | None = Query(None, description="Replies to this root message"),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[MessageOut]:
     ch = await _channel(db, channel_id, current_user)
+    if (after_id is not None and after is None) or (before_id is not None and before is None):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "A message-id cursor needs its paired timestamp")
     q = select(ChannelMessage).where(ChannelMessage.channel_id == ch.id)
     q = q.where(ChannelMessage.parent_id == thread) if thread else q.where(ChannelMessage.parent_id.is_(None))
     if after is not None:
-        rows = (await db.execute(q.where(ChannelMessage.created_at > after)
+        newer = ChannelMessage.created_at > after
+        if after_id is not None:
+            newer = or_(newer, and_(ChannelMessage.created_at == after, ChannelMessage.id > after_id))
+        rows = (await db.execute(q.where(newer)
                                  .order_by(ChannelMessage.created_at, ChannelMessage.id).limit(limit))).scalars().all()
     else:
         if before is not None:
-            q = q.where(ChannelMessage.created_at < before)
+            older = ChannelMessage.created_at < before
+            if before_id is not None:
+                older = or_(older, and_(ChannelMessage.created_at == before, ChannelMessage.id < before_id))
+            q = q.where(older)
         rows = list(reversed((await db.execute(
             q.order_by(ChannelMessage.created_at.desc(), ChannelMessage.id.desc()).limit(limit)
         )).scalars().all()))
     return await _messages_out(db, list(rows), current_user.id)
+
+
+@router.get("/{channel_id}/search", response_model=SearchOut)
+async def search_messages(
+    channel_id: uuid.UUID,
+    q: str = Query(min_length=2, max_length=200, description="Literal text in messages and thread replies"),
+    before: datetime | None = None,
+    before_id: uuid.UUID | None = None,
+    limit: int = Query(25, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SearchOut:
+    ch = await _channel(db, channel_id, current_user)
+    term = q.strip()
+    if len(term) < 2:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Enter at least two characters")
+    if (before is None) != (before_id is None):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Search pagination needs both timestamp and message id")
+    query = select(ChannelMessage).where(
+        ChannelMessage.channel_id == ch.id,
+        ChannelMessage.deleted_at.is_(None),
+        ChannelMessage.body.icontains(term, autoescape=True),
+    )
+    if before is not None:
+        query = query.where(or_(
+            ChannelMessage.created_at < before,
+            and_(ChannelMessage.created_at == before, ChannelMessage.id < before_id),
+        ))
+    rows = list((await db.execute(query.order_by(
+        ChannelMessage.created_at.desc(), ChannelMessage.id.desc()
+    ).limit(limit + 1))).scalars())
+    return SearchOut(items=await _messages_out(db, rows[:limit], current_user.id), has_more=len(rows) > limit)
 
 
 @router.post("/{channel_id}/messages", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
@@ -297,7 +344,9 @@ async def post_message(
             )
         )
         if existing is not None:
-            return (await _messages_out(db, [existing]))[0]
+            if existing.channel_id != ch.id:
+                raise HTTPException(status.HTTP_409_CONFLICT, "This retry token was already used in another channel")
+            return (await _messages_out(db, [existing], current_user.id))[0]
     if payload.parent_id is not None:
         parent = await db.get(ChannelMessage, payload.parent_id)
         if parent is None or parent.channel_id != ch.id or parent.parent_id is not None:
@@ -324,7 +373,9 @@ async def post_message(
         )
         if existing is None:
             raise
-        return (await _messages_out(db, [existing]))[0]
+        if existing.channel_id != ch.id:
+            raise HTTPException(status.HTTP_409_CONFLICT, "This retry token was already used in another channel") from None
+        return (await _messages_out(db, [existing], current_user.id))[0]
     # Sending marks the channel read for the sender.
     (await _member_row(db, ch, current_user.id)).last_read_at = msg.created_at
     await db.flush()

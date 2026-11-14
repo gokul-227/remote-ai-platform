@@ -1,9 +1,7 @@
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.auth.models import User, UserRole
-from app.domains.social.models import Post, PostComment, PostLike
+from app.domains.auth.models import User
 
 
 @pytest.mark.asyncio

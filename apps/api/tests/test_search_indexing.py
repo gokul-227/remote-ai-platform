@@ -34,7 +34,7 @@ def google(monkeypatch):
     monkeypatch.setattr(settings, "APP_ENV", "production")
     monkeypatch.setattr(settings, "APP_URL", "https://remoteaiplatform.com")
     monkeypatch.setattr(settings, "GOOGLE_INDEXING_PER_RUN", 3)
-    seen: dict[str, list] = {"published": [], "indexnow": []}
+    seen: dict[str, list] = {"published": [], "indexnow": [], "scopes": []}
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.host == "oauth2.googleapis.com":
@@ -44,7 +44,7 @@ def google(monkeypatch):
             claims = jwt.decode(
                 assertion, key.public_key(), algorithms=["RS256"], audience=creds["token_uri"]
             )
-            assert claims["scope"] == ix.GOOGLE_SCOPE
+            seen["scopes"].append(claims["scope"])
             return httpx.Response(200, json={"access_token": "tok"})
         if request.url.host == "indexing.googleapis.com":
             assert request.headers["Authorization"] == "Bearer tok"
@@ -79,3 +79,10 @@ async def test_nothing_is_sent_outside_production(google, monkeypatch):
     assert await ix.notify_new_jobs([uuid.uuid4()]) == {"google": 0, "indexnow": 0}
     assert google["published"] == []
     assert google["indexnow"] == []
+
+
+@pytest.mark.asyncio
+async def test_search_console_oauth_uses_readonly_scope_instead_of_indexing_scope(google):
+    async with httpx.AsyncClient() as client:
+        assert await ix._google_token(client, ix.SEARCH_CONSOLE_SCOPE) == "tok"
+    assert google["scopes"] == [ix.SEARCH_CONSOLE_SCOPE]

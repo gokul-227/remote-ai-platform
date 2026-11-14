@@ -75,7 +75,8 @@ async def test_ai_health_reports_when_ai_last_worked(client: AsyncClient, monkey
         await db.commit()
     data = (await client.get("/health/dependencies", headers=await _member(client, admin=True))).json()
     details = data["services"]["ai_provider"]["details"]
-    assert details["last_success_at"] and details["last_failure_at"]
+    assert details['last_success_at']
+    assert details['last_failure_at']
 
 
 @pytest.mark.asyncio

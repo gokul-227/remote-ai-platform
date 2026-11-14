@@ -17,7 +17,12 @@ from datetime import UTC, datetime
 import httpx
 
 from app.core.config import settings
-from app.domains.jobs.aggregators.base import BaseAggregator, SourceFetchError
+from app.domains.jobs.aggregators.base import (
+    BaseAggregator,
+    SourceDisabledError,
+    SourceFetchError,
+    require_list,
+)
 from app.domains.jobs.schemas import JobPostCreate
 
 TIMEOUT = httpx.Timeout(20.0)
@@ -65,7 +70,7 @@ class _Board(BaseAggregator):
         description = (self.clean_rich_text(description) or title)[
             : settings.JOB_DESCRIPTION_MAX_CHARS
         ]
-        location = self.clean_text(location) or "Remote"
+        location = self.clean_text(location) or "Not specified"
         low, high, currency = salary
         # Column limits (VARCHAR 255): multi-city locations can be far longer.
         return JobPostCreate(
@@ -88,17 +93,21 @@ class _Board(BaseAggregator):
     async def _many(self, boards: list[str], fetch, limit: int) -> list[JobPostCreate]:
         """Fetch boards concurrently; one bad board never fails the whole source."""
         sem = asyncio.Semaphore(3)  # few boards in memory at once: the API instance has 512 MB
+        answered = 0
         async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
 
             async def one(board: str) -> list[JobPostCreate]:
                 async with sem:
                     try:
-                        return await fetch(client, board)
+                        nonlocal answered
+                        result = await fetch(client, board)
+                        answered += 1
+                        return result
                     except Exception:
                         return []
 
             results = await asyncio.gather(*(one(b) for b in boards))
-        if boards and not any(results):
+        if boards and not answered:
             raise SourceFetchError("no board answered")
         # Interleave boards so the per-run limit is shared fairly between companies.
         jobs: list[JobPostCreate] = []
@@ -121,7 +130,7 @@ class GreenhouseAggregator(_Board):
             r.raise_for_status()
             company = board.replace("-", " ").title()
             out = []
-            for it in r.json().get("jobs", []):
+            for it in require_list(r.json(), "jobs"):
                 job = self._job(
                     ext_id=f"{board}_{it.get('id')}",
                     title=it.get("title", ""),
@@ -147,7 +156,7 @@ class LeverAggregator(_Board):
             )
             r.raise_for_status()
             out = []
-            for it in r.json() if isinstance(r.json(), list) else []:
+            for it in require_list(r.json()):
                 cat = it.get("categories") or {}
                 job = self._job(
                     ext_id=f"{board}_{it.get('id')}",
@@ -157,7 +166,7 @@ class LeverAggregator(_Board):
                     description=it.get("descriptionPlain") or it.get("description") or "",
                     location=cat.get("location"),
                     job_type=cat.get("commitment"),
-                    remote=(it.get("workplaceType") == "remote") or None,
+                    remote=(it.get("workplaceType") == "remote") if it.get("workplaceType") else None,
                     tags=[cat.get("team") or ""],
                 )
                 if job:
@@ -178,7 +187,7 @@ class AshbyAggregator(_Board):
             )
             r.raise_for_status()
             out = []
-            for it in r.json().get("jobs", []):
+            for it in require_list(r.json(), "jobs"):
                 if it.get("isListed") is False:
                     continue
                 job = self._job(
@@ -189,7 +198,7 @@ class AshbyAggregator(_Board):
                     description=it.get("descriptionPlain") or it.get("descriptionHtml") or "",
                     location=it.get("location"),
                     job_type=it.get("employmentType"),
-                    remote=bool(it.get("isRemote")) or None,
+                    remote=it.get("isRemote") if isinstance(it.get("isRemote"), bool) else None,
                     tags=[it.get("department") or ""],
                 )
                 if job:
@@ -210,7 +219,7 @@ class SmartRecruitersAggregator(_Board):
             )
             r.raise_for_status()
             out = []
-            for it in r.json().get("content", []):
+            for it in require_list(r.json(), "content"):
                 loc = it.get("location") or {}
                 place = ", ".join(x for x in (loc.get("city"), loc.get("country", "").upper()) if x)
                 dept = (it.get("department") or {}).get("label") or ""
@@ -222,7 +231,7 @@ class SmartRecruitersAggregator(_Board):
                     description=f"{it.get('name', '')} — {dept}".strip(" —"),
                     location=("Remote" if loc.get("remote") else place) or None,
                     job_type=(it.get("typeOfEmployment") or {}).get("label"),
-                    remote=bool(loc.get("remote")) or None,
+                    remote=loc.get("remote") if isinstance(loc.get("remote"), bool) else None,
                     tags=[dept],
                 )
                 if job:
@@ -232,19 +241,44 @@ class SmartRecruitersAggregator(_Board):
         return await self._many(_shard(_boards(settings.SMARTRECRUITERS_COMPANIES)), fetch, limit)
 
 
+async def _cursor_jobs(url: str, limit: int, page_size: int) -> list[dict]:
+    """Walk only the requested inventory, preserving opaque cursors and bounding loops."""
+    items: list[dict] = []
+    cursor: str | None = None
+    seen: set[str] = set()
+    size_key = "count" if "jobicy.com" in url else "limit"
+    try:
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            while len(items) < limit:
+                params: dict[str, str | int] = {size_key: min(page_size, limit)}
+                if cursor:
+                    params["cursor"] = cursor
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                payload = response.json()
+                batch = require_list(payload, "jobs")
+                if not batch:
+                    break
+                items.extend(batch)
+                next_cursor = payload.get("nextCursor")
+                if not next_cursor or len(items) >= limit:
+                    break
+                if not isinstance(next_cursor, str) or next_cursor in seen:
+                    raise SourceFetchError("invalid or repeated pagination cursor")
+                seen.add(next_cursor)
+                cursor = next_cursor
+    except SourceFetchError:
+        raise
+    except Exception as exc:
+        raise SourceFetchError(type(exc).__name__) from exc
+    return items[:limit]
+
+
 class JobicyAggregator(_Board):
     source_name = "JOBICY"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
-        try:
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-                r = await client.get(
-                    "https://jobicy.com/api/v2/remote-jobs", params={"count": min(limit, 100)}
-                )
-                r.raise_for_status()
-                items = r.json().get("jobs", [])
-        except Exception as e:
-            raise SourceFetchError(type(e).__name__) from e
+        items = await _cursor_jobs("https://jobicy.com/api/jobs", limit, 100)
         out = []
         for it in items:
             job = self._job(
@@ -272,23 +306,7 @@ class HimalayasAggregator(_Board):
     source_name = "HIMALAYAS"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
-        items: list[dict] = []
-        try:
-            async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-                offset = 0
-                while len(items) < limit:
-                    r = await client.get(
-                        "https://himalayas.app/jobs/api", params={"limit": 20, "offset": offset}
-                    )
-                    r.raise_for_status()
-                    page = r.json().get("jobs", [])
-                    if not page:
-                        break
-                    items.extend(page)
-                    offset += len(page)
-        except Exception as e:
-            if not items:
-                raise SourceFetchError(type(e).__name__) from e
+        items = await _cursor_jobs("https://himalayas.app/jobs/api", limit, 20)
         out = []
         for it in items[:limit]:
             restrictions = it.get("locationRestrictions") or []
@@ -313,11 +331,13 @@ class WorkingNomadsAggregator(_Board):
     source_name = "WORKINGNOMADS"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        if not settings.WORKINGNOMADS_PERMISSION_CONFIRMED:
+            raise SourceDisabledError("Written Working Nomads redistribution permission not confirmed")
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
                 r = await client.get("https://www.workingnomads.com/api/exposed_jobs/")
                 r.raise_for_status()
-                items = r.json() if isinstance(r.json(), list) else []
+                items = require_list(r.json())
         except Exception as e:
             raise SourceFetchError(type(e).__name__) from e
         out = []
@@ -346,6 +366,8 @@ class AdzunaAggregator(_Board):
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         from app.domains.jobs.aggregators.base import SourceDisabledError
 
+        if not settings.ADZUNA_LICENSE_CONFIRMED:
+            raise SourceDisabledError("Adzuna production licence not confirmed")
         if not (settings.ADZUNA_APP_ID and settings.ADZUNA_APP_KEY):
             raise SourceDisabledError("ADZUNA_APP_ID/ADZUNA_APP_KEY not set")
         countries = _boards(settings.ADZUNA_COUNTRIES)
@@ -364,7 +386,7 @@ class AdzunaAggregator(_Board):
             )
             r.raise_for_status()
             out = []
-            for it in r.json().get("results", []):
+            for it in require_list(r.json(), "results"):
                 job = self._job(
                     ext_id=f"{country}_{it.get('id')}",
                     title=it.get("title", ""),
@@ -399,7 +421,7 @@ class JoobleAggregator(_Board):
                     json={"keywords": settings.JOOBLE_KEYWORDS, "location": "", "page": 1},
                 )
                 r.raise_for_status()
-                items = r.json().get("jobs", [])
+                items = require_list(r.json(), "jobs")
         except Exception as e:
             raise SourceFetchError(type(e).__name__) from e
         out = []

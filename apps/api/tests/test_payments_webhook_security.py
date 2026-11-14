@@ -13,6 +13,7 @@ import uuid
 
 import pytest
 import stripe
+from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +23,6 @@ from app.domains.companies.models import CompanyProfile
 from app.domains.notifications.models import Notification
 from app.domains.payments.models import StripeWebhookEvent
 from app.domains.projects.models import PaymentTransaction, Project
-from httpx import AsyncClient
 
 
 @pytest.fixture(autouse=True)
@@ -31,7 +31,7 @@ def _stripe_provider_enabled(monkeypatch):
     this test module only; other tests keep the default sandbox provider."""
     monkeypatch.setattr(settings, "PAYMENT_PROVIDER", "stripe")
     monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_test_secret")
-    yield
+    return
 
 
 async def _make_escrowed_payment(
