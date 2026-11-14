@@ -32,7 +32,12 @@ const sentryOrigin = (() => {
 // per-request middleware -- worth doing if the app ever renders rich user HTML.
 const csp = [
   "default-src 'self'",
-  `connect-src 'self' ${apiUrl} ${supabaseUrl} ${sentryOrigin}`.trim(),
+  // Firebase endpoints are only contacted when browser push is configured and switched on.
+  `connect-src 'self' ${apiUrl} ${supabaseUrl} ${sentryOrigin} https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com`.replace(
+    /\s+/g,
+    " ",
+  ),
+  "worker-src 'self'",
   // Organisations link logos hosted anywhere; images can't run code, so any
   // HTTPS source is allowed (plain HTTP and other schemes are not).
   "img-src 'self' data: https:",

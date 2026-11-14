@@ -128,6 +128,15 @@ components:
     detect:
       - python_dep: redis
 
+  - id: fcm
+    name: Firebase Cloud Messaging
+    type: external
+    technology: Browser push (HTTP v1, service account) · only email-worthy events
+    group: saas
+    detect:
+      - node_dep: firebase
+      - setting: FCM_PROJECT_ID
+
   - id: resend
     name: Resend
     type: external
@@ -241,6 +250,8 @@ connections:
   - {from: api, to: ai-providers, label: LiteLLM}
   - {from: api, to: job-boards, label: HTTPS pull}
   - {from: api, to: resend, label: Email API}
+  - {from: api, to: fcm, label: Push (worker)}
+  - {from: web, to: fcm, label: Device token}
   - {from: api, to: stripe, label: Payments API}
   - {from: api, to: sentry, label: Errors}
   - {from: web, to: sentry, label: Errors}

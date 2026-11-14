@@ -185,6 +185,15 @@ components:
   status: active
   evidence:
   - 'apps/api/pyproject.toml: redis'
+- id: fcm
+  name: Firebase Cloud Messaging
+  type: external
+  technology: Browser push (HTTP v1, service account) · only email-worthy events
+  group: saas
+  status: active
+  evidence:
+  - 'apps/web/package.json: firebase'
+  - 'apps/api/app/core/config.py: FCM_PROJECT_ID'
 - id: resend
   name: Resend
   type: external
@@ -465,6 +474,12 @@ connections:
 - from: api
   to: resend
   label: Email API
+- from: api
+  to: fcm
+  label: Push (worker)
+- from: web
+  to: fcm
+  label: Device token
 - from: api
   to: stripe
   label: Payments API

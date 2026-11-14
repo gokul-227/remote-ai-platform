@@ -4,7 +4,16 @@ Notifications Router — REST endpoints + WebSocket real-time delivery.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,6 +63,7 @@ async def list_notifications(
 
 
 class CategoryPrefIn(BaseModel):
+    push: bool = True
     in_app: bool = True
     email: str = Field(default="immediate", pattern="^(immediate|digest|off)$")
 
@@ -98,6 +108,76 @@ async def put_preferences(
         "digest_minutes": pref.digest_minutes,
         "configured": True,
     }
+
+
+class PushSubscribeIn(BaseModel):
+    token: str = Field(min_length=20, max_length=512)
+    platform: str = Field(default="web", pattern="^(web|android|ios)$")
+
+
+@router.get("/push/config", summary="Browser push configuration (public values only)")
+async def push_config(current_user: User = Depends(get_current_user)) -> dict:
+    from app.core.config import settings
+    from app.domains.notifications.push import push_enabled
+
+    return {
+        "enabled": push_enabled(),
+        "vapid_key": settings.FCM_VAPID_KEY if push_enabled() else None,
+    }
+
+
+@router.post(
+    "/push/subscriptions",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Register this device for push",
+)
+async def push_subscribe(
+    body: PushSubscribeIn,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    from datetime import UTC, datetime
+
+    from app.domains.notifications.models import PushSubscription
+
+    existing = await db.scalar(select(PushSubscription).where(PushSubscription.token == body.token))
+    agent = (request.headers.get("user-agent") or "")[:255]
+    if existing is None:
+        db.add(
+            PushSubscription(
+                user_id=current_user.id, token=body.token, platform=body.platform, user_agent=agent
+            )
+        )
+    else:
+        # A token moves to whoever signed in on that browser last.
+        existing.user_id = current_user.id
+        existing.revoked_at = None
+        existing.last_seen_at = datetime.now(UTC)
+        existing.user_agent = agent
+    await db.flush()
+
+
+@router.delete(
+    "/push/subscriptions", status_code=status.HTTP_204_NO_CONTENT, summary="Unregister this device"
+)
+async def push_unsubscribe(
+    body: PushSubscribeIn,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    from datetime import UTC, datetime
+
+    from app.domains.notifications.models import PushSubscription
+
+    existing = await db.scalar(
+        select(PushSubscription).where(
+            PushSubscription.token == body.token, PushSubscription.user_id == current_user.id
+        )
+    )
+    if existing is not None:
+        existing.revoked_at = datetime.now(UTC)
+        await db.flush()
 
 
 @router.get("/unread-count", summary="Count unread notifications")

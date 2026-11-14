@@ -89,6 +89,7 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_BASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_FIREBASE_CONFIG: ${{ vars.FIREBASE_WEB_CONFIG }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
         run: npm run cf:build
 
@@ -154,6 +155,7 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ vars.PROD_API_BASE_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_FIREBASE_CONFIG: ${{ vars.FIREBASE_WEB_CONFIG }}
         run: npm run build
 
       - name: Deploy

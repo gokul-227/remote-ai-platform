@@ -50,6 +50,7 @@ TASK_OUTBOX_EVENT = "outbox.handle_event"
 # records them and does nothing else, so an unknown event is never lost silently.
 OUTBOX_ROUTES: dict[str, str] = {
     "email.enqueued": TASK_FLUSH_EMAIL_OUTBOX,
+    "push.notify": "notifications.send_push",
 }
 
 # Sources whose provider asks for fewer fetches than the default schedule.

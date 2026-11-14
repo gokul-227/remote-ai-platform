@@ -23,7 +23,7 @@ from app.domains.notifications.models import (
 )
 
 DEDUP_WINDOW = timedelta(minutes=10)
-DEFAULT_CATEGORY: dict[str, Any] = {"in_app": True, "email": "immediate"}
+DEFAULT_CATEGORY: dict[str, Any] = {"in_app": True, "email": "immediate", "push": True}
 
 
 def category_of(kind: str) -> str:
@@ -40,6 +40,7 @@ def normalise(categories: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
         out[cat] = {
             "in_app": bool(raw.get("in_app", DEFAULT_CATEGORY["in_app"])),
             "email": email if email in EMAIL_MODES else DEFAULT_CATEGORY["email"],
+            "push": bool(raw.get("push", DEFAULT_CATEGORY["push"])),
         }
     return out
 
@@ -49,6 +50,7 @@ class Decision:
     in_app: bool
     email: str  # immediate | digest | off
     duplicate: bool
+    push: bool = True
 
 
 async def decide(
@@ -68,7 +70,9 @@ async def decide(
         )
         .limit(1)
     )
-    return Decision(in_app=cat["in_app"], email=cat["email"], duplicate=dup is not None)
+    return Decision(
+        in_app=cat["in_app"], email=cat["email"], duplicate=dup is not None, push=cat["push"]
+    )
 
 
 async def queue_digest(

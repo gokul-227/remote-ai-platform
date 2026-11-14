@@ -55,7 +55,14 @@ async def notify_user(
         return  # same event for the same user within the dedup window
     if decision.in_app:
         await InAppNotificationProvider(db).send(user_id, title, body, kind)
-    if email_event_key is None or decision.email == "off":
+    if email_event_key is None:
+        return
+    # Push only for email-worthy events (never for likes and other minor activity).
+    if decision.push:
+        from app.domains.notifications.push import queue_push
+
+        await queue_push(db, user_id, title, body, email_link, dedup_key=email_event_key)
+    if decision.email == "off":
         return
     if decision.email == "digest":
         await queue_digest(db, user_id, kind, title, body, email_link)

@@ -119,6 +119,11 @@ class Settings(BaseSettings):
     FILES_MAX_UPLOAD_MB: int = 25
     FILES_USER_QUOTA_MB: int = 2048
     FILES_TRASH_RETENTION_DAYS: int = 30
+    # Browser push via Firebase Cloud Messaging (HTTP v1). Disabled while empty.
+    FCM_PROJECT_ID: str = ""
+    FCM_CREDENTIALS_B64: str = ""  # base64 of the service-account JSON
+    FCM_VAPID_KEY: str = ""  # public key, given to browsers
+    PUSH_MAX_PER_USER_PER_HOUR: int = 20
 
     # ── Supabase Auth (the only identity provider) ──────────────────────────────
     # Sign-in happens entirely against Supabase from the frontend; this API

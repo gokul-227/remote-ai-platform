@@ -4826,6 +4826,68 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
+  /api/v1/notifications/push/config:
+    get:
+      tags:
+      - Notifications
+      summary: Browser push configuration (public values only)
+      operationId: push_config_api_v1_notifications_push_config_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Push Config Api V1 Notifications Push Config Get
+      security:
+      - HTTPBearer: []
+  /api/v1/notifications/push/subscriptions:
+    post:
+      tags:
+      - Notifications
+      summary: Register this device for push
+      operationId: push_subscribe_api_v1_notifications_push_subscriptions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscribeIn'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+    delete:
+      tags:
+      - Notifications
+      summary: Unregister this device
+      operationId: push_unsubscribe_api_v1_notifications_push_subscriptions_delete
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushSubscribeIn'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /api/v1/notifications/unread-count:
     get:
       tags:
@@ -12093,6 +12155,10 @@ components:
       description: 'A match shown to a company: the engineer appears only as their public profile.'
     CategoryPrefIn:
       properties:
+        push:
+          type: boolean
+          title: Push
+          default: true
         in_app:
           type: boolean
           title: In App
@@ -16892,6 +16958,22 @@ components:
       - created_at
       - author
       title: PublicPost
+    PushSubscribeIn:
+      properties:
+        token:
+          type: string
+          maxLength: 512
+          minLength: 20
+          title: Token
+        platform:
+          type: string
+          pattern: ^(web|android|ios)$
+          title: Platform
+          default: web
+      type: object
+      required:
+      - token
+      title: PushSubscribeIn
     QualityIssue:
       properties:
         severity:

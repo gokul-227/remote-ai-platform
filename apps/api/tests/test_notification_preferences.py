@@ -143,7 +143,11 @@ async def test_preferences_endpoints(client: AsyncClient, engineer_token: str):
     current = await client.get("/api/v1/notifications/preferences", headers=h)
     assert current.status_code == 200
     assert current.json()["configured"] is False
-    assert current.json()["categories"]["application"] == {"in_app": True, "email": "immediate"}
+    assert current.json()["categories"]["application"] == {
+        "in_app": True,
+        "email": "immediate",
+        "push": True,
+    }
     bad = await client.put(
         "/api/v1/notifications/preferences",
         headers=h,
@@ -163,8 +167,8 @@ async def test_preferences_endpoints(client: AsyncClient, engineer_token: str):
     )
     assert ok.status_code == 200
     body = ok.json()
-    assert body["categories"]["message"] == {"in_app": True, "email": "digest"}
-    assert body["categories"]["system"] == {"in_app": True, "email": "immediate"}
+    assert body["categories"]["message"] == {"in_app": True, "email": "digest", "push": True}
+    assert body["categories"]["system"] == {"in_app": True, "email": "immediate", "push": True}
     assert body["digest_minutes"] == 60
 
 

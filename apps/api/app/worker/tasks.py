@@ -257,3 +257,30 @@ def sweep_trash() -> dict[str, Any]:
             return await _sweep(db, settings.FILES_TRASH_RETENTION_DAYS)
 
     return runtime.run(go())
+
+
+async def send_push_async(
+    run_id: uuid.UUID, aggregate_id: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    from app.domains.notifications.push import send_push
+
+    factory = runtime.session_factory()
+
+    async def work() -> dict[str, Any]:
+        async with factory() as db:
+            return await send_push(
+                db,
+                uuid.UUID(aggregate_id),
+                str(payload.get("title", "")),
+                str(payload.get("body", "")),
+                str(payload.get("link", "#notifications")),
+            )
+
+    return await _with_run(run_id, work)
+
+
+@shared_task(name="notifications.send_push")
+def send_push_task(
+    run_id: str, aggregate_id: str, payload: dict[str, Any] | None = None, **_: Any
+) -> dict[str, Any]:
+    return runtime.run(send_push_async(_uuid(run_id), aggregate_id, payload or {}))

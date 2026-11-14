@@ -46,6 +46,7 @@ SOURCES: tuple[Source, ...] = (
     Source("user_verifications", ("user_id",), drop=frozenset({"reviewed_by_id"})),
     Source("notifications", ("user_id",)),
     Source("notification_preferences", ("user_id",)),
+    Source("push_subscriptions", ("user_id",), drop=frozenset({"token"})),
     Source("notification_digest_items", ("user_id",)),
     Source("job_preferences", ("user_id",)),
     Source("file_nodes", ("owner_id",), drop=frozenset({"object_key"})),

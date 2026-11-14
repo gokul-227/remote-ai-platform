@@ -4,6 +4,7 @@ import api, { extractErrorMessage } from "@/lib/api";
 import { useApi, toFigmaJob, goRoute, isMember } from "./live";
 import { useAuth } from "@/lib/auth";
 import { downloadCsv } from "@/lib/csv";
+import { disablePush, enablePush, pushState, type PushState } from "@/lib/push";
 const openJob = (id: string) => {
   localStorage.setItem("rap-selected-job", id);
   goRoute("jobs");
@@ -2148,7 +2149,7 @@ const NOTIFY_CATEGORIES: [string, string][] = [
   ["support", "Support"],
   ["system", "Platform"],
 ];
-type CatPref = { in_app: boolean; email: "immediate" | "digest" | "off" };
+type CatPref = { in_app: boolean; email: "immediate" | "digest" | "off"; push?: boolean };
 /** Live: /notifications/preferences. In-app on/off and email timing per category. */
 export function NotificationPreferences() {
   const q = useApi<{ categories: Record<string, CatPref>; digest_minutes: number; configured: boolean }>(
@@ -2223,10 +2224,20 @@ export function NotificationPreferences() {
                   <option value="off">off</option>
                 </select>
               </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  aria-label={`Push for ${label}`}
+                  checked={cats[k]?.push ?? true}
+                  onChange={(e) => set(k, { push: e.target.checked })}
+                />
+                Push
+              </label>
             </span>
           </div>
         ))}
       </div>
+      <PushToggle />
       {notice && (
         <p role="status" className="mt-3 text-sm text-slate-700">
           {notice}
@@ -2236,5 +2247,53 @@ export function NotificationPreferences() {
         {busy ? "Saving…" : "Save notification settings"}
       </Btn>
     </>
+  );
+}
+
+const PUSH_TEXT: Record<PushState, string> = {
+  unsupported: "This browser does not support push notifications.",
+  unconfigured: "Push notifications are not available yet.",
+  denied: "Notifications are blocked for this site in your browser settings.",
+  off: "Push notifications are off on this browser.",
+  on: "Push notifications are on for this browser.",
+};
+/** Browser push on/off for this device. Only important events (the ones that also send email) are pushed. */
+function PushToggle() {
+  const [state, setState] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    let live = true;
+    pushState().then((s) => live && setState(s));
+    return () => {
+      live = false;
+    };
+  }, []);
+  if (!state) return null;
+  const toggle = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      setState(state === "on" ? await disablePush() : await enablePush());
+    } catch {
+      setErr("Couldn’t change push notifications. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm">
+      <span role="status">{PUSH_TEXT[state]}</span>
+      {(state === "on" || state === "off") && (
+        <Btn v={state === "on" ? "line" : "primary"} onClick={toggle} disabled={busy}>
+          {busy ? "Working…" : state === "on" ? "Turn off on this browser" : "Turn on for this browser"}
+        </Btn>
+      )}
+      {err && (
+        <span role="alert" className="text-red-600">
+          {err}
+        </span>
+      )}
+    </div>
   );
 }

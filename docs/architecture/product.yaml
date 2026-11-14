@@ -641,6 +641,11 @@ infrastructure:
     icon: redis
     group: cache
     status: active
+  - id: fcm
+    name: Firebase Cloud Messaging
+    technology: Browser push (HTTP v1, service account) · only email-worthy events
+    group: saas
+    status: active
   - id: resend
     name: Resend
     technology: Transactional email (outbox)
