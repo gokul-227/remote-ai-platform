@@ -16,8 +16,8 @@ export const OPERATOR: {
   governingLaw: string | null;
   supervisoryAuthority: string | null;
 } = {
-  legalName: null,
-  address: null,
+  legalName: "Remote-AI-Platform",
+  address: ["Schoneweide", "Berlin - 12439"],
   contactEmail: "contact@remoteaiplatform.com",
   vatOrRegister: null,
   contentResponsible: null,
@@ -32,7 +32,7 @@ export const OPERATOR: {
   supervisoryAuthority: null,
 };
 
-export const LAST_UPDATED = "27 September 2026";
+export const LAST_UPDATED = "5 November 2026";
 
 export type Fact = { fact: string | null; label: string };
 export type Block = string | string[] | Fact;

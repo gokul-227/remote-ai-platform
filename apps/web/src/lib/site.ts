@@ -16,6 +16,7 @@ export type PublicJob = {
   posted_at?: string;
   expired_at?: string | null;
   external_url?: string | null;
+  source?: string | null;
   company_id?: string | null;
   skills?: string[];
   job_type?: string | null;
@@ -44,7 +45,7 @@ export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string
   const posted = job.posted_at ? new Date(job.posted_at) : new Date();
   const until = new Date(posted.getTime() + 90 * 24 * 3600 * 1000);
   const type = EMPLOYMENT[(job.job_type || "").toLowerCase().replace(/[\s_-]+/g, "")];
-  const unit = { year: "YEAR", month: "MONTH", hour: "HOUR" }[job.salary_period || "year"] ?? "YEAR";
+  const unit = { year: "YEAR", month: "MONTH", hour: "HOUR" }[job.salary_period || ""];
   const ld: Record<string, unknown> = {
     "@context": "https://schema.org/",
     "@type": "JobPosting",
@@ -60,15 +61,16 @@ export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string
   if (type) ld.employmentType = type;
   if (job.is_remote) {
     ld.jobLocationType = "TELECOMMUTE";
-    ld.applicantLocationRequirements = { "@type": "Country", name: "Worldwide" };
+    // Do not invent worldwide eligibility: imported roles may restrict residency.
+    // Add applicantLocationRequirements only when structured country data exists.
   }
-  if (job.location && !/^remote$/i.test(job.location.trim())) {
+  if (!job.is_remote && job.location && !/^remote$/i.test(job.location.trim())) {
     ld.jobLocation = { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: job.location } };
   }
-  if (job.salary_min || job.salary_max) {
+  if ((job.salary_min != null || job.salary_max != null) && unit && job.currency) {
     ld.baseSalary = {
       "@type": "MonetaryAmount",
-      currency: job.currency || "USD",
+      currency: job.currency,
       value: {
         "@type": "QuantitativeValue",
         ...(job.salary_min ? { minValue: job.salary_min } : {}),
@@ -105,7 +107,7 @@ export async function fetchSitemapEntries(max = 50000, page = 5000): Promise<Sit
         next: { revalidate: 3600 },
       });
     } catch {
-      break;
+      return out.length ? out : null;
     }
     if (!res.ok) return out.length ? out : null;
     const batch: SitemapEntry[] = await res.json();

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
 import { SITE_URL, fetchPublicJob, jobPostingJsonLd, summary } from "@/lib/site";
+import { permitsGoogleJobs, jobSourceName, originalJobUrl } from "@/lib/jobSources";
 import { topicsForJob } from "@/lib/seo";
 
 /**
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     alternates: { canonical: `/jobs/${job.id}` },
     // A listing its source no longer shows stays reachable but isn't promoted.
-    robots: job.expired_at ? { index: false, follow: true } : undefined,
+    robots: job.expired_at || !permitsGoogleJobs(job.source) ? { index: false, follow: true } : undefined,
     openGraph: { title, description, type: "article", url: `/jobs/${job.id}` },
   };
 }
@@ -32,7 +33,7 @@ export default async function JobPage({ params }: Props) {
   const where = job.location || (job.is_remote ? "Remote" : "On-site");
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 text-[#1c1e21]">
-      {!job.expired_at && (
+      {!job.expired_at && permitsGoogleJobs(job.source) && (
         <script
           type="application/ld+json"
           // Escaped so text from a job description can never close the script tag.
@@ -57,6 +58,20 @@ export default async function JobPage({ params }: Props) {
       {job.expired_at && (
         <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
           This listing is over a month old and may no longer be open.
+        </p>
+      )}
+      {originalJobUrl(job.external_url) && (
+        <p className="mt-4 text-sm text-slate-600">
+          Source:{" "}
+          <a
+            href={originalJobUrl(job.external_url)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-[#0552CC] underline"
+          >
+            {jobSourceName(job.source)} — view original listing and apply
+          </a>
+          . No platform account required.
         </p>
       )}
       <p className="mt-6">

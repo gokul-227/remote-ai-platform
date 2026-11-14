@@ -1,3 +1,4 @@
+import { JobSource } from "@/components/JobSource";
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -62,10 +63,6 @@ export function Jobs() {
   };
   const startApply = () => {
     if (!sel) return;
-    if (!user) {
-      goRoute("login");
-      return;
-    }
     if (!sel.easy) {
       const link = safeHref(sel.raw.external_url);
       if (link) window.open(link, "_blank", "noopener");
@@ -73,6 +70,10 @@ export function Jobs() {
         setNotice(
           "This listing was imported from another job board and has no application link. Apply on the original board.",
         );
+      return;
+    }
+    if (!user) {
+      goRoute("login");
       return;
     }
     setApply(true);
@@ -307,7 +308,7 @@ export function Jobs() {
                       style={{ background: BL }}
                     >
                       {sel.easy && <Ic n="bolt" s={16} />}
-                      {!user ? "Sign in to apply" : sel.easy ? "Easy Apply" : "Apply on company site"}
+                      {!sel.easy ? "Apply on original site" : !user ? "Sign in to apply" : "Easy Apply"}
                     </button>
                   )
                 )}
@@ -391,7 +392,7 @@ export function Jobs() {
                   <div className="flex-1">
                     <p className="font-bold">About {sel.co}</p>
                     <p className="text-sm text-slate-500">
-                      {sel.easy ? "Hiring on Remote AI Platform" : `Listed on ${title(sel.raw.source)}`}
+                      <JobSource source={sel.raw.source} url={sel.raw.external_url} />
                     </p>
                   </div>
                 </div>

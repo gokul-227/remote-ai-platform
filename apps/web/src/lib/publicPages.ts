@@ -63,7 +63,7 @@ export async function fetchSeoEntries(kind: SeoKind, max = 20000): Promise<{ id:
     out.push(...batch);
     if (batch.length < 5000) break;
   }
-  return out;
+  return out.slice(0, max);
 }
 
 /** JSON for a <script type="application/ld+json">, escaped so content can't close the tag. */

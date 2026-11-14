@@ -40,4 +40,8 @@ describe("fetchSitemapEntries (SEO-01)", () => {
     );
     expect(await fetchSitemapEntries(50000, 2)).toHaveLength(2);
   });
+  it("falls back when the first sitemap request cannot reach the API", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+    expect(await fetchSitemapEntries()).toBeNull();
+  });
 });

@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Remote jobs and freelance work | Remote AI Platform",
   description:
-    "Thousands of remote jobs and freelance projects from leading companies and job boards, updated every few hours. Browse by role, skill and way of working.",
+    "Explore remote jobs and freelance work from employers and job boards. Browse by role, skill and way of working.",
   alternates: { canonical: "/remote-jobs" },
 };
 

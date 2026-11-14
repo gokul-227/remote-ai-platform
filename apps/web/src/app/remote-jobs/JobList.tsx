@@ -1,3 +1,4 @@
+import { JobSource } from "@/components/JobSource";
 import Link from "next/link";
 import type { PublicJob } from "@/lib/site";
 
@@ -15,6 +16,9 @@ export function JobList({ jobs }: { jobs: PublicJob[] }) {
           <p className="text-sm text-slate-600">
             {j.company_name} · {j.location || (j.is_remote ? "Remote" : "On-site")}
             {j.posted_at ? ` · ${new Date(j.posted_at).toISOString().slice(0, 10)}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-slate-600">
+            <JobSource source={j.source} url={j.external_url} />
           </p>
         </li>
       ))}

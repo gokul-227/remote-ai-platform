@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import LegacyRedirect from "./LegacyRedirect";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 /** Old path-based URLs → the app's hash routes, so existing links and bookmarks still land on the right screen.
  * Anything else is a real 404 (it used to answer 200 with the app shell). /jobs/<id> has its own public page. */

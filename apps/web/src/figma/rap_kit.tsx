@@ -143,29 +143,7 @@ export function Lg({ name, s = 48, r = 8 }: { name: string; s?: number; r?: numb
     </div>
   );
 }
-export function Brand({ s = 32 }: { s?: number }) {
-  return (
-    <div
-      className="flex items-center justify-center rounded-lg bg-[#0552CC] text-white"
-      style={{ width: s, height: s }}
-    >
-      <svg
-        width={s * 0.62}
-        height={s * 0.62}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <circle cx="12" cy="12" r="9" />
-        <path d="M3 12h18M12 3a14 14 0 0 1 0 18" />
-        <path d="M17 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="currentColor" stroke="none" />
-      </svg>
-    </div>
-  );
-}
+export { Brand } from "@/components/Brand";
 export function Btn({
   children,
   v = "primary",
@@ -173,6 +151,7 @@ export function Btn({
   onClick,
   icon,
   full,
+  disabled,
   c = "",
 }: {
   children?: ReactNode;
@@ -181,6 +160,7 @@ export function Btn({
   onClick?: () => void;
   icon?: string;
   full?: boolean;
+  disabled?: boolean;
   c?: string;
 }) {
   const base = "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors";
@@ -198,7 +178,8 @@ export function Btn({
   return (
     <button
       onClick={onClick}
-      className={cx(base, vs[v], sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]", full && "w-full", c)}
+      disabled={disabled}
+      className={cx(base, vs[v], sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]", full && "w-full", "disabled:opacity-50 disabled:cursor-not-allowed", c)}
     >
       {icon && <Ic n={icon} s={sm ? 14 : 16} />}
       {children}

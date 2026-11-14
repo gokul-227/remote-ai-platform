@@ -1,3 +1,4 @@
+import { JobSource } from "@/components/JobSource";
 import { useState, useEffect } from "react";
 import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
@@ -357,10 +358,6 @@ export function JobDetail() {
     savedQ.reload();
   };
   const startApply = () => {
-    if (!user) {
-      nav("login");
-      return;
-    }
     if (!fj.easy) {
       const link = safeHref(j.external_url);
       if (link) window.open(link, "_blank", "noopener");
@@ -368,6 +365,10 @@ export function JobDetail() {
         setNotice(
           "This listing was imported from another job board and has no application link. Apply on the original board.",
         );
+      return;
+    }
+    if (!user) {
+      nav("login");
       return;
     }
     setApply(true);
@@ -409,7 +410,7 @@ export function JobDetail() {
                   ) : (
                     (!user || eng || !fj.easy) && (
                       <Btn v="primary" icon="send" onClick={startApply}>
-                        {!user ? "Sign in to apply" : fj.easy ? "Easy Apply" : "Apply on company site"}
+                        {!fj.easy ? "Apply on original site" : !user ? "Sign in to apply" : "Easy Apply"}
                       </Btn>
                     )
                   )}
@@ -522,7 +523,7 @@ export function JobDetail() {
           <Card c="rounded-xl" p="p-5">
             <h3 className="font-bold">Source</h3>
             <p className="mt-1 text-sm text-slate-600">
-              {fj.easy ? "Posted on Remote AI Platform" : `Aggregated from ${j.source}`}
+              <JobSource source={j.source} url={j.external_url} />
             </p>
           </Card>
         </div>

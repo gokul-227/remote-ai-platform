@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Brand } from "@/components/Brand";
 import type { ReactNode } from "react";
 
 /** Shared frame for public pages: header with sign-in, and the sign-up prompt for actions. */
@@ -7,8 +8,8 @@ export function PublicFrame({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-[#f0f2f5] text-[#1c1e21]">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <Link href="/" className="text-lg font-bold text-[#0552CC]">
-            Remote AI Platform
+          <Link href="/" className="flex items-center gap-2 text-lg font-bold text-[#0552CC]">
+            <Brand /> Remote AI Platform
           </Link>
           <nav className="flex items-center gap-4 text-sm font-semibold">
             <Link href="/remote-jobs" className="hover:underline">
