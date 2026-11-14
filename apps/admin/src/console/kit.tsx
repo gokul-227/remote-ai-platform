@@ -15,10 +15,15 @@ export function useLoad<T>(path: string | null) {
     setState((s) => ({ ...s, loading: true }));
     api<T>(path)
       .then((r) => live && setState({ data: r.data, total: r.total, loading: false }))
-      .catch((e: unknown) => live && setState((s) => ({
-        ...(e instanceof ApiError && [401, 403].includes(e.status) ? {} : s),
-        loading: false, error: errText(e),
-      })));
+      .catch(
+        (e: unknown) =>
+          live &&
+          setState((s) => ({
+            ...(e instanceof ApiError && [401, 403].includes(e.status) ? {} : s),
+            loading: false,
+            error: errText(e),
+          })),
+      );
     return () => {
       live = false;
     };

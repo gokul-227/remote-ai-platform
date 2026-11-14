@@ -55,7 +55,7 @@ dependencies = [
     "python-docx==1.2.0",
 
     # Caching
-    "redis[hiredis]==5.3.1",
+    "redis[hiredis]==6.4.0",
 
     # Monitoring & Logging
     "prometheus-fastapi-instrumentator==8.1.0",

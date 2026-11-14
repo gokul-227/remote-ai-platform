@@ -179,7 +179,14 @@ export function Btn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={cx(base, vs[v], sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]", full && "w-full", "disabled:opacity-50 disabled:cursor-not-allowed", c)}
+      className={cx(
+        base,
+        vs[v],
+        sm ? "px-3 py-1.5 text-[13px]" : "px-4 py-2 text-[15px]",
+        full && "w-full",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        c,
+      )}
     >
       {icon && <Ic n={icon} s={sm ? 14 : 16} />}
       {children}

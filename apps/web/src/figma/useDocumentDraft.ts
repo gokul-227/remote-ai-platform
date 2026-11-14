@@ -32,7 +32,8 @@ export function useDocumentDraft<T extends DraftDocument>(initial: T, editable: 
     setStatus("Saving…");
     try {
       const response = await api.put<T>(`/documents/${current.current.id}`, {
-        expected_version: current.current.version, ...latest.current,
+        expected_version: current.current.version,
+        ...latest.current,
       });
       current.current = response.data;
       setDoc(response.data);
@@ -43,7 +44,11 @@ export function useDocumentDraft<T extends DraftDocument>(initial: T, editable: 
       setPaused(true);
       const stale = (error as { response?: { status?: number } })?.response?.status === 409;
       setConflict(stale);
-      setStatus(stale ? "Newer version available; your draft has not been overwritten." : extractErrorMessage(error, "Not saved. Try again."));
+      setStatus(
+        stale
+          ? "Newer version available; your draft has not been overwritten."
+          : extractErrorMessage(error, "Not saved. Try again."),
+      );
     } finally {
       locked.current = false;
       setSaving(false);
@@ -56,7 +61,10 @@ export function useDocumentDraft<T extends DraftDocument>(initial: T, editable: 
   }, [dirty, saving, conflict, paused, save, editTick]);
   useEffect(() => {
     if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);

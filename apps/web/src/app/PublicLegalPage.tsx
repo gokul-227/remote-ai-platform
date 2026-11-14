@@ -9,7 +9,10 @@ export function PublicLegalPage({ title, sections }: { title: string; sections: 
         <h1 className="text-3xl font-bold">{title}</h1>
         <p className="mt-2 text-sm text-slate-500">Last updated: {LAST_UPDATED}</p>
         <p className="mt-2 text-sm text-slate-600">
-          Contact: <a className="text-[#0552CC] underline" href={`mailto:${OPERATOR.contactEmail}`}>{OPERATOR.contactEmail}</a>
+          Contact:{" "}
+          <a className="text-[#0552CC] underline" href={`mailto:${OPERATOR.contactEmail}`}>
+            {OPERATOR.contactEmail}
+          </a>
         </p>
         {sections.map((section) => (
           <section key={section.h} className="mt-8">

@@ -200,12 +200,22 @@ function LoadedEditor({ initial, onClose }: { initial: DocFull; onClose: () => v
   const { doc, dirty, status, saving, conflict, change, save, replace, draft } = useDocumentDraft(initial, canEdit);
   const [panel, setPanel] = useState<"" | "versions" | "share" | "comments">("");
   const [editorGeneration, setEditorGeneration] = useState(0);
-  const recoverDraft = () => download(new Blob([JSON.stringify({ kind: doc.kind, ...draft() }, null, 2)],
-    { type: "application/json" }), `${doc.title}-draft.json`);
+  const recoverDraft = () =>
+    download(
+      new Blob([JSON.stringify({ kind: doc.kind, ...draft() }, null, 2)], { type: "application/json" }),
+      `${doc.title}-draft.json`,
+    );
   return (
     <div className="v2-page">
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2">
-        <Btn sm v="ghost" onClick={() => { if (!dirty || window.confirm("Leave with unsaved changes? Download your draft first to keep a copy.")) onClose(); }}>
+        <Btn
+          sm
+          v="ghost"
+          onClick={() => {
+            if (!dirty || window.confirm("Leave with unsaved changes? Download your draft first to keep a copy."))
+              onClose();
+          }}
+        >
           Files
         </Btn>
         <Ic n={KIND_ICON[doc.kind]} s={18} />
@@ -253,10 +263,21 @@ function LoadedEditor({ initial, onClose }: { initial: DocFull; onClose: () => v
           </Btn>
         )}
       </div>
-      {(dirty || conflict) && <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">
-        <span>{conflict ? "Someone saved a newer version. Your draft is preserved here; download it before reopening the file." : "Changes are pending. Keep this file open until saved, or download your draft."}</span>
-        <Btn sm v="line" onClick={recoverDraft}>Download draft</Btn>
-      </div>}
+      {(dirty || conflict) && (
+        <div
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"
+          role="status"
+        >
+          <span>
+            {conflict
+              ? "Someone saved a newer version. Your draft is preserved here; download it before reopening the file."
+              : "Changes are pending. Keep this file open until saved, or download your draft."}
+          </span>
+          <Btn sm v="line" onClick={recoverDraft}>
+            Download draft
+          </Btn>
+        </div>
+      )}
       {!canEdit && (
         <p className="mb-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800">
           You have {doc.my_role.toLowerCase()} access. Changes can’t be saved.

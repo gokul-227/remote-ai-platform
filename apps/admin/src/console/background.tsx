@@ -208,12 +208,15 @@ export function Background({ writable }: { writable: boolean }) {
                       className="btn"
                       disabled={!writable}
                       onClick={() =>
-                        act(`${s.permission_confirmed ? "Withdraw" : "Confirm"} permission for ${s.name}`, async (reason) => {
-                          await api(`/admin/background/sources/${s.name}`, {
-                            method: "PATCH",
-                            json: { reason, permission_confirmed: !s.permission_confirmed },
-                          });
-                        })
+                        act(
+                          `${s.permission_confirmed ? "Withdraw" : "Confirm"} permission for ${s.name}`,
+                          async (reason) => {
+                            await api(`/admin/background/sources/${s.name}`, {
+                              method: "PATCH",
+                              json: { reason, permission_confirmed: !s.permission_confirmed },
+                            });
+                          },
+                        )
                       }
                     >
                       {s.permission_confirmed ? "Withdraw permission" : "Confirm permission"}
@@ -238,7 +241,12 @@ export function Background({ writable }: { writable: boolean }) {
       )}
 
       <h3>Dead letters</h3>
-      <State loading={dead.loading && !dead.data} error={dead.error} empty={dead.data?.length === 0} retry={dead.reload} />
+      <State
+        loading={dead.loading && !dead.data}
+        error={dead.error}
+        empty={dead.data?.length === 0}
+        retry={dead.reload}
+      />
       {!!dead.data?.length && (
         <div className="card">
           <table>
@@ -266,7 +274,10 @@ export function Background({ writable }: { writable: boolean }) {
                       disabled={!writable}
                       onClick={() =>
                         act(`Retry ${d.task_name}`, async (reason) => {
-                          await api(`/admin/background/dead-letters/${d.id}/retry`, { method: "POST", json: { reason } });
+                          await api(`/admin/background/dead-letters/${d.id}/retry`, {
+                            method: "POST",
+                            json: { reason },
+                          });
                         })
                       }
                     >
@@ -297,7 +308,12 @@ export function Background({ writable }: { writable: boolean }) {
           Refresh
         </button>
       </div>
-      <State loading={runs.loading && !runs.data} error={runs.error} empty={runs.data?.length === 0} retry={runs.reload} />
+      <State
+        loading={runs.loading && !runs.data}
+        error={runs.error}
+        empty={runs.data?.length === 0}
+        retry={runs.reload}
+      />
       {!!runs.data?.length && (
         <div className="card">
           <table>
@@ -338,7 +354,14 @@ export function Background({ writable }: { writable: boolean }) {
         </div>
       )}
       {dialog && (
-        <ReasonDialog title={dialog.title} onCancel={() => setDialog(null)} onConfirm={async (r) => { await dialog.run(r); setDialog(null); }} />
+        <ReasonDialog
+          title={dialog.title}
+          onCancel={() => setDialog(null)}
+          onConfirm={async (r) => {
+            await dialog.run(r);
+            setDialog(null);
+          }}
+        />
       )}
     </Section>
   );

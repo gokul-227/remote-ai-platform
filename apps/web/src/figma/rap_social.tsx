@@ -24,7 +24,10 @@ export function Feed() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("latest");
   const feed = useApi<any>(user && scope === "connections" ? "/social/feed" : "/social/posts/public", {
-    page, page_size: 20, q: query, order: sort,
+    page,
+    page_size: 20,
+    q: query,
+    order: sort,
   });
   const [local, setLocal] = useState<Record<string, any>>({});
   const posts = (feed.data?.posts ?? [])
@@ -182,27 +185,74 @@ export function Feed() {
       )}
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <h3>{scope === "connections" ? "Your community" : "Discover public posts"}</h3>
-        {user && <select aria-label="Feed audience" className="max-w-full" value={scope} onChange={(e) => { setScope(e.target.value); setPage(1); }}>
-          <option value="connections">My connections</option>
-          <option value="public">Discover public posts</option>
-        </select>}
+        {user && (
+          <select
+            aria-label="Feed audience"
+            className="max-w-full"
+            value={scope}
+            onChange={(e) => {
+              setScope(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="connections">My connections</option>
+            <option value="public">Discover public posts</option>
+          </select>
+        )}
         <select
           aria-label="Feed order"
           value={sort}
-          onChange={(e) => { setSort(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setSort(e.target.value);
+            setPage(1);
+          }}
           className="bg-transparent text-slate-500"
         >
           <option value="latest">Latest</option>
           <option value="most_liked">Most liked</option>
         </select>
       </div>
-      <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); setQuery(search.trim()); setPage(1); }}>
-        <input aria-label="Search post content" maxLength={200} value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search post content" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2" />
-        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-white">Search posts</button>
-        {query && <button type="button" className="text-blue-600" onClick={() => { setSearch(""); setQuery(""); setPage(1); }}>Clear search</button>}
+      <form
+        className="flex flex-wrap gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setQuery(search.trim());
+          setPage(1);
+        }}
+      >
+        <input
+          aria-label="Search post content"
+          maxLength={200}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search post content"
+          className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2"
+        />
+        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-white">
+          Search posts
+        </button>
+        {query && (
+          <button
+            type="button"
+            className="text-blue-600"
+            onClick={() => {
+              setSearch("");
+              setQuery("");
+              setPage(1);
+            }}
+          >
+            Clear search
+          </button>
+        )}
       </form>
-      {feed.error && <div role="alert">Couldn’t load posts. <button type="button" onClick={feed.reload}>Retry</button></div>}
+      {feed.error && (
+        <div role="alert">
+          Couldn’t load posts.{" "}
+          <button type="button" onClick={feed.reload}>
+            Retry
+          </button>
+        </div>
+      )}
       {feed.loading && !feed.data && <div className="rap-panel p-8 text-center text-slate-500">Loading your feed…</div>}
       {sorted.map((p: any) => {
         const by = p.author?.full_name || "Member";
@@ -353,14 +403,34 @@ export function Feed() {
         <div className="rap-panel v2-empty">
           <Ic n="users" s={36} c="mx-auto" />
           <h3>{query ? "No matching posts" : "Your feed is quiet"}</h3>
-          <p>{query ? "Try another search or discover public posts." : "Connect with people, discover public posts, or share an update."}</p>
+          <p>
+            {query
+              ? "Try another search or discover public posts."
+              : "Connect with people, discover public posts, or share an update."}
+          </p>
         </div>
       )}
-      {(page > 1 || feed.data?.has_more) && <nav aria-label="Feed pages" className="flex items-center justify-center gap-4 py-5">
-        <button type="button" className="text-blue-600 disabled:text-slate-400" disabled={page === 1 || feed.loading} onClick={() => setPage(page - 1)}>Previous posts</button>
-        <span aria-live="polite">Page {page}</span>
-        <button type="button" className="text-blue-600 disabled:text-slate-400" disabled={!feed.data?.has_more || feed.loading} onClick={() => setPage(page + 1)}>Next posts</button>
-      </nav>}
+      {(page > 1 || feed.data?.has_more) && (
+        <nav aria-label="Feed pages" className="flex items-center justify-center gap-4 py-5">
+          <button
+            type="button"
+            className="text-blue-600 disabled:text-slate-400"
+            disabled={page === 1 || feed.loading}
+            onClick={() => setPage(page - 1)}
+          >
+            Previous posts
+          </button>
+          <span aria-live="polite">Page {page}</span>
+          <button
+            type="button"
+            className="text-blue-600 disabled:text-slate-400"
+            disabled={!feed.data?.has_more || feed.loading}
+            onClick={() => setPage(page + 1)}
+          >
+            Next posts
+          </button>
+        </nav>
+      )}
       <Modal open={compose} onClose={() => setCompose(false)} title={edit ? "Edit post" : "Create a post"}>
         <div className="flex gap-3 items-center mb-5">
           <Av name={me} />
