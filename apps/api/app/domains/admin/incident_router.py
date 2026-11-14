@@ -143,7 +143,7 @@ async def change(item_id: uuid.UUID, body: IncidentPatch, request: Request,
         values["resolved_at"] = datetime.now(UTC) if body.status == "RESOLVED" else None
     result = await db.execute(update(Incident).where(Incident.id == item_id, Incident.version == body.version)
                               .values(**values).execution_options(synchronize_session=False))
-    if result.rowcount != 1:
+    if result.rowcount != 1:  # type: ignore[attr-defined]
         raise HTTPException(409, "Incident changed; reload before updating")
     await audit(db, admin, request, item, "update", {"reason": body.reason, "before": before, "after": changes})
     await db.commit()

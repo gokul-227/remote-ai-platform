@@ -39,10 +39,10 @@ async def project_workspace(project_id: uuid.UUID, user: User, db: AsyncSession)
         if role:
             documents.append(_summary(doc, role))
     channels = []
-    rows = await db.scalars(select(Channel).where(
+    channel_rows = await db.scalars(select(Channel).where(
         Channel.project_id == project.id, Channel.archived.is_(False),
     ).order_by(Channel.name).limit(100))
-    for channel in rows:
+    for channel in channel_rows:
         if await _has_access(db, channel, user):
             channels.append(await _out(db, channel, user))
     # An invitation is required even when the user owns the linked project.

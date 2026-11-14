@@ -105,6 +105,11 @@ class Settings(BaseSettings):
     MINIO_BUCKET_ASSETS: str = "remote-ai-platform-assets"
     MINIO_BUCKET_DELIVERABLES: str = "remote-ai-platform-deliverables"
     MINIO_SECURE: bool = False
+    # Files application (private bucket; signed URLs only). R2/S3/Supabase Storage/MinIO all work.
+    FILES_BUCKET: str = "remote-ai-platform-files"
+    FILES_MAX_UPLOAD_MB: int = 25
+    FILES_USER_QUOTA_MB: int = 2048
+    FILES_TRASH_RETENTION_DAYS: int = 30
 
     # ── Supabase Auth (the only identity provider) ──────────────────────────────
     # Sign-in happens entirely against Supabase from the frontend; this API

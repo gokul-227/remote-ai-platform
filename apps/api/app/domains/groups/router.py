@@ -23,8 +23,8 @@ from app.domains.groups.schemas import (
     GroupResponse,
     GroupUpdate,
     MemberRoleUpdate,
-    MemberStatusUpdate,
     MembershipResponse,
+    MemberStatusUpdate,
 )
 from app.domains.network.router import user_summaries
 

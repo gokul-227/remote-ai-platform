@@ -24,6 +24,7 @@ import app.domains.deliverables.models  # noqa: F401
 import app.domains.documents.models  # noqa: F401
 import app.domains.endorsements.models  # noqa: F401
 import app.domains.engineers.models  # noqa: F401
+import app.domains.files.models  # noqa: F401
 import app.domains.github.models  # noqa: F401
 import app.domains.groups.models  # noqa: F401
 import app.domains.jobs.models  # noqa: F401

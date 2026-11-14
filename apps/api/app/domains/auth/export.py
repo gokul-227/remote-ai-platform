@@ -48,6 +48,8 @@ SOURCES: tuple[Source, ...] = (
     Source("notification_preferences", ("user_id",)),
     Source("notification_digest_items", ("user_id",)),
     Source("job_preferences", ("user_id",)),
+    Source("file_nodes", ("owner_id",), drop=frozenset({"object_key"})),
+    Source("file_stars", ("user_id",)),
     # Emails sent to the user (MAIL-01); delivery internals are not personal data.
     Source(
         "email_outbox",

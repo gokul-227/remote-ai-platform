@@ -266,3 +266,14 @@ def send_digests() -> dict[str, Any]:
             return await build_digests(db)
 
     return runtime.run(go())
+
+
+@shared_task(name="files.sweep_trash")
+def sweep_trash() -> dict[str, Any]:
+    async def go() -> dict[str, Any]:
+        from app.domains.files.router import sweep_trash as _sweep
+
+        async with runtime.session_factory()() as db:
+            return await _sweep(db, settings.FILES_TRASH_RETENTION_DAYS)
+
+    return runtime.run(go())

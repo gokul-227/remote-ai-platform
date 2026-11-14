@@ -11,13 +11,12 @@ Supabase secret and never calls back into Supabase on the request path
 """
 
 import time
-
-from pydantic import EmailStr, TypeAdapter, ValidationError
 from dataclasses import dataclass
 
 import jwt
 from fastapi import HTTPException, status
 from jwt import PyJWKClient
+from pydantic import EmailStr, TypeAdapter, ValidationError
 
 from app.core.config import settings
 
@@ -161,7 +160,7 @@ def _extra_issuer_config(issuer: str) -> dict[str, str] | None:
 
 
 def _extra_client(config: dict[str, str]) -> PyJWKClient:
-    cache_key = tuple(config[k] for k in ("issuer", "jwks_url", "audience", "provider"))
+    cache_key = (config["issuer"], config["jwks_url"], config["audience"], config["provider"])
     client = _extra_jwks_clients.get(cache_key)
     if client is None:
         client = PyJWKClient(
