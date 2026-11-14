@@ -113,6 +113,9 @@ class Settings(BaseSettings):
     R2_ENDPOINT: str = ""
     R2_ACCESS_KEY_ID: str = ""
     R2_SECRET_ACCESS_KEY: str = ""
+    # "auto" for Cloudflare R2; the region name (e.g. eu-frankfurt-1) for any other
+    # S3-compatible store such as Oracle Object Storage, which signs per region.
+    R2_REGION: str = "auto"
     # Migration window: keep the MINIO_* provider reachable for reads, links and deletes.
     STORAGE_LEGACY_FALLBACK: bool = False
     # JSON map new bucket -> old bucket name when the names differ between providers.

@@ -86,7 +86,7 @@ def get_s3_client():
             settings.R2_ENDPOINT.rstrip("/"),
             settings.R2_ACCESS_KEY_ID,
             settings.R2_SECRET_ACCESS_KEY,
-            region="auto",
+            region=settings.R2_REGION or "auto",
         )
     return _client(_legacy_endpoint_url(), settings.MINIO_ACCESS_KEY, settings.MINIO_SECRET_KEY)
 

@@ -40,7 +40,7 @@ def client(prefix: str):
         endpoint_url=endpoint,
         aws_access_key_id=os.environ[f"{prefix}_ACCESS_KEY"],
         aws_secret_access_key=os.environ[f"{prefix}_SECRET_KEY"],
-        region_name="auto" if "r2.cloudflarestorage.com" in endpoint else None,
+        region_name=os.environ.get(f"{prefix}_REGION") or ("auto" if "r2.cloudflarestorage.com" in endpoint else None),
         config=Config(
             signature_version="s3v4",
             s3={"addressing_style": "path"},
