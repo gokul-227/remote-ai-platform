@@ -180,9 +180,9 @@ export function Feed() {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <h3>{scope === "connections" ? "Your community" : "Discover public posts"}</h3>
-        {user && <select aria-label="Feed audience" value={scope} onChange={(e) => { setScope(e.target.value); setPage(1); }}>
+        {user && <select aria-label="Feed audience" className="max-w-full" value={scope} onChange={(e) => { setScope(e.target.value); setPage(1); }}>
           <option value="connections">My connections</option>
           <option value="public">Discover public posts</option>
         </select>}
@@ -196,7 +196,7 @@ export function Feed() {
           <option value="most_liked">Most liked</option>
         </select>
       </div>
-      <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); setQuery(search.trim()); setPage(1); }}>
+      <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); setQuery(search.trim()); setPage(1); }}>
         <input aria-label="Search post content" maxLength={200} value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Search post content" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2" />
         <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-white">Search posts</button>

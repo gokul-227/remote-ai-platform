@@ -45,7 +45,7 @@ test("members discover public updates, search literal phrases and page without e
   await expect(page.getByText("No matching posts", { exact: true })).toBeVisible();
   await page.route("**/api/v1/social/posts/public?**", (route) => route.fulfill({ status: 503, contentType: "application/json", body: '{"detail":"Temporarily unavailable"}' }), { times: 1 });
   await feed.search(marker);
-  await expect(page.getByRole("alert")).toContainText("Couldn’t load posts");
+  await expect(page.getByRole("alert").filter({ hasText: "Couldn’t load posts" })).toBeVisible();
   await expect(page.getByText("No matching posts", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(feed.articles()).toHaveCount(20);
