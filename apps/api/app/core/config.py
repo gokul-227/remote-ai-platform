@@ -105,6 +105,15 @@ class Settings(BaseSettings):
     MINIO_BUCKET_ASSETS: str = "remote-ai-platform-assets"
     MINIO_BUCKET_DELIVERABLES: str = "remote-ai-platform-deliverables"
     MINIO_SECURE: bool = False
+    # Object storage provider: "s3" uses MINIO_* (MinIO / Supabase Storage); "r2" uses R2_*.
+    STORAGE_PROVIDER: str = "s3"
+    R2_ENDPOINT: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    # Migration window: keep the MINIO_* provider reachable for reads, links and deletes.
+    STORAGE_LEGACY_FALLBACK: bool = False
+    # JSON map new bucket -> old bucket name when the names differ between providers.
+    STORAGE_LEGACY_BUCKETS: str = ""
     # Files application (private bucket; signed URLs only). R2/S3/Supabase Storage/MinIO all work.
     FILES_BUCKET: str = "remote-ai-platform-files"
     FILES_MAX_UPLOAD_MB: int = 25
@@ -398,15 +407,24 @@ class Settings(BaseSettings):
             )
         if not self.SUPABASE_URL:
             errors.append("SUPABASE_URL must be configured (it is the only sign-in path)")
-        if self.MINIO_SECRET_KEY in {"minioadmin", "minioadmin_dev_password", ""}:
+        uses_minio = self.STORAGE_PROVIDER != "r2" or self.STORAGE_LEGACY_FALLBACK
+        if self.STORAGE_PROVIDER not in {"s3", "r2"}:
+            errors.append("STORAGE_PROVIDER must be 's3' or 'r2'")
+        if self.STORAGE_PROVIDER == "r2":
+            for name in ("R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY"):
+                if not getattr(self, name):
+                    errors.append(f"{name} must be configured when STORAGE_PROVIDER=r2")
+            if self.R2_ENDPOINT and not self.R2_ENDPOINT.startswith("https://"):
+                errors.append("R2_ENDPOINT must be an https:// URL")
+        if uses_minio and self.MINIO_SECRET_KEY in {"minioadmin", "minioadmin_dev_password", ""}:
             errors.append("MINIO_SECRET_KEY must be configured")
         # MINIO_ENDPOINT/MINIO_PUBLIC_ENDPOINT double as the real object-storage
         # endpoint in production (Supabase Storage's S3-compatible endpoint --
         # see storage.py), so a localhost value here is never correct in prod,
         # not just a "still using MinIO" smell.
-        if "localhost" in self.MINIO_ENDPOINT or "127.0.0.1" in self.MINIO_ENDPOINT:
+        if uses_minio and ("localhost" in self.MINIO_ENDPOINT or "127.0.0.1" in self.MINIO_ENDPOINT):
             errors.append("MINIO_ENDPOINT must not point at localhost/127.0.0.1 in production")
-        if "localhost" in self.MINIO_PUBLIC_ENDPOINT or "127.0.0.1" in self.MINIO_PUBLIC_ENDPOINT:
+        if uses_minio and ("localhost" in self.MINIO_PUBLIC_ENDPOINT or "127.0.0.1" in self.MINIO_PUBLIC_ENDPOINT):
             errors.append("MINIO_PUBLIC_ENDPOINT must not point at localhost/127.0.0.1 in production")
         if "*" in self.CORS_ORIGINS:
             errors.append(

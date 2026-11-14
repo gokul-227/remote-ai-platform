@@ -166,6 +166,16 @@ components:
   status: active
   evidence:
   - 'apps/api/pyproject.toml: boto3'
+- id: r2
+  name: Cloudflare R2
+  type: storage
+  technology: Private buckets (S3 API) · resumes, assets, deliverables, Files — STORAGE_PROVIDER=r2
+  provider: Cloudflare
+  group: cloudflare
+  icon: cloudflare
+  status: active
+  evidence:
+  - 'apps/api/app/core/config.py: R2_ENDPOINT'
 - id: redis
   name: Redis
   type: cache
@@ -440,6 +450,9 @@ connections:
 - from: api
   to: redis
   label: RESP
+- from: api
+  to: r2
+  label: S3 API (signed URLs)
 - from: api
   to: worker
   label: Enqueue

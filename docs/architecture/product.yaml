@@ -629,6 +629,12 @@ infrastructure:
     icon: supabase
     group: supabase
     status: active
+  - id: r2
+    name: Cloudflare R2
+    technology: Private buckets (S3 API) · resumes, assets, deliverables, Files — STORAGE_PROVIDER=r2
+    icon: cloudflare
+    group: cloudflare
+    status: active
   - id: redis
     name: Redis
     technology: Rate limits · read cache (in-memory fallback)

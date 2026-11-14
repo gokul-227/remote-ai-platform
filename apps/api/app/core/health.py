@@ -13,9 +13,7 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-import boto3
 import httpx
-from botocore.client import Config as BotoConfig
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel
 from redis.asyncio import Redis
@@ -62,7 +60,6 @@ class HealthReadyResponse(BaseModel):
     environment: str
     timestamp: str
     services: dict[str, ServiceCheckResult]
-
 
 
 # ── Dependency Check Helpers ──────────────────────────────────────────────────
@@ -125,23 +122,22 @@ async def _check_redis() -> ServiceCheckResult:
 
 
 def _probe_s3_storage_sync() -> None:
-    scheme = "https" if settings.MINIO_SECURE else "http"
-    endpoint = settings.MINIO_ENDPOINT
-    endpoint_url = (
-        endpoint if endpoint.startswith(("http://", "https://")) else f"{scheme}://{endpoint}"
-    )
-    client = boto3.client(
-        "s3",
-        endpoint_url=endpoint_url,
-        aws_access_key_id=settings.MINIO_ACCESS_KEY,
-        aws_secret_access_key=settings.MINIO_SECRET_KEY,
-        config=BotoConfig(
-            signature_version="s3v4",
-            s3={"addressing_style": "path"},
-            connect_timeout=1.5,
-            read_timeout=1.5,
-            retries={"max_attempts": 0},
-        ),
+    from app.core.storage import _client, _endpoint_url
+
+    timeouts: dict[str, Any] = {"connect_timeout": 1.5, "read_timeout": 1.5, "retries": {"max_attempts": 0}}
+    if settings.STORAGE_PROVIDER == "r2":
+        client = _client(
+            _endpoint_url(),
+            settings.R2_ACCESS_KEY_ID,
+            settings.R2_SECRET_ACCESS_KEY,
+            region="auto",
+            timeouts=timeouts,
+        )
+        # R2 API tokens are scoped to buckets; head the files bucket instead of listing.
+        client.head_bucket(Bucket=settings.FILES_BUCKET)
+        return
+    client = _client(
+        _endpoint_url(), settings.MINIO_ACCESS_KEY, settings.MINIO_SECRET_KEY, timeouts=timeouts
     )
     client.list_buckets()
 
@@ -153,7 +149,7 @@ async def _check_storage() -> ServiceCheckResult:
         await asyncio.wait_for(asyncio.to_thread(_probe_s3_storage_sync), timeout=2.0)
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         return ServiceCheckResult(
-            service="Object Storage (S3/MinIO)",
+            service=f"Object Storage ({settings.STORAGE_PROVIDER.upper()})",
             status="HEALTHY",
             latency_ms=latency_ms,
             checked_at=checked_at,
@@ -161,7 +157,7 @@ async def _check_storage() -> ServiceCheckResult:
     except Exception as exc:
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         return ServiceCheckResult(
-            service="Object Storage (S3/MinIO)",
+            service=f"Object Storage ({settings.STORAGE_PROVIDER.upper()})",
             status="DOWN",
             latency_ms=latency_ms,
             checked_at=checked_at,
@@ -237,7 +233,11 @@ async def _check_ai_provider() -> ServiceCheckResult:
 # ── Health Route Definitions ──────────────────────────────────────────────────
 
 
-@router.get("/health/version", response_model=HealthVersionResponse, summary="Service version and git commit SHA")
+@router.get(
+    "/health/version",
+    response_model=HealthVersionResponse,
+    summary="Service version and git commit SHA",
+)
 async def health_version() -> HealthVersionResponse:
     """Return current service version, git commit SHA, and environment without secrets."""
     return HealthVersionResponse(
@@ -342,8 +342,12 @@ async def health_dependencies(
         return_exceptions=False,
     )
     # "Configured" is not "working": add when AI calls last succeeded and failed.
-    last_success = await db.scalar(select(func.max(AIUsageLog.created_at)).where(AIUsageLog.status == "SUCCESS"))
-    last_failure = await db.scalar(select(func.max(AIUsageLog.created_at)).where(AIUsageLog.status == "FAILED"))
+    last_success = await db.scalar(
+        select(func.max(AIUsageLog.created_at)).where(AIUsageLog.status == "SUCCESS")
+    )
+    last_failure = await db.scalar(
+        select(func.max(AIUsageLog.created_at)).where(AIUsageLog.status == "FAILED")
+    )
     ai_result.details = {
         **(ai_result.details or {}),
         "last_success_at": last_success.isoformat() if last_success else None,
@@ -417,13 +421,22 @@ async def ingestion_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]
     since = now - timedelta(days=14)
     configured = [a.source_name for a in AGGREGATORS]
     sources: dict[str, dict[str, Any]] = {
-        name: {"configured": True, "last_attempt_at": None, "last_status": None, "last_success_at": None,
-               "last_success_fetched": None, "failures_since_success": 0, "hours_since_success": None}
+        name: {
+            "configured": True,
+            "last_attempt_at": None,
+            "last_status": None,
+            "last_success_at": None,
+            "last_success_fetched": None,
+            "failures_since_success": 0,
+            "hours_since_success": None,
+        }
         for name in configured
     }
     rows = (
         await db.execute(
-            select(ApiSyncLog.source, ApiSyncLog.status, ApiSyncLog.jobs_fetched, ApiSyncLog.created_at)
+            select(
+                ApiSyncLog.source, ApiSyncLog.status, ApiSyncLog.jobs_fetched, ApiSyncLog.created_at
+            )
             .where(ApiSyncLog.created_at >= since)
             .order_by(ApiSyncLog.created_at.desc())
         )
@@ -432,8 +445,15 @@ async def ingestion_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]
         created_at = _aware(created_at)
         entry = sources.setdefault(
             source,
-            {"configured": False, "last_attempt_at": None, "last_status": None, "last_success_at": None,
-             "last_success_fetched": None, "failures_since_success": 0, "hours_since_success": None},
+            {
+                "configured": False,
+                "last_attempt_at": None,
+                "last_status": None,
+                "last_success_at": None,
+                "last_success_fetched": None,
+                "failures_since_success": 0,
+                "hours_since_success": None,
+            },
         )
         if entry["last_attempt_at"] is None:
             entry["last_attempt_at"] = created_at.isoformat()
@@ -460,10 +480,19 @@ async def ingestion_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]
         for source, created_at in older:
             created_at = _aware(created_at)
             sources[source]["last_success_at"] = created_at.isoformat()
-            sources[source]["hours_since_success"] = round((now - created_at).total_seconds() / 3600, 1)
+            sources[source]["hours_since_success"] = round(
+                (now - created_at).total_seconds() / 3600, 1
+            )
     overdue = await db.scalar(
         select(func.count())
         .select_from(DeletedIdentity)
-        .where(DeletedIdentity.pending_subject.is_not(None), DeletedIdentity.deleted_at < now - timedelta(hours=24))
+        .where(
+            DeletedIdentity.pending_subject.is_not(None),
+            DeletedIdentity.deleted_at < now - timedelta(hours=24),
+        )
     )
-    return {"checked_at": now.isoformat(), "sources": sources, "identity_erasures_overdue": int(overdue or 0)}
+    return {
+        "checked_at": now.isoformat(),
+        "sources": sources,
+        "identity_erasures_overdue": int(overdue or 0),
+    }

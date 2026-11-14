@@ -109,6 +109,16 @@ components:
     detect:
       - python_dep: boto3
 
+  - id: r2
+    name: Cloudflare R2
+    type: storage
+    technology: "Private buckets (S3 API) · resumes, assets, deliverables, Files — STORAGE_PROVIDER=r2"
+    provider: Cloudflare
+    group: cloudflare
+    icon: cloudflare
+    detect:
+      - setting: R2_ENDPOINT
+
   - id: redis
     name: Redis
     type: cache
@@ -226,6 +236,7 @@ connections:
   - {from: api, to: postgres, label: SQL (asyncpg)}
   - {from: api, to: storage, label: S3 API}
   - {from: api, to: redis, label: RESP}
+  - {from: api, to: r2, label: S3 API (signed URLs)}
   - {from: api, to: worker, label: Enqueue}
   - {from: api, to: ai-providers, label: LiteLLM}
   - {from: api, to: job-boards, label: HTTPS pull}
