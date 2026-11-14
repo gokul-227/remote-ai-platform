@@ -133,7 +133,17 @@ def test_production_validation_requires_r2_credentials(monkeypatch):
 
 
 def _load_tool():
-    path = pathlib.Path(__file__).resolve().parents[3] / "ops" / "storage" / "migrate_objects.py"
+    here = pathlib.Path(__file__).resolve()
+    path = next(
+        (
+            p / "ops" / "storage" / "migrate_objects.py"
+            for p in here.parents
+            if (p / "ops" / "storage").is_dir()
+        ),
+        None,
+    )
+    if path is None:  # CI's test container mounts only apps/api
+        pytest.skip("ops/storage is not present in this checkout")
     spec = importlib.util.spec_from_file_location("migrate_objects", path)
     assert spec is not None
     assert spec.loader is not None

@@ -43,6 +43,9 @@ def upgrade() -> None:
             "created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False
         ),
     )
+    # Same posture as every public table: RLS on and no policies, so the Supabase
+    # Data API roles cannot read it; the API owner role bypasses RLS.
+    op.execute("ALTER TABLE backup_runs ENABLE ROW LEVEL SECURITY")
     op.create_index(
         "ix_backup_runs_kind_env_finished", "backup_runs", ["kind", "environment", "finished_at"]
     )
