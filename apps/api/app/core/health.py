@@ -124,7 +124,11 @@ async def _check_redis() -> ServiceCheckResult:
 def _probe_s3_storage_sync() -> None:
     from app.core.storage import _client, _endpoint_url
 
-    timeouts: dict[str, Any] = {"connect_timeout": 1.5, "read_timeout": 1.5, "retries": {"max_attempts": 0}}
+    timeouts: dict[str, Any] = {
+        "connect_timeout": 1.5,
+        "read_timeout": 1.5,
+        "retries": {"max_attempts": 0},
+    }
     if settings.STORAGE_PROVIDER == "r2":
         client = _client(
             _endpoint_url(),
@@ -134,7 +138,9 @@ def _probe_s3_storage_sync() -> None:
             timeouts=timeouts,
         )
         # R2 API tokens are scoped to buckets; head the files bucket instead of listing.
-        client.head_bucket(Bucket=settings.FILES_BUCKET)
+        from app.core.storage import primary_bucket
+
+        client.head_bucket(Bucket=primary_bucket(settings.FILES_BUCKET))
         return
     client = _client(
         _endpoint_url(), settings.MINIO_ACCESS_KEY, settings.MINIO_SECRET_KEY, timeouts=timeouts

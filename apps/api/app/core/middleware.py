@@ -19,6 +19,7 @@ logger = structlog.get_logger(__name__)
 
 _SAFE_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """
     Injects a unique X-Request-ID header into every request and response.

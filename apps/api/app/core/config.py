@@ -10,7 +10,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ADMIN_CONSOLE_ORIGINS = {
     "production": ("https://admin.remoteaiplatform.com",),
-    "development": ("https://dev.admin.remoteaiplatform.com", "https://admin-dev.remoteaiplatform.com"),
+    "development": (
+        "https://dev.admin.remoteaiplatform.com",
+        "https://admin-dev.remoteaiplatform.com",
+    ),
     # The hosted dev API runs with APP_ENV=staging.
     "staging": ("https://dev.admin.remoteaiplatform.com", "https://admin-dev.remoteaiplatform.com"),
 }
@@ -114,6 +117,11 @@ class Settings(BaseSettings):
     STORAGE_LEGACY_FALLBACK: bool = False
     # JSON map new bucket -> old bucket name when the names differ between providers.
     STORAGE_LEGACY_BUCKETS: str = ""
+    # R2 bucket names per purpose; empty means "same name as the MINIO_BUCKET_* / FILES_BUCKET value".
+    R2_BUCKET_RESUMES: str = ""
+    R2_BUCKET_ASSETS: str = ""
+    R2_BUCKET_DELIVERABLES: str = ""
+    R2_BUCKET_FILES: str = ""
     # Files application (private bucket; signed URLs only). R2/S3/Supabase Storage/MinIO all work.
     FILES_BUCKET: str = "remote-ai-platform-files"
     FILES_MAX_UPLOAD_MB: int = 25
@@ -166,7 +174,10 @@ class Settings(BaseSettings):
         for item in raw if isinstance(raw, list) else []:
             if not isinstance(item, dict):
                 continue
-            if all(isinstance(item.get(k), str) and item[k] for k in ("provider", "issuer", "jwks_url", "audience")):
+            if all(
+                isinstance(item.get(k), str) and item[k]
+                for k in ("provider", "issuer", "jwks_url", "audience")
+            ):
                 out.append({k: item[k] for k in ("provider", "issuer", "jwks_url", "audience")})
         return out
 
@@ -296,7 +307,9 @@ class Settings(BaseSettings):
     # Imported jobs posted longer ago than this are removed (or, if someone applied, hidden).
     JOB_RETENTION_DAYS: int = 90
 
-    JOB_SYNC_SCHEDULE: str = "17 */3 * * *"  # Every 3 hours (.github/workflows/scheduled-job-sync.yml)
+    JOB_SYNC_SCHEDULE: str = (
+        "17 */3 * * *"  # Every 3 hours (.github/workflows/scheduled-job-sync.yml)
+    )
     JOB_SYNC_MAX_PER_SOURCE: int = 10000
     # Secret for the scheduled sync (POST /jobs/sync/scheduled). Grants that one
     # action only; empty disables the endpoint. At least 32 characters.
@@ -399,7 +412,9 @@ class Settings(BaseSettings):
         if not self.is_production:
             return
         errors = []
-        if self.DATABASE_URL.startswith("postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost"):
+        if self.DATABASE_URL.startswith(
+            "postgresql+asyncpg://remote_ai_platform:remote_ai_platform_dev_password@localhost"
+        ):
             errors.append("DATABASE_URL is still the local development default")
         elif "localhost" in self.DATABASE_URL or "127.0.0.1" in self.DATABASE_URL:
             # Broader than the exact-default check above: catches any
@@ -427,10 +442,16 @@ class Settings(BaseSettings):
         # endpoint in production (Supabase Storage's S3-compatible endpoint --
         # see storage.py), so a localhost value here is never correct in prod,
         # not just a "still using MinIO" smell.
-        if uses_minio and ("localhost" in self.MINIO_ENDPOINT or "127.0.0.1" in self.MINIO_ENDPOINT):
+        if uses_minio and (
+            "localhost" in self.MINIO_ENDPOINT or "127.0.0.1" in self.MINIO_ENDPOINT
+        ):
             errors.append("MINIO_ENDPOINT must not point at localhost/127.0.0.1 in production")
-        if uses_minio and ("localhost" in self.MINIO_PUBLIC_ENDPOINT or "127.0.0.1" in self.MINIO_PUBLIC_ENDPOINT):
-            errors.append("MINIO_PUBLIC_ENDPOINT must not point at localhost/127.0.0.1 in production")
+        if uses_minio and (
+            "localhost" in self.MINIO_PUBLIC_ENDPOINT or "127.0.0.1" in self.MINIO_PUBLIC_ENDPOINT
+        ):
+            errors.append(
+                "MINIO_PUBLIC_ENDPOINT must not point at localhost/127.0.0.1 in production"
+            )
         if "*" in self.CORS_ORIGINS:
             errors.append(
                 "CORS_ORIGINS must not contain a wildcard in production (combined with allow_credentials=True, this permits credentialed cross-origin requests from any site)"

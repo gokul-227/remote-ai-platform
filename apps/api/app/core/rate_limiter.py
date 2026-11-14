@@ -116,8 +116,10 @@ def _classify(path: str, method: str) -> tuple[str | None, tuple[int, int] | Non
     if any(path.startswith(p) for p in AI_CALL_ROUTE_PREFIXES):
         return "ai", (base_limit * 3, window)
 
-    if method == "POST" and path.startswith("/api/v1/projects/") and path.endswith(
-        AI_CALL_ROUTE_SUFFIXES
+    if (
+        method == "POST"
+        and path.startswith("/api/v1/projects/")
+        and path.endswith(AI_CALL_ROUTE_SUFFIXES)
     ):
         return "ai", (base_limit * 3, window)
 

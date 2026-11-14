@@ -103,8 +103,29 @@ def legacy_fallback_enabled() -> bool:
     return settings.STORAGE_PROVIDER == "r2" and settings.STORAGE_LEGACY_FALLBACK
 
 
+def _r2_names() -> dict[str, str]:
+    """Logical (MINIO_*/FILES_BUCKET) bucket name -> R2 bucket name."""
+    pairs = (
+        (settings.MINIO_BUCKET_RESUMES, settings.R2_BUCKET_RESUMES),
+        (settings.MINIO_BUCKET_ASSETS, settings.R2_BUCKET_ASSETS),
+        (settings.MINIO_BUCKET_DELIVERABLES, settings.R2_BUCKET_DELIVERABLES),
+        (settings.FILES_BUCKET, settings.R2_BUCKET_FILES),
+    )
+    return {old: new for old, new in pairs if new}
+
+
+def primary_bucket(bucket_name: str) -> str:
+    """The bucket to use on the primary provider for a configured bucket name."""
+    if settings.STORAGE_PROVIDER == "r2":
+        return _r2_names().get(bucket_name, bucket_name)
+    return bucket_name
+
+
 def legacy_bucket(bucket_name: str) -> str:
-    """The bucket that held this data before the migration (same name unless mapped)."""
+    """The bucket that held this data before the migration: the configured
+    (MINIO_*) name for callers, unless STORAGE_LEGACY_BUCKETS maps it."""
+    if bucket_name in _r2_names():
+        return bucket_name
     try:
         mapping = (
             json.loads(settings.STORAGE_LEGACY_BUCKETS) if settings.STORAGE_LEGACY_BUCKETS else {}
@@ -136,6 +157,7 @@ def ensure_bucket_exists(bucket_name: str) -> None:
     """Create the bucket if missing (MinIO/dev). R2 and Supabase buckets are
     provisioned by the owner and scoped tokens cannot create them."""
     client = get_s3_client()
+    bucket_name = primary_bucket(bucket_name)
     try:
         client.head_bucket(Bucket=bucket_name)
     except ClientError:
@@ -159,9 +181,10 @@ def generate_presigned_url(
     the primary provider is signed against the legacy provider instead."""
     expires = int(expires_hours * 3600)
     client = get_s3_client()
+    primary = primary_bucket(bucket_name)
     try:
         legacy = get_legacy_client()
-        if legacy is not None and not object_exists(client, bucket_name, object_name):
+        if legacy is not None and not object_exists(client, primary, object_name):
             old_bucket = legacy_bucket(bucket_name)
             if object_exists(legacy, old_bucket, object_name):
                 return str(
@@ -173,7 +196,7 @@ def generate_presigned_url(
                 )
         return str(
             client.generate_presigned_url(
-                "get_object", Params={"Bucket": bucket_name, "Key": object_name}, ExpiresIn=expires
+                "get_object", Params={"Bucket": primary, "Key": object_name}, ExpiresIn=expires
             )
         )
     except Exception as e:
@@ -200,13 +223,13 @@ class StorageService:
             await asyncio.to_thread(ensure_bucket_exists, bucket_name)
             await asyncio.to_thread(
                 self.client.put_object,
-                Bucket=bucket_name,
+                Bucket=primary_bucket(bucket_name),
                 Key=object_name,
                 Body=data,
                 ContentType=content_type,
             )
             # Callers store the object key; this URL is informational only.
-            return f"{_endpoint_url()}/{bucket_name}/{object_name}"
+            return f"{_endpoint_url()}/{primary_bucket(bucket_name)}/{object_name}"
         except Exception as e:
             logger.error(
                 "Storage upload failed", bucket=bucket_name, object=object_name, error=str(e)
@@ -225,7 +248,7 @@ class StorageService:
             return body
 
         try:
-            return await asyncio.to_thread(_read, self.client, bucket_name)
+            return await asyncio.to_thread(_read, self.client, primary_bucket(bucket_name))
         except Exception as e:
             if self.legacy is not None and _missing(e):
                 try:
@@ -243,7 +266,9 @@ class StorageService:
         primary delete failed or a legacy copy could not be removed."""
         ok = True
         try:
-            await asyncio.to_thread(self.client.delete_object, Bucket=bucket_name, Key=object_name)
+            await asyncio.to_thread(
+                self.client.delete_object, Bucket=primary_bucket(bucket_name), Key=object_name
+            )
         except Exception as e:
             logger.error("Storage delete failed", bucket=bucket_name, error=str(e))
             ok = False

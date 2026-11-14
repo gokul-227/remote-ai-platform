@@ -116,7 +116,9 @@ async def list_audit_events(
     limit: int = Query(50, ge=1, le=200),
     action: str | None = Query(None),
     action_prefix: str | None = Query(
-        None, max_length=200, description="One or more comma-separated prefixes, e.g. 'auth.,admin.user.'"
+        None,
+        max_length=200,
+        description="One or more comma-separated prefixes, e.g. 'auth.,admin.user.'",
     ),
     resource_type: str | None = Query(None),
     current_user: User = Depends(require_role(UserRole.ADMIN)),
@@ -128,7 +130,9 @@ async def list_audit_events(
         stmt = stmt.where(AuditEvent.action == action)
     if action_prefix:
         prefixes = [p.strip() for p in action_prefix.split(",") if p.strip()]
-        stmt = stmt.where(or_(*(AuditEvent.action.startswith(p, autoescape=True) for p in prefixes)))
+        stmt = stmt.where(
+            or_(*(AuditEvent.action.startswith(p, autoescape=True) for p in prefixes))
+        )
     if resource_type:
         stmt = stmt.where(AuditEvent.resource_type == resource_type)
     stmt = stmt.offset(skip).limit(limit)
@@ -147,7 +151,9 @@ async def update_user_status(
 ) -> UserResponse:
     """Toggle user active / suspended status (Admin only)."""
     if user_id == current_user.id and not body.is_active:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot suspend your own account")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot suspend your own account"
+        )
     repo = UserRepository(db)
     user = await repo.get_by_id(user_id)
     if not user:
@@ -160,8 +166,14 @@ async def update_user_status(
         current_user.id, "USER_STATUS_UPDATED", "USER", str(user.id), {"is_active": body.is_active}
     )
     await record_audit_event(
-        db, "admin.user.status", "user", str(user.id), current_user.id, current_user.role.value,
-        {"is_active": body.is_active, "reason": body.reason}, request,
+        db,
+        "admin.user.status",
+        "user",
+        str(user.id),
+        current_user.id,
+        current_user.role.value,
+        {"is_active": body.is_active, "reason": body.reason},
+        request,
     )
     await db.commit()
     await db.refresh(user)
@@ -182,7 +194,9 @@ async def update_user_role(
     explicitly forbids self-assigning ADMIN.
     """
     if user_id == current_user.id and body.role != UserRole.ADMIN:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot remove your own admin role")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot remove your own admin role"
+        )
     repo = UserRepository(db)
     user = await repo.get_by_id(user_id)
     if not user:
@@ -193,8 +207,14 @@ async def update_user_role(
         # A role change takes effect on the next sign-in, not with an old session.
         user.sessions_revoked_at = datetime.now(UTC)
     await record_audit_event(
-        db, "admin.user.role", "user", str(user.id), current_user.id, current_user.role.value,
-        {"previous_role": previous_role.value, "new_role": body.role.value, "reason": body.reason}, request,
+        db,
+        "admin.user.role",
+        "user",
+        str(user.id),
+        current_user.id,
+        current_user.role.value,
+        {"previous_role": previous_role.value, "new_role": body.role.value, "reason": body.reason},
+        request,
     )
     await AdminRepository(db).log_activity(
         current_user.id,
@@ -222,8 +242,14 @@ async def revoke_user_sessions(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     user.sessions_revoked_at = datetime.now(UTC)
     await record_audit_event(
-        db, "admin.user.revoke_sessions", "user", str(user.id), current_user.id, current_user.role.value,
-        {"reason": body.reason}, request,
+        db,
+        "admin.user.revoke_sessions",
+        "user",
+        str(user.id),
+        current_user.id,
+        current_user.role.value,
+        {"reason": body.reason},
+        request,
     )
     await db.commit()
     await db.refresh(user)
@@ -259,7 +285,9 @@ async def delete_user(
             detail=f"This account has {' and '.join(kept)} the other party relies on; suspend it instead.",
         )
     # The id identifies the account in the audit trail; no email is kept after deletion.
-    await AdminRepository(db).log_activity(current_user.id, "USER_DELETED", "USER", str(user.id), {})
+    await AdminRepository(db).log_activity(
+        current_user.id, "USER_DELETED", "USER", str(user.id), {}
+    )
     # Same erasure as self-service deletion: tombstone (the deleted user's
     # tokens can't re-create the account), resume file and Supabase user.
     await erase_account(db, user)
@@ -274,7 +302,9 @@ async def retry_identity_erasures(
     """Retry erasing Supabase users whose deletion failed when the account was
     deleted (Admin only). Returns how many were erased and how many remain."""
     result = await retry_pending_erasures(db)
-    await AdminRepository(db).log_activity(current_user.id, "IDENTITY_ERASURE_RETRIED", "USER", "-", result)
+    await AdminRepository(db).log_activity(
+        current_user.id, "IDENTITY_ERASURE_RETRIED", "USER", "-", result
+    )
     await db.commit()
     return result
 
@@ -296,8 +326,10 @@ async def list_all_jobs(
     if active is not None:
         query = query.where(JobPost.is_active.is_(active))
     rows = (
-        await db.execute(query.order_by(JobPost.created_at.desc()).offset(skip).limit(limit))
-    ).scalars().all()
+        (await db.execute(query.order_by(JobPost.created_at.desc()).offset(skip).limit(limit)))
+        .scalars()
+        .all()
+    )
     return [
         {
             "id": j.id,
@@ -351,7 +383,11 @@ async def delete_job(
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     await AdminRepository(db).log_activity(
-        current_user.id, "JOB_DELETED", "JOB", str(job.id), {"title": job.title, "source": job.source}
+        current_user.id,
+        "JOB_DELETED",
+        "JOB",
+        str(job.id),
+        {"title": job.title, "source": job.source},
     )
     await db.delete(job)
     await db.commit()
@@ -380,13 +416,21 @@ async def reclean_job_text(
         new_title = BaseAggregator.clean_text(job.title)
         new_company = BaseAggregator.clean_text(job.company_name)
         new_description = BaseAggregator.clean_rich_text(job.description)
-        if new_title != job.title or new_company != job.company_name or new_description != job.description:
+        if (
+            new_title != job.title
+            or new_company != job.company_name
+            or new_description != job.description
+        ):
             job.title = new_title
             job.company_name = new_company
             job.description = new_description
             changed += 1
     await AdminRepository(db).log_activity(
-        current_user.id, "JOBS_TEXT_RECLEANED", "JOB", "bulk", {"scanned": len(jobs), "changed": changed}
+        current_user.id,
+        "JOBS_TEXT_RECLEANED",
+        "JOB",
+        "bulk",
+        {"scanned": len(jobs), "changed": changed},
     )
     await db.commit()
     return {"scanned": len(jobs), "changed": changed}
@@ -447,9 +491,7 @@ async def get_ai_usage_stats(
 
     feature_rows = (
         await db.execute(
-            select(AIUsageLog.prompt_key, func.count(AIUsageLog.id)).group_by(
-                AIUsageLog.prompt_key
-            )
+            select(AIUsageLog.prompt_key, func.count(AIUsageLog.id)).group_by(AIUsageLog.prompt_key)
         )
     ).all()
     feature_breakdown = {(key or "uncategorized"): count for key, count in feature_rows}
@@ -484,9 +526,7 @@ async def _check_postgres(db: AsyncSession) -> ServiceHealthStatus:
 
 async def _check_redis() -> ServiceHealthStatus:
     started = time.monotonic()
-    client: Redis = Redis.from_url(
-        settings.redis_url, socket_connect_timeout=1, socket_timeout=1
-    )
+    client: Redis = Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
     try:
         await client.ping()
         return ServiceHealthStatus(
@@ -520,14 +560,16 @@ def _storage_ping():
     # that. Bounding the *outer* wait instead (see _check_minio) keeps the
     # dashboard responsive while still letting a slow-but-working
     # connection succeed the way real traffic does.
-    from app.core.storage import get_s3_client
+    from app.core.storage import get_s3_client, primary_bucket
 
     client = get_s3_client()
-    bucket = settings.MINIO_BUCKET_RESUMES
+    bucket = primary_bucket(settings.MINIO_BUCKET_RESUMES)
     # The resumes bucket accepts only PDF/DOCX (DATA-01), so the probe is a
     # PDF-typed object.
     key = "_health/ping.pdf"
-    client.put_object(Bucket=bucket, Key=key, Body=b"%PDF-1.4 health check", ContentType="application/pdf")
+    client.put_object(
+        Bucket=bucket, Key=key, Body=b"%PDF-1.4 health check", ContentType="application/pdf"
+    )
     client.get_object(Bucket=bucket, Key=key)
 
 
@@ -541,13 +583,13 @@ async def _check_minio() -> ServiceHealthStatus:
         # connection room to actually succeed.
         await asyncio.wait_for(asyncio.to_thread(_storage_ping), timeout=8.0)
         return ServiceHealthStatus(
-            service="MinIO Object Storage S3",
+            service=f"Object Storage ({settings.STORAGE_PROVIDER.upper()})",
             status="OPERATIONAL",
             latency_ms=round((time.monotonic() - started) * 1000, 1),
         )
     except Exception:
         return ServiceHealthStatus(
-            service="MinIO Object Storage S3",
+            service=f"Object Storage ({settings.STORAGE_PROVIDER.upper()})",
             status="DOWN",
             latency_ms=round((time.monotonic() - started) * 1000, 1),
         )

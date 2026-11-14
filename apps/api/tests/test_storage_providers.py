@@ -164,3 +164,31 @@ def test_copy_tool_dry_run_apply_verify_and_idempotence():
     # Re-running apply copies nothing; nothing is ever deleted from the source.
     assert tool.run(src, dst, buckets, "apply").copied == 0
     assert src.deleted == []
+
+
+@pytest.mark.asyncio
+async def test_r2_bucket_names_are_resolved_per_purpose(monkeypatch):
+    new, old = FakeS3("r2"), FakeS3("supabase")
+    monkeypatch.setattr(settings, "STORAGE_PROVIDER", "r2")
+    monkeypatch.setattr(settings, "STORAGE_LEGACY_FALLBACK", True)
+    monkeypatch.setattr(settings, "STORAGE_LEGACY_BUCKETS", "")
+    monkeypatch.setattr(settings, "MINIO_BUCKET_RESUMES", "resumes")
+    monkeypatch.setattr(settings, "R2_BUCKET_RESUMES", "rap-prod-resumes")
+    monkeypatch.setattr(storage, "get_s3_client", lambda: new)
+    monkeypatch.setattr(storage, "get_legacy_client", lambda: old)
+    assert storage.primary_bucket("resumes") == "rap-prod-resumes"
+    assert storage.legacy_bucket("resumes") == "resumes"
+    svc = storage.StorageService()
+    await svc.upload_file("resumes", "u/cv.pdf", b"%PDF-1", content_type="application/pdf")
+    assert ("rap-prod-resumes", "u/cv.pdf") in new.objects
+    old.objects[("resumes", "u/old.pdf")] = (b"%PDF-old", "application/pdf")
+    assert storage.generate_presigned_url("resumes", "u/old.pdf").startswith(
+        "https://supabase/resumes/"
+    )
+    assert storage.generate_presigned_url("resumes", "u/cv.pdf").startswith(
+        "https://r2/rap-prod-resumes/"
+    )
+    assert await svc.delete_file("resumes", "u/old.pdf") is True
+    assert ("resumes", "u/old.pdf") in old.deleted
+    monkeypatch.setattr(settings, "STORAGE_PROVIDER", "s3")
+    assert storage.primary_bucket("resumes") == "resumes"

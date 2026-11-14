@@ -57,7 +57,9 @@ class AIUnavailableException(PlatformException):
     real validation/auth error -- never present as a 200 with placeholder data.
     """
 
-    def __init__(self, message: str = "AI service is temporarily unavailable. Please retry shortly."):
+    def __init__(
+        self, message: str = "AI service is temporarily unavailable. Please retry shortly."
+    ):
         super().__init__(message, status.HTTP_503_SERVICE_UNAVAILABLE, "AI_UNAVAILABLE")
 
 

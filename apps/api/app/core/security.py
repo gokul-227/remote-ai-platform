@@ -46,7 +46,10 @@ def _check_docx_package(data: bytes) -> None:
         raise ValueError("DOCX resume content could not be verified") from exc
     if not any(e.filename == "word/document.xml" for e in entries):
         raise ValueError("DOCX resume content could not be verified")
-    if len(entries) > _DOCX_MAX_ENTRIES or sum(e.file_size for e in entries) > _DOCX_MAX_UNCOMPRESSED:
+    if (
+        len(entries) > _DOCX_MAX_ENTRIES
+        or sum(e.file_size for e in entries) > _DOCX_MAX_UNCOMPRESSED
+    ):
         raise ValueError("DOCX resume is too large once unpacked")
 
 

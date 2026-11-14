@@ -181,6 +181,13 @@ def _bucket() -> str:
     return settings.FILES_BUCKET
 
 
+def _primary() -> str:
+    """Files bucket on the primary provider (R2 name when STORAGE_PROVIDER=r2)."""
+    from app.core.storage import primary_bucket
+
+    return primary_bucket(settings.FILES_BUCKET)
+
+
 def _key(node_id: uuid.UUID, version: int, name: str) -> str:
     return f"files/{node_id}/v{version}/{safe_file_name(name)}"
 
@@ -717,9 +724,9 @@ async def restore_version(
     try:
         await asyncio.to_thread(
             client.copy_object,
-            Bucket=_bucket(),
+            Bucket=_primary(),
             Key=new_key,
-            CopySource={"Bucket": _bucket(), "Key": old.object_key},
+            CopySource={"Bucket": _primary(), "Key": old.object_key},
         )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Storage is unavailable") from exc
@@ -823,9 +830,9 @@ async def copy_node(
     try:
         await asyncio.to_thread(
             get_s3_client().copy_object,
-            Bucket=_bucket(),
+            Bucket=_primary(),
             Key=key,
-            CopySource={"Bucket": _bucket(), "Key": node.object_key},
+            CopySource={"Bucket": _primary(), "Key": node.object_key},
         )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Storage is unavailable") from exc
