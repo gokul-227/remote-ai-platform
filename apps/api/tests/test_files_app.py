@@ -366,3 +366,20 @@ async def test_project_and_organisation_spaces(client: AsyncClient, storage: Fak
         n["name"]
         for n in (await client.get(f"/api/v1/files?view=organisation:{cid}", headers=owner)).json()
     ] == ["Policies"]
+
+
+@pytest.mark.asyncio
+async def test_preview_signing_failure_is_retryable(
+    client: AsyncClient, storage: FakeStorage, monkeypatch
+):
+    me = await _signup(client, "preview-outage@example.com")
+    uploaded = await client.post(
+        "/api/v1/files/upload",
+        headers=me,
+        files=_file("image.png", b"image", "image/png"),
+    )
+    assert uploaded.status_code == 201, uploaded.text
+    node_id = uploaded.json()["id"]
+    monkeypatch.setattr(files_router, "generate_presigned_url", lambda *a, **kw: None)
+    response = await client.get(f"/api/v1/files/{node_id}/preview", headers=me)
+    assert response.status_code == 503

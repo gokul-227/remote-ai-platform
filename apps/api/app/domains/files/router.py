@@ -632,6 +632,8 @@ async def preview(
         url = generate_presigned_url(
             _bucket(), node.object_key, expires_hours=DOWNLOAD_TTL_SECONDS / 3600
         )
+        if not url:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Storage is unavailable")
         return {"kind": "url", "mime": mime, "url": url, "expires_in": DOWNLOAD_TTL_SECONDS}
     if mime.startswith("text/") or mime == "application/json":
         data = await get_storage().read_file(_bucket(), node.object_key, PREVIEW_MAX_BYTES)
