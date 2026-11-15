@@ -5,7 +5,8 @@
 #   docker compose --env-file /opt/rap/.env -f infra/docker/docker-compose.prod.yml up -d
 #
 # Containers: api, worker, scheduler, postgres and redis (private network only,
-# no host ports) and caddy (the only published ports: 80/443, automatic TLS).
+# no host ports), web (Next.js) and admin (static console) on loopback only,
+# and caddy (the only public ports: 80/443, TLS via ACME DNS-01 at Cloudflare).
 # PostgreSQL 17 runs here (volume postgres_data); set POSTGRES_PASSWORD in the
 # env file. DATABASE_URL in the env file is overridden to the local postgres;
 # set RAP_DATABASE_URL to point elsewhere (e.g. Supabase during a canary).
@@ -147,20 +148,64 @@ services:
       resources:
         limits: { memory: 256M, cpus: "0.25" }
 
+  web:
+    # Next.js standalone server (apps/web/Dockerfile). Built per environment by
+    # .github/workflows/deploy-vm.yml; WEB_IMAGE pins the commit SHA tag.
+    image: ${WEB_IMAGE:-ghcr.io/gokul-227/remote-ai-platform-web:prod}
+    restart: unless-stopped
+    networks:
+      - edge
+    # Loopback only, for SSH-tunnel checks; public traffic goes through caddy.
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/version >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { memory: 1G, cpus: "1.5" }
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  admin:
+    # Staff console static export on a tiny Caddy (apps/admin/Dockerfile).
+    image: ${ADMIN_IMAGE:-ghcr.io/gokul-227/remote-ai-platform-admin:prod}
+    restart: unless-stopped
+    networks:
+      - edge
+    ports:
+      - "127.0.0.1:3002:8080"
+    deploy:
+      resources:
+        limits: { memory: 64M }
+
   caddy:
-    image: caddy:2-alpine
+    # Custom build with the Cloudflare DNS (ACME DNS-01) and rate-limit plugins.
+    image: ${CADDY_IMAGE:-ghcr.io/gokul-227/remote-ai-platform-caddy:latest}
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     environment:
       API_HOST: ${API_PUBLIC_HOST:-api.remoteaiplatform.com}
+      WEB_HOST: ${WEB_PUBLIC_HOST:-remoteaiplatform.com}
+      WWW_HOST: ${WWW_PUBLIC_HOST:-www.remoteaiplatform.com}
+      ADMIN_HOST: ${ADMIN_PUBLIC_HOST:-admin.remoteaiplatform.com}
+      # Zone:DNS:Edit token for ACME DNS-01 (Infisical prod:/ CLOUDFLARE_API_TOKEN).
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
       - api
+      - web
+      - admin
     networks:
       - edge
     deploy:

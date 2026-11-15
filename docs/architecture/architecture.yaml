@@ -265,6 +265,7 @@ components:
   - .github/workflows/ci.yml ~ /health/(ready|live)/
   - .github/workflows/deploy-frontend-dev.yml ~ /health/(ready|live)/
   - .github/workflows/deploy-frontend.yml ~ /health/(ready|live)/
+  - .github/workflows/deploy-vm.yml ~ /health/(ready|live)/
   - .github/workflows/enforce-branch-flow.yml ~ /health/(ready|live)/
   - .github/workflows/keep-dev-awake.yml ~ /health/(ready|live)/
   - .github/workflows/keep-render-warm.yml ~ /health/(ready|live)/
