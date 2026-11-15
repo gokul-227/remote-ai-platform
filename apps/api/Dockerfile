@@ -61,6 +61,11 @@ RUN python -m pip install --upgrade pip==26.2 setuptools==84.1.0 hatchling && pi
 
 FROM production-deps AS production
 
+# CI supplies the immutable commit used to build this image.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=${GIT_SHA}
+LABEL org.opencontainers.image.revision=${GIT_SHA}
+
 COPY . .
 
 RUN useradd -m -u 1000 appuser \
