@@ -1,9 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
-import { API_URL, SUPABASE_KEY, SUPABASE_URL } from "./env";
+import { API_URL } from "./env";
+import { getSession, refreshSession } from "./session";
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: "rap-admin-auth" },
-});
+export { supabase } from "./session";
 
 export class ApiError extends Error {
   constructor(
@@ -32,8 +30,7 @@ export interface ApiResult<T> {
 
 /** Authenticated JSON call to /api/v1. Throws ApiError with the API's message. */
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<ApiResult<T>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = (await getSession())?.access_token;
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
   let body = init.body;
@@ -41,7 +38,16 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
     headers.set("Content-Type", "application/json");
     body = JSON.stringify(init.json);
   }
-  const res = await fetch(`${API_URL}/api/v1${path}`, { ...init, headers, body });
+  let res = await fetch(`${API_URL}/api/v1${path}`, { ...init, headers, body });
+  if (res.status === 401 && token) {
+    // WorkOS access tokens are short-lived: refresh once and retry (Supabase
+    // refreshes itself, so refreshSession() returns null there).
+    const next = await refreshSession();
+    if (next) {
+      headers.set("Authorization", `Bearer ${next.access_token}`);
+      res = await fetch(`${API_URL}/api/v1${path}`, { ...init, headers, body });
+    }
+  }
   const text = await res.text();
   let parsed: unknown = null;
   try {

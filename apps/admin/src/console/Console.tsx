@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import type { Session } from "@supabase/supabase-js";
-import { ApiError, api, publicGet, supabase } from "@/lib/client";
+import { getSession, onSessionChange, sendCode, signOut, verifyCode, type StaffSession } from "@/lib/session";
+import { ApiError, api, publicGet } from "@/lib/client";
 import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
 import { Ic } from "./icons";
@@ -211,7 +211,7 @@ const screenFromHash = () => {
 };
 
 export default function Console() {
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [session, setSession] = useState<StaffSession | null | undefined>(undefined);
   const [me, setMe] = useState<Me | null>(null);
   const [meErr, setMeErr] = useState("");
   const [version, setVersion] = useState<Version | null>(null);
@@ -253,12 +253,12 @@ export default function Console() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    getSession().then(setSession);
+    const unsubscribe = onSessionChange(setSession);
     publicGet<Version>("/health/version")
       .then(setVersion)
       .catch(() => setVersion(null));
-    return () => data.subscription.unsubscribe();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -270,7 +270,7 @@ export default function Console() {
       .then((r) => setMe(r.data))
       .catch((e) => {
         // An expired or revoked session goes back to the sign-in screen.
-        if (e instanceof ApiError && e.status === 401) void supabase.auth.signOut();
+        if (e instanceof ApiError && e.status === 401) void signOut();
         else setMeErr(errText(e));
       });
   }, [session]);
@@ -407,7 +407,7 @@ export default function Console() {
                   <p>{me.email}</p>
                 </div>
               </div>
-              <button className="menu-item" onClick={() => supabase.auth.signOut()}>
+              <button className="menu-item" onClick={() => void signOut()}>
                 <Ic n="lock" s={18} />
                 Sign out
               </button>
@@ -471,7 +471,7 @@ function Blocked({ text }: { text: string }) {
     <div style={{ maxWidth: 420, margin: "80px auto" }} className="card">
       <h2>Access denied</h2>
       <p>{text}</p>
-      <button className="btn" onClick={() => supabase.auth.signOut()}>
+      <button className="btn" onClick={() => void signOut()}>
         Sign out
       </button>
     </div>
@@ -486,14 +486,14 @@ function SignIn() {
   const send = async () => {
     setErr("");
     // Existing accounts only: the staff console never creates users.
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
-    if (error) setErr(error.message);
+    const error = await sendCode(email);
+    if (error) setErr(error);
     else setSent(true);
   };
   const verify = async () => {
     setErr("");
-    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
-    if (error) setErr(error.message);
+    const error = await verifyCode(email, code);
+    if (error) setErr(error);
   };
   return (
     <div style={{ maxWidth: 380, margin: "80px auto" }} className="card">

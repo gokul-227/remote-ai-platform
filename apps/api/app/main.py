@@ -38,6 +38,7 @@ from app.domains.assistant.router import router as assistant_router
 
 # Domain routers — imported as they are implemented
 from app.domains.auth.router import router as auth_router
+from app.domains.auth.workos_router import router as workos_auth_router
 from app.domains.browser.router import router as browser_router
 from app.domains.channels.router import router as channels_router
 from app.domains.companies.members_router import router as organisation_members_router
@@ -316,6 +317,7 @@ def create_app() -> FastAPI:
     prefix = "/api/v1"
     app.include_router(health_router, prefix=prefix)
     app.include_router(auth_router, prefix=prefix)
+    app.include_router(workos_auth_router, prefix=prefix)
     app.include_router(engineers_router, prefix=prefix)
     app.include_router(companies_router, prefix=prefix)
     app.include_router(organisation_members_router, prefix=prefix)

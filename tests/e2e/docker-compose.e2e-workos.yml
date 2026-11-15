@@ -1,0 +1,23 @@
+# Second overlay (on top of docker-compose.e2e.yml): the same isolated stack, but
+# the web app signs in with WorkOS AuthKit against the mock in ./mock-workos and
+# the API accepts both WorkOS and (mock) Supabase tokens -- the transition window.
+#
+#   python3 tests/e2e/mock-supabase/server.py &   # ISSUER=http://host.docker.internal:9999/auth/v1
+#   ISSUER=http://host.docker.internal:9998/user_management/client_e2e python3 tests/e2e/mock-workos/server.py &
+#   docker compose -p rap-e2e -f infra/docker/docker-compose.yml -f tests/e2e/docker-compose.e2e.yml \
+#     -f tests/e2e/docker-compose.e2e-workos.yml up -d --build postgres redis minio minio-init api web
+#   cd tests/e2e && E2E_AUTH_PROVIDER=workos npx playwright test auth-workos.spec.ts
+services:
+  api:
+    environment:
+      WORKOS_CLIENT_ID: client_e2e
+      # Test-mode key accepted only by the mock; not a real secret.
+      WORKOS_API_KEY: sk_test_e2e_mock
+      WORKOS_API_URL: http://host.docker.internal:9998
+      # The browser reaches the mock on the host's localhost.
+      WORKOS_AUTHORIZE_URL: http://localhost:9998
+      AUTH_PRIMARY_PROVIDER: workos
+  web:
+    build:
+      args:
+        NEXT_PUBLIC_AUTH_PROVIDER: workos

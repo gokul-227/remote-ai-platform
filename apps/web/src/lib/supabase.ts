@@ -14,11 +14,14 @@ const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KE
 // The publishable key is safe to expose client-side by design -- it only
 // grants what Supabase's Row Level Security policies allow for anonymous/
 // authenticated users, same as any other public API key.
+// With WorkOS sign-in the Supabase client stays inert: no stored session, no
+// background refresh, no URL parsing, so Supabase can be switched off entirely.
+const SUPABASE_ACTIVE = process.env.NEXT_PUBLIC_AUTH_PROVIDER !== "workos";
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
+    persistSession: SUPABASE_ACTIVE,
+    autoRefreshToken: SUPABASE_ACTIVE,
+    detectSessionInUrl: SUPABASE_ACTIVE,
   },
 });
 
@@ -30,7 +33,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
  * fetch the real user record (auto-provisioned server-side on first sight)
  * so callers can hand it to AuthContext's login().
  */
-export async function fetchBackendUser(session: Session) {
+export async function fetchBackendUser(session: Pick<Session, "access_token">) {
   const res = await axios.get(`${API_URL}/api/v1/auth/me`, {
     headers: { Authorization: `Bearer ${session.access_token}` },
   });
@@ -69,7 +72,7 @@ export function rememberOAuthSignUp(role: "ENGINEER" | "COMPANY", fullName: stri
  * re-applies on a later, unrelated login.
  */
 export async function applyPendingRegistration(
-  session: Session,
+  session: Pick<Session, "access_token">,
   currentUser: { email: string; full_name?: string; role: string; created_at?: string },
 ) {
   if (typeof window === "undefined") return currentUser;

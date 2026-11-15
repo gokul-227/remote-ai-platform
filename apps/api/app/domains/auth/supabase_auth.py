@@ -32,6 +32,10 @@ class SupabaseIdentity:
     provider: str = "supabase"
     # Extra issuers must assert the email is verified before it can link an account.
     email_verified: bool = True
+    # WorkOS session id (`sid`), used to revoke the session on sign-out.
+    session_id: str | None = None
+    # WorkOS access tokens carry no verified email: ask the WorkOS API on first sign-in.
+    verify_email_with_provider: bool = False
 
 
 def _get_jwks_client() -> PyJWKClient:
@@ -201,32 +205,97 @@ def _verify_extra_issuer_token(token: str, config: dict[str, str]) -> SupabaseId
     )
 
 
+_workos_jwks_client: PyJWKClient | None = None
+
+
+def _workos_client() -> PyJWKClient:
+    global _workos_jwks_client
+    if _workos_jwks_client is None:
+        _workos_jwks_client = PyJWKClient(
+            settings.WORKOS_JWKS_URL,
+            cache_keys=True,
+            lifespan=settings.SUPABASE_JWKS_CACHE_SECONDS,
+            timeout=5,
+        )
+    return _workos_jwks_client
+
+
+def _unauthorized(detail: str = "Invalid or expired token") -> HTTPException:
+    return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=detail)
+
+
+def verify_workos_token(token: str) -> SupabaseIdentity:
+    """Verify a WorkOS AuthKit access token.
+
+    Keys come from this client's own JWKS (a token for another WorkOS client
+    fails the signature), `iss` must be one of this client's issuers, and
+    `aud`, when present, must be this client id. AuthKit access tokens carry
+    no email by default: the verified email is read from the WorkOS API the
+    first time a subject is seen (auth/service.py).
+    """
+    try:
+        signing_key = _workos_client().get_signing_key_from_jwt(token)
+        payload = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256", "ES256"],
+            options={"require": ["exp", "iat", "sub", "iss"], "verify_aud": False},
+        )
+    except jwt.PyJWTError as exc:
+        raise _unauthorized() from exc
+    if str(payload.get("iss", "")).rstrip("/") not in settings.workos_issuers:
+        raise _unauthorized("Invalid token")
+    aud = payload.get("aud")
+    if aud is not None:
+        auds = aud if isinstance(aud, list) else [aud]
+        if settings.WORKOS_CLIENT_ID not in auds:
+            raise _unauthorized("Invalid token")
+    sub = payload.get("sub")
+    if not sub:
+        raise _unauthorized("Invalid token")
+    email = payload.get("email")
+    return SupabaseIdentity(
+        user_id=str(sub),
+        email=email,
+        issued_at=payload.get("iat"),
+        provider="workos",
+        # Only an explicit claim (custom JWT template) counts here; otherwise
+        # the service asks the WorkOS API.
+        email_verified=bool(email and payload.get("email_verified") is True),
+        session_id=payload.get("sid"),
+        verify_email_with_provider=not (email and payload.get("email_verified") is True),
+    )
+
+
 def verify_access_token(token: str) -> SupabaseIdentity:
-    """Verify a bearer token from Supabase or from an allow-listed extra issuer.
+    """Verify a bearer token from Supabase, WorkOS AuthKit or an allow-listed extra issuer.
 
     The issuer is read from the unverified payload only to pick the key set;
-    every claim is then verified against that issuer's own JWKS and audience.
-    A token whose issuer is on neither list is rejected before any key fetch.
+    every claim is then verified against that issuer's own JWKS. A token whose
+    issuer is on no list is rejected before any key fetch. With
+    AUTH_ACCEPT_SUPABASE=false, Supabase tokens are refused (after migration).
     """
     extra = settings.extra_issuers
-    if not extra:
+    if not extra and not settings.workos_enabled:
+        if not settings.AUTH_ACCEPT_SUPABASE:
+            raise _unauthorized()
         return verify_supabase_token(token)
     try:
         issuer = jwt.decode(token, options={"verify_signature": False}).get("iss")
     except (jwt.PyJWTError, TypeError, ValueError, OverflowError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
-        ) from exc
+        raise _unauthorized() from exc
+    if not isinstance(issuer, str) or not issuer:
+        raise _unauthorized("Invalid token")
+    if settings.workos_enabled and issuer.rstrip("/") in settings.workos_issuers:
+        return verify_workos_token(token)
     supabase_issuer = (
         f"{settings.SUPABASE_URL.rstrip('/')}/auth/v1" if settings.SUPABASE_URL else None
     )
-    if not isinstance(issuer, str) or not issuer:
-        raise HTTPException(status_code=401, detail="Invalid token")
     if issuer == supabase_issuer:
+        if not settings.AUTH_ACCEPT_SUPABASE:
+            raise _unauthorized()
         return verify_supabase_token(token)
     config = _extra_issuer_config(str(issuer))
     if config is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
-        )
+        raise _unauthorized()
     return _verify_extra_issuer_token(token, config)

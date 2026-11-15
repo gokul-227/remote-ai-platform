@@ -113,6 +113,17 @@ def _classify(path: str, method: str) -> tuple[str | None, tuple[int, int] | Non
     if path in {"/api/v1/auth/me/export"} or (method == "DELETE" and path == "/api/v1/auth/me"):
         return "sensitive", (base_limit, window)
 
+    # WorkOS sign-in is proxied here (codes are emailed from these calls), so
+    # sending and verifying codes share the tight sensitive budget. Refresh
+    # runs on every page load of a signed-in tab and gets the auth tier.
+    if method == "POST" and path in {
+        "/api/v1/auth/workos/magic-auth/send",
+        "/api/v1/auth/workos/magic-auth/verify",
+    }:
+        return "sensitive", (base_limit, window)
+    if path.startswith("/api/v1/auth/workos/"):
+        return "auth-session", (base_limit * 5, window)
+
     if any(path.startswith(p) for p in AI_CALL_ROUTE_PREFIXES):
         return "ai", (base_limit * 3, window)
 

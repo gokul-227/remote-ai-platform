@@ -2,6 +2,8 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
 export const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "placeholder";
+/** "supabase" (default) or "workos": which identity provider staff sign in with. */
+export const AUTH_PROVIDER = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "workos" ? "workos" : "supabase";
 /** "production" | "development" | "local" — which API this console was built to operate. */
 export const CONSOLE_ENV = process.env.NEXT_PUBLIC_DEPLOY_ENV || "local";
 

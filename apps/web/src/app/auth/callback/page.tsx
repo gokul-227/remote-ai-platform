@@ -6,6 +6,7 @@ import { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { takeReturnTo } from "@/figma/live";
 import { supabase, fetchBackendUser, applyPendingRegistration } from "@/lib/supabase";
+import * as workos from "@/lib/workos";
 
 const homeFor = (role?: string) => (role === "COMPANY" ? "codash" : role === "ADMIN" ? "admin" : "feed");
 
@@ -18,6 +19,30 @@ export default function OAuthCallback() {
 
   useEffect(() => {
     let done = false;
+    if (workos.WORKOS_ENABLED) {
+      done = true;
+      let token: string | null = null;
+      void (async () => {
+        try {
+          const session = await workos.completeOAuth(window.location.search);
+          if (!session)
+            throw new workos.WorkOSAuthError(
+              400,
+              "Sign-in was cancelled or didn't complete. Choose another method or try again.",
+            );
+          token = session.access_token;
+          let user = await fetchBackendUser(session);
+          user = await applyPendingRegistration(session, user);
+          login(session.access_token, user, session.refresh_token);
+          window.location.replace(`/#${takeReturnTo(homeFor(user.role))}`);
+        } catch (e) {
+          // The app refused this sign-in: end the WorkOS session and say why.
+          await workos.signOut(token);
+          setError(extractErrorMessage(e, "Signed in, but we couldn't load your account. Please try again."));
+        }
+      })();
+      return;
+    }
     const finish = async () => {
       const { data } = await supabase.auth.getSession();
       if (done || !data.session) return;

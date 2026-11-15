@@ -385,6 +385,175 @@ paths:
               schema: {}
       security:
       - HTTPBearer: []
+  /api/v1/auth/workos/config:
+    get:
+      tags:
+      - Authentication
+      summary: Provider Config
+      description: Which sign-in provider the apps should use. Public; no secrets.
+      operationId: provider_config_api_v1_auth_workos_config_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderConfig'
+  /api/v1/auth/workos/magic-auth/send:
+    post:
+      tags:
+      - Authentication
+      summary: Send Code
+      description: Email a one-time sign-in code. Same answer whether or not an account exists.
+      operationId: send_code_api_v1_auth_workos_magic_auth_send_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailIn'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/workos/magic-auth/verify:
+    post:
+      tags:
+      - Authentication
+      summary: Verify Code
+      operationId: verify_code_api_v1_auth_workos_magic_auth_verify_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokensOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/workos/authorize:
+    post:
+      tags:
+      - Authentication
+      summary: Authorize
+      description: The WorkOS URL that starts a Google/GitHub/Microsoft sign-in.
+      operationId: authorize_api_v1_auth_workos_authorize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorizeIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Authorize Api V1 Auth Workos Authorize Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/workos/callback:
+    post:
+      tags:
+      - Authentication
+      summary: Oauth Callback
+      operationId: oauth_callback_api_v1_auth_workos_callback_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallbackIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokensOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/workos/refresh:
+    post:
+      tags:
+      - Authentication
+      summary: Refresh Session
+      operationId: refresh_session_api_v1_auth_workos_refresh_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokensOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/auth/workos/logout:
+    post:
+      tags:
+      - Authentication
+      summary: Logout
+      description: |-
+        End this WorkOS session (or every session of the user) so refresh stops working.
+
+        Always 204: a client whose access token has lapsed just drops its refresh
+        token locally (it should refresh first to revoke server-side), and WorkOS
+        sessions also expire on their own.
+      operationId: logout_api_v1_auth_workos_logout_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutIn'
+        required: true
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
   /api/v1/engineers:
     get:
       tags:
@@ -12097,6 +12266,35 @@ components:
       - full_name
       - role
       title: AuthorSummary
+    AuthorizeIn:
+      properties:
+        provider:
+          type: string
+          title: Provider
+        redirect_uri:
+          type: string
+          maxLength: 512
+          title: Redirect Uri
+        state:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: ^[A-Za-z0-9_\-]+$
+          title: State
+        code_challenge:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 43
+            pattern: ^[A-Za-z0-9_\-]+$
+          - type: 'null'
+          title: Code Challenge
+      type: object
+      required:
+      - provider
+      - redirect_uri
+      - state
+      title: AuthorizeIn
     BatchEvaluationRequest:
       properties:
         submissions:
@@ -12240,6 +12438,26 @@ components:
       required:
       - file
       title: Body_upload_resume_api_v1_engineers_me_resume_post
+    CallbackIn:
+      properties:
+        code:
+          type: string
+          maxLength: 256
+          minLength: 8
+          pattern: ^[A-Za-z0-9_\-]+$
+          title: Code
+        code_verifier:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 43
+            pattern: ^[A-Za-z0-9_\-.~]+$
+          - type: 'null'
+          title: Code Verifier
+      type: object
+      required:
+      - code
+      title: CallbackIn
     CandidateMatchResponse:
       properties:
         id:
@@ -13680,6 +13898,20 @@ components:
       - institution
       - degree
       title: EducationItem
+    EmailIn:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        existing_only:
+          type: boolean
+          title: Existing Only
+          default: false
+      type: object
+      required:
+      - email
+      title: EmailIn
     EndorseIn:
       properties:
         user_id:
@@ -15845,6 +16077,14 @@ components:
       - url
       - provider
       title: JoinLink
+    LogoutIn:
+      properties:
+        everywhere:
+          type: boolean
+          title: Everywhere
+          default: false
+      type: object
+      title: LogoutIn
     MatchStatusUpdate:
       properties:
         status:
@@ -17092,6 +17332,30 @@ components:
       required:
       - cover_note
       title: ProposalRevision
+    ProviderConfig:
+      properties:
+        primary:
+          type: string
+          title: Primary
+        workos_client_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Workos Client Id
+        oauth_providers:
+          items:
+            type: string
+          type: array
+          title: Oauth Providers
+          default: []
+        accept_supabase:
+          type: boolean
+          title: Accept Supabase
+      type: object
+      required:
+      - primary
+      - accept_supabase
+      title: ProviderConfig
     PublicAuthor:
       properties:
         name:
@@ -17215,6 +17479,17 @@ components:
       required:
       - reason
       title: Reason
+    RefreshIn:
+      properties:
+        refresh_token:
+          type: string
+          maxLength: 512
+          minLength: 8
+          title: Refresh Token
+      type: object
+      required:
+      - refresh_token
+      title: RefreshIn
     ResumeUploadResponse:
       properties:
         resume_url:
@@ -18249,6 +18524,24 @@ components:
       - created_at
       - updated_at
       title: TicketOut
+    TokensOut:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        refresh_token:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Refresh Token
+        token_type:
+          type: string
+          title: Token Type
+          default: bearer
+      type: object
+      required:
+      - access_token
+      title: TokensOut
     TrustScoreResponse:
       properties:
         user_id:
@@ -18529,6 +18822,23 @@ components:
       required:
       - status
       title: VerificationReviewUpdate
+    VerifyIn:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        code:
+          type: string
+          maxLength: 12
+          minLength: 4
+          pattern: ^[0-9A-Za-z]+$
+          title: Code
+      type: object
+      required:
+      - email
+      - code
+      title: VerifyIn
     VersionOut:
       properties:
         version:
