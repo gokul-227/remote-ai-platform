@@ -63,7 +63,10 @@ recorded in PostgreSQL (`app/domains/tasks/`); job imports are scheduled from th
 operated from the staff console (`/admin/background/*`). Imports run only on the Celery worker on the
 production VM; GitHub Actions is for CI and deployments only. Production is one Oracle VM
 (`infra/docker/docker-compose.prod.yml`, deployed by `.github/workflows/deploy-vm.yml`); Cloudflare is
-DNS/proxy only (no Workers), and there is no dev environment. Resume parsing is still inline with a time budget. Money movement is gated off
+DNS/proxy only (no Workers), and there is no dev environment. The VM runs PostgreSQL 17 and Redis in
+compose, Oracle Object Storage holds files and nightly encrypted backups (`ops/backup`), email goes
+through Brevo, every alert goes to Slack, and `/opt/rap/.env` is rendered from Infisical by
+`ops/vm/render-env.sh`. Resume parsing is still inline with a time budget. Money movement is gated off
 (`MARKETPLACE_PAYMENTS_ENABLED`); contract/milestone state rules live in `app/domains/contracts/lifecycle.py`.
 The frontend is a hash-routed client app in `apps/web/src/figma` (routes in `App.tsx`; the navigation
 catalog — seven sections and their groups — and the shell live in `rap_shell.tsx`), styled via its own
@@ -80,6 +83,7 @@ PostgreSQL (`tests/test_postgres_concurrency.py`), not SQLite.
 
 ## Documentation
 
-In-depth docs (architecture, deployment, audits, UI screenshots) live in the companion private repo, not
-here — ask the repo owner for access if you need them. Keep this file itself as the only
-architecture-in-prose document in the public repo.
+All documentation lives in `docs/` (index: `docs/README.md`): architecture, operations runbooks
+(deploy, rollback, backups, incidents, monitoring, secrets, free-tier limits), development, product and the
+decision log. The repo is public: docs name Infisical secrets, never values, account ids, IPs or personal
+data. Update the matching doc in the same change as the behaviour.
