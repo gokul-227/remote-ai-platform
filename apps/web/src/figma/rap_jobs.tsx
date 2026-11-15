@@ -1010,7 +1010,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
             </button>
           ))}
         </Card>
-        <main className="min-w-0 space-y-3">
+        <section className="min-w-0 space-y-3">
           <InviteBanner onNotice={setNotice} />
           {view === "invitations" && (
             <Card c="rounded-lg" p={false}>
@@ -1093,7 +1093,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
               ))}
             </Card>
           )}
-        </main>
+        </section>
         <aside className="self-start">
           <Card c="rounded-lg" p={false}>
             {user ? <InviteLink onNotice={setNotice} /> : null}

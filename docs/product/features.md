@@ -6,6 +6,7 @@ Status reflects the code; "partial" items are labelled honestly in the product.
 
 | Area | What members can do | Status |
 | --- | --- | --- |
+| Home overview | After sign-in: getting-started checklist, jobs for you, messages, network, projects, files, meetings, the assistant and a directory of every area | Working |
 | Sign-in | Passwordless email code, or Google / GitHub / Microsoft, via WorkOS (Supabase Auth during transition) | Working |
 | Profile | Manual builder or AI import from a PDF/DOCX resume; completeness score and checklist | Working |
 | Jobs | Search remote jobs imported from many boards ([job-ingestion.md](job-ingestion.md)) with filters; save; apply with a note; withdraw; track status | Working |

@@ -11,11 +11,21 @@ const NotificationsPanel = lazy(() => import("./rap_social").then((m) => ({ defa
 // floating dock, not in the menu. Staff tools live in the separate console.
 type NavItem = [route: string, label: string, icon: string];
 type Area = { icon: string; blurb: string; groups: { label: string; items: NavItem[] }[] };
-const catalog: Record<string, Area> = {
+export const catalog: Record<string, Area> = {
   Home: {
     icon: "home",
-    blurb: "Updates from your network",
-    groups: [{ label: "", items: [["feed", "Feed", "home"]] }],
+    blurb: "Your day at a glance and updates from your network",
+    groups: [
+      {
+        label: "",
+        items: [
+          ["home", "Overview", "home"],
+          ["feed", "Feed", "list"],
+          ["notifications", "Notifications", "bell"],
+          ["assistant", "AI assistant", "spark"],
+        ],
+      },
+    ],
   },
   Network: {
     icon: "users",
@@ -27,6 +37,7 @@ const catalog: Record<string, Area> = {
           ["profile", "My profile", "user"],
           ["network", "Connections", "users"],
           ["invitations", "Invitations", "inbox"],
+          ["suggestions", "People you may know", "user"],
         ],
       },
       {
@@ -82,6 +93,7 @@ const catalog: Record<string, Area> = {
       {
         label: "Hiring",
         items: [
+          ["codash", "Hiring dashboard", "chart"],
           ["postjob", "Post a job", "plus"],
           ["cojobs", "Manage postings", "layers"],
           ["candidates", "Applicants", "users"],
@@ -157,6 +169,7 @@ const catalog: Record<string, Area> = {
         items: [
           ["settings", "Account settings", "settings"],
           ["security", "Security & verification", "shield"],
+          ["notifysettings", "Notification settings", "bell"],
           ["privacydata", "Privacy & data", "lock"],
           ["apps", "Connected apps", "link"],
         ],
@@ -180,15 +193,14 @@ const HOME_OF: Record<string, string> = {
   freelancework: "Freelancing",
   jobdetail: "Jobs",
   talent: "Jobs",
-  codash: "Jobs",
   engineer: "Network",
   company: "Network",
   group: "Collaboration",
   contractsign: "Freelancing",
   copayments: "Freelancing",
-  notifications: "Home",
   search: "Home",
-  assistant: "Home",
+  project: "Projects",
+  sharedfile: "Projects",
 };
 // Search screens and their AI-matched view share one page with a toggle.
 const JOBS_TOGGLE: NavItem[] = [
@@ -382,7 +394,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           ["companies", "Companies", "building", "Explore"],
         ]
       : [
-          ["feed", "Home", "home", "Home"],
+          ["home", "Home", "home", "Home"],
           ["network", "Network", "users", "Network"],
           ["messenger", "Collaboration", "chat", "Collaboration"],
           ["jobs", "Jobs", "briefcase", "Jobs"],
@@ -394,7 +406,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
     <div className="rap-app">
       <header className="rap-top">
         <div className="rap-brand-search">
-          <button aria-label="Remote AI home" onClick={() => go("feed")}>
+          <button aria-label="Remote AI home" onClick={() => go(user ? "home" : "jobs")}>
             <Brand s={42} />
           </button>
           <form
@@ -568,7 +580,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
                 </button>
               </div>
             ))}
-          {crumb && r !== "feed" && (
+          {crumb && r !== "feed" && r !== "home" && (
             <nav aria-label="Breadcrumb" className="rap-crumb">
               <button onClick={() => go(sections[crumb.area]?.[0]?.[0] ?? "feed")}>{crumb.area}</button>
               {crumb.group && <span>{crumb.group}</span>}
@@ -807,11 +819,17 @@ function ProfileCard({ go, name }: { go: (route: string) => void; name: string }
         <h3>Quick access</h3>
         {(
           [
+            ["feed", "Feed", "list"],
             ["recs", "AI-matched jobs", "spark"],
             ["freelancework", "AI-matched work", "spark"],
+            ["messenger", "Chats", "chat"],
+            ["channels", "Channels", "inbox"],
             ["groups", "Communities", "globe"],
             ["meetings", "Meetings", "calendar"],
+            ["projects", "Project boards", "board"],
+            ["files", "Files", "inbox"],
             ["docs", "Documents", "file"],
+            ["assistant", "AI assistant", "spark"],
           ] as const
         ).map(([r, l, i]) => (
           <button key={r} className="rap-nav" onClick={() => go(r)}>

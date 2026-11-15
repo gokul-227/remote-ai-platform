@@ -12,6 +12,7 @@ const Feed = lazy(() => import("./rap_social").then((m) => ({ default: m.Feed })
 const Groups = lazy(() => import("./rap_social").then((m) => ({ default: m.Groups })));
 const Messenger = lazy(() => import("./rap_social").then((m) => ({ default: m.Messenger })));
 const Notifications = lazy(() => import("./rap_social").then((m) => ({ default: m.Notifications })));
+const Home = lazy(() => import("./rap_start").then((m) => ({ default: m.Home })));
 const Dashboard = lazy(() => import("./rap_home").then((m) => ({ default: m.Dashboard })));
 const Recs = lazy(() => import("./rap_home").then((m) => ({ default: m.Recs })));
 const Applications = lazy(() => import("./rap_home").then((m) => ({ default: m.Applications })));
@@ -104,6 +105,8 @@ export const REG: Record<string, any> = {
       <GithubConnect />
     </div>
   ),
+  home: Home,
+  notifysettings: () => <Settings initial="Notifications" />,
   privacydata: () => <Settings initial="Privacy" />,
   apps: () => <Settings initial="Connected accounts" />,
   browser: Browser,
@@ -224,7 +227,7 @@ function App() {
     window.scrollTo(0, 0);
   };
   // Visitors land on public job discovery rather than a members-only home feed.
-  const r = !user && loc.route === "feed" ? "jobs" : loc.route;
+  const r = !user && (loc.route === "feed" || loc.route === "home") ? "jobs" : loc.route;
   if (AUTH_ROUTES.includes(r)) return <AuthFlow key={r} route={r} go={go} />;
   const Page = REG[r] || NotFound;
   return (

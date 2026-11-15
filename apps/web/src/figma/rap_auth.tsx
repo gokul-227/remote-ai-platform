@@ -24,7 +24,7 @@ const OAUTH_LABELS: [OAuthProvider, string][] = [
 // with the real Supabase email-code / OAuth sign-in and the backend's
 // password-recovery endpoints.
 // One kind of member account: everyone starts on the feed (staff use the separate console).
-const homeFor = () => "feed";
+const homeFor = () => "home";
 
 export function AuthFlow({ route, go }: { route: string; go: (r: string) => void }) {
   const { login } = useAuth();
