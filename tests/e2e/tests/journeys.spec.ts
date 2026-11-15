@@ -240,7 +240,7 @@ test("an API failure shows an error with a working retry, not an empty result", 
   await expect(page.getByText(/no jobs match/i)).toHaveCount(0);
   fail = false;
   await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByText(/results/i).first()).toBeVisible();
+  await expect(page.getByText(/live remote roles - [\d,]+ results/i)).toBeVisible();
   await expect(page.getByText(/couldn’t load jobs/i)).toHaveCount(0);
 });
 
