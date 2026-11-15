@@ -38,7 +38,7 @@ export default async function RemoteJobsIndex() {
               <Link
                 key={t.slug}
                 href={`/remote-jobs/${t.slug}`}
-                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:border-[#175CD3] hover:text-[#175CD3]"
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:border-brand hover:text-brand"
               >
                 Remote {t.name} jobs
               </Link>
@@ -53,7 +53,7 @@ export default async function RemoteJobsIndex() {
             <Link
               key={p.slug}
               href={`/remote-jobs/in/${p.slug}`}
-              className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:border-[#175CD3] hover:text-[#175CD3]"
+              className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:border-brand hover:text-brand"
             >
               Remote jobs in {p.name}
             </Link>

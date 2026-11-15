@@ -50,14 +50,14 @@ export default async function JobPage({ params }: Props) {
       <article className="mt-4 rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
         <p className="text-sm font-semibold text-slate-600">
           {job.company_id ? (
-            <Link href={`/companies/${job.company_id}`} className="hover:text-[#175CD3] hover:underline">
+            <Link href={`/companies/${job.company_id}`} className="hover:text-brand hover:underline">
               {job.company_name}
             </Link>
           ) : (
             job.company_name
           )}
         </p>
-        <h1 className="mt-1 text-3xl font-bold text-[#102A43]">{job.title}</h1>
+        <h1 className="mt-1 text-3xl font-bold text-navy">{job.title}</h1>
         <p className="mt-1 text-slate-600">
           {where}
           {job.posted_at ? ` · posted ${new Date(job.posted_at).toISOString().slice(0, 10)}` : ""}
@@ -75,7 +75,7 @@ export default async function JobPage({ params }: Props) {
               href={originalJobUrl(job.external_url)}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#175CD3] underline"
+              className="font-semibold text-brand underline"
             >
               {jobSourceName(job.source)} — view original listing and apply
             </a>
@@ -85,7 +85,7 @@ export default async function JobPage({ params }: Props) {
         <p className="mt-6">
           <a
             href={`/#jobdetail/${job.id}`}
-            className="inline-flex rounded-full bg-[#175CD3] px-5 py-2.5 font-semibold text-white hover:bg-[#124BAD]"
+            className="inline-flex rounded-full bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-hover"
           >
             View and apply
           </a>
@@ -114,7 +114,7 @@ export default async function JobPage({ params }: Props) {
               <Link
                 key={t.slug}
                 href={`/remote-jobs/${t.slug}`}
-                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#175CD3] hover:text-[#175CD3]"
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-brand hover:text-brand"
               >
                 {t.jobType ? `${t.name} remote jobs` : `Remote ${t.name} jobs`}
               </Link>
@@ -122,13 +122,10 @@ export default async function JobPage({ params }: Props) {
           </div>
         </section>
       )}
-      <div className="mt-8 rounded-xl bg-[#102A43] p-6 text-white">
+      <div className="mt-8 rounded-xl bg-navy p-6 text-white">
         <p className="text-lg font-bold">Get matched to jobs like this</p>
         <p className="mt-1 text-sm text-[#DCE8FF]">Free profile, one-click applications, and alerts for new roles.</p>
-        <Link
-          href="/#register"
-          className="mt-4 inline-flex rounded-full bg-white px-5 py-2 font-semibold text-[#102A43]"
-        >
+        <Link href="/#register" className="mt-4 inline-flex rounded-full bg-white px-5 py-2 font-semibold text-navy">
           Join free
         </Link>
       </div>

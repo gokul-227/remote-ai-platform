@@ -56,7 +56,7 @@ export function FindGoogleContacts({ onNotice }: { onNotice: (m: string) => void
       <button
         type="button"
         onClick={start}
-        className="mt-3 rounded-lg bg-[#175CD3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#124BAD]"
+        className="mt-3 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-hover"
       >
         Find people you know from Google
       </button>
@@ -118,7 +118,7 @@ export function ContactResults({ result }: { result: ImportResult }) {
                   type="button"
                   disabled={Boolean(state)}
                   onClick={() => connect(m.id)}
-                  className="rounded-full border border-[#175CD3] px-4 py-1 text-sm font-semibold text-[#175CD3] disabled:border-slate-300 disabled:text-slate-500"
+                  className="rounded-full border border-brand px-4 py-1 text-sm font-semibold text-brand disabled:border-slate-300 disabled:text-slate-500"
                 >
                   {state === "ACCEPTED" ? "Connected" : state ? "Requested" : "Connect"}
                 </button>
@@ -158,7 +158,7 @@ export function ContactResults({ result }: { result: ImportResult }) {
           type="button"
           disabled={busy || chosen.length === 0 || chosen.length > remaining}
           onClick={invite}
-          className="mt-3 rounded-lg bg-[#175CD3] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="mt-3 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           Invite {chosen.length || ""} selected
         </button>

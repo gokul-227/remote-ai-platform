@@ -40,7 +40,7 @@ export default async function PlacePage({ params }: Props) {
   return (
     <PublicFrame wide>
       <Breadcrumbs trail={trail} />
-      <h1 className="mt-3 text-3xl font-bold text-[#102A43]">{heading(place.name)}</h1>
+      <h1 className="mt-3 text-3xl font-bold text-navy">{heading(place.name)}</h1>
       <p className="mt-2 max-w-3xl text-slate-600">
         {total} open roles whose posting mentions {place.name}, newest first. Check each listing for residency or
         time-zone requirements.
@@ -58,7 +58,7 @@ export default async function PlacePage({ params }: Props) {
             <Link
               key={p.slug}
               href={`/remote-jobs/in/${p.slug}`}
-              className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#175CD3] hover:text-[#175CD3]"
+              className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-brand hover:text-brand"
             >
               {heading(p.name)}
             </Link>

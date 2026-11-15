@@ -34,7 +34,7 @@ export default async function PersonPage({ params }: Props) {
     <PublicFrame>
       <section className="rounded-xl border border-slate-200 bg-white p-6">
         <div className="flex items-center gap-4">
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-[#175CD3] text-3xl font-bold text-white">
+          <div className="grid h-20 w-20 place-items-center rounded-full bg-brand text-3xl font-bold text-white">
             {name.charAt(0)}
           </div>
           <div>

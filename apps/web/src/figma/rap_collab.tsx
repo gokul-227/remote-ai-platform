@@ -430,7 +430,7 @@ export function Support() {
               <button
                 key={t.id}
                 onClick={() => setSel(t.id)}
-                className={`rounded-xl border p-3 text-left ${sel === t.id ? "border-[#175CD3] bg-[#E8F0FC]" : "border-slate-200 bg-white"}`}
+                className={`rounded-xl border p-3 text-left ${sel === t.id ? "border-brand bg-brand-soft" : "border-slate-200 bg-white"}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold">{t.subject}</span>
@@ -506,7 +506,7 @@ function TicketThread({ id, onChange }: { id: string; onChange: () => void }) {
       </div>
       <ol className="grid gap-2">
         {q.data.messages.map((m) => (
-          <li key={m.id} className={`rounded-lg p-3 text-sm ${m.from_staff ? "bg-[#E8F0FC]" : "bg-slate-50"}`}>
+          <li key={m.id} className={`rounded-lg p-3 text-sm ${m.from_staff ? "bg-brand-soft" : "bg-slate-50"}`}>
             <p className="mb-1 text-xs font-semibold text-slate-500">
               {m.from_staff ? "Support team" : "You"} · {timeAgo(m.created_at)}
             </p>
@@ -673,7 +673,7 @@ export function AssistantChat({ go, compact }: { go?: (r: string) => void; compa
           {turns.map((t, i) => (
             <li
               key={i}
-              className={`rounded-lg p-3 text-sm ${t.role === "user" ? "ml-10 bg-slate-50" : "mr-10 bg-[#E8F0FC]"}`}
+              className={`rounded-lg p-3 text-sm ${t.role === "user" ? "ml-10 bg-slate-50" : "mr-10 bg-brand-soft"}`}
             >
               <p className="whitespace-pre-line">{t.text}</p>
               {t.out?.kind === "READ" && t.out.result && <ResultList result={t.out.result} go={go} />}
@@ -699,7 +699,7 @@ export function AssistantChat({ go, compact }: { go?: (r: string) => void; compa
                     <p className="mt-1">
                       {t.actionState}{" "}
                       {t.out.result?.link && (
-                        <a className="text-[#175CD3] underline" href={t.out.result.link}>
+                        <a className="text-brand underline" href={t.out.result.link}>
                           Open
                         </a>
                       )}
@@ -806,7 +806,7 @@ function ResultList({ result, go }: { result: Record<string, any>; go?: (r: stri
       {items.map((it, k) => (
         <li key={k}>
           <button
-            className="text-left text-[#175CD3] underline"
+            className="text-left text-brand underline"
             onClick={() => go?.(String(it.link || "").replace(/^#/, ""))}
           >
             {it.title}
@@ -933,7 +933,7 @@ export function Deliverables({
                   {d.kind === "CODE" && (
                     <p className="mt-1 font-mono text-xs break-all">
                       <a
-                        className="text-[#175CD3] underline"
+                        className="text-brand underline"
                         href={safeHref(`${d.repo_url}/commit/${d.commit_sha}`)}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -947,12 +947,12 @@ export function Deliverables({
                     </p>
                   )}
                   {d.kind === "DOCUMENT" && (
-                    <button className="mt-1 text-xs text-[#175CD3] underline" onClick={() => download(d)}>
+                    <button className="mt-1 text-xs text-brand underline" onClick={() => download(d)}>
                       Download {d.file_name} ({Math.ceil((d.file_size ?? 0) / 1024)} KB)
                     </button>
                   )}
                   {d.kind === "DOCUMENT" && /\.(csv|txt|md)$/i.test(d.file_name ?? "") && (
-                    <button className="ml-3 mt-1 text-xs text-[#175CD3] underline" onClick={() => setPreviewing(d)}>
+                    <button className="ml-3 mt-1 text-xs text-brand underline" onClick={() => setPreviewing(d)}>
                       Preview
                     </button>
                   )}
@@ -960,12 +960,12 @@ export function Deliverables({
                     <p className="mt-1 text-xs">
                       {d.environment && <Tag>{d.environment}</Tag>}{" "}
                       {canEmbed(d.demo_url) && (
-                        <button className="mr-2 text-[#175CD3] underline" onClick={() => setViewing(d)}>
+                        <button className="mr-2 text-brand underline" onClick={() => setViewing(d)}>
                           Open in demo viewer
                         </button>
                       )}
                       <a
-                        className="text-[#175CD3] underline break-all"
+                        className="text-brand underline break-all"
                         href={safeHref(d.demo_url)}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -1225,7 +1225,7 @@ export function Channels() {
             <button
               key={c.id}
               onClick={() => setSel(c.id)}
-              className={`flex items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${sel === c.id ? "bg-[#E8F0FC] font-semibold" : "hover:bg-slate-100"}`}
+              className={`flex items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${sel === c.id ? "bg-brand-soft font-semibold" : "hover:bg-slate-100"}`}
             >
               <span>
                 # {c.name} {c.muted && <span className="text-xs text-slate-400">(muted)</span>}
@@ -1412,7 +1412,7 @@ export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: 
             {messages.length > 0 && (viewingHistory ? history.more : (q.data?.length ?? 0) === 50) && (
               <button
                 type="button"
-                className="rounded-lg px-3 py-2 font-semibold text-[#175CD3] disabled:opacity-50"
+                className="rounded-lg px-3 py-2 font-semibold text-brand disabled:opacity-50"
                 onClick={loadOlder}
                 disabled={loadingHistory}
               >
@@ -1432,7 +1432,7 @@ export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: 
             {messages.map((m) => (
               <li
                 key={m.id}
-                className={`rounded-lg p-2 text-sm ${m.author_id === user?.id ? "bg-[#E8F0FC]" : "bg-slate-50"}`}
+                className={`rounded-lg p-2 text-sm ${m.author_id === user?.id ? "bg-brand-soft" : "bg-slate-50"}`}
               >
                 <p className="text-xs text-slate-500">
                   <b className="text-slate-700">{m.author_name || "Former member"}</b> · {timeAgo(m.created_at)}
@@ -1476,7 +1476,7 @@ export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: 
                       <button
                         key={emoji}
                         aria-pressed={m.my_reactions.includes(emoji)}
-                        className={`rounded-full border px-2 text-xs ${m.my_reactions.includes(emoji) ? "border-[#175CD3] bg-white" : "border-slate-200"}`}
+                        className={`rounded-full border px-2 text-xs ${m.my_reactions.includes(emoji) ? "border-brand bg-white" : "border-slate-200"}`}
                         onClick={() =>
                           msgAction(() =>
                             m.my_reactions.includes(emoji)
@@ -1534,7 +1534,7 @@ export function ChannelView({ channel, onRead }: { channel: ChannelRow; onRead: 
                   </div>
                 )}
                 {!thread && (
-                  <button className="mt-1 text-xs text-[#175CD3] underline" onClick={() => setThread(m)}>
+                  <button className="mt-1 text-xs text-brand underline" onClick={() => setThread(m)}>
                     {m.reply_count ? `${m.reply_count} repl${m.reply_count === 1 ? "y" : "ies"}` : "Reply in thread"}
                   </button>
                 )}
@@ -1747,7 +1747,7 @@ export function Endorsements({ userId, canEndorse }: { userId: string; canEndors
             <span className="capitalize">{s.skill}</span>
             <span className="text-xs text-slate-500">{s.count}</span>
             {canEndorse && (
-              <button className="text-xs text-[#175CD3] underline" onClick={() => toggle(s.skill, s.endorsed_by_me)}>
+              <button className="text-xs text-brand underline" onClick={() => toggle(s.skill, s.endorsed_by_me)}>
                 {s.endorsed_by_me ? "Withdraw" : "Endorse"}
               </button>
             )}
@@ -1796,7 +1796,7 @@ export function SprintBar({ projectId, onChange }: { projectId: string; onChange
           <Tag t={s.status === "ACTIVE" ? "green" : "gray"}>{s.status === "ACTIVE" ? "Active" : "Planned"}</Tag>
           {s.status === "PLANNED" && (
             <button
-              className="text-[#175CD3] underline"
+              className="text-brand underline"
               onClick={() => act(() => api.post(`/projects/sprints/${s.id}/start`), "Sprint started.")}
             >
               Start
@@ -1804,7 +1804,7 @@ export function SprintBar({ projectId, onChange }: { projectId: string; onChange
           )}
           {s.status === "ACTIVE" && (
             <button
-              className="text-[#175CD3] underline"
+              className="text-brand underline"
               onClick={() => act(() => api.post(`/projects/sprints/${s.id}/complete`), "Sprint completed.")}
             >
               Complete
@@ -2341,13 +2341,13 @@ export function Browser() {
           <button
             type="submit"
             disabled={busy || !address.trim()}
-            className="rounded-lg bg-[#175CD3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0443A8] disabled:opacity-50"
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-[#0443A8] disabled:opacity-50"
           >
             {busy ? "Loading…" : "Go"}
           </button>
           {current && (
             <a
-              className="px-2 text-sm font-semibold text-[#175CD3] hover:underline"
+              className="px-2 text-sm font-semibold text-brand hover:underline"
               href={current}
               target="_blank"
               rel="noopener noreferrer"

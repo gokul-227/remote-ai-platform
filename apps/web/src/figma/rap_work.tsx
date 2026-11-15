@@ -1,3 +1,4 @@
+import { BRAND } from "@/lib/brand";
 import { useRef, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -22,7 +23,7 @@ import {
   Notice,
 } from "./rap_kit";
 
-const GR = "#175CD3";
+const GR = BRAND.blue;
 export function Work() {
   // Live: contract / freelance roles from /jobs, real saved jobs, proposals submitted as applications.
   const { user } = useAuth();
@@ -154,7 +155,7 @@ export function Work() {
                       }}
                       className={cx(
                         "rounded-full border p-1.5",
-                        saved.has(w.id) ? "border-[#175CD3] text-[#175CD3]" : "border-slate-300 text-slate-500",
+                        saved.has(w.id) ? "border-brand text-brand" : "border-slate-300 text-slate-500",
                       )}
                     >
                       <Ic n="heart" s={16} c={saved.has(w.id) ? "fill-current" : ""} />
@@ -180,7 +181,7 @@ export function Work() {
                     {w.loc}
                   </span>
                   {score[w.id] != null && (
-                    <span className="font-semibold text-[#175CD3]">{Math.round(score[w.id])}% match</span>
+                    <span className="font-semibold text-brand">{Math.round(score[w.id])}% match</span>
                   )}
                 </p>
               </div>
@@ -219,7 +220,7 @@ export function Work() {
                     <span>Profile completeness</span>
                     <b>{Math.round(prof.data.profile_score || 0)}%</b>
                   </div>
-                  <Bar v={prof.data.profile_score || 0} c="bg-[#175CD3]" />
+                  <Bar v={prof.data.profile_score || 0} c="bg-brand" />
                 </div>
               </Card>
             )}
@@ -687,7 +688,7 @@ export function Contracts() {
                   </p>
                 </div>
                 <div className="hidden w-48 md:block">
-                  <Bar v={progress(c)} c="bg-[#175CD3]" />
+                  <Bar v={progress(c)} c="bg-brand" />
                   <p className="mt-1 text-xs text-slate-500">{progress(c)}% complete</p>
                 </div>
                 <p className="w-24 text-right font-semibold">{money(total(c), c.currency)}</p>
@@ -842,7 +843,7 @@ export function Contracts() {
                   )}
                   {cur.status === "ACTIVE" && (
                     <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 p-4 text-sm">
-                      <Ic n="shieldcheck" c="text-[#175CD3]" s={22} />
+                      <Ic n="shieldcheck" c="text-brand" s={22} />
                       <span className="flex-1">
                         The professional delivers each milestone and the client approves it. Payments are not processed
                         through Remote AI Platform yet, so approving a milestone does not move any money.
@@ -1026,7 +1027,7 @@ function PaymentsView({ company }: { company: boolean }) {
               {mixed ? ` (${cur} only)` : ""}
             </p>
             <div className="mt-4">
-              <Bars d={monthly} c="#175CD3" h={180} />
+              <Bars d={monthly} c={BRAND.blue} h={180} />
             </div>
             <div className="mt-2 flex justify-between text-xs text-slate-500">
               {byMonth.map((d) => (
@@ -1188,9 +1189,7 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
               aria-pressed={tab === k}
               className={cx(
                 "whitespace-nowrap border-b-2 px-4 py-2 text-sm font-semibold",
-                tab === k
-                  ? "border-[#175CD3] text-[#175CD3]"
-                  : "border-transparent text-slate-500 hover:text-slate-800",
+                tab === k ? "border-brand text-brand" : "border-transparent text-slate-500 hover:text-slate-800",
               )}
             >
               {l}
@@ -1313,7 +1312,7 @@ export function TaskMarketplace({ initial }: { initial?: string } = {}) {
               return (
                 <Card key={s.id} c="rounded-lg">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E8F0FC] text-[#175CD3]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
                       <Ic n="code" s={20} />
                     </div>
                     <div className="flex-1">

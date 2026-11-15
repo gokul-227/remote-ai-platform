@@ -7,7 +7,7 @@ export function JobSource({ source, url }: { source?: string | null; url?: strin
   return (
     <span>
       Source:{" "}
-      <a href={href} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#175CD3] underline">
+      <a href={href} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand underline">
         {jobSourceName(source)} — original listing
       </a>
     </span>
