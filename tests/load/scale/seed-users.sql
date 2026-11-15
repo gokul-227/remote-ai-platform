@@ -78,7 +78,7 @@ FROM seed.uids u, generate_series(16, 20) k, seed.paras p WHERE p.id = 1 + ((u.n
 
 CREATE TABLE seed.convs AS
 SELECT gen_random_uuid() AS id, a.id AS p1, b.id AS p2
-FROM seed.uids a JOIN seed.uids b ON b.n = 1 + (a.n % :users) WHERE a.n < b.n OR b.n = 1;
+FROM seed.uids a JOIN seed.uids b ON b.n = 1 + (a.n % :users) WHERE a.id <> b.id AND (a.n < b.n OR b.n = 1);
 INSERT INTO conversations (id, participant_one_id, participant_two_id, created_at, updated_at)
 SELECT id, least(p1, p2), greatest(p1, p2), now(), now() FROM seed.convs ON CONFLICT DO NOTHING;
 INSERT INTO messages (id, conversation_id, sender_id, content, is_read, created_at, attachment_ids)
@@ -87,13 +87,16 @@ SELECT gen_random_uuid(), c.id, CASE WHEN k % 2 = 0 THEN c.p1 ELSE c.p2 END, 'Hi
 FROM seed.convs c JOIN conversations cc ON cc.id = c.id, generate_series(1, 10) k;
 
 CREATE TABLE seed.jobsample AS SELECT id FROM job_posts TABLESAMPLE SYSTEM (5) LIMIT 1000000;
+-- Block sampling can miss every page of a small table. Always provide an anchor.
+INSERT INTO seed.jobsample
+SELECT id FROM job_posts WHERE NOT EXISTS (SELECT 1 FROM seed.jobsample) LIMIT 1;
 CREATE TABLE seed.js AS SELECT row_number() OVER () AS n, id FROM seed.jobsample;
 CREATE UNIQUE INDEX ON seed.js (n);
 INSERT INTO saved_jobs (id, user_id, job_id, created_at)
 SELECT gen_random_uuid(), u.id, j.id, now() FROM seed.uids u, generate_series(0, 1) k
-JOIN seed.js j ON true WHERE j.n = 1 + ((u.n * 2 + k) % (SELECT count(*) FROM seed.js))
+JOIN seed.js j ON true WHERE j.n = 1 + ((u.n * 2 + k) % NULLIF((SELECT count(*) FROM seed.js), 0))
 ON CONFLICT DO NOTHING;
 INSERT INTO job_applications (id, user_id, job_id, status, created_at, updated_at)
 SELECT gen_random_uuid(), u.id, j.id, 'submitted', now(), now() FROM seed.uids u
-JOIN seed.js j ON j.n = 1 + ((u.n * 7 + 3) % (SELECT count(*) FROM seed.js))
+JOIN seed.js j ON j.n = 1 + ((u.n * 7 + 3) % NULLIF((SELECT count(*) FROM seed.js), 0))
 ON CONFLICT DO NOTHING;

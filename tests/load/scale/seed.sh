@@ -11,6 +11,9 @@ JOBS=${JOBS:-10000000}
 USERS=${USERS:-1000000}
 PAR=${PAR:-4}
 CHUNK=${CHUNK:-250000}
+for value in "$JOBS" "$USERS" "$PAR" "$CHUNK"; do
+  case "$value" in ''|*[!0-9]*|0) echo "seed sizes must be positive integers" >&2; exit 2;; esac
+done
 HERE=$(cd "$(dirname "$0")" && pwd)
 PSQL="docker exec -i $C psql -q -v ON_ERROR_STOP=1 -U rap -d rap"
 for f in seed-setup.sql seed-jobs.sql seed-users.sql seed-indexes.sql; do docker cp "$HERE/$f" "$C:/$f"; done
@@ -21,11 +24,7 @@ $PSQL -c "CREATE TABLE IF NOT EXISTS seed.jobidx AS SELECT indexname, indexdef F
 $PSQL -Atc "SELECT 'DROP INDEX IF EXISTS ' || indexname || ';' FROM seed.jobidx" | $PSQL
 
 start=$(date +%s)
-i=1
-while [ "$i" -le "$JOBS" ]; do
-  echo "$i $((i + CHUNK - 1 > JOBS ? JOBS : i + CHUNK - 1))"
-  i=$((i + CHUNK))
-done | xargs -P "$PAR" -n 2 sh -c "docker exec $C psql -q -v ON_ERROR_STOP=1 -U rap -d rap -v lo=\$0 -v hi=\$1 -f /seed-jobs.sql"
+CONTAINER="$C" JOBS="$JOBS" PAR="$PAR" CHUNK="$CHUNK" sh "$HERE/load-jobs.sh"
 echo "jobs loaded in $(( $(date +%s) - start ))s"
 
 start=$(date +%s)

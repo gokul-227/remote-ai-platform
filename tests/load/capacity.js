@@ -16,6 +16,11 @@ import { Trend } from "k6/metrics";
 
 const API = __ENV.API || "http://localhost:28039";
 const AUTH = __ENV.AUTH || "http://localhost:9998";
+for (const target of [API, AUTH]) {
+  if (!/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/.test(target)) {
+    throw new Error("Capacity workload accepts only loopback HTTP origins");
+  }
+}
 const MEMBERS = Number(__ENV.MEMBERS || 1000000);
 const signIn = new Trend("sign_in_ms", true);
 
@@ -34,6 +39,7 @@ export const options = {
     member: { executor: "ramping-vus", exec: "member", stages: scale(ramp, 0.1), gracefulRampDown: "10s" },
   },
   thresholds: {
+    checks: ["rate==1"],
     http_req_failed: ["rate<0.01"],
     "http_req_duration{kind:public}": ["p(95)<500"],
     "http_req_duration{kind:search}": ["p(95)<500"],
@@ -51,30 +57,48 @@ function scale(stages, f) {
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const TERMS = ["python", "react engineer", "data", "designer", "kubernetes", "\"product manager\"", "sales", "golang"];
 const FILTERS = [
-  "workplace=remote", "country=US", "country=DE", "seniority=senior", "job_type=full-time",
+  "workplace=remote", "country=US", "country=DE", "seniority=mid_senior", "job_type=full-time",
   "region=europe", "industry=fintech", "job_function=engineering", "has_salary=true",
-  "posted_within=7d", "skills=Python", "workplace=hybrid&country=GB", "seniority=lead&job_function=data",
+  "posted_within=7d", "skills=Python", "workplace=hybrid&country=GB", "seniority=director&job_function=data",
 ];
 const pub = (route) => ({ tags: { kind: "public", route } });
 let ids = [];
+let cursor = null;
+let cursorPages = 0;
+let seen = new Set();
+
+function checkedPublic(url, params) {
+  const r = http.get(url, params);
+  check(r, { "public auxiliary 200": (x) => x.status === 200 });
+}
 
 export function browse() {
-  const page = Math.random() < 0.9 ? Math.floor(Math.random() * 5) : Math.floor(Math.random() * 400);
-  const list = http.get(`${API}/api/v1/jobs?limit=20&skip=${page * 20}`, pub(page > 4 ? "list_deep" : "list"));
-  check(list, { "list 200": (r) => r.status === 200 });
-  if (list.status === 200) {
-    const got = list.json().map((j) => j.id);
-    if (got.length) ids = got;
-  }
+  // Each VU follows the actual HTTP cursor, resetting after a bounded chain.
+  const query = cursor ? `after=${encodeURIComponent(cursor)}&` : "";
+  const list = http.get(`${API}/api/v1/jobs?${query}limit=20`, pub(cursor ? "list_cursor" : "list"));
+  let rows = null;
+  try { rows = list.json(); } catch (_) { /* recorded by the semantic check */ }
+  check(list, {
+    "list 200": (r) => r.status === 200,
+    "list array": () => Array.isArray(rows),
+    "cursor no duplicate jobs": () => Array.isArray(rows) && rows.every((j) => j.id && !seen.has(j.id)),
+  });
+  if (list.status === 200 && Array.isArray(rows)) {
+    ids = rows.map((j) => j.id);
+    ids.forEach((id) => seen.add(id));
+    cursor = list.headers["X-Next-Cursor"] || null;
+    cursorPages += 1;
+    if (!cursor || cursorPages >= 10) { cursor = null; cursorPages = 0; seen = new Set(); }
+  } else { ids = []; cursor = null; cursorPages = 0; seen = new Set(); }
   sleep(1 + Math.random() * 2);
   if (ids.length) {
     const r = http.get(`${API}/api/v1/jobs/${pick(ids)}`, pub("detail"));
     check(r, { "detail 200": (x) => x.status === 200 });
   }
   const roll = Math.random();
-  if (roll < 0.15) http.get(`${API}/api/v1/jobs/landing-stats?query=${pick(TERMS)}`, pub("landing"));
-  else if (roll < 0.2) http.get(`${API}/api/v1/jobs/employers?limit=200`, pub("employers"));
-  else if (roll < 0.25) http.get(`${API}/api/v1/jobs/sitemap-entries?skip=${Math.floor(Math.random() * 1000) * 5000}&limit=5000`, pub("sitemap"));
+  if (roll < 0.15) checkedPublic(`${API}/api/v1/jobs/landing-stats?query=${pick(TERMS)}`, pub("landing"));
+  else if (roll < 0.2) checkedPublic(`${API}/api/v1/jobs/employers?limit=200`, pub("employers"));
+  else if (roll < 0.25) checkedPublic(`${API}/api/v1/jobs/sitemap-entries?skip=${Math.floor(Math.random() * 1000) * 5000}&limit=5000`, pub("sitemap"));
   sleep(1 + Math.random() * 2);
 }
 
@@ -91,8 +115,10 @@ export function search() {
 
 function token(email) {
   const t0 = Date.now();
-  http.post(`${AUTH}/auth/v1/otp`, JSON.stringify({ email, create_user: true }), { headers: { "Content-Type": "application/json" }, tags: { kind: "auth" } });
+  const otp = http.post(`${AUTH}/auth/v1/otp`, JSON.stringify({ email, create_user: true }), { headers: { "Content-Type": "application/json" }, tags: { kind: "auth" } });
   const v = http.post(`${AUTH}/auth/v1/verify`, JSON.stringify({ email, token: "123456", type: "email" }), { headers: { "Content-Type": "application/json" }, tags: { kind: "auth" } });
+  check(otp, { "otp 200": (r) => r.status === 200 });
+  check(v, { "verify token": (r) => r.status === 200 && !!r.json().access_token });
   const access = v.status === 200 ? v.json().access_token : null;
   signIn.add(Date.now() - t0);
   return access;

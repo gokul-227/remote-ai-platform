@@ -34,7 +34,7 @@ SELECT
   src.s,
   md5(t.t || c.name || n),
   (ARRAY['remote','remote','remote','hybrid','onsite', NULL])[1 + (n % 6)],
-  (ARRAY['junior','mid','senior','senior','lead', NULL, NULL])[1 + (n % 7)],
+  (ARRAY['entry','associate','mid_senior','mid_senior','director', NULL, NULL])[1 + (n % 7)],
   (ARRAY['US','US','US','GB','DE','CA','IN','NL','FR','ES','BR','AU', NULL, NULL])[1 + (n % 14)],
   (ARRAY['north-america','europe','europe','asia-pacific','latam','worldwide', NULL])[1 + (n % 7)],
   CASE WHEN n % 3 = 0 THEN -8 + (n % 10) END, CASE WHEN n % 3 = 0 THEN -4 + (n % 10) END,
