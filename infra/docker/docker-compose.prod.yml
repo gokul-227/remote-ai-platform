@@ -51,7 +51,7 @@ x-api-image: &api-image
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:17
     restart: unless-stopped
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     environment:
