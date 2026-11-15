@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -19,10 +20,6 @@ import {
   type LandingStats,
 } from "@/lib/landing";
 import { Breadcrumbs, JsonLd, PublicFrame } from "../../PublicChrome";
-
-export const revalidate = 3600;
-export const dynamicParams = false;
-export const generateStaticParams = () => GUIDES.map((g) => ({ slug: g.slug }));
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -246,6 +243,7 @@ const BODIES: Record<string, () => Promise<ReactNode>> = {
 };
 
 export default async function GuidePage({ params }: Props) {
+  await connection();
   const guide: Guide | null = guideBySlug((await params).slug);
   if (!guide) notFound();
   const site = SITE_URL || "https://remoteaiplatform.com";

@@ -478,9 +478,14 @@ class JobRepository:
             stmt = stmt.where(JobPost.company_id == f["company_id"])
 
         if location := f.get("location"):
-            # Substring of the posting's free-text location (a city, "Europe").
-            needle = location.strip().lower().replace("%", "").replace("_", "")
-            stmt = stmt.where(func.lower(JobPost.location).contains(needle))
+            # Substring of the posting's free-text location (a city, "Europe");
+            # "a|b" matches either spelling ("usa|united states").
+            needles = [
+                n.strip().lower().replace("%", "").replace("_", "") for n in location.split("|")[:5]
+            ]
+            needles = [n for n in needles if n]
+            if needles:
+                stmt = stmt.where(or_(*(func.lower(JobPost.location).contains(n) for n in needles)))
 
         workplace = _as_list(want("workplace"))
         if workplace:

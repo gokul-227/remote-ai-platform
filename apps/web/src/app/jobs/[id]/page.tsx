@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
 import { SITE_URL, fetchPublicJob, jobHighlights, jobPostingJsonLd, summary } from "@/lib/site";
 import { permitsGoogleJobs, jobSourceName, originalJobUrl } from "@/lib/jobSources";
-import { PLACES, topicsForJob } from "@/lib/seo";
+import { PLACES, placeMatches, topicsForJob } from "@/lib/seo";
 import { fetchLandingJobs, topicFilter, topicHeading } from "@/lib/landing";
 import { JobList } from "../../remote-jobs/JobList";
 
@@ -58,7 +58,7 @@ export default async function JobPage({ params }: Props) {
     ...(topics[0] ? [[topicHeading(topics[0]), `/remote-jobs/${topics[0].slug}`] as [string, string]] : []),
     [job.title, `/jobs/${job.id}`],
   ];
-  const places = PLACES.filter((p) => (job.location || "").toLowerCase().includes(p.match)).slice(0, 3);
+  const places = PLACES.filter((p) => placeMatches(p, job.location)).slice(0, 3);
   const [sameEmployer, sameTopic] = await Promise.all([
     fetchLandingJobs({ employer: job.company_name }),
     topics[0] ? fetchLandingJobs(topicFilter(topics[0])) : Promise.resolve({ jobs: [], total: 0 }),

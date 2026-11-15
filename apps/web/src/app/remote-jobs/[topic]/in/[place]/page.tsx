@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { LandingPage, landingMetadata } from "../../../Landing";
 import { topicPlaceSpec } from "../../../specs";
 
-export const dynamic = "force-dynamic";
+// Dynamic because it reads searchParams. Not force-dynamic: that would turn off
+// the fetch cache (every request would hit the API for every aggregate).
 type Props = {
   params: Promise<{ topic: string; place: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;

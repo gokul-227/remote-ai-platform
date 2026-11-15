@@ -60,6 +60,16 @@ export function validate(ld: LD): string[] {
       if (String(ld.headline).length > 110) errs.push("headline too long");
       if ((ld.author as LD)?.["@type"] !== "Organization") errs.push("author must be the site");
       break;
+    case "FAQPage": {
+      const qs = ld.mainEntity as LD[];
+      if (!qs?.length) errs.push("no questions");
+      qs?.forEach((q, i) => {
+        if (q["@type"] !== "Question" || !q.name) errs.push(`question ${i}`);
+        const a = q.acceptedAnswer as LD;
+        if (a?.["@type"] !== "Answer" || !a.text) errs.push(`answer ${i}`);
+      });
+      break;
+    }
     case "Organization":
       ["name", "url"].forEach(need);
       break;

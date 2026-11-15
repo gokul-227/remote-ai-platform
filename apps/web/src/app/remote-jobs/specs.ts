@@ -60,7 +60,7 @@ export function placeSpec(slug: string): LandingSpec | null {
     heading: `Remote jobs in ${p.name}`,
     subject: `remote roles open to people in ${p.name}`,
     filter: placeFilter(p),
-    trail: [...ROOT, [`Remote jobs in ${p.name}`, path]],
+    trail: [...ROOT, ["By country", "/remote-jobs/in"], [`Remote jobs in ${p.name}`, path]],
     note: `Postings mention ${p.name}; check each listing for residency or time-zone requirements.`,
     related: [
       {

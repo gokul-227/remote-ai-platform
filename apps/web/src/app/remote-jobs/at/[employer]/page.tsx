@@ -3,7 +3,8 @@ import { fetchEmployer, fetchEmployers } from "@/lib/landing";
 import { LandingPage, landingMetadata } from "../../Landing";
 import { employerSpec } from "../../specs";
 
-export const dynamic = "force-dynamic";
+// Dynamic because it reads searchParams. Not force-dynamic: that would turn off
+// the fetch cache (every request would hit the API for every aggregate).
 type Props = {
   params: Promise<{ employer: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;

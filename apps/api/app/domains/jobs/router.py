@@ -90,7 +90,9 @@ def job_search_query(
     company_id: uuid.UUID | None = Query(None, description="Filter by company profile UUID"),
     company: list[str] | None = Query(None, description="Company names (any of)"),
     location: str | None = Query(
-        None, max_length=60, description="Text in the posting's location (a city, e.g. Berlin)"
+        None,
+        max_length=120,
+        description="Text in the posting's location (a city, e.g. Berlin); a|b matches either",
     ),
     employer: str | None = Query(
         None, max_length=200, description="Exact employer name (case-insensitive)"
@@ -217,7 +219,7 @@ async def landing_stats(
     response: Response,
     query: str | None = Query(None, max_length=100),
     job_type: str | None = Query(None, max_length=30),
-    location: str | None = Query(None, max_length=60),
+    location: str | None = Query(None, max_length=120),
     employer: str | None = Query(None, max_length=200),
     db: AsyncSession = Depends(get_db),
 ) -> JobLandingStats:

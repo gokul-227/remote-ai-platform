@@ -1,14 +1,14 @@
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PLACES, TOPICS } from "@/lib/seo";
+import { TOPICS } from "@/lib/seo";
+import { livePlaces } from "@/lib/hubs";
 import { ROLES, SKILLS, fetchEmployers, topicHeading } from "@/lib/landing";
 import { topicBySlug } from "@/lib/seo";
 import { GUIDES } from "@/lib/guides";
 import { SITE_URL } from "@/lib/site";
 import { breadcrumbJsonLd } from "@/lib/brand";
 import { Breadcrumbs, JsonLd, PublicFrame } from "../PublicChrome";
-
-export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Site map: every remote job category, location and employer | Remote AI Platform",
@@ -42,7 +42,8 @@ function Group({ title, links }: { title: string; links: [string, string][] }) {
 
 /** Human-readable site map: one crawlable page that links every hub (hub-and-spoke). */
 export default async function SiteMapPage() {
-  const employers = await fetchEmployers(3, 500);
+  await connection();
+  const [employers, places] = await Promise.all([fetchEmployers(3, 500), livePlaces()]);
   const site = SITE_URL || "https://remoteaiplatform.com";
   const groups = [...new Set(TOPICS.map((t) => t.group))];
   return (
@@ -56,6 +57,9 @@ export default async function SiteMapPage() {
         title="Start here"
         links={[
           ["/remote-jobs", "All remote jobs"],
+          ["/work-from-home-jobs", "Work from home jobs"],
+          ["/remote-work", "Remote work"],
+          ["/remote-jobs/in", "Remote jobs by country"],
           ["/remote-jobs/at", "Companies hiring remotely"],
           ["/guides", "Guides"],
           ...GUIDES.map((g): [string, string] => [`/guides/${g.slug}`, g.title]),
@@ -68,7 +72,10 @@ export default async function SiteMapPage() {
           links={TOPICS.filter((t) => t.group === g).map((t) => [`/remote-jobs/${t.slug}`, topicHeading(t)])}
         />
       ))}
-      <Group title="Locations" links={PLACES.map((p) => [`/remote-jobs/in/${p.slug}`, `Remote jobs in ${p.name}`])} />
+      <Group
+        title="Countries and regions"
+        links={places.map(({ item: p }) => [`/remote-jobs/in/${p.slug}`, `Remote jobs in ${p.name}`])}
+      />
       <Group
         title="Roles by skill"
         links={ROLES.flatMap((r) =>
@@ -78,7 +85,7 @@ export default async function SiteMapPage() {
           ]),
         )}
       />
-      {PLACES.slice(0, 12).map((p) => (
+      {places.slice(0, 12).map(({ item: p }) => (
         <Group
           key={p.slug}
           title={`Categories in ${p.name}`}

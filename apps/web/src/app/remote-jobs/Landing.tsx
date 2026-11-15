@@ -18,6 +18,8 @@ import {
 import { Breadcrumbs, JsonLd, PublicFrame } from "../PublicChrome";
 import { JobList, JoinCta } from "./JobList";
 import { LandingInsights } from "./LandingInsights";
+import { FaqSection } from "../Faq";
+import { landingFaq } from "@/lib/hubs";
 
 export type LandingSpec = {
   path: string;
@@ -112,6 +114,7 @@ export async function LandingPage({ spec, searchParams }: { spec: LandingSpec | 
         </nav>
       )}
       {page === 1 && <LandingInsights subject={spec.subject} stats={stats} />}
+      {page === 1 && <FaqSection faqs={landingFaq(spec.subject, stats)} />}
       <JoinCta />
       {spec.related
         ?.filter((r) => r.links.length)

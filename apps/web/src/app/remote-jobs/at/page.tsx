@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
 import { breadcrumbJsonLd } from "@/lib/brand";
 import { MIN_INDEXABLE_JOBS, fetchEmployers } from "@/lib/landing";
 import { Breadcrumbs, JsonLd, PublicFrame } from "../../PublicChrome";
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Companies hiring remotely | Remote AI Platform",
@@ -14,6 +13,8 @@ export const metadata: Metadata = {
 };
 
 export default async function EmployersIndex() {
+  // Per request, with the fetch cache (force-dynamic would bypass it).
+  await connection();
   const employers = await fetchEmployers(MIN_INDEXABLE_JOBS, 500);
   const trail: [string, string][] = [
     ["Remote AI Platform", "/"],
