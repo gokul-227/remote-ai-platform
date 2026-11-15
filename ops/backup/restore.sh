@@ -22,10 +22,11 @@ sha() { if command -v sha256sum >/dev/null; then sha256sum "$@"; else shasum -a 
 # PostgreSQL client tools: local ones (optionally from PG_BIN), or from an official
 # image with PG_IMAGE=postgres:<major>-alpine so the client matches the server's
 # major version (a dump restores only into a server at least as new as pg_dump).
-# With PG_IMAGE, use host.docker.internal instead of localhost in database URLs.
+# With PG_IMAGE, use host.docker.internal instead of localhost in database URLs,
+# or PG_DOCKER_NETWORK=<network> to reach a database container by service name.
 pg() {
   if [ -n "${PG_IMAGE:-}" ]; then
-    docker run --rm -i -v "$work:$work" -w "$work" --add-host=host.docker.internal:host-gateway "$PG_IMAGE" "$@"
+    docker run --rm -i -v "$work:$work" -w "$work" --add-host=host.docker.internal:host-gateway ${PG_DOCKER_NETWORK:+--network "$PG_DOCKER_NETWORK"} "$PG_IMAGE" "$@"
   else
     "${PG_BIN:+$PG_BIN/}$1" "${@:2}"
   fi
@@ -96,7 +97,7 @@ exts="$work/backup/extensions.txt"
 [ -f "$exts" ] || echo "pg_trgm public" > "$exts"
 while read -r ext schema; do
   [ -n "$ext" ] || continue
-  pg psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 -qc "CREATE SCHEMA IF NOT EXISTS \"$schema\"; CREATE EXTENSION IF NOT EXISTS \"$ext\" WITH SCHEMA \"$schema\""
+  pg psql "$TARGET_DATABASE_URL" -v ON_ERROR_STOP=1 -qc "CREATE SCHEMA IF NOT EXISTS \"$schema\"; CREATE EXTENSION IF NOT EXISTS \"$ext\" WITH SCHEMA \"$schema\"" </dev/null  # docker run -i would eat the list
 done < "$exts"
 echo "extensions: $(awk '{print $1}' "$exts" | paste -sd, -)"
 pg pg_restore --list "$work/backup/db.dump" | grep -Ev '^[0-9]+; [0-9]+ [0-9]+ SCHEMA - public ' > "$work/toc.list"

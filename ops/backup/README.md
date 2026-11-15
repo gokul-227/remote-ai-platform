@@ -61,3 +61,16 @@ A full backup and restore of the isolated E2E stack into a fresh PostgreSQL 16 a
 found that a public-schema dump does not create extensions, so the search indexes (`pg_trgm`) failed to
 restore; backups now record `extensions.txt` and restores create those extensions first. Repeat the drill
 after any schema or provider change, and monthly against production backups (the console shows the date).
+
+## Nightly backups on the production VM
+
+`ops/backup/vm/` holds the VM setup: `rap-backup.sh` (runs `backup.sh` against the local PostgreSQL
+container over the `rap-prod_internal` network with `PG_IMAGE=postgres:16 PG_DOCKER_NETWORK=rap-prod_internal`,
+then `offsite.py` copies the archive to the private Oracle Object Storage bucket `rap-prod-backups` and keeps
+the newest 14), `rap-backup.service` / `rap-backup.timer` (02:30 UTC) and `backup.env.example` (names of
+`/opt/rap/backup.env`, root-only). With `PG_IMAGE`, every client call is `docker run -i`, which reads
+stdin: never call `pg` inside a `while read` loop without `</dev/null`.
+
+Restore drill (2026-11-15, VM): the first nightly archive (85 MB, 93 tables, 5 objects) fetched from
+`rap-prod-backups` and restored into a scratch database in 19 s: checksums, row counts (93 tables), objects and
+references all ok. It found that `restore.sh` created only the first extension under `PG_IMAGE` (fixed).
