@@ -38,6 +38,9 @@ x-api-image: &api-image
   env_file: ${RAP_ENV_FILE:-/opt/rap/.env}
   environment:
     REDIS_URL: redis://redis:6379/0
+    # Celery uses the VM's Redis, never a hosted one (Upstash free cannot sustain broker polling).
+    CELERY_BROKER_URL: redis://redis:6379/1
+    CELERY_RESULT_BACKEND: redis://redis:6379/2
     DATABASE_URL: ${RAP_DATABASE_URL:-postgresql+asyncpg://rap:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/remote_ai_platform}
   depends_on:
     redis:
