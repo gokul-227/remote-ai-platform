@@ -126,6 +126,28 @@ export default async function RemoteJobsIndex({ searchParams }: Props) {
           )}
         </nav>
       )}
+      {!result && !q && last > 1 && (
+        // Every page of the full list, one click away: any live job is at most
+        // three clicks from the home page (home → here → page N → job).
+        <nav aria-label="All pages of remote jobs" className="mt-6 text-sm">
+          <h2 className="mb-2 font-semibold text-navy">All {last} pages, newest first</h2>
+          <ol className="flex flex-wrap gap-x-2 gap-y-1">
+            {Array.from({ length: last }, (_, i) => i + 1).map((n) => (
+              <li key={n}>
+                {n === page ? (
+                  <span aria-current="page" className="font-bold">
+                    {n}
+                  </span>
+                ) : (
+                  <a href={href(n)} className="text-brand underline">
+                    {n}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

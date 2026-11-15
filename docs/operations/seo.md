@@ -81,6 +81,10 @@ JobPosting is emitted only for sources that allow Google for Jobs (`lib/jobSourc
   guides, `/sitemap`), `sitemaps/landing/0.xml` (employer pages from the employer list with `lastmod` =
   newest posting; category and place hubs unless known thin; combinations only when known to have ≥ 3
   roles; stats lookups share a 40 s budget so the file always answers — it used to time out),
+  Shards (`sitemaps/<kind>/<n>.xml`) are ISR (`revalidate = 900`): generated on first request, then
+  served from the web server's cache in milliseconds and regenerated in the background; a failed
+  regeneration keeps the last good copy (the first-ever failure answers 500). `/remote-jobs` lists every
+  page of the full job list, so any live job is at most three clicks from the home page.
   and `sitemaps/{jobs,people,companies,posts}/<n>.xml` in 5,000-URL chunks. The jobs sitemap covers every
   live, syndication-eligible job posted in the last `SITEMAP_JOB_MAX_AGE_DAYS` (90), with `lastmod`.
 

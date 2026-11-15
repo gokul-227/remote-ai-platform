@@ -28,8 +28,12 @@ type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const job = await fetchPublicJob((await params).id);
   if (!job) return { title: "Job not found | Remote AI Platform", robots: { index: false } };
-  const title = `${job.title} at ${job.company_name} | Remote AI Platform`;
-  const description = summary(job.description || `${job.title} at ${job.company_name}`);
+  // Location in the title keeps reposted roles (same title, same employer) distinct.
+  const where = job.location || (job.is_remote ? "Remote" : "");
+  const base = `${job.title} at ${job.company_name}`;
+  const title = `${where && base.length + where.length < 75 ? `${base} (${where})` : base} | Remote AI Platform`;
+  const lead = `${base}${where ? `, ${where}` : ""}. `;
+  const description = summary(lead + (job.description || ""));
   return {
     title,
     description,

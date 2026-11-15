@@ -16937,6 +16937,24 @@ components:
           anyOf:
           - $ref: '#/components/schemas/LandingSalary'
           - type: 'null'
+        salary_by_seniority:
+          items:
+            $ref: '#/components/schemas/LandingSeniorityPay'
+          type: array
+          title: Salary By Seniority
+          default: []
+        top_skills:
+          items:
+            $ref: '#/components/schemas/LandingSkill'
+          type: array
+          title: Top Skills
+          default: []
+        weekly_new:
+          items:
+            type: integer
+          type: array
+          title: Weekly New
+          default: []
       type: object
       required:
       - total
@@ -17705,6 +17723,52 @@ components:
       - high
       title: LandingSalary
       description: Pay published by matching jobs, in their most common currency and period.
+    LandingSeniorityPay:
+      properties:
+        currency:
+          type: string
+          title: Currency
+        period:
+          type: string
+          title: Period
+        count:
+          type: integer
+          title: Count
+        low:
+          type: number
+          title: Low
+        median:
+          type: number
+          title: Median
+        high:
+          type: number
+          title: High
+        seniority:
+          type: string
+          title: Seniority
+      type: object
+      required:
+      - currency
+      - period
+      - count
+      - low
+      - median
+      - high
+      - seniority
+      title: LandingSeniorityPay
+    LandingSkill:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - name
+      - count
+      title: LandingSkill
     LogoutIn:
       properties:
         everywhere:

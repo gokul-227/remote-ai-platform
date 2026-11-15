@@ -48,9 +48,11 @@ describe("sitemap HTTP routes", () => {
       "fetch",
       vi.fn(async () => json({}, 503)),
     );
-    for (const response of [await index(), await shard(new Request("https://s"), context("jobs", "0.xml"))]) {
-      expect(response.status).toBe(503);
-      expect(response.headers.get("retry-after")).toBe("900");
-    }
+    const response = await index();
+    expect(response.status).toBe(503);
+    expect(response.headers.get("retry-after")).toBe("900");
+    // Shards are ISR: a failure throws so Next keeps serving the last good copy
+    // rather than caching an error or an empty inventory.
+    await expect(shard(new Request("https://s"), context("jobs", "0.xml"))).rejects.toThrow("503");
   });
 });
