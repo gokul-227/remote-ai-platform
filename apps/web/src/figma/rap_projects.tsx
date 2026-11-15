@@ -177,6 +177,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
   const [risk, setRisk] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [needsOrg, setNeedsOrg] = useState(false);
   const d = dq.data;
   const people = d?.people ?? {};
   const name = (id?: string | null) => (id && people[id]?.full_name) || "Unassigned";
@@ -252,14 +253,32 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
     }, "Task created");
   };
   const addProject = () => {
-    if (!np.title.trim() || !np.desc.trim()) return;
-    act(async () => {
-      const r = await api.post("/projects", { title: np.title.trim(), description: np.desc.trim() });
-      list.reload();
-      setPid(r.data.id);
-      setNewProject(false);
-      setNp({ title: "", desc: "" });
-    }, "Project created");
+    // A silent no-op on a missing description left members stuck in the dialog:
+    // ask for a name, and let the description default to it.
+    if (!np.title.trim()) {
+      setNotice("Enter a project name.");
+      return;
+    }
+    void (async () => {
+      try {
+        const r = await api.post("/projects", {
+          title: np.title.trim(),
+          description: np.desc.trim() || np.title.trim(),
+        });
+        list.reload();
+        setPid(r.data.id);
+        setNewProject(false);
+        setNp({ title: "", desc: "" });
+        setNotice("Project created");
+      } catch (e) {
+        // Projects belong to an organisation page; say so and offer the way there.
+        const msg = extractErrorMessage(e, "That didn't work. Please try again.");
+        if (/company profile required/i.test(msg)) {
+          setNewProject(false);
+          setNeedsOrg(true);
+        } else setNotice(msg);
+      }
+    })();
   };
   const analyse = async () => {
     if (!pid) return;
@@ -314,10 +333,22 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
             ? "Create a project to plan tasks and milestones with your team."
             : "Projects you’re added to, or whose tasks you accept, appear here."}
         </p>
-        {company && (
-          <Btn c="mt-4" icon="plus" onClick={() => setNewProject(true)}>
-            Create project
-          </Btn>
+        {needsOrg ? (
+          <div role="status" className="mt-4 rounded-lg border border-slate-200 bg-white p-4 text-left">
+            <b>Set up your organisation page first</b>
+            <p className="mt-1 text-sm text-slate-500">
+              Project boards belong to an organisation so you can invite your team. It takes a minute.
+            </p>
+            <Btn c="mt-3" onClick={() => goRoute("coprofile")}>
+              Set up organisation page
+            </Btn>
+          </div>
+        ) : (
+          company && (
+            <Btn c="mt-4" icon="plus" onClick={() => setNewProject(true)}>
+              Create project
+            </Btn>
+          )
         )}
         <Modal open={newProject} onClose={() => setNewProject(false)} title="Create project">
           <div className="space-y-3">

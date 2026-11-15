@@ -125,7 +125,8 @@ class FolderArgs(ToolArgs):
 # Every screen the assistant can take you to (route -> what it is).
 SCREENS: dict[str, str] = {
     # Home and top bar
-    "feed": "feed", "notifications": "notifications", "messenger": "chats", "search": "search",
+    "home": "home overview", "feed": "feed", "notifications": "notifications",
+    "notifysettings": "notification settings", "messenger": "chats", "search": "search",
     "assistant": "AI assistant",
     # Network
     "profile": "my profile", "network": "connections", "invitations": "connection invitations",

@@ -846,6 +846,7 @@ export function Groups({ initial }: { initial?: string | null } = {}) {
               <div key={g.id} className="rap-panel overflow-hidden">
                 <button
                   className="w-full h-36 flex items-center justify-center"
+                  aria-label={`Open ${g.name}`}
                   style={{ background: tint(g.name) }}
                   onClick={() => {
                     setSelected(g.id);

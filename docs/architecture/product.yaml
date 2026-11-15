@@ -36,6 +36,8 @@ features:
     label: Job preferences
   - route: settings
     label: Account settings
+  - route: notifysettings
+    label: Notification settings
   - route: security
     label: Security & verification
   - route: privacydata
@@ -150,7 +152,7 @@ features:
   - organisation
   screens:
   - route: codash
-    label: codash
+    label: Hiring dashboard
   - route: cojobs
     label: Manage postings
   - route: postjob
@@ -200,7 +202,7 @@ features:
   - route: invitations
     label: Invitations
   - route: suggestions
-    label: suggestions
+    label: People you may know
   - route: messenger
     label: Messages
   - route: channels
@@ -233,6 +235,8 @@ features:
   - professional
   - organisation
   screens:
+  - route: home
+    label: Home overview
   - route: feed
     label: Home feed
   - route: groups
@@ -288,7 +292,7 @@ features:
   - route: project
     label: project
   - route: projects
-    label: Boards
+    label: Project boards
   - route: backlog
     label: Backlog & sprints
   - route: timeline
@@ -361,7 +365,7 @@ features:
   - organisation
   screens:
   - route: assistant
-    label: assistant
+    label: AI assistant
   api:
   - domain: assistant
     prefix: /api/v1/assistant
@@ -438,7 +442,7 @@ features:
 web:
   technology: Next.js 16 · standalone Node server
   provider: Oracle Cloud VM (behind Cloudflare DNS/proxy)
-  screens: 65
+  screens: 67
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service

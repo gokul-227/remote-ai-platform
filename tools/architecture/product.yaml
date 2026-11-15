@@ -24,7 +24,7 @@ features:
     name: Sign-in & onboarding
     step: 1
     personas: [professional, organisation]
-    screens: [onboarding, settings, security, privacydata, apps]
+    screens: [onboarding, settings, notifysettings, security, privacydata, apps]
     api: [auth, auth.workos]
     uses: [auth, resend]
   - id: profiles
@@ -78,7 +78,7 @@ features:
     icon: concepts/users
     name: Community
     personas: [professional, organisation]
-    screens: [feed, groups, group]
+    screens: [home, feed, groups, group]
     api: [social, groups]
     uses: []
   - id: contracts
@@ -143,7 +143,9 @@ screen_labels:
   network: People
   messenger: Messages
   notifications: Notifications
+  home: Home overview
   feed: Home feed
+  notifysettings: Notification settings
   groups: Groups
   jobs: Jobs
   talent: Talent
