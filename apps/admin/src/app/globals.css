@@ -7,8 +7,8 @@
   --line: #e4e6eb;
   --text: #1c1e21;
   --muted: #65676b;
-  --brand: #0866ff;
-  --brand-hover: #0757d8;
+  --brand: #175CD3;
+  --brand-hover: #124BAD;
   --brand-soft: #e7f0ff;
   --hover: #f2f3f5;
   --chip: #e4e6eb;
@@ -24,7 +24,7 @@
   --line: #3a3b3c;
   --text: #e4e6eb;
   --muted: #b0b3b8;
-  --brand: #2d88ff;
+  --brand: #8DBBFF;
   --brand-hover: #4599ff;
   --brand-soft: #263951;
   --hover: #3a3b3c;
@@ -42,7 +42,7 @@ h1, h2, h3 { letter-spacing: -.2px; }
 /* ── Top bar ─────────────────────────────────────────────── */
 .top { position: sticky; top: 0; z-index: 30; height: 60px; display: grid; grid-template-columns: 320px 1fr 320px; align-items: center; padding: 0 16px; background: var(--panel); box-shadow: 0 1px 4px #0000001a; }
 .top-left { display: flex; align-items: center; gap: 10px; }
-.logo { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--brand); color: #fff; display: grid; place-items: center; flex-shrink: 0; }
+.logo { width: 40px; height: 40px; border-radius: 10px; border: 0; background: #fff; padding: 2px; display: grid; place-items: center; flex-shrink: 0; }
 .top-search { position: relative; display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 22px; padding: 9px 14px; color: var(--muted); flex: 1; max-width: 260px; }
 .top-search input { border: 0; background: none; outline: none; width: 100%; font-size: 14px; color: var(--text); }
 .search-results { position: absolute; top: 46px; left: 0; width: 320px; background: var(--panel); border-radius: 10px; box-shadow: 0 12px 40px #0003; border: 1px solid var(--line); padding: 6px; }
@@ -56,7 +56,7 @@ h1, h2, h3 { letter-spacing: -.2px; }
 .tabs button.active { color: var(--brand); border-bottom-color: var(--brand); }
 .top-right { position: relative; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--chip); display: grid; place-items: center; }
-.avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: linear-gradient(135deg, #0866ff, #5b9dff); color: #fff; font-weight: 700; display: grid; place-items: center; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: linear-gradient(135deg, #175CD3, #5b9dff); color: #fff; font-weight: 700; display: grid; place-items: center; }
 .avatar.big { width: 48px; height: 48px; font-size: 18px; }
 .env { font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 4px 10px; border-radius: 12px; background: var(--chip); color: var(--text); }
 .env.production { background: #ffe1e5; color: #b0122e; }

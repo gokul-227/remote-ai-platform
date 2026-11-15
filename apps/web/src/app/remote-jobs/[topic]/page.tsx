@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { SITE_URL } from "@/lib/site";
 import { TOPICS, fetchTopicJobs, topicBySlug } from "@/lib/seo";
 import { JobList, JoinCta } from "../JobList";
+import { PublicFrame } from "../../PublicChrome";
 
 export const dynamic = "force-dynamic";
 type Props = { params: Promise<{ topic: string }> };
@@ -34,8 +35,8 @@ export default async function TopicPage({ params }: Props) {
   const related = TOPICS.filter((t) => t.group === topic.group && t.slug !== topic.slug).slice(0, 10);
   const title = heading(topic.name, topic.jobType);
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 text-[#1c1e21]">
-      <nav className="text-sm text-slate-500">
+    <PublicFrame wide>
+      <nav aria-label="Breadcrumb" className="text-sm text-slate-600">
         <Link href="/" className="hover:underline">
           Remote AI Platform
         </Link>{" "}
@@ -61,7 +62,7 @@ export default async function TopicPage({ params }: Props) {
               <Link
                 key={t.slug}
                 href={`/remote-jobs/${t.slug}`}
-                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#0552CC] hover:text-[#0552CC]"
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#175CD3] hover:text-[#175CD3]"
               >
                 {heading(t.name, t.jobType)}
               </Link>
@@ -94,6 +95,6 @@ export default async function TopicPage({ params }: Props) {
           ]).replace(/</g, "\\u003c"),
         }}
       />
-    </main>
+    </PublicFrame>
   );
 }

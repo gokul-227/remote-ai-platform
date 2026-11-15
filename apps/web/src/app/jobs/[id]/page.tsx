@@ -5,6 +5,8 @@ import { RichText } from "@/figma/richtext";
 import { SITE_URL, fetchPublicJob, jobPostingJsonLd, summary } from "@/lib/site";
 import { permitsGoogleJobs, jobSourceName, originalJobUrl } from "@/lib/jobSources";
 import { topicsForJob } from "@/lib/seo";
+import { breadcrumbJsonLd } from "@/lib/brand";
+import { Breadcrumbs, JsonLd, PublicFrame } from "../../PublicChrome";
 
 /**
  * Public, server-rendered job page: what crawlers and link previews see, and
@@ -31,70 +33,79 @@ export default async function JobPage({ params }: Props) {
   const job = await fetchPublicJob((await params).id);
   if (!job) notFound();
   const where = job.location || (job.is_remote ? "Remote" : "On-site");
+  const site = SITE_URL || "https://remoteaiplatform.com";
+  const trail: [string, string][] = [
+    ["Remote AI Platform", "/"],
+    ["Remote jobs", "/remote-jobs"],
+    [job.title, `/jobs/${job.id}`],
+  ];
+  const topics = topicsForJob(job);
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 text-[#1c1e21]">
-      {!job.expired_at && permitsGoogleJobs(job.source) && (
-        <script
-          type="application/ld+json"
-          // Escaped so text from a job description can never close the script tag.
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jobPostingJsonLd(job, SITE_URL || "https://remoteaiplatform.com")).replace(
-              /</g,
-              "\\u003c",
-            ),
-          }}
-        />
-      )}
-      <Link href="/remote-jobs" className="text-sm font-semibold text-[#0552CC]">
-        ← All remote jobs
-      </Link>
-      <p className="mt-6 text-sm font-semibold text-slate-600">{job.company_name}</p>
-      <h1 className="mt-1 text-3xl font-bold">{job.title}</h1>
-      <p className="mt-1 text-slate-600">
-        {where}
-        {job.posted_at ? ` · posted ${new Date(job.posted_at).toISOString().slice(0, 10)}` : ""}
-        {job.company_id ? "" : " · listed from another job board"}
-      </p>
-      {job.expired_at && (
-        <p className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-          This listing is over a month old and may no longer be open.
+    <PublicFrame>
+      {!job.expired_at && permitsGoogleJobs(job.source) && <JsonLd data={jobPostingJsonLd(job, site)} />}
+      <JsonLd data={breadcrumbJsonLd(site, trail)} />
+      <Breadcrumbs trail={trail} />
+      <article className="mt-4 rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
+        <p className="text-sm font-semibold text-slate-600">
+          {job.company_id ? (
+            <Link href={`/companies/${job.company_id}`} className="hover:text-[#175CD3] hover:underline">
+              {job.company_name}
+            </Link>
+          ) : (
+            job.company_name
+          )}
         </p>
-      )}
-      {originalJobUrl(job.external_url) && (
-        <p className="mt-4 text-sm text-slate-600">
-          Source:{" "}
+        <h1 className="mt-1 text-3xl font-bold text-[#102A43]">{job.title}</h1>
+        <p className="mt-1 text-slate-600">
+          {where}
+          {job.posted_at ? ` · posted ${new Date(job.posted_at).toISOString().slice(0, 10)}` : ""}
+          {job.company_id ? "" : " · listed from another job board"}
+        </p>
+        {job.expired_at && (
+          <p role="status" className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+            This listing is over a month old and may no longer be open.
+          </p>
+        )}
+        {originalJobUrl(job.external_url) && (
+          <p className="mt-4 text-sm text-slate-600">
+            Source:{" "}
+            <a
+              href={originalJobUrl(job.external_url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#175CD3] underline"
+            >
+              {jobSourceName(job.source)} — view original listing and apply
+            </a>
+            . No platform account required.
+          </p>
+        )}
+        <p className="mt-6">
           <a
-            href={originalJobUrl(job.external_url)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-[#0552CC] underline"
+            href={`/#jobdetail/${job.id}`}
+            className="inline-flex rounded-full bg-[#175CD3] px-5 py-2.5 font-semibold text-white hover:bg-[#124BAD]"
           >
-            {jobSourceName(job.source)} — view original listing and apply
+            View and apply
           </a>
-          . No platform account required.
         </p>
-      )}
-      <p className="mt-6">
-        <a
-          href={`/#jobdetail/${job.id}`}
-          className="inline-flex rounded-full bg-[#0552CC] px-5 py-2.5 font-semibold text-white"
-        >
-          View and apply
-        </a>
-      </p>
-      <section className="mt-8">
-        <h2 className="mb-3 text-xl font-bold">About the job</h2>
-        <RichText text={job.description || "No description provided."} />
-      </section>
-      {topicsForJob(job).length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-3 text-lg font-bold">More jobs like this</h2>
+        <section className="mt-8" aria-labelledby="about-job">
+          <h2 id="about-job" className="mb-3 text-xl font-bold">
+            About the job
+          </h2>
+          <RichText text={job.description || "No description provided."} />
+        </section>
+      </article>
+      {topics.length > 0 && (
+        <section className="mt-8" aria-labelledby="similar-jobs">
+          <h2 id="similar-jobs" className="mb-3 text-lg font-bold">
+            More jobs like this
+          </h2>
           <div className="flex flex-wrap gap-2">
-            {topicsForJob(job).map((t) => (
+            {topics.map((t) => (
               <Link
                 key={t.slug}
                 href={`/remote-jobs/${t.slug}`}
-                className="rounded-full border border-slate-300 px-4 py-1.5 text-sm hover:border-[#0552CC] hover:text-[#0552CC]"
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#175CD3] hover:text-[#175CD3]"
               >
                 {t.jobType ? `${t.name} remote jobs` : `Remote ${t.name} jobs`}
               </Link>
@@ -102,16 +113,16 @@ export default async function JobPage({ params }: Props) {
           </div>
         </section>
       )}
-      <div className="mt-8 rounded-xl bg-[#0552CC] p-6 text-white">
-        <p className="text-lg font-bold">Get AI-matched to jobs like this</p>
-        <p className="mt-1 text-sm text-blue-100">Free profile, one-click applications, and alerts for new roles.</p>
+      <div className="mt-8 rounded-xl bg-[#102A43] p-6 text-white">
+        <p className="text-lg font-bold">Get matched to jobs like this</p>
+        <p className="mt-1 text-sm text-[#DCE8FF]">Free profile, one-click applications, and alerts for new roles.</p>
         <Link
           href="/#register"
-          className="mt-4 inline-flex rounded-full bg-white px-5 py-2 font-semibold text-[#0552CC]"
+          className="mt-4 inline-flex rounded-full bg-white px-5 py-2 font-semibold text-[#102A43]"
         >
           Join free
         </Link>
       </div>
-    </main>
+    </PublicFrame>
   );
 }

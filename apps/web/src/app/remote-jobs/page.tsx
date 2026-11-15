@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_URL, fetchRecentJobs } from "@/lib/site";
-import { TOPICS } from "@/lib/seo";
+import { PLACES, TOPICS } from "@/lib/seo";
+import { PublicFrame } from "../PublicChrome";
 import { JobList, JoinCta } from "./JobList";
 
 export const dynamic = "force-dynamic";
@@ -17,8 +18,8 @@ export default async function RemoteJobsIndex() {
   const latest = (await fetchRecentJobs(30)).filter((j) => !j.expired_at);
   const groups = [...new Set(TOPICS.map((t) => t.group))];
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 text-[#1c1e21]">
-      <nav className="text-sm text-slate-500">
+    <PublicFrame wide>
+      <nav aria-label="Breadcrumb" className="text-sm text-slate-600">
         <Link href="/" className="hover:underline">
           Remote AI Platform
         </Link>{" "}
@@ -37,7 +38,7 @@ export default async function RemoteJobsIndex() {
               <Link
                 key={t.slug}
                 href={`/remote-jobs/${t.slug}`}
-                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:border-[#0552CC] hover:text-[#0552CC]"
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:border-[#175CD3] hover:text-[#175CD3]"
               >
                 Remote {t.name} jobs
               </Link>
@@ -45,6 +46,20 @@ export default async function RemoteJobsIndex() {
           </div>
         </section>
       ))}
+      <section className="mt-8">
+        <h2 className="mb-3 text-lg font-bold">By location</h2>
+        <div className="flex flex-wrap gap-2">
+          {PLACES.map((p) => (
+            <Link
+              key={p.slug}
+              href={`/remote-jobs/in/${p.slug}`}
+              className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-medium hover:border-[#175CD3] hover:text-[#175CD3]"
+            >
+              Remote jobs in {p.name}
+            </Link>
+          ))}
+        </div>
+      </section>
       <JoinCta />
       <h2 className="mb-3 text-xl font-bold">Latest remote jobs</h2>
       <JobList jobs={latest} />
@@ -61,6 +76,6 @@ export default async function RemoteJobsIndex() {
           }).replace(/</g, "\\u003c"),
         }}
       />
-    </main>
+    </PublicFrame>
   );
 }

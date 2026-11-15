@@ -1,3 +1,5 @@
+<p><img src="apps/web/public/brand/rap-logo.svg" alt="Remote AI Platform" width="300" height="48"></p>
+
 # Remote AI Platform
 
 [![CI](https://github.com/gokul-227/remote-ai-platform/actions/workflows/ci.yml/badge.svg?branch=prod)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/ci.yml)

@@ -57,7 +57,7 @@ export default async function CompanyPage({ params }: Props) {
           <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
             {jobs.map((j) => (
               <li key={j.id} className="p-4">
-                <Link href={`/jobs/${j.id}`} className="font-semibold text-[#0552CC] hover:underline">
+                <Link href={`/jobs/${j.id}`} className="font-semibold text-[#175CD3] hover:underline">
                   {j.title}
                 </Link>
                 <p className="text-sm text-slate-600">{j.location || (j.is_remote ? "Remote" : "On-site")}</p>

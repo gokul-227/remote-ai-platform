@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
-const BL = "#0552CC";
+const BL = "#175CD3";
 export function Jobs() {
   // Live: real jobs, saved jobs, applications and AI match (markup is the Figma design).
   const { user } = useAuth();
@@ -189,7 +189,7 @@ export function Jobs() {
                 type="button"
                 onClick={() => setSelId(j.id)}
                 aria-current={sel?.id === j.id ? "true" : undefined}
-                className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0552CC]"
+                className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175CD3]"
               >
                 <Lg name={j.co} s={56} r={4} />
                 <div className="min-w-0 flex-1">
@@ -206,7 +206,7 @@ export function Jobs() {
                     {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
                     {j.easy && (
                       <span className="flex items-center gap-1 font-semibold">
-                        <Ic n="bolt" s={12} c="text-[#0552CC]" />
+                        <Ic n="bolt" s={12} c="text-[#175CD3]" />
                         Easy Apply
                       </span>
                     )}
@@ -223,7 +223,7 @@ export function Jobs() {
                   }}
                   className="self-start p-1 text-slate-500"
                 >
-                  <Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-[#0552CC]" : ""} />
+                  <Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-[#175CD3]" : ""} />
                 </button>
               )}
             </div>
@@ -404,7 +404,7 @@ export function Jobs() {
       </div>
       <Modal open={apply && !!sel} onClose={() => setApply(false)} title={"Apply to " + (sel?.co ?? "")}>
         <div className="mb-4">
-          <Bar v={((step + 1) / steps.length) * 100} c="bg-[#0552CC]" />
+          <Bar v={((step + 1) / steps.length) * 100} c="bg-[#175CD3]" />
           <p className="mt-1 text-xs font-semibold text-slate-500">
             Step {step + 1} of {steps.length} - {steps[step]}
           </p>
@@ -593,7 +593,7 @@ export function Profile() {
       <div className="mx-auto grid max-w-[1200px] gap-5 px-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-3">
           <Card p={false} c="overflow-hidden rounded-lg">
-            <div className="h-48 bg-gradient-to-r from-[#031B4E] via-[#0552CC] to-[#5B4BDB]" />
+            <div className="h-48 bg-gradient-to-r from-[#031B4E] via-[#175CD3] to-[#5B4BDB]" />
             <div className="relative px-6 pb-6">
               <div className="-mt-20 flex justify-between">
                 <div className="rounded-full border-4 border-white bg-white">
@@ -612,7 +612,7 @@ export function Profile() {
                   <h1 className="text-2xl font-black">
                     {name}
                     {p.is_verified && (
-                      <span className="ml-1 rounded bg-[#E8F0FC] px-1.5 py-0.5 align-middle text-xs font-bold text-[#0552CC]">
+                      <span className="ml-1 rounded bg-[#E8F0FC] px-1.5 py-0.5 align-middle text-xs font-bold text-[#175CD3]">
                         Verified
                       </span>
                     )}
@@ -1032,7 +1032,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
         </main>
         <aside className="self-start">
           <Card c="rounded-lg" p={false}>
-            <div style={{ background: "#0552CC" }} className="rounded-lg p-4">
+            <div style={{ background: "#175CD3" }} className="rounded-lg p-4">
               <p className="font-black text-white">Grow your network faster</p>
               <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.85)" }}>
                 Invite teammates to Remote-AI-Platform.
@@ -1147,7 +1147,7 @@ export function Company() {
       <div className="mx-auto grid max-w-[1200px] gap-5 px-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]">
         <main className="min-w-0 space-y-3">
           <Card p={false} c="overflow-hidden rounded-lg">
-            <div className="h-40 bg-gradient-to-r from-slate-800 via-[#0552CC] to-cyan-500" />
+            <div className="h-40 bg-gradient-to-r from-slate-800 via-[#175CD3] to-cyan-500" />
             <div className="px-6 pb-2">
               <div className="-mt-12 rounded-lg border-4 border-white bg-white inline-block">
                 <Lg name={c.name} s={96} r={6} />
@@ -1263,7 +1263,7 @@ export function PreferenceBar() {
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2 text-sm">
         <Ic n="settings" s={16} c="text-slate-500" />
         <span className="text-slate-700">{summary.data?.summary ?? "Jobs based on your preferences"}</span>
-        <button type="button" className="font-semibold text-[#0552CC]" onClick={edit}>
+        <button type="button" className="font-semibold text-[#175CD3]" onClick={edit}>
           {summary.data?.configured ? "Edit preferences" : "Set preferences"}
         </button>
       </div>

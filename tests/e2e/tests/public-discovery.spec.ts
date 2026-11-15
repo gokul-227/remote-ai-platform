@@ -120,9 +120,12 @@ test("homepage has no serious or critical WCAG AA violations", async ({ page }) 
 test("project demo preview uses the original HTTPS origin without a backend proxy", async ({ page, context }) => {
   await signUp(page, { as: "professional", name: "Demo Reviewer", email: unique("demo-reviewer") });
   const previewUrl = "https://demo.example.com/project";
-  await context.route("https://demo.example.com/**", (route) => route.fulfill({
-    contentType: "text/html", body: "<h1>Owned project demo</h1>",
-  }));
+  await context.route("https://demo.example.com/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>Owned project demo</h1>",
+    }),
+  );
   const proxyRequests: string[] = [];
   page.on("request", (request) => {
     if (/\/api\/v1\/browser\/(?:proxy|fetch)/.test(request.url())) proxyRequests.push(request.url());
@@ -137,4 +140,31 @@ test("project demo preview uses the original HTTPS origin without a backend prox
   await expect(page.getByRole("link", { name: "Open in new tab", exact: true })).toHaveAttribute("href", previewUrl);
   await expect(page.getByText(/preview respects the site’s security settings/)).toBeVisible();
   expect(proxyRequests).toEqual([]);
+});
+
+test("location landing, trust pages and brand metadata render without JavaScript", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    const response = await page.goto("/remote-jobs/in/europe");
+    expect(response?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Remote jobs in Europe");
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/remote-jobs\/in\/europe$/);
+    const ld = await page.locator('script[type="application/ld+json"]').allTextContents();
+    expect(ld.join("")).toContain('"BreadcrumbList"');
+    const footer = page.getByRole("contentinfo");
+    for (const name of ["Privacy", "Terms", "Security", "Service status"])
+      await expect(footer.getByRole("link", { name, exact: true })).toBeVisible();
+    expect((await page.goto("/remote-jobs/in/atlantis"))?.status()).toBe(404);
+    expect((await page.goto("/trust"))?.status()).toBe(200);
+    expect((await page.goto("/status"))?.status()).toBe(200);
+    const manifest = await (await page.request.get("/manifest.webmanifest")).json();
+    expect(manifest.theme_color).toBe("#175CD3");
+    await page.goto("/");
+    expect((await page.locator('script[type="application/ld+json"]').allTextContents()).join("")).toContain(
+      '"WebSite"',
+    );
+  } finally {
+    await context.close();
+  }
 });

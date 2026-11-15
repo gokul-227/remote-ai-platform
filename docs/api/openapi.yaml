@@ -1220,6 +1220,17 @@ paths:
           description: Filter by company profile UUID
           title: Company Id
         description: Filter by company profile UUID
+      - name: location
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 60
+          - type: 'null'
+          description: Text in the posting's location (e.g. Germany)
+          title: Location
+        description: Text in the posting's location (e.g. Germany)
       - name: skip
         in: query
         required: false

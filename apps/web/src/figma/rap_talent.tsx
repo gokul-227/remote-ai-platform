@@ -190,7 +190,7 @@ export function TalentMatching() {
                               </div>
                               <div className="mt-1 h-1.5 rounded bg-slate-100">
                                 <div
-                                  className="h-1.5 rounded bg-[#0552CC]"
+                                  className="h-1.5 rounded bg-[#175CD3]"
                                   style={{ width: `${Math.min(100, pct(c[k] as number))}%` }}
                                 />
                               </div>

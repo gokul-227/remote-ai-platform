@@ -94,3 +94,25 @@ async def test_sitemap_lists_only_jobs_posted_in_the_last_90_days(client: AsyncC
         skip += 500
     assert str(fresh[0]) in seen
     assert str(stale[0]) not in seen
+
+
+@pytest.mark.asyncio
+async def test_job_list_filters_by_location_text(client: AsyncClient):
+    from conftest import TestingSessionLocal
+
+    from app.domains.jobs.models import JobPost
+
+    async with TestingSessionLocal() as db:
+        rows = [
+            JobPost(title="Platform role", slug=f"p-{uuid.uuid4().hex[:8]}", description="D",
+                    company_name="C", source="ARBEITNOW", location=where)
+            for where in ("Berlin, Germany", "Austin, USA")
+        ]
+        db.add_all(rows)
+        await db.commit()
+        berlin = [rows[0].id]
+    res = await client.get("/api/v1/jobs?location=germany&limit=100")
+    ids = {j["id"] for j in res.json()}
+    assert str(berlin[0]) in ids
+    assert all("germany" in (j["location"] or "").lower() for j in res.json())
+    assert res.headers["x-total-count"] == str(len(ids))

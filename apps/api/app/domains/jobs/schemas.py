@@ -104,6 +104,7 @@ class JobSearchQuery(BaseModel):
     salary_period: str | None = None
     source: str | None = None
     company_id: uuid.UUID | None = None
+    location: str | None = None
     skip: int = 0
     limit: int = 20
 

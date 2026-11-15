@@ -54,7 +54,7 @@ function Stat({ l, v, d, i }: { l: string; v: string; d?: string; i: string }) {
     <Card c="rounded-xl">
       <div className="flex items-center justify-between text-slate-500">
         <span className="text-sm">{l}</span>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
           <Ic n={i} s={16} />
         </span>
       </div>
@@ -557,7 +557,7 @@ export function Engineers() {
                 onClick={() => setTz(x)}
                 className={cx(
                   "rounded-full px-3 py-1 text-sm font-semibold",
-                  tz === x ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+                  tz === x ? "bg-[#175CD3] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
                 )}
               >
                 {x}
@@ -610,7 +610,7 @@ export function Engineers() {
                     onClick={() => setSort(x[0])}
                     className={cx(
                       "rounded-full px-3 py-1.5 font-semibold",
-                      sort === x[0] ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+                      sort === x[0] ? "bg-[#E8F0FC] text-[#175CD3]" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
                     )}
                   >
                     {x[1]}
@@ -628,7 +628,7 @@ export function Engineers() {
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => open(e.id)}
-                        className="text-[17px] font-bold text-[#0552CC] hover:underline"
+                        className="text-[17px] font-bold text-[#175CD3] hover:underline"
                       >
                         {e.n}
                       </button>
@@ -703,7 +703,7 @@ export function Engineers() {
           <p className="text-slate-500">
             Post a job first, then invite professionals to apply.{" "}
             <button
-              className="font-semibold text-[#0552CC]"
+              className="font-semibold text-[#175CD3]"
               onClick={() => {
                 setInviting(null);
                 goRoute("postjob");
@@ -761,7 +761,7 @@ export function Companies() {
             onClick={() => setHiring(!hiring)}
             className={cx(
               "h-10 rounded-full px-4 text-sm font-semibold",
-              hiring ? "bg-[#0552CC] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+              hiring ? "bg-[#175CD3] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
             )}
           >
             Hiring now
@@ -776,7 +776,7 @@ export function Companies() {
               <Lg name={c.n} s={64} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[17px] font-bold text-[#0552CC]">{c.n}</p>
+                  <p className="text-[17px] font-bold text-[#175CD3]">{c.n}</p>
                   {c.hiring && <Tag v="blue">Hiring</Tag>}
                   {c.verified && <Tag v="gray">Verified</Tag>}
                 </div>
@@ -1449,16 +1449,16 @@ export function PostJob() {
               onClick={() => setStep(i)}
               className={cx(
                 "flex items-center gap-2 2xl:w-full rounded-lg px-3 py-2 text-left text-sm font-semibold",
-                i === step ? "bg-[#E8F0FC] text-[#0552CC]" : "text-slate-700 hover:bg-slate-100",
+                i === step ? "bg-[#E8F0FC] text-[#175CD3]" : "text-slate-700 hover:bg-slate-100",
               )}
             >
               <span
                 className={cx(
                   "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
                   i < step
-                    ? "bg-[#0552CC] text-white"
+                    ? "bg-[#175CD3] text-white"
                     : i === step
-                      ? "border-2 border-[#0552CC] text-[#0552CC]"
+                      ? "border-2 border-[#175CD3] text-[#175CD3]"
                       : "bg-slate-200 text-slate-600",
                 )}
               >
@@ -1471,7 +1471,7 @@ export function PostJob() {
         <Card c="rounded-xl" p="p-6">
           {done ? (
             <div className="py-10 text-center">
-              <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]">
+              <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
                 <Ic n="check" s={28} />
               </span>
               <h2 className="text-xl font-bold">Job published</h2>
@@ -1554,7 +1554,7 @@ export function PostJob() {
                         <button
                           key={k}
                           onClick={() => setSkills(skills.filter((x) => x !== k))}
-                          className="flex items-center gap-1 rounded-full bg-[#E8F0FC] px-3 py-1 text-sm font-semibold text-[#0552CC]"
+                          className="flex items-center gap-1 rounded-full bg-[#E8F0FC] px-3 py-1 text-sm font-semibold text-[#175CD3]"
                         >
                           {k}
                           <Ic n="x" s={12} />
@@ -1622,7 +1622,7 @@ export function PostJob() {
                     </div>
                   </div>
                   <div className="rounded-lg bg-[#E8F0FC] p-4 text-sm">
-                    <p className="font-semibold text-[#0552CC]">Estimated monthly spend</p>
+                    <p className="font-semibold text-[#175CD3]">Estimated monthly spend</p>
                     <p className="mt-1 text-2xl font-bold">USD {(Number(rate) * Number(hours) * 4).toLocaleString()}</p>
                     <p className="text-slate-600">
                       {hours} hrs x 4 weeks at USD {rate}/hr + 5% platform fee on release
@@ -1674,7 +1674,7 @@ export function PostJob() {
             <div className="flex gap-3">
               <Lg name={coName} s={48} />
               <div>
-                <p className="font-bold text-[#0552CC]">{title || "Job title"}</p>
+                <p className="font-bold text-[#175CD3]">{title || "Job title"}</p>
                 <p className="text-sm text-slate-600">{coName} - Remote</p>
                 <p className="text-sm text-slate-500">
                   {kind} - {level}
@@ -1832,7 +1832,7 @@ export function Candidates() {
               onClick={() => setMin(x[1])}
               className={cx(
                 "h-10 rounded-full px-4 text-sm font-semibold",
-                min === x[1] ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+                min === x[1] ? "bg-[#E8F0FC] text-[#175CD3]" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
               )}
             >
               Match {x[0]}
@@ -1842,7 +1842,7 @@ export function Candidates() {
             onClick={() => setSavedOnly(!savedOnly)}
             className={cx(
               "flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold",
-              savedOnly ? "bg-[#E8F0FC] text-[#0552CC]" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
+              savedOnly ? "bg-[#E8F0FC] text-[#175CD3]" : "bg-slate-100 text-slate-700 hover:bg-slate-200",
             )}
           >
             <Ic n="bookmark" s={14} />
@@ -1879,7 +1879,7 @@ export function Candidates() {
                       onClick={() => setSel(c.id)}
                       className={cx(
                         "cursor-pointer rounded-lg bg-white p-3 shadow-sm hover:shadow-md",
-                        sel === c.id && "ring-2 ring-[#0552CC]",
+                        sel === c.id && "ring-2 ring-[#175CD3]",
                       )}
                     >
                       <div className="flex items-center gap-2">
@@ -1895,13 +1895,13 @@ export function Candidates() {
                           }}
                           className={cx(
                             "rounded-full p-1",
-                            saved.includes(c.id) ? "text-[#0552CC]" : "text-slate-400 hover:text-slate-600",
+                            saved.includes(c.id) ? "text-[#175CD3]" : "text-slate-400 hover:text-slate-600",
                           )}
                         >
                           <Ic n="bookmark" s={15} />
                         </button>
                         {c.sc != null && (
-                          <span className="rounded-full bg-[#E8F0FC] px-2 py-0.5 text-xs font-bold text-[#0552CC]">
+                          <span className="rounded-full bg-[#E8F0FC] px-2 py-0.5 text-xs font-bold text-[#175CD3]">
                             {c.sc}%
                           </span>
                         )}
@@ -1932,7 +1932,7 @@ export function Candidates() {
                               e.stopPropagation();
                               move(c.id, 1);
                             }}
-                            className="rounded bg-[#0552CC] px-1.5 text-white hover:bg-[#0443A8]"
+                            className="rounded bg-[#175CD3] px-1.5 text-white hover:bg-[#0443A8]"
                           >
                             Move
                           </button>
@@ -1965,7 +1965,7 @@ export function Candidates() {
               </button>
             </div>
             <div className="mt-3 rounded-lg bg-[#E8F0FC] p-3">
-              <p className="text-sm font-bold text-[#0552CC]">
+              <p className="text-sm font-bold text-[#175CD3]">
                 {cur.m ? `Match ${cur.sc}%` : "Match not calculated yet"}
               </p>
               {(cur.m
@@ -1983,7 +1983,7 @@ export function Candidates() {
                     <span>{x[1]}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-white">
-                    <div className="h-1.5 rounded-full bg-[#0552CC]" style={{ width: x[1] + "%" }} />
+                    <div className="h-1.5 rounded-full bg-[#175CD3]" style={{ width: x[1] + "%" }} />
                   </div>
                 </div>
               ))}
@@ -2116,7 +2116,7 @@ export function CoJobs() {
                 <tr>
                   <td colSpan={5} className="px-4 py-10 text-center text-slate-500">
                     No job postings yet.{" "}
-                    <button className="font-semibold text-[#0552CC]" onClick={() => visit("postjob")}>
+                    <button className="font-semibold text-[#175CD3]" onClick={() => visit("postjob")}>
                       Post your first job
                     </button>
                   </td>

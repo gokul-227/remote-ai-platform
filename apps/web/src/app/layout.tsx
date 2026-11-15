@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { SITE_URL } from "@/lib/site";
+import { BRAND } from "@/lib/brand";
 import localFont from "next/font/local";
 import "@/figma/index.css";
 import { Providers } from "./providers";
@@ -27,8 +28,13 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "Remote AI Platform",
     type: "website",
+    locale: "en",
   },
+  twitter: { card: "summary_large_image", title: "Remote AI Platform", description: BRAND.tagline },
+  applicationName: BRAND.name,
 };
+
+export const viewport: Viewport = { themeColor: BRAND.blue };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

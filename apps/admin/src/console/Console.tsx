@@ -328,7 +328,8 @@ export default function Console() {
       <header className="top">
         <div className="top-left">
           <button className="logo" aria-label="Operations console home" onClick={() => open("overview")}>
-            <Ic n="globe" s={22} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand-mark.svg" width={36} height={36} alt="" />
           </button>
           <div className="top-search">
             <Ic n="search" s={18} />

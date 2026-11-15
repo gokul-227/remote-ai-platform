@@ -2,7 +2,10 @@ import Link from "next/link";
 import { OPERATOR } from "@/figma/legal_content";
 import { Brand } from "@/components/Brand";
 import { AppEntry } from "./AppEntry";
-import { TOPICS } from "@/lib/seo";
+import { PLACES, TOPICS } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/brand";
+import { BrandLockup, JsonLd, PublicFooter } from "./PublicChrome";
 
 const workflows = [
   ["Connect", "Build your professional profile, find people and share updates with your network.", "/#engineers"],
@@ -14,33 +17,30 @@ const workflows = [
 export default function Home() {
   return (
     <AppEntry>
-      <div className="min-h-screen bg-[#f0f2f5] text-[#1c1e21]">
+      <div className="min-h-screen bg-[#F5F8FC] text-[#1F2937]">
         <header className="border-b border-slate-200 bg-white">
           <nav
             aria-label="Main navigation"
             className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4"
           >
-            <Link href="/" className="flex items-center gap-2 font-bold text-[#0552CC]">
-              <Brand s={40} />
-              Remote AI Platform
-            </Link>
+            <BrandLockup size={40} />
             <div className="flex items-center gap-5 text-sm font-semibold">
-              <Link href="/remote-jobs" className="text-[#0552CC] hover:underline">
+              <Link href="/remote-jobs" className="text-[#175CD3] hover:underline">
                 Find jobs
               </Link>
               <a href="#login" className="hover:underline">
                 Sign in
               </a>
-              <a href="#register" className="rounded-lg bg-[#0552CC] px-4 py-2 text-white">
+              <a href="#register" className="rounded-lg bg-[#175CD3] px-4 py-2 text-white">
                 Join free
               </a>
             </div>
           </nav>
         </header>
-        <main className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
+        <main id="main" className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
           <section className="grid items-center gap-10 md:grid-cols-2">
             <div>
-              <p className="font-semibold text-[#0552CC]">Your professional network and workspace</p>
+              <p className="font-semibold text-[#175CD3]">Your professional network and workspace</p>
               <h1 className="mt-4 font-bold" style={{ fontSize: "clamp(2.25rem, 4vw, 3.5rem)", lineHeight: 1.12 }}>
                 Connect. Find work.
                 <br />
@@ -51,12 +51,12 @@ export default function Home() {
                 Remote AI Platform.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <a href="#register" className="rounded-lg bg-[#0552CC] px-6 py-3 font-semibold text-white">
+                <a href="#register" className="rounded-lg bg-[#175CD3] px-6 py-3 font-semibold text-white">
                   Create your free account
                 </a>
                 <Link
                   href="/remote-jobs"
-                  className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-[#0552CC]"
+                  className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-[#175CD3]"
                 >
                   Explore remote jobs
                 </Link>
@@ -68,15 +68,15 @@ export default function Home() {
               <h2 className="mt-5 text-2xl font-bold">From opportunity to delivery</h2>
               <ol className="mt-5 space-y-4 text-slate-600">
                 <li>
-                  <strong className="text-[#0552CC]">1. Build your profile.</strong> Share your skills and what you are
+                  <strong className="text-[#175CD3]">1. Build your profile.</strong> Share your skills and what you are
                   looking for.
                 </li>
                 <li>
-                  <strong className="text-[#0552CC]">2. Find your next connection.</strong> Explore jobs, people and
+                  <strong className="text-[#175CD3]">2. Find your next connection.</strong> Explore jobs, people and
                   companies.
                 </li>
                 <li>
-                  <strong className="text-[#0552CC]">3. Work together.</strong> Organise tasks, discuss ideas and share
+                  <strong className="text-[#175CD3]">3. Work together.</strong> Organise tasks, discuss ideas and share
                   deliverables.
                 </li>
               </ol>
@@ -87,7 +87,7 @@ export default function Home() {
               <article key={title} className="rounded-xl border border-slate-200 bg-white p-6">
                 <h2 className="text-xl font-bold">{title}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-slate-600">{text}</p>
-                <a href={href} className="mt-4 inline-block font-semibold text-[#0552CC] hover:underline">
+                <a href={href} className="mt-4 inline-block font-semibold text-[#175CD3] hover:underline">
                   Explore {title.toLowerCase()} →
                 </a>
               </article>
@@ -100,27 +100,33 @@ export default function Home() {
                 <Link
                   key={topic.slug}
                   href={`/remote-jobs/${topic.slug}`}
-                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#0552CC] hover:border-[#0552CC]"
+                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#175CD3] hover:border-[#175CD3]"
                 >
                   {topic.name} jobs
                 </Link>
               ))}
             </div>
-            <Link href="/remote-jobs" className="mt-5 inline-block font-semibold text-[#0552CC] hover:underline">
+            <Link href="/remote-jobs" className="mt-5 inline-block font-semibold text-[#175CD3] hover:underline">
               Browse all categories →
             </Link>
           </section>
+          <section className="mt-10">
+            <h2 className="text-2xl font-bold">Find remote work by location</h2>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {PLACES.map((place) => (
+                <Link
+                  key={place.slug}
+                  href={`/remote-jobs/in/${place.slug}`}
+                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#175CD3] hover:border-[#175CD3]"
+                >
+                  Remote jobs in {place.name}
+                </Link>
+              ))}
+            </div>
+          </section>
         </main>
-        <footer className="border-t border-slate-200 bg-white px-5 py-6">
-          <nav aria-label="Footer" className="mx-auto flex max-w-6xl flex-wrap gap-5 text-sm text-slate-600">
-            <span>Remote AI Platform</span>
-            <a href={`mailto:${OPERATOR.contactEmail}`}>{OPERATOR.contactEmail}</a>
-            <Link href="/privacy">Privacy</Link>
-            <Link href="/terms">Terms</Link>
-            <Link href="/impressum">Legal notice</Link>
-            <a href="#help">Help</a>
-          </nav>
-        </footer>
+        <PublicFooter />
+        <JsonLd data={[organizationJsonLd(SITE_URL, OPERATOR.contactEmail), websiteJsonLd(SITE_URL)]} />
       </div>
     </AppEntry>
   );

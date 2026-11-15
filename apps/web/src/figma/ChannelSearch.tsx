@@ -79,7 +79,7 @@ export function ChannelSearch({ channelId }: { channelId: string }) {
           />
         </label>
         <button
-          className="rounded-lg bg-[#0552CC] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-lg bg-[#175CD3] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
           disabled={busy || draft.trim().length < 2}
           type="submit"
         >
@@ -119,7 +119,7 @@ export function ChannelSearch({ channelId }: { channelId: string }) {
             <div className="mt-2">
               <button
                 type="button"
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-[#0552CC] disabled:opacity-50"
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-[#175CD3] disabled:opacity-50"
                 disabled={busy}
                 onClick={() => void search(true)}
               >

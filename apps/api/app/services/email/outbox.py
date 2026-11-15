@@ -39,21 +39,46 @@ def email_enabled() -> bool:
     return settings.EMAIL_PROVIDER != "none"
 
 
+# Brand palette (Enterprise Brand Identity): blue, navy, charcoal, mist.
+_BLUE, _NAVY, _CHARCOAL, _MIST = "#175CD3", "#102A43", "#1F2937", "#F5F8FC"
+_FONT = "Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif"
+
+
 def render_email(title: str, body: str, link_path: str | None = None) -> str:
-    """A minimal, escaped HTML message. Titles and bodies contain other users'
-    text (job titles, names), so everything is escaped."""
-    parts = [
-        f"<h2 style=\"font-family:sans-serif\">{html_lib.escape(title)}</h2>",
-        f"<p style=\"font-family:sans-serif\">{html_lib.escape(body)}</p>",
-    ]
-    if link_path and settings.FRONTEND_URL:
-        url = f"{settings.FRONTEND_URL.rstrip('/')}/{link_path.lstrip('/')}"
-        parts.append(f"<p style=\"font-family:sans-serif\"><a href=\"{html_lib.escape(url)}\">Open Remote AI Platform</a></p>")
-    parts.append(
-        "<p style=\"font-family:sans-serif;color:#666;font-size:12px\">You receive this because of activity on "
-        "your Remote AI Platform account.</p>"
+    """A branded, escaped HTML message (table layout for email clients). Titles and
+    bodies contain other users' text (job titles, names), so everything is escaped."""
+    site = (settings.FRONTEND_URL or "").rstrip("/")
+    logo = (
+        f'<img src="{html_lib.escape(site)}/brand/email-logo.png" width="300" height="48" '
+        f'alt="Remote AI Platform" style="display:block;border:0">'
+        if site
+        else f'<strong style="font-size:20px;color:{_NAVY}">Remote AI Platform</strong>'
     )
-    return "\n".join(parts)
+    button = ""
+    if link_path and site:
+        url = f"{site}/{link_path.lstrip('/')}"
+        button = (
+            f'<p style="margin:24px 0 0"><a href="{html_lib.escape(url)}" '
+            f'style="display:inline-block;background:{_BLUE};color:#ffffff;text-decoration:none;'
+            f'font-weight:600;padding:12px 20px;border-radius:8px">Open Remote AI Platform</a></p>'
+        )
+    return "\n".join(
+        [
+            f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            f'style="background:{_MIST};font-family:{_FONT};color:{_CHARCOAL}"><tr><td align="center" '
+            f'style="padding:24px 12px">',
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">',
+            f'<tr><td style="padding:0 0 16px">{logo}</td></tr>',
+            '<tr><td style="background:#ffffff;border:1px solid #e4e6eb;border-radius:12px;padding:28px">',
+            f'<h2 style="margin:0 0 12px;font-size:20px;color:{_NAVY}">{html_lib.escape(title)}</h2>',
+            f'<p style="margin:0;font-size:15px;line-height:1.5">{html_lib.escape(body)}</p>',
+            button,
+            "</td></tr>",
+            '<tr><td style="padding:16px 4px;font-size:12px;color:#65676b">You receive this because of '
+            "activity on your Remote AI Platform account.</td></tr>",
+            "</table></td></tr></table>",
+        ]
+    )
 
 
 async def enqueue_email(

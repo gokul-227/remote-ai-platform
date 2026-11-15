@@ -66,7 +66,7 @@ function AdminMoved() {
       <div className="rounded-xl border border-slate-200 bg-white p-6">
         <h1 className="text-xl font-bold">Administration has moved</h1>
         <p className="mt-2 text-slate-600">Staff tools now live in the separate staff console.</p>
-        <a className="mt-4 inline-block rounded-lg bg-[#0552CC] px-4 py-2 font-semibold text-white" href={url}>
+        <a className="mt-4 inline-block rounded-lg bg-[#175CD3] px-4 py-2 font-semibold text-white" href={url}>
           Open the staff console
         </a>
       </div>

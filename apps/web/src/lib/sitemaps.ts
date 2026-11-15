@@ -1,5 +1,5 @@
 import { API_URL, SITE_URL } from "./site";
-import { TOPICS } from "./seo";
+import { PLACES, TOPICS } from "./seo";
 
 export const SITEMAP_PAGE_SIZE = 5000;
 export const SITEMAP_KINDS = ["jobs", "people", "companies", "posts"] as const;
@@ -77,11 +77,18 @@ export function urlSet(entries: { url: string; changed?: string }[]): string {
 
 export function staticSitemap(): string {
   return urlSet(
-    ["/", "/remote-jobs", "/privacy", "/terms", "/impressum", ...TOPICS.map((t) => `/remote-jobs/${t.slug}`)].map(
-      (path) => ({
-        url: `${SITE_URL}${path}`,
-      }),
-    ),
+    [
+      "/",
+      "/remote-jobs",
+      "/privacy",
+      "/terms",
+      "/impressum",
+      "/trust",
+      ...TOPICS.map((t) => `/remote-jobs/${t.slug}`),
+      ...PLACES.map((p) => `/remote-jobs/in/${p.slug}`),
+    ].map((path) => ({
+      url: `${SITE_URL}${path}`,
+    })),
   );
 }
 

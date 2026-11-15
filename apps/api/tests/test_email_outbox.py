@@ -157,6 +157,8 @@ def test_rendered_email_escapes_user_text(monkeypatch):
     assert "&lt;script&gt;" in html
     assert "A&amp;B" in html
     assert 'href="https://remoteaiplatform.com/#applications"' in html
+    assert 'src="https://remoteaiplatform.com/brand/email-logo.png"' in html
+    assert "#175CD3" in html
 
 
 @pytest.mark.asyncio

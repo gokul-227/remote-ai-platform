@@ -96,7 +96,7 @@ function Side({ page, setPage, projects, pid, setPid, risk, onRisk, busy }: any)
   return (
     <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-[#F7F8F9] p-3 md:block">
       <div className="mb-4 flex items-center gap-2 px-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded bg-[#0552CC] text-white">
+        <span className="flex h-8 w-8 items-center justify-center rounded bg-[#175CD3] text-white">
           <Ic n="bolt" s={16} />
         </span>
         <div className="min-w-0">
@@ -125,7 +125,7 @@ function Side({ page, setPage, projects, pid, setPid, risk, onRisk, busy }: any)
           onClick={() => setPage(i[0])}
           className={cx(
             "mb-0.5 flex w-full items-center gap-2 rounded px-2 py-2 text-left text-sm font-medium",
-            page === i[0] ? "bg-[#E9F2FF] text-[#0552CC]" : "text-slate-700 hover:bg-slate-200/60",
+            page === i[0] ? "bg-[#E9F2FF] text-[#175CD3]" : "text-slate-700 hover:bg-slate-200/60",
           )}
         >
           <Ic n={i[2]} s={16} />
@@ -305,7 +305,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
   if (!projects.length)
     return (
       <div className="mx-auto max-w-xl p-10 text-center">
-        <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#0552CC]">
+        <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
           <Ic n="board" s={26} />
         </span>
         <h2>No projects yet</h2>
@@ -411,7 +411,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                 New project
               </Btn>
             )}
-            <Btn v="primary" icon="plus" onClick={() => setCreate(true)} c="!bg-[#0552CC]">
+            <Btn v="primary" icon="plus" onClick={() => setCreate(true)} c="!bg-[#175CD3]">
               Create
             </Btn>
           </div>
@@ -462,7 +462,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                       setDrag(null);
                       setOver(null);
                     }}
-                    className={cx("rounded-lg bg-[#F1F2F4] p-2 transition", over === c[0] && "ring-2 ring-[#0552CC]")}
+                    className={cx("rounded-lg bg-[#F1F2F4] p-2 transition", over === c[0] && "ring-2 ring-[#175CD3]")}
                   >
                     <p className="px-2 py-2 text-xs font-bold text-slate-600">
                       {c[1]} <span className="ml-1 font-normal">{col.length}</span>
@@ -582,7 +582,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                 {ms.map((m: any, idx: number) => {
                   const due = (new Date(m.due_date).getTime() - start.getTime()) / (7 * 86400000);
                   const left = Math.max(0, Math.min(11, due - 2));
-                  const color = ["#904EE2", "#E5493A", "#36B37E", "#4BADE8", "#E97F33", "#0552CC"][idx % 6];
+                  const color = ["#904EE2", "#E5493A", "#36B37E", "#4BADE8", "#E97F33", "#175CD3"][idx % 6];
                   const pct = ["COMPLETED", "DONE"].includes(m.status)
                     ? 100
                     : m.status === "IN_REVIEW"
@@ -629,7 +629,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
               ],
             ].map((s) => (
               <div key={s[0]} className="flex items-center gap-3 rounded-lg border border-slate-200 p-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#0552CC]">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E9F2FF] text-[#175CD3]">
                   <Ic n={s[2]} s={18} />
                 </span>
                 <div>
@@ -646,7 +646,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                   <div className="flex-1">
                     <Bar
                       v={iss.length ? (iss.filter((i) => i.st === c[0]).length / iss.length) * 100 : 0}
-                      c="bg-[#0552CC]"
+                      c="bg-[#175CD3]"
                     />
                   </div>
                   <b className="w-4">{iss.filter((i) => i.st === c[0]).length}</b>
@@ -696,7 +696,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                       <td className="px-3 py-2">
                         <TI t={i.type} />
                       </td>
-                      <td className="px-3 py-2 text-[#0552CC]">{i.k}</td>
+                      <td className="px-3 py-2 text-[#175CD3]">{i.k}</td>
                       <td className="px-3 py-2">{i.t}</td>
                       <td className="px-3 py-2">
                         <Tag t="gray">{COLS.find((c) => c[0] === i.st)![1]}</Tag>
@@ -729,7 +729,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                 {perWeek.map((v, i) => (
                   <div key={i} className="flex flex-1 flex-col items-center justify-end gap-1">
                     <div
-                      className="w-full rounded-t bg-[#0552CC]"
+                      className="w-full rounded-t bg-[#175CD3]"
                       style={{ height: Math.max(2, (v / Math.max(1, ...perWeek)) * 140) }}
                     />
                     <span className="text-[10px] text-slate-500">
@@ -838,7 +838,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                   aria-label="Status"
                   value={open.raw}
                   onChange={(e) => patch(open.id, { status: e.target.value })}
-                  className="h-9 w-full rounded bg-[#E9F2FF] px-3 text-sm font-bold text-[#0552CC]"
+                  className="h-9 w-full rounded bg-[#E9F2FF] px-3 text-sm font-bold text-[#175CD3]"
                 >
                   {[
                     ["TODO", "TO DO"],
@@ -940,7 +940,7 @@ export function Projects({ initial = "workspace" }: { initial?: string } = {}) {
                   <div className="flex items-center justify-between border-b border-slate-100 p-3">
                     <span className="text-slate-500">Notifications</span>
                     <span className="flex gap-1">
-                      <button className="text-[#0552CC] underline" onClick={() => watch(open.id, true)}>
+                      <button className="text-[#175CD3] underline" onClick={() => watch(open.id, true)}>
                         Watch
                       </button>
                       <span className="text-slate-400">/</span>

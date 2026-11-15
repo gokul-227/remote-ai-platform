@@ -57,6 +57,9 @@ async def list_jobs(
     skills: list[str] | None = Query(None, description="Match any of these skills"),
     source: str | None = Query(None, description="Filter by source (REMOTEOK, ARBEITNOW, etc.)"),
     company_id: uuid.UUID | None = Query(None, description="Filter by company profile UUID"),
+    location: str | None = Query(
+        None, max_length=60, description="Text in the posting's location (e.g. Germany)"
+    ),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: JobService = Depends(get_job_service),
@@ -88,6 +91,7 @@ async def list_jobs(
         skills=[skill.strip() for skill in skills or [] if skill.strip()] or None,
         source=source,
         company_id=company_id,
+        location=location,
         skip=skip,
         limit=limit,
     )

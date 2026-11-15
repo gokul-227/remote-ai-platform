@@ -59,7 +59,7 @@ export default function OAuthCallback() {
           </p>
           <Link
             href="/#login"
-            className="mt-6 flex min-h-11 items-center justify-center rounded-lg bg-[#0866FF] font-semibold text-white"
+            className="mt-6 flex min-h-11 items-center justify-center rounded-lg bg-[#175CD3] font-semibold text-white"
           >
             Back to sign in
           </Link>

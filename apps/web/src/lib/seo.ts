@@ -81,3 +81,38 @@ export function topicsForJob(job: PublicJob): Topic[] {
     t.jobType ? type === t.jobType : new RegExp(`\\b${t.query!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text),
   ).slice(0, 6);
 }
+
+/**
+ * Location landing pages (/remote-jobs/in/<place>): remote roles whose posting
+ * names the place (often a residency or time-zone requirement). `match` is the
+ * text the API looks for in the job's free-text location.
+ */
+export type Place = { slug: string; name: string; match: string };
+export const PLACES: Place[] = [
+  { slug: "usa", name: "the United States", match: "usa" },
+  { slug: "canada", name: "Canada", match: "canada" },
+  { slug: "uk", name: "the United Kingdom", match: "united kingdom" },
+  { slug: "europe", name: "Europe", match: "europe" },
+  { slug: "germany", name: "Germany", match: "germany" },
+  { slug: "netherlands", name: "the Netherlands", match: "netherlands" },
+  { slug: "france", name: "France", match: "france" },
+  { slug: "spain", name: "Spain", match: "spain" },
+  { slug: "india", name: "India", match: "india" },
+  { slug: "australia", name: "Australia", match: "australia" },
+  { slug: "latin-america", name: "Latin America", match: "latam" },
+  { slug: "worldwide", name: "anywhere in the world", match: "worldwide" },
+];
+export const placeBySlug = (slug: string) => PLACES.find((p) => p.slug === slug);
+
+/** Up to `limit` newest remote jobs that name a place, and how many match. */
+export async function fetchPlaceJobs(place: Place, limit = 50): Promise<{ jobs: PublicJob[]; total: number }> {
+  const params = new URLSearchParams({ limit: String(limit), location: place.match });
+  try {
+    const res = await fetch(`${API_URL}/api/v1/jobs?${params}`, { next: { revalidate: 1800 } });
+    if (!res.ok) return { jobs: [], total: 0 };
+    const jobs: PublicJob[] = await res.json();
+    return { jobs, total: Number(res.headers.get("x-total-count")) || jobs.length };
+  } catch {
+    return { jobs: [], total: 0 };
+  }
+}

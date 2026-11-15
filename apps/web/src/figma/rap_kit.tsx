@@ -124,7 +124,7 @@ export function Av({ name, s = 40, dot, ring }: { name: string; s?: number; dot?
         className={cx(
           "flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br font-bold text-white",
           grad(name),
-          ring && "ring-2 ring-[#0552CC] ring-offset-2",
+          ring && "ring-2 ring-[#175CD3] ring-offset-2",
         )}
         style={{ fontSize: s * 0.36 }}
       >
@@ -166,8 +166,8 @@ export function Btn({
 }) {
   const base = "inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors";
   const vs: Record<string, string> = {
-    primary: "bg-[#0552CC] text-white hover:bg-[#0443A8]",
-    outline: "border border-[#0552CC] text-[#0552CC] hover:bg-[#E8F0FC]",
+    primary: "bg-[#175CD3] text-white hover:bg-[#0443A8]",
+    outline: "border border-[#175CD3] text-[#175CD3] hover:bg-[#E8F0FC]",
     ghost: "text-slate-600 hover:bg-slate-100",
     gray: "bg-slate-100 text-slate-800 hover:bg-slate-200",
     dark: "bg-black text-white hover:bg-slate-800",
@@ -213,8 +213,8 @@ export function Tag({ children, t, v }: { children: ReactNode; t?: string; v?: s
   const tone = t ?? v ?? "gray";
   const m: Record<string, string> = {
     gray: "bg-slate-100 text-slate-700",
-    blue: "bg-[#E8F0FC] text-[#0552CC]",
-    primary: "bg-[#E8F0FC] text-[#0552CC]",
+    blue: "bg-[#E8F0FC] text-[#175CD3]",
+    primary: "bg-[#E8F0FC] text-[#175CD3]",
     green: "bg-emerald-50 text-emerald-700",
     amber: "bg-amber-50 text-amber-700",
     red: "bg-red-50 text-red-700",
@@ -266,7 +266,7 @@ export function Tabs({ items, v, set, c = "" }: { items: string[]; v: string; se
           aria-pressed={v === t}
           className={cx(
             "whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold",
-            v === t ? "border-[#0552CC] text-[#0552CC]" : "border-transparent text-slate-500 hover:text-slate-800",
+            v === t ? "border-[#175CD3] text-[#175CD3]" : "border-transparent text-slate-500 hover:text-slate-800",
           )}
         >
           {t}
@@ -371,15 +371,15 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 export const inputCls =
-  "h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-[#0552CC] focus:ring-2 focus:ring-[#0552CC]/20";
-export function Bar({ v, c = "bg-[#0552CC]" }: { v: number; c?: string }) {
+  "h-10 w-full rounded-lg border border-slate-300 px-3 text-sm outline-none focus:border-[#175CD3] focus:ring-2 focus:ring-[#175CD3]/20";
+export function Bar({ v, c = "bg-[#175CD3]" }: { v: number; c?: string }) {
   return (
     <div className="h-2 overflow-hidden rounded-full bg-slate-100">
       <div className={cx("h-full rounded-full", c)} style={{ width: v + "%" }} />
     </div>
   );
 }
-export function Spark({ d, c = "#0552CC", h = 36, w = 120 }: { d: number[]; c?: string; h?: number; w?: number }) {
+export function Spark({ d, c = "#175CD3", h = 36, w = 120 }: { d: number[]; c?: string; h?: number; w?: number }) {
   const mx = Math.max(...d),
     mn = Math.min(...d);
   const pts = d
@@ -391,7 +391,7 @@ export function Spark({ d, c = "#0552CC", h = 36, w = 120 }: { d: number[]; c?: 
     </svg>
   );
 }
-export function Bars({ d, c = "#0552CC", h = 120 }: { d: number[]; c?: string; h?: number }) {
+export function Bars({ d, c = "#175CD3", h = 120 }: { d: number[]; c?: string; h?: number }) {
   const mx = Math.max(...d);
   return (
     <div className="flex items-end gap-1.5" style={{ height: h }}>

@@ -147,14 +147,14 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
   };
 
   const button =
-    "flex min-h-11 w-full items-center justify-center rounded-lg bg-[#0866FF] px-5 py-3 font-semibold text-white hover:bg-[#0756d8] disabled:opacity-50";
+    "flex min-h-11 w-full items-center justify-center rounded-lg bg-[#175CD3] px-5 py-3 font-semibold text-white hover:bg-[#0756d8] disabled:opacity-50";
   return (
     <div className="min-h-screen bg-[#F0F2F5] text-[#1c1e21]">
       <main className="mx-auto grid min-h-[calc(100vh-110px)] max-w-[1080px] items-center gap-16 px-6 py-12 lg:grid-cols-[1fr_420px]">
         <section>
           <div className="flex items-center gap-3">
             <Brand s={52} />
-            <span className="text-2xl font-bold text-[#0866FF]">Remote AI Platform</span>
+            <span className="text-2xl font-bold text-[#175CD3]">Remote AI Platform</span>
           </div>
           <h1 className="mt-7 text-5xl">
             Your network.
@@ -175,7 +175,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
               ],
             ].map(([icon, title, copy]) => (
               <div key={title} className="flex items-start gap-4">
-                <span className="rounded-full bg-white p-3 text-[#0866FF]">
+                <span className="rounded-full bg-white p-3 text-[#175CD3]">
                   <Ic n={icon} />
                 </span>
                 <div>
@@ -206,11 +206,11 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                     setStep("email");
                     setError("");
                   }}
-                  className="text-sm text-[#0866FF]"
+                  className="text-sm text-[#175CD3]"
                 >
                   ← Change email
                 </button>
-                <span className="mx-auto my-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-[#0866FF]">
+                <span className="mx-auto my-5 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-[#175CD3]">
                   <Ic n="mail" s={26} />
                 </span>
                 <h2>Check your email</h2>
@@ -246,7 +246,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                 <button
                   disabled={seconds > 0}
                   onClick={resend}
-                  className="mt-4 w-full text-sm font-semibold text-[#0866FF] disabled:text-slate-400"
+                  className="mt-4 w-full text-sm font-semibold text-[#175CD3] disabled:text-slate-400"
                 >
                   {seconds > 0 ? "Resend code in " + seconds + "s" : "Resend code"}
                 </button>
@@ -334,7 +334,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                 {!recovery && (
                   <>
                     <div className="mt-6 border-t border-slate-200 pt-5 text-center">
-                      <button onClick={() => go(join ? "login" : "register")} className="font-semibold text-[#0866FF]">
+                      <button onClick={() => go(join ? "login" : "register")} className="font-semibold text-[#175CD3]">
                         {join ? "Already a member? Sign in" : "New here? Create an account"}
                       </button>
                     </div>

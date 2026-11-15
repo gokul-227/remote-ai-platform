@@ -324,6 +324,7 @@ class JobRepository:
         salary_period: str | None = None,
         source: str | None = None,
         company_id: uuid.UUID | None = None,
+        location: str | None = None,
     ) -> Select:
         stmt = stmt.where(
             JobPost.is_active.is_(True), JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None)
@@ -331,6 +332,11 @@ class JobRepository:
 
         if company_id is not None:
             stmt = stmt.where(JobPost.company_id == company_id)
+
+        if location:
+            # Substring of the posting's free-text location ("Germany", "Europe", "USA").
+            needle = location.strip().lower().replace("%", "").replace("_", "")
+            stmt = stmt.where(func.lower(JobPost.location).contains(needle))
 
         if is_remote is not None:
             stmt = stmt.where(JobPost.is_remote == is_remote)
@@ -413,6 +419,7 @@ class JobRepository:
         salary_period: str | None = None,
         source: str | None = None,
         company_id: uuid.UUID | None = None,
+        location: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> Sequence[JobPost]:
@@ -429,6 +436,7 @@ class JobRepository:
             salary_period=salary_period,
             source=source,
             company_id=company_id,
+            location=location,
         )
         # id breaks ties so consecutive pages never overlap or skip rows.
         stmt = stmt.order_by(JobPost.posted_at.desc(), JobPost.id.desc()).offset(skip).limit(limit)

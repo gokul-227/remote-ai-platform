@@ -1,30 +1,155 @@
 import Link from "next/link";
 import { Brand } from "@/components/Brand";
+import { OPERATOR } from "@/figma/legal_content";
 import type { ReactNode } from "react";
 
-/** Shared frame for public pages: header with sign-in, and the sign-up prompt for actions. */
-export function PublicFrame({ children }: { children: ReactNode }) {
+const focus = "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#8DBBFF]";
+
+/** Brand lockup linking home (symbol + wordmark, "AI" in brand blue). */
+export function BrandLockup({ size = 32 }: { size?: number }) {
   return (
-    <div className="min-h-screen bg-[#f0f2f5] text-[#1c1e21]">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <Link href="/" className="flex items-center gap-2 text-lg font-bold text-[#0552CC]">
-            <Brand /> Remote AI Platform
+    <Link
+      href="/"
+      aria-label="Remote AI Platform home"
+      className={`flex items-center gap-2 text-lg font-semibold tracking-tight text-[#102A43] ${focus}`}
+    >
+      <Brand s={size} decorative />
+      <span aria-hidden="true">
+        Remote <span className="text-[#175CD3]">AI</span> Platform
+      </span>
+    </Link>
+  );
+}
+
+/** Header for public, crawlable pages: brand, job search entry, sign-in. */
+export function PublicHeader() {
+  return (
+    <header className="border-b border-slate-200 bg-white">
+      <nav
+        aria-label="Main navigation"
+        className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3"
+      >
+        <BrandLockup />
+        <div className="flex items-center gap-4 text-sm font-semibold">
+          <Link href="/remote-jobs" className={`text-[#102A43] hover:text-[#175CD3] hover:underline ${focus}`}>
+            Find jobs
           </Link>
-          <nav className="flex items-center gap-4 text-sm font-semibold">
-            <Link href="/remote-jobs" className="hover:underline">
-              Jobs
-            </Link>
-            <Link href="/#login" className="hover:underline">
-              Sign in
-            </Link>
-            <Link href="/#register" className="rounded-full bg-[#0552CC] px-4 py-1.5 text-white">
-              Join free
-            </Link>
-          </nav>
+          <Link href="/#login" className={`text-[#102A43] hover:underline ${focus}`}>
+            Sign in
+          </Link>
+          <Link
+            href="/#register"
+            className={`rounded-lg bg-[#175CD3] px-4 py-2 text-white hover:bg-[#124BAD] ${focus}`}
+          >
+            Join free
+          </Link>
         </div>
-      </header>
-      <main className="mx-auto max-w-4xl px-4 py-8">{children}</main>
+      </nav>
+    </header>
+  );
+}
+
+/** Trust footer: legal, security, status and contact on every public page. */
+export function PublicFooter() {
+  const year = new Date().getUTCFullYear();
+  const linkClass = `hover:text-[#175CD3] hover:underline ${focus}`;
+  return (
+    <footer className="mt-16 border-t border-slate-200 bg-white">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <BrandLockup size={28} />
+          <p className="mt-3">Connect. Find work. Get work done.</p>
+        </div>
+        <nav aria-label="Find work">
+          <h2 className="mb-3 text-sm font-semibold text-[#102A43]">Find work</h2>
+          <ul className="space-y-2">
+            <li>
+              <Link className={linkClass} href="/remote-jobs">
+                All remote jobs
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/remote-jobs/freelance">
+                Freelance work
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/remote-jobs/in/worldwide">
+                Work from anywhere
+              </Link>
+            </li>
+          </ul>
+        </nav>
+        <nav aria-label="Trust and legal">
+          <h2 className="mb-3 text-sm font-semibold text-[#102A43]">Trust</h2>
+          <ul className="space-y-2">
+            <li>
+              <Link className={linkClass} href="/privacy">
+                Privacy
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/terms">
+                Terms
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/trust">
+                Security
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/impressum">
+                Legal notice
+              </Link>
+            </li>
+          </ul>
+        </nav>
+        <nav aria-label="Support">
+          <h2 className="mb-3 text-sm font-semibold text-[#102A43]">Support</h2>
+          <ul className="space-y-2">
+            <li>
+              <Link className={linkClass} href="/#help">
+                Help centre
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/status">
+                Service status
+              </Link>
+            </li>
+            {OPERATOR.contactEmail && (
+              <li>
+                <a className={linkClass} href={`mailto:${OPERATOR.contactEmail}`}>
+                  Contact us
+                </a>
+              </li>
+            )}
+          </ul>
+        </nav>
+      </div>
+      <p className="border-t border-slate-100 px-4 py-4 text-center text-xs text-slate-500">
+        © {year} Remote AI Platform
+      </p>
+    </footer>
+  );
+}
+
+/** Shared frame for public pages: skip link, header, main landmark, trust footer. */
+export function PublicFrame({ children, wide }: { children: ReactNode; wide?: boolean }) {
+  return (
+    <div className="min-h-screen bg-[#F5F8FC] text-[#1F2937]">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-[#175CD3]"
+      >
+        Skip to content
+      </a>
+      <PublicHeader />
+      <main id="main" className={`mx-auto ${wide ? "max-w-6xl" : "max-w-4xl"} px-4 py-8`}>
+        {children}
+      </main>
+      <PublicFooter />
     </div>
   );
 }
@@ -36,11 +161,43 @@ export function ActionLink({ href, children, primary }: { href: string; children
       href={href}
       className={
         primary
-          ? "inline-flex rounded-full bg-[#0552CC] px-5 py-2 font-semibold text-white"
-          : "inline-flex rounded-full border border-[#0552CC] px-5 py-2 font-semibold text-[#0552CC]"
+          ? `inline-flex rounded-full bg-[#175CD3] px-5 py-2 font-semibold text-white hover:bg-[#124BAD] ${focus}`
+          : `inline-flex rounded-full border border-[#175CD3] px-5 py-2 font-semibold text-[#175CD3] ${focus}`
       }
     >
       {children}
     </Link>
+  );
+}
+
+/** Visible breadcrumb trail (the JSON-LD BreadcrumbList mirrors it). */
+export function Breadcrumbs({ trail }: { trail: [string, string][] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="text-sm text-slate-600">
+      <ol className="flex flex-wrap items-center gap-1">
+        {trail.map(([name, href], i) => (
+          <li key={href} className="flex items-center gap-1">
+            {i > 0 && <span aria-hidden="true">›</span>}
+            {i === trail.length - 1 ? (
+              <span aria-current="page">{name}</span>
+            ) : (
+              <Link href={href} className={`hover:underline ${focus}`}>
+                {name}
+              </Link>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+/** JSON for a <script type="application/ld+json">, escaped so content can't close the tag. */
+export function JsonLd({ data }: { data: unknown }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
+    />
   );
 }

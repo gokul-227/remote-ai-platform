@@ -10,7 +10,7 @@ export function PublicLegalPage({ title, sections }: { title: string; sections: 
         <p className="mt-2 text-sm text-slate-500">Last updated: {LAST_UPDATED}</p>
         <p className="mt-2 text-sm text-slate-600">
           Contact:{" "}
-          <a className="text-[#0552CC] underline" href={`mailto:${OPERATOR.contactEmail}`}>
+          <a className="text-[#175CD3] underline" href={`mailto:${OPERATOR.contactEmail}`}>
             {OPERATOR.contactEmail}
           </a>
         </p>
