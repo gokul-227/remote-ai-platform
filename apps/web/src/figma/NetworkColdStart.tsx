@@ -82,7 +82,7 @@ export function PeopleYouMayKnow({ onNotice }: { onNotice: (m: string) => void }
 }
 
 /** A personal invite link the member shares themselves (copy, or their own
- * email app). We never collect or email other people's addresses. */
+ * email app). Emailing invitations is a separate, opt-in flow (GoogleContacts). */
 export function InviteLink({ onNotice }: { onNotice: (m: string) => void }) {
   const [link, setLink] = useState("");
   const create = async () => {

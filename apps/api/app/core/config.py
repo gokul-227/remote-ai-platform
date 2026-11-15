@@ -169,6 +169,14 @@ class Settings(BaseSettings):
     # Server-side secret (sk_...): magic-auth codes, OAuth code exchange,
     # refresh, sign-out and user erasure. Never exposed to the browser.
     WORKOS_API_KEY: str = ""
+    # Google OAuth client used only for the opt-in contacts read (People API).
+    GOOGLE_OAUTH_CLIENT_ID: str = ""
+    GOOGLE_OAUTH_CLIENT_SECRET: str = ""
+    # Signs OAuth state, contact tokens and stop-invites links. Empty = derived
+    # from GOOGLE_OAUTH_CLIENT_SECRET.
+    INVITE_SIGNING_KEY: str = ""
+    # Contact invitations a member may send per rolling 24 hours.
+    CONTACT_INVITES_PER_DAY: int = 25
     WORKOS_API_URL: str = "https://api.workos.com"
     # Where browsers are sent to start an OAuth sign-in. Empty = WORKOS_API_URL;
     # set it to a WorkOS custom auth domain (or the E2E mock's host address).
@@ -452,6 +460,9 @@ class Settings(BaseSettings):
     # endpoints stay closed until the UI uses them. Their access token rides
     # in the URL, so enabling this needs short-lived connection tickets.
     FEATURE_REALTIME_WEBSOCKETS: bool = False
+    # "Find people you know from Google": off until Google has verified the
+    # OAuth app for the contacts scopes (see the internal runbook).
+    FEATURE_CONTACTS_IMPORT: bool = False
 
     # ── Error monitoring (Sentry) ────────────────────────────────────────────
     # Empty string (default) means Sentry is never initialized -- a complete

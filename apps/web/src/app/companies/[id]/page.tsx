@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ShareButtons } from "@/figma/ShareButtons";
+import { socialMetadata } from "@/lib/share";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionLink, PublicFrame } from "../../PublicChrome";
@@ -18,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     alternates: { canonical: `/companies/${c.id}` },
-    openGraph: { title, description, url: `/companies/${c.id}` },
+    ...socialMetadata({ title, description, path: `/companies/${c.id}` }),
   };
 }
 
@@ -48,6 +50,13 @@ export default async function CompanyPage({ params }: Props) {
               Website
             </a>
           )}
+        </div>
+        <div className="mt-4">
+          <ShareButtons
+            url={`${SITE_URL || "https://remoteaiplatform.com"}/companies/${c.id}`}
+            title={`${c.name} on Remote AI Platform`}
+            label="Share company"
+          />
         </div>
         {c.description && <p className="mt-6 whitespace-pre-line">{c.description}</p>}
       </section>

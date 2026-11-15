@@ -17,6 +17,7 @@ const OAUTH_LABELS: [OAuthProvider, string][] = [
   ["google", "Google"],
   ["azure", "Microsoft"],
   ["github", "GitHub"],
+  ["linkedin_oidc", "LinkedIn"],
 ];
 
 // Figma Make "AuthFlow" — markup unchanged; the simulated steps are replaced
@@ -287,7 +288,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
                     {/* Provider sign-in first: it needs no email delivery, which
                         the free email plan caps at 100 messages a day. */}
                     <div className="mt-5">
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {OAUTH_LABELS.filter(([id]) => providers === null || providers.includes(id)).map(
                           ([id, label]) => (
                             <button

@@ -54,11 +54,12 @@ export const PRIVACY: Section[] = [
     h: "What we collect",
     body: [
       [
-        "Account data: your name, email address and account type (professional or organisation). You sign in with a one-time code sent by email, or with Google, Microsoft or GitHub; from those providers we receive your name and email address. We do not store a password for these sign-in methods.",
+        "Account data: your name, email address and account type (professional or organisation). You sign in with a one-time code sent by email, or with Google, Microsoft, GitHub or LinkedIn; from those providers we receive your name, email address and, where available, your profile photo. We do not store a password for these sign-in methods.",
         "Profile data you enter: headline, bio, skills, experience, education, location, time zone, availability, rates, salary expectations and links. Companies provide organisation details and job posts.",
         "Resumes: the file you upload, the text extracted from it and the profile fields generated from that text.",
         "Communications and content: messages, connection requests, the members you block, posts, comments, group activity, reports you file and reviews you write.",
         "Work records: applications, invitations, contract offers and signatures, milestones, project tasks, submissions and time entries.",
+        "Google contacts (only if you choose \u201cFind people you know from Google\u201d): with your permission we read the names and email addresses in your Google contacts once, in memory, to show which of them already have a public profile here. We do not store your contact list or Google\u2019s access token, which is revoked right after the read. If you choose to invite contacts, we email only the people you select (one invitation each, with a link to stop all future invitations) and keep only a one-way hash of their address after sending. Our use of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.",
         "Usage data: product events such as an account being created, a search or an application, linked to your account when you are signed in; and how much of your AI allowance you have used.",
         "Technical data: request logs (including IP address and browser type) and error reports, used for security and troubleshooting.",
       ],

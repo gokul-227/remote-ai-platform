@@ -5,6 +5,7 @@ import { ExternalReading } from "./ExternalReading";
 import { useState, useEffect } from "react";
 import { Ic, Av, Btn, Card, Tag, Modal, cx, Notice } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
+import { ShareButtons } from "./ShareButtons";
 import { useAuth } from "@/lib/auth";
 import { useApi, timeAgo, goRoute, safeHref, statusOf } from "./live";
 const go = (r: string) => {
@@ -356,6 +357,18 @@ export function Feed() {
                   >
                     {p.link_preview_title || p.link_url}
                   </a>
+                )}
+                {p.visibility === "PUBLIC" && (
+                  <details className="mx-5 mb-2 text-sm">
+                    <summary className="cursor-pointer font-semibold text-slate-500">Share</summary>
+                    <div className="mt-2">
+                      <ShareButtons
+                        url={`${window.location.origin}/posts/${p.id}`}
+                        title={`${p.author?.full_name || "A member"} on Remote AI Platform`}
+                        label="Share post"
+                      />
+                    </div>
+                  </details>
                 )}
                 <div className="mx-5 flex items-center justify-between border-b border-slate-200 py-3 text-sm text-slate-500">
                   <span className="flex items-center gap-2">

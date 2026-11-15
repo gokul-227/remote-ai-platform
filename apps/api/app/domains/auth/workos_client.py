@@ -21,6 +21,9 @@ OAUTH_PROVIDERS = {
     "google": "GoogleOAuth",
     "github": "GitHubOAuth",
     "microsoft": "MicrosoftOAuth",
+    # Sign In with LinkedIn using OpenID Connect (openid profile email),
+    # configured with the LinkedIn app's credentials in the WorkOS dashboard.
+    "linkedin": "LinkedInOAuth",
 }
 
 _ID = re.compile(r"^[A-Za-z0-9_]{1,64}$")

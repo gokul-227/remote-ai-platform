@@ -19,7 +19,21 @@ from app.domains.auth.supabase_auth import SupabaseIdentity
 logger = get_logger("auth.service")
 
 
-async def _workos_verified_identity(identity: SupabaseIdentity) -> SupabaseIdentity:
+def _profile_prefill(wos_user: dict) -> dict[str, str]:
+    """Name and photo from the provider (Google, LinkedIn, ...) for a new account only."""
+    out: dict[str, str] = {}
+    name = " ".join(str(wos_user.get(k) or "").strip() for k in ("first_name", "last_name")).strip()
+    if name:
+        out["full_name"] = name[:255]
+    photo = wos_user.get("profile_picture_url")
+    if isinstance(photo, str) and photo.startswith("https://") and len(photo) <= 2048:
+        out["avatar_url"] = photo
+    return out
+
+
+async def _workos_verified_identity(
+    identity: SupabaseIdentity,
+) -> tuple[SupabaseIdentity, dict[str, str]]:
     """Fill email/email_verified for a first-seen WorkOS subject from the WorkOS API.
 
     AuthKit access tokens carry no email. The API's `email_verified` is the
@@ -46,7 +60,7 @@ async def _workos_verified_identity(identity: SupabaseIdentity) -> SupabaseIdent
         identity,
         email=email.strip().lower() if isinstance(email, str) else None,
         email_verified=bool(email and wos_user.get("email_verified") is True),
-    )
+    ), _profile_prefill(wos_user)
 
 
 class AuthService:
@@ -142,9 +156,10 @@ class AuthService:
             user = await self.user_repo.get_by_id(linked.user_id)
             if user is not None:
                 return user
+        prefill: dict[str, str] = {}
         if identity.verify_email_with_provider:
             # WorkOS access tokens carry no email: ask WorkOS, once, before linking.
-            identity = await _workos_verified_identity(identity)
+            identity, prefill = await _workos_verified_identity(identity)
         user = None
         if identity.email:
             user = await self.user_repo.get_by_email(identity.email)
@@ -169,7 +184,8 @@ class AuthService:
                     auth_subject=None,
                     email=identity.email
                     or f"{identity.provider}-{identity.user_id}@users.remoteaiplatform.invalid",
-                    full_name="Member",
+                    full_name=prefill.get("full_name", "Member"),
+                    avatar_url=prefill.get("avatar_url"),
                     role=UserRole.ENGINEER,
                     is_active=True,
                 )

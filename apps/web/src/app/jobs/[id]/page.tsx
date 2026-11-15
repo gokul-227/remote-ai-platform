@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ShareButtons } from "@/figma/ShareButtons";
+import { socialMetadata } from "@/lib/share";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
@@ -25,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical: `/jobs/${job.id}` },
     // A listing its source no longer shows stays reachable but isn't promoted.
     robots: job.expired_at || !permitsGoogleJobs(job.source) ? { index: false, follow: true } : undefined,
-    openGraph: { title, description, type: "article", url: `/jobs/${job.id}` },
+    ...socialMetadata({ title, description, path: `/jobs/${job.id}`, type: "article" }),
   };
 }
 
@@ -88,6 +90,13 @@ export default async function JobPage({ params }: Props) {
             View and apply
           </a>
         </p>
+        <div className="mt-4">
+          <ShareButtons
+            url={`${site}/jobs/${job.id}`}
+            title={`${job.title} at ${job.company_name}`}
+            label="Share this job"
+          />
+        </div>
         <section className="mt-8" aria-labelledby="about-job">
           <h2 id="about-job" className="mb-3 text-xl font-bold">
             About the job

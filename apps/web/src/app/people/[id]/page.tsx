@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ShareButtons } from "@/figma/ShareButtons";
+import { socialMetadata } from "@/lib/share";
 import { notFound } from "next/navigation";
 import { ActionLink, PublicFrame } from "../../PublicChrome";
 import { fetchPerson, ldJson } from "@/lib/publicPages";
@@ -19,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     alternates: { canonical: `/people/${p.id}` },
-    openGraph: { title, description, type: "profile", url: `/people/${p.id}` },
+    ...socialMetadata({ title, description, path: `/people/${p.id}`, type: "profile" }),
   };
 }
 
@@ -50,6 +52,13 @@ export default async function PersonPage({ params }: Props) {
             Connect
           </ActionLink>
           <ActionLink href={app}>Message</ActionLink>
+        </div>
+        <div className="mt-4">
+          <ShareButtons
+            url={`${SITE_URL || "https://remoteaiplatform.com"}/people/${p.id}`}
+            title={`${name} on Remote AI Platform`}
+            label="Share profile"
+          />
         </div>
         {p.bio && <p className="mt-6 whitespace-pre-line">{p.bio}</p>}
         {!!p.skills?.length && (

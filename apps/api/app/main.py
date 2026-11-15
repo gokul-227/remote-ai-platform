@@ -55,6 +55,7 @@ from app.domains.jobs.preferences_router import router as job_preferences_router
 from app.domains.jobs.router import router as jobs_router
 from app.domains.matching.router import router as matching_router
 from app.domains.meetings.router import router as meetings_router
+from app.domains.network.contacts import router as contacts_router
 from app.domains.network.router import router as network_router
 from app.domains.notifications.router import router as notifications_router
 from app.domains.payments.router import router as payments_router
@@ -338,6 +339,7 @@ def create_app() -> FastAPI:
     app.include_router(projects_router, prefix=prefix)
     app.include_router(notifications_router, prefix=prefix)
     app.include_router(network_router, prefix=prefix)
+    app.include_router(contacts_router, prefix=prefix)
     app.include_router(social_router, prefix=prefix)
     app.include_router(contracts_router, prefix=prefix)
     app.include_router(deliverables_router, prefix=prefix)

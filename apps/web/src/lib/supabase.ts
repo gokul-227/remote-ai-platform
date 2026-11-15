@@ -115,7 +115,7 @@ export async function applyPendingRegistration(
   return fetchBackendUser(session);
 }
 
-const OAUTH_PROVIDERS = ["google", "azure", "github"] as const;
+const OAUTH_PROVIDERS = ["google", "azure", "github", "linkedin_oidc"] as const;
 export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
 
 /** The OAuth providers this Supabase project has switched on, from its public

@@ -1,7 +1,9 @@
 import { InviteBanner, InviteLink, PeopleYouMayKnow } from "./NetworkColdStart";
+import { FindGoogleContacts } from "./GoogleContacts";
 import { JobSource } from "@/components/JobSource";
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
+import { ShareButtons } from "./ShareButtons";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
@@ -1043,6 +1045,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
         <aside className="self-start">
           <Card c="rounded-lg" p={false}>
             {user ? <InviteLink onNotice={setNotice} /> : null}
+            {user ? <FindGoogleContacts onNotice={setNotice} /> : null}
           </Card>
         </aside>
       </div>
@@ -1094,6 +1097,13 @@ export function Company() {
       <p className="mt-2 whitespace-pre-line text-[15px] leading-6 text-slate-700">
         {c.description || "This company hasn’t added a description yet."}
       </p>
+      <div className="mt-3">
+        <ShareButtons
+          url={`${window.location.origin}/companies/${c.id}`}
+          title={`${c.name} on Remote AI Platform`}
+          label="Share company"
+        />
+      </div>
       <div className="mt-4 grid grid-cols-3 gap-3 text-center">
         {[
           [c.is_verified ? "Verified" : "Unverified", "Company"],

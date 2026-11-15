@@ -113,3 +113,38 @@ class MemberInvite(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class ContactInvite(Base):
+    """An invitation a member chose to email to one of their Google contacts.
+
+    The contact list itself is never stored. Only addresses the member
+    explicitly selected become rows; the plaintext address exists only until
+    the send attempt finishes, then only its SHA-256 hash remains (to stop
+    duplicate invites and to honour the stop-invites list).
+    """
+
+    __tablename__ = "contact_invites"
+    __table_args__ = (UniqueConstraint("inviter_id", "email_hash", name="uq_contact_invite_pair"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    inviter_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    email_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    # Cleared as soon as the send attempt finishes (sent, failed or skipped).
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    # PENDING -> SENT | FAILED | SKIPPED (suppressed or already a member; the
+    # inviter is never told which).
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="PENDING")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class InviteSuppression(Base):
+    """Addresses (as SHA-256 hashes) that asked never to receive invitations."""
+
+    __tablename__ = "invite_suppressions"
+
+    email_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

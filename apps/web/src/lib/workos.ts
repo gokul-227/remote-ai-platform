@@ -14,8 +14,13 @@ const BASE = `${API_URL}/api/v1/auth/workos`;
 export const WORKOS_ENABLED = process.env.NEXT_PUBLIC_AUTH_PROVIDER === "workos";
 
 /** The app's names for sign-in options; "azure" is Supabase's name for Microsoft. */
-export type AppOAuthProvider = "google" | "azure" | "github";
-const TO_WORKOS: Record<AppOAuthProvider, string> = { google: "google", azure: "microsoft", github: "github" };
+export type AppOAuthProvider = "google" | "azure" | "github" | "linkedin_oidc";
+const TO_WORKOS: Record<AppOAuthProvider, string> = {
+  google: "google",
+  azure: "microsoft",
+  github: "github",
+  linkedin_oidc: "linkedin",
+};
 
 export interface Tokens {
   access_token: string;

@@ -384,7 +384,7 @@ async def test_config_reports_primary_provider(client: AsyncClient, workos, monk
     monkeypatch.setattr(settings, "AUTH_PRIMARY_PROVIDER", "workos")
     cfg = (await client.get("/api/v1/auth/workos/config")).json()
     assert cfg["primary"] == "workos"
-    assert set(cfg["oauth_providers"]) == {"google", "github", "microsoft"}
+    assert set(cfg["oauth_providers"]) == {"google", "github", "microsoft", "linkedin"}
 
 
 @pytest.mark.asyncio

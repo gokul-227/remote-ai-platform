@@ -54,6 +54,14 @@ describe("WorkOS sign-in client", () => {
     expect(err.message).toMatch(/try again/);
   });
 
+  it("maps LinkedIn sign-in to the WorkOS linkedin provider", async () => {
+    const calls = mockFetch({
+      "/authorize": { status: 200, body: { url: "https://api.workos.com/user_management/authorize?x" } },
+    });
+    await workos.startOAuth("linkedin_oidc", "http://localhost/auth/callback");
+    expect(calls[0].body!.provider).toBe("linkedin");
+  });
+
   it("starts OAuth with state and PKCE, then completes only the matching callback", async () => {
     const calls = mockFetch({
       "/authorize": { status: 200, body: { url: "https://api.workos.com/user_management/authorize?x" } },

@@ -2,6 +2,7 @@ import { JobSource } from "@/components/JobSource";
 import { useState, useEffect } from "react";
 import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
+import { ShareButtons } from "./ShareButtons";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Groups } from "./rap_social";
@@ -150,6 +151,15 @@ export function EngineerDetail() {
           </div>
           <h1 className="mt-3">{p.n}</h1>
           <p className="text-slate-700">{p.t}</p>
+          {p0?.id && p0.is_public !== false && (
+            <div className="my-2">
+              <ShareButtons
+                url={`${window.location.origin}/people/${p0.id}`}
+                title={`${p.n} on Remote AI Platform`}
+                label="Share profile"
+              />
+            </div>
+          )}
           <p className="text-sm text-slate-500">
             {[
               p.loc,
@@ -429,6 +439,15 @@ export function JobDetail() {
                 ))}
                 {m && <Tag v="blue">{Math.round(m.overall_score)}% match</Tag>}
               </div>
+              {j.id && (
+                <div className="mt-3">
+                  <ShareButtons
+                    url={`${window.location.origin}/jobs/${j.id}`}
+                    title={j.title || "Remote job"}
+                    label="Share this job"
+                  />
+                </div>
+              )}
             </div>
             <div className="flex gap-1 border-t border-slate-200 px-4">
               {["Overview", "Company"].map((x) => (

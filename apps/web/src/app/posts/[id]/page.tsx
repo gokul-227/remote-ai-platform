@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ShareButtons } from "@/figma/ShareButtons";
+import { socialMetadata } from "@/lib/share";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionLink, PublicFrame } from "../../PublicChrome";
@@ -16,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description: summary(p.content),
     alternates: { canonical: `/posts/${p.id}` },
-    openGraph: { title, description: summary(p.content), type: "article", url: `/posts/${p.id}` },
+    ...socialMetadata({ title, description: summary(p.content), path: `/posts/${p.id}`, type: "article" }),
   };
 }
 
@@ -47,6 +49,13 @@ export default async function PostPage({ params }: Props) {
             Like
           </ActionLink>
           <ActionLink href="/#feed">Comment</ActionLink>
+        </div>
+        <div className="mt-4">
+          <ShareButtons
+            url={`${SITE_URL || "https://remoteaiplatform.com"}/posts/${p.id}`}
+            title={`${by} on Remote AI Platform`}
+            label="Share post"
+          />
         </div>
       </article>
       <script
