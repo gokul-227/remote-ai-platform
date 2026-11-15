@@ -1,6 +1,7 @@
 /* The product's icon set (same paths as apps/web/src/figma/rap_kit.tsx) so the
    staff console looks and feels like the main application. */
 const P: Record<string, string> = {
+  menu: "M3 6h18|M3 12h18|M3 18h18",
   home: "M3 11l9-8 9 8|M5 10v10h5v-6h4v6h5V10",
   users:
     "M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2|M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8|M21 21v-2a4 4 0 0 0-3-3.9|M16 3.1a4 4 0 0 1 0 7.8",
