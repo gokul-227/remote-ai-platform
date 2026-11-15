@@ -111,6 +111,7 @@ jobs:
           build-args: |
             GIT_SHA=${{ needs.meta.outputs.sha }}
             NEXT_PUBLIC_DEPLOY_ENV=production
+            NEXT_PUBLIC_AUTH_PROVIDER=${{ vars.AUTH_PROVIDER || 'supabase' }}
             NEXT_PUBLIC_SITE_URL=${{ vars.PROD_FRONTEND_URL }}
             NEXT_PUBLIC_API_URL=${{ vars.PROD_API_BASE_URL }}
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
