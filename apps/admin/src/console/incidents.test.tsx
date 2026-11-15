@@ -4,12 +4,34 @@ import { Incidents } from "./incidents";
 
 const { api } = vi.hoisted(() => ({ api: vi.fn() }));
 vi.mock("@/lib/client", () => ({ api, ApiError: class extends Error {} }));
-const item = { id: "one", title: "Imports delayed", service: "imports", description: "Queue backed up", severity: "SEV2", status: "OPEN", version: 1, created_at: "2026-11-14T12:00:00Z", assignee_id: null, resolved_at: null };
+const item = {
+  id: "one",
+  title: "Imports delayed",
+  service: "imports",
+  description: "Queue backed up",
+  severity: "SEV2",
+  status: "OPEN",
+  version: 1,
+  created_at: "2026-11-14T12:00:00Z",
+  assignee_id: null,
+  resolved_at: null,
+};
 beforeEach(() => {
   api.mockReset();
   api.mockImplementation(async (path: string, options?: { method: string }) => {
     if (options?.method === "POST" || options?.method === "PATCH") return { data: item };
-    if (path.includes("/activity")) return { data: [{ id: "event", action: "admin.incident.create", actor_id: "staff", created_at: item.created_at, payload: { reason: "Monitoring alert" } }] };
+    if (path.includes("/activity"))
+      return {
+        data: [
+          {
+            id: "event",
+            action: "admin.incident.create",
+            actor_id: "staff",
+            created_at: item.created_at,
+            payload: { reason: "Monitoring alert" },
+          },
+        ],
+      };
     if (path === "/admin/incidents/one") return { data: item };
     return { data: [item] };
   });
@@ -26,7 +48,12 @@ describe("staff incidents", () => {
     const dialog = screen.getByRole("dialog");
     fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "On call investigating" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Confirm" }));
-    await waitFor(() => expect(api).toHaveBeenCalledWith("/admin/incidents/one", { method: "PATCH", json: { status: "ACKNOWLEDGED", version: 1, reason: "On call investigating" } }));
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith("/admin/incidents/one", {
+        method: "PATCH",
+        json: { status: "ACKNOWLEDGED", version: 1, reason: "On call investigating" },
+      }),
+    );
   });
 
   it("blocks mutations when the environment is read only and supports filters", async () => {
@@ -35,7 +62,9 @@ describe("staff incidents", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Imports delayed" }));
     await screen.findByText("Queue backed up");
     expect((screen.getByRole("button", { name: "ACKNOWLEDGED" }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: "Save assignment and severity" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Save assignment and severity" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
     expect((screen.getByRole("button", { name: "Add note" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(screen.getByLabelText("Status"), { target: { value: "RESOLVED" } });
     await waitFor(() => expect(api).toHaveBeenCalledWith("/admin/incidents?limit=25&offset=0&status=RESOLVED"));
@@ -52,6 +81,17 @@ describe("staff incidents", () => {
     const dialog = screen.getByRole("dialog");
     fireEvent.change(within(dialog).getByRole("textbox"), { target: { value: "Monitoring alert" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Confirm" }));
-    await waitFor(() => expect(api).toHaveBeenCalledWith("/admin/incidents", { method: "POST", json: { title: "Worker unavailable", service: "workers", description: "Heartbeat stale", severity: "SEV3", reason: "Monitoring alert" } }));
+    await waitFor(() =>
+      expect(api).toHaveBeenCalledWith("/admin/incidents", {
+        method: "POST",
+        json: {
+          title: "Worker unavailable",
+          service: "workers",
+          description: "Heartbeat stale",
+          severity: "SEV3",
+          reason: "Monitoring alert",
+        },
+      }),
+    );
   });
 });

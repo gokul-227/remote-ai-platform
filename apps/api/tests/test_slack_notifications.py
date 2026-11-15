@@ -72,7 +72,8 @@ async def test_disabled_without_token_or_channel(monkeypatch):
 async def test_post_dedup_rate_limit_and_failures(sent, monkeypatch):
     assert await slack.post("critical", "one", dedup_key="k", fields={"a": 1, "b": None})
     assert await slack.post("critical", "one again", dedup_key="k") is False
-    assert "• *a*: 1" in sent[0][1] and "*b*" not in sent[0][1]
+    assert "• *a*: 1" in sent[0][1]
+    assert "*b*" not in sent[0][1]
     assert sent[0][1].startswith("[development] ")
     monkeypatch.setattr(settings, "SLACK_MAX_PER_MINUTE", 2)
     assert await slack.post("critical", "two")
@@ -110,10 +111,13 @@ async def test_audit_hook_routes_security_and_incidents(sent, monkeypatch):
     )
     await slack.drain()
     sec = channels(sent, "C_SEC")
-    assert len(sec) == 2 and "Member role changed" in sec[0] and "token" not in sec[0]
+    assert len(sec) == 2
+    assert "Member role changed" in sec[0]
+    assert "token" not in sec[0]
     crit = channels(sent, "C_CRIT")
     assert len(crit) == 2
-    assert "Incident opened (SEV1)" in crit[0] and "admin.example.com" in crit[0]
+    assert "Incident opened (SEV1)" in crit[0]
+    assert "admin.example.com" in crit[0]
     assert "Incident resolved" in crit[1]
 
 
@@ -146,7 +150,8 @@ async def test_backup_report_posts(sent, client: AsyncClient, monkeypatch):
     assert (await client.post("/api/v1/ops/backups/report", json=bad, headers=h)).status_code == 201
     await slack.drain()
     bak = channels(sent, "C_BAK")
-    assert "Backup success" in bak[0] and "size_mb*: 2.0" in bak[0]
+    assert "Backup success" in bak[0]
+    assert "size_mb*: 2.0" in bak[0]
     assert any("failed" in t for t in bak)
     assert "disk full" in channels(sent, "C_CRIT")[0]
 
@@ -167,7 +172,8 @@ async def test_uptime_hook_requires_token_and_relays(sent, client: AsyncClient, 
             "alertDetails": "timeout",
         },
     )
-    assert res.status_code == 202 and res.json() == {"relayed": True}
+    assert res.status_code == 202
+    assert res.json() == {"relayed": True}
     res = await client.post(
         url,
         data={"monitorFriendlyName": "Web", "alertTypeFriendlyName": "Up"},
@@ -175,7 +181,8 @@ async def test_uptime_hook_requires_token_and_relays(sent, client: AsyncClient, 
     )
     assert res.json() == {"relayed": True}
     crit = channels(sent, "C_CRIT")
-    assert ":red_circle: External monitor: API ready is Down" in crit[0] and "timeout" in crit[0]
+    assert ":red_circle: External monitor: API ready is Down" in crit[0]
+    assert "timeout" in crit[0]
     assert ":large_green_circle:" in crit[1]
 
 
@@ -243,7 +250,8 @@ async def test_health_degradation_alert(sent, client: AsyncClient):
     )
     await slack.drain()
     crit = channels(sent, "C_CRIT")
-    assert len(crit) == 1 and "Redis is DOWN" in crit[0]
+    assert len(crit) == 1
+    assert "Redis is DOWN" in crit[0]
     await client.get("/health/ready")  # exercises the hook inside the endpoint
     await slack.drain()
 
@@ -271,7 +279,8 @@ async def test_dead_letter_and_stale_heartbeat(sent):
         await db.commit()
         assert (await ops.check_liveness(db))["stale"] == ["worker"]
     crit = channels(sent, "C_CRIT")
-    assert "dead letters: x.task" in crit[0] and "boom" in crit[0]
+    assert "dead letters: x.task" in crit[0]
+    assert "boom" in crit[0]
     assert "No fresh worker heartbeat" in crit[1]
 
 
@@ -297,10 +306,13 @@ async def test_daily_import_summary_and_backup_check(sent):
         )
         await db.commit()
         out = await ops.daily_import_summary(db)
-        assert out["saved"] == 7 and out["failing"] == 1
+        assert out["saved"] == 7
+        assert out["failing"] == 1
         assert (await ops.check_backups(db))["status"] == "no_evidence"
     job = channels(sent, "C_JOB")[0]
-    assert "succeeded 1" in job and "7 jobs saved" in job and "REMOTIVE (2x" in job
+    assert "succeeded 1" in job
+    assert "7 jobs saved" in job
+    assert "REMOTIVE (2x" in job
     assert "No successful backup" in channels(sent, "C_BAK")[0]
     assert "No successful backup" in channels(sent, "C_CRIT")[0]
 

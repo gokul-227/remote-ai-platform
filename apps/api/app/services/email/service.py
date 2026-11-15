@@ -22,7 +22,9 @@ def _recipient_domain(to: str) -> str:
     problem, without writing personal addresses into logs (PRIV-01)."""
     return to.rsplit("@", 1)[-1].lower() if "@" in to else "invalid"
 
+
 RESEND_API_URL = "https://api.resend.com/emails"
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 @dataclass(frozen=True)
@@ -49,7 +51,9 @@ class NoopEmailProvider:
     async def send_email(
         self, to: str, subject: str, html: str, idempotency_key: str | None = None
     ) -> EmailResult:
-        logger.info("Email suppressed (EMAIL_PROVIDER=none)", recipient_domain=_recipient_domain(to))
+        logger.info(
+            "Email suppressed (EMAIL_PROVIDER=none)", recipient_domain=_recipient_domain(to)
+        )
         return EmailResult(sent=False, error="email disabled", retryable=False)
 
 
@@ -79,7 +83,11 @@ class ResendEmailProvider:
                     },
                 )
         except httpx.HTTPError as e:
-            logger.error("Resend email send failed", recipient_domain=_recipient_domain(to), error=type(e).__name__)
+            logger.error(
+                "Resend email send failed",
+                recipient_domain=_recipient_domain(to),
+                error=type(e).__name__,
+            )
             return EmailResult(sent=False, error=type(e).__name__)
         if response.status_code >= 400:
             # Status only: the provider's error body can echo the address and content.
@@ -90,11 +98,59 @@ class ResendEmailProvider:
             )
             # 422/400: the message itself is unacceptable; 429/5xx: try later.
             retryable = response.status_code == 429 or response.status_code >= 500
-            return EmailResult(sent=False, error=f"HTTP {response.status_code}", retryable=retryable)
+            return EmailResult(
+                sent=False, error=f"HTTP {response.status_code}", retryable=retryable
+            )
         return EmailResult(sent=True, provider_message_id=response.json().get("id"))
 
 
-def get_email_provider() -> NoopEmailProvider | ResendEmailProvider:
+class BrevoEmailProvider:
+    """Brevo transactional email (free plan: 300 emails/day)."""
+
+    def __init__(self) -> None:
+        if not settings.BREVO_API_KEY:
+            raise RuntimeError("BREVO_API_KEY must be set to use EMAIL_PROVIDER=brevo")
+
+    async def send_email(
+        self, to: str, subject: str, html: str, idempotency_key: str | None = None
+    ) -> EmailResult:
+        headers = {"api-key": settings.BREVO_API_KEY or "", "accept": "application/json"}
+        body: dict[str, object] = {
+            "sender": {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM_ADDRESS},
+            "to": [{"email": to}],
+            "subject": subject,
+            "htmlContent": html,
+        }
+        if idempotency_key:
+            # Brevo has no idempotency header; the key travels as a custom header
+            # so a duplicate can be traced, and the outbox prevents re-sends.
+            body["headers"] = {"X-Idempotency-Key": idempotency_key[:256]}
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(BREVO_API_URL, headers=headers, json=body)
+        except httpx.HTTPError as e:
+            logger.error(
+                "Brevo email send failed",
+                recipient_domain=_recipient_domain(to),
+                error=type(e).__name__,
+            )
+            return EmailResult(sent=False, error=type(e).__name__)
+        if response.status_code >= 400:
+            logger.error(
+                "Brevo email send failed",
+                recipient_domain=_recipient_domain(to),
+                status_code=response.status_code,
+            )
+            retryable = response.status_code == 429 or response.status_code >= 500
+            return EmailResult(
+                sent=False, error=f"HTTP {response.status_code}", retryable=retryable
+            )
+        return EmailResult(sent=True, provider_message_id=response.json().get("messageId"))
+
+
+def get_email_provider() -> NoopEmailProvider | ResendEmailProvider | BrevoEmailProvider:
+    if settings.EMAIL_PROVIDER == "brevo":
+        return BrevoEmailProvider()
     if settings.EMAIL_PROVIDER == "resend":
         return ResendEmailProvider()
     return NoopEmailProvider()

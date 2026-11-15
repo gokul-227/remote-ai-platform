@@ -669,6 +669,11 @@ infrastructure:
     icon: resend
     group: saas
     status: active
+  - id: brevo
+    name: Brevo
+    technology: Transactional email (outbox, 300/day free)
+    group: saas
+    status: active
   - id: sentry
     name: Sentry
     technology: Error monitoring (web + API)

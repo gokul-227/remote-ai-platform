@@ -7,15 +7,23 @@ vi.mock("@/lib/client", () => ({ api, ApiError: class extends Error {} }));
 afterEach(cleanup);
 
 it("shows missing evidence explicitly and exposes only read navigation", async () => {
-  api.mockResolvedValue({ data: {
-    measured_at: "2026-11-14T12:00:00Z",
-    services: [{ id: "admin", route_count: 2, status: "mounted" }],
-    read_views: [{ name: "Usage", path: "/api/v1/admin/usage", screen: "usage" }],
-    backup: { status: "evidence_unavailable", last_backup_at: null, last_restore_verified_at: null,
-      reason: "No published run evidence.", runbook: "ops/backup/README.md",
-      includes: ["Public schema"], excludes: ["Auth users and sessions"],
-      required_evidence: ["Separate restore verification"] },
-  } });
+  api.mockResolvedValue({
+    data: {
+      measured_at: "2026-11-14T12:00:00Z",
+      services: [{ id: "admin", route_count: 2, status: "mounted" }],
+      read_views: [{ name: "Usage", path: "/api/v1/admin/usage", screen: "usage" }],
+      backup: {
+        status: "evidence_unavailable",
+        last_backup_at: null,
+        last_restore_verified_at: null,
+        reason: "No published run evidence.",
+        runbook: "ops/backup/README.md",
+        includes: ["Public schema"],
+        excludes: ["Auth users and sessions"],
+        required_evidence: ["Separate restore verification"],
+      },
+    },
+  });
   render(<OperationsInventory />);
   await screen.findByText("Backup evidence unavailable");
   expect(screen.getByText(/Last evidenced backup: —/)).toBeTruthy();

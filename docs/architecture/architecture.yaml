@@ -213,6 +213,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/core/config.py: RESEND_API_KEY'
+- id: brevo
+  name: Brevo
+  type: external
+  technology: Transactional email (outbox, 300/day free)
+  group: saas
+  status: active
+  evidence:
+  - 'apps/api/app/core/config.py: BREVO_API_KEY'
 - id: sentry
   name: Sentry
   type: external
@@ -500,6 +508,9 @@ connections:
   label: HTTPS pull
 - from: api
   to: resend
+  label: Email API
+- from: api
+  to: brevo
   label: Email API
 - from: api
   to: fcm

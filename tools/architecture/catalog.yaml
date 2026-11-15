@@ -153,6 +153,14 @@ components:
     detect:
       - setting: RESEND_API_KEY
 
+  - id: brevo
+    name: Brevo
+    type: external
+    technology: Transactional email (outbox, 300/day free)
+    group: saas
+    detect:
+      - setting: BREVO_API_KEY
+
   - id: sentry
     name: Sentry
     type: external
@@ -259,6 +267,7 @@ connections:
   - {from: api, to: ai-providers, label: LiteLLM}
   - {from: api, to: job-boards, label: HTTPS pull}
   - {from: api, to: resend, label: Email API}
+  - {from: api, to: brevo, label: Email API}
   - {from: api, to: fcm, label: Push (worker)}
   - {from: web, to: fcm, label: PushManager subscription}
   - {from: api, to: slack, label: Alerts}
