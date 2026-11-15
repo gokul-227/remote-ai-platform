@@ -11,7 +11,7 @@ Legend: **Nav** = reachable from navigation (D desktop / P phone) · **Loads** =
 ## Member app
 
 | Feature | Before | After | Notes |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Home after sign-in | Landed on the feed; no overview, no onboarding | New `#home` overview: getting-started checklist, jobs for you, messages, network, projects, files, meetings, assistant, directory of every area | Home tab, logo and sign-in all land here |
 | Feed + "From around the web" | Nav D/P ✓, loads ✓ | unchanged, plus "Feed" in Home section | 404 on `/matching/recommendations` for members without a profile is expected and handled |
 | Notifications | Top bar only | Also in Home section nav | |
