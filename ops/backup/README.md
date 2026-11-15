@@ -65,7 +65,7 @@ after any schema or provider change, and monthly against production backups (the
 ## Nightly backups on the production VM
 
 `ops/backup/vm/` holds the VM setup: `rap-backup.sh` (runs `backup.sh` against the local PostgreSQL
-container over the `rap-prod_internal` network with `PG_IMAGE=postgres:16 PG_DOCKER_NETWORK=rap-prod_internal`,
+container over the `rap-prod_internal` network with `PG_IMAGE=postgres:17 PG_DOCKER_NETWORK=rap-prod_internal`,
 then `offsite.py` copies the archive to the private Oracle Object Storage bucket `rap-prod-backups` and keeps
 the newest 14), `rap-backup.service` / `rap-backup.timer` (02:30 UTC) and `backup.env.example` (names of
 `/opt/rap/backup.env`, root-only). With `PG_IMAGE`, every client call is `docker run -i`, which reads

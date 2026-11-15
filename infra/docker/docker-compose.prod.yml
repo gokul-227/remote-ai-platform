@@ -6,7 +6,7 @@
 #
 # Containers: api, worker, scheduler, postgres and redis (private network only,
 # no host ports) and caddy (the only published ports: 80/443, automatic TLS).
-# PostgreSQL 16 runs here (volume postgres_data); set POSTGRES_PASSWORD in the
+# PostgreSQL 17 runs here (volume postgres_data); set POSTGRES_PASSWORD in the
 # env file. DATABASE_URL in the env file is overridden to the local postgres;
 # set RAP_DATABASE_URL to point elsewhere (e.g. Supabase during a canary).
 # Redis is local: Celery broker polling would exhaust a free Upstash quota. The VM is a single point of failure: there is no second
