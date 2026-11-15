@@ -74,7 +74,7 @@ async def test_post_dedup_rate_limit_and_failures(sent, monkeypatch):
     assert await slack.post("critical", "one again", dedup_key="k") is False
     assert "• *a*: 1" in sent[0][1]
     assert "*b*" not in sent[0][1]
-    assert sent[0][1].startswith("[development] ")
+    assert sent[0][1].startswith(f"[{settings.APP_ENV}] ")
     monkeypatch.setattr(settings, "SLACK_MAX_PER_MINUTE", 2)
     assert await slack.post("critical", "two")
     assert await slack.post("critical", "three") is False  # 2 per minute
