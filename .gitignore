@@ -98,3 +98,6 @@ screenshot-pages/README.md
 postman/
 *.postman_collection.json
 *.postman_environment.jsontools/local/.logs/
+
+# local venv links in worktrees
+.venv
