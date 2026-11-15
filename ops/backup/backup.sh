@@ -15,10 +15,11 @@ work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
 # PostgreSQL client tools: local ones (optionally from PG_BIN), or from an official
 # image with PG_IMAGE=postgres:<major>-alpine so the client matches the server's
 # major version (a dump restores only into a server at least as new as pg_dump).
-# With PG_IMAGE, use host.docker.internal instead of localhost in database URLs.
+# With PG_IMAGE, use host.docker.internal instead of localhost in database URLs,
+# or PG_DOCKER_NETWORK=<network> to reach a database container by service name.
 pg() {
   if [ -n "${PG_IMAGE:-}" ]; then
-    docker run --rm -i -v "$work:$work" -w "$work" --add-host=host.docker.internal:host-gateway "$PG_IMAGE" "$@"
+    docker run --rm -i -v "$work:$work" -w "$work" --add-host=host.docker.internal:host-gateway ${PG_DOCKER_NETWORK:+--network "$PG_DOCKER_NETWORK"} "$PG_IMAGE" "$@"
   else
     "${PG_BIN:+$PG_BIN/}$1" "${@:2}"
   fi

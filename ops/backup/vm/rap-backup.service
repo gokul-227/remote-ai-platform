@@ -1,0 +1,12 @@
+[Unit]
+Description=Remote AI Platform nightly encrypted backup
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/rap/repo/ops/backup/vm/rap-backup.sh
+Environment=TMPDIR=/var/tmp
+TimeoutStartSec=3h
+Nice=10
+IOSchedulingClass=idle
