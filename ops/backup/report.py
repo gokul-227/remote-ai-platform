@@ -50,7 +50,12 @@ def main() -> int:
     req = urllib.request.Request(
         url.rstrip("/") + "/api/v1/ops/backups/report",
         data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json", "X-Backup-Report-Token": token},
+        headers={
+            "Content-Type": "application/json",
+            "X-Backup-Report-Token": token,
+            # Cloudflare rejects the default Python-urllib agent (error 1010).
+            "User-Agent": "rap-backup-report/1.0",
+        },
         method="POST",
     )
     try:
