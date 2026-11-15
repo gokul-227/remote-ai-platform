@@ -146,6 +146,37 @@ def _day_slot() -> str:
     return datetime.now(UTC).strftime("%Y%m%d")
 
 
+# ── external reading ("From around the web") ────────────────────────────────
+
+
+async def import_news_async(run_id: uuid.UUID, source: str, fetch: Any = None) -> dict[str, Any]:
+    from app.domains.social.news import import_news
+
+    factory = runtime.session_factory()
+
+    async def work() -> dict[str, Any]:
+        async with factory() as db:
+            stats = await import_news(db, source, fetch)
+        async with factory() as db:
+            await TaskService(db).record_import(
+                source, run_id, ok=True, error=None, cursor={"last_stats": stats}
+            )
+        return stats
+
+    result = await _with_run(run_id, work)
+    if "error" in result:
+        async with factory() as db:
+            await TaskService(db).record_import(
+                source, run_id, ok=False, error=str(result["error"]), cursor=None
+            )
+    return result
+
+
+@shared_task(name="news.import_source")
+def import_news_task(run_id: str, source: str, **_: Any) -> dict[str, Any]:
+    return runtime.run(import_news_async(_uuid(run_id), source))
+
+
 # ── outbox and notifications ────────────────────────────────────────────────
 
 
@@ -197,6 +228,7 @@ async def tick_schedule_async() -> dict[str, Any]:
     async with runtime.session_factory()() as db:
         service = TaskService(db)
         await service.ensure_sources([a.source_name for a in AGGREGATORS])
+        await service.ensure_news_sources()
         runs = await service.due_sources()
         return {"enqueued": [r.args.get("source") for r in runs]}
 

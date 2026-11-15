@@ -1,6 +1,7 @@
 import { PrivateGroupAccess } from "./PrivateGroupAccess";
 import { AttachmentPicker, MessageAttachments } from "./ChannelAttachments";
 import { GroupModeration } from "./GroupModeration";
+import { ExternalReading } from "./ExternalReading";
 import { useState, useEffect } from "react";
 import { Ic, Av, Btn, Card, Tag, Modal, cx, Notice } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
@@ -26,12 +27,16 @@ export function Feed() {
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("latest");
-  const feed = useApi<any>(user && scope === "connections" ? "/social/feed" : "/social/posts/public", {
-    page,
-    page_size: 20,
-    q: query,
-    order: sort,
-  });
+  const [view, setView] = useState<"members" | "web">("members");
+  const feed = useApi<any>(
+    view === "web" ? null : user && scope === "connections" ? "/social/feed" : "/social/posts/public",
+    {
+      page,
+      page_size: 20,
+      q: query,
+      order: sort,
+    },
+  );
   const [local, setLocal] = useState<Record<string, any>>({});
   const posts = (feed.data?.posts ?? [])
     .map((p: any) => ({ ...p, ...(local[p.id] || {}) }))
@@ -186,253 +191,299 @@ export function Feed() {
           </div>
         </div>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-        <h3>{scope === "connections" ? "Your community" : "Discover public posts"}</h3>
-        {user && (
-          <select
-            aria-label="Feed audience"
-            className="max-w-full"
-            value={scope}
-            onChange={(e) => {
-              setScope(e.target.value);
-              setPage(1);
-            }}
+      <div role="tablist" aria-label="Feed source" className="flex gap-2 text-sm">
+        {(
+          [
+            ["members", "Member posts"],
+            ["web", "From around the web"],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={view === k}
+            onClick={() => setView(k)}
+            className={cx(
+              "rounded-full px-4 py-1.5 font-semibold",
+              view === k ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700",
+            )}
           >
-            <option value="connections">My connections</option>
-            <option value="public">Discover public posts</option>
-          </select>
-        )}
-        <select
-          aria-label="Feed order"
-          value={sort}
-          onChange={(e) => {
-            setSort(e.target.value);
-            setPage(1);
-          }}
-          className="bg-transparent text-slate-500"
-        >
-          <option value="latest">Latest</option>
-          <option value="most_liked">Most liked</option>
-        </select>
+            {label}
+          </button>
+        ))}
       </div>
-      <form
-        className="flex flex-wrap gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setQuery(search.trim());
-          setPage(1);
-        }}
-      >
-        <input
-          aria-label="Search post content"
-          maxLength={200}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search post content"
-          className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2"
-        />
-        <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-white">
-          Search posts
-        </button>
-        {query && (
-          <button
-            type="button"
-            className="text-blue-600"
-            onClick={() => {
-              setSearch("");
-              setQuery("");
+      {view === "web" ? (
+        <ExternalReading />
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <h3>{scope === "connections" ? "Your community" : "Discover public posts"}</h3>
+            {user && (
+              <select
+                aria-label="Feed audience"
+                className="max-w-full"
+                value={scope}
+                onChange={(e) => {
+                  setScope(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="connections">My connections</option>
+                <option value="public">Discover public posts</option>
+              </select>
+            )}
+            <select
+              aria-label="Feed order"
+              value={sort}
+              onChange={(e) => {
+                setSort(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent text-slate-500"
+            >
+              <option value="latest">Latest</option>
+              <option value="most_liked">Most liked</option>
+            </select>
+          </div>
+          <form
+            className="flex flex-wrap gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setQuery(search.trim());
               setPage(1);
             }}
           >
-            Clear search
-          </button>
-        )}
-      </form>
-      {feed.error && (
-        <div role="alert">
-          Couldn’t load posts.{" "}
-          <button type="button" onClick={feed.reload}>
-            Retry
-          </button>
-        </div>
-      )}
-      {feed.loading && !feed.data && <div className="rap-panel p-8 text-center text-slate-500">Loading your feed…</div>}
-      {sorted.map((p: any) => {
-        const by = p.author?.full_name || "Member";
-        const mine = p.author_id === user?.id;
-        return (
-          <article key={p.id} className="rap-panel overflow-hidden">
-            <header className="flex items-start gap-3 p-5 pb-3">
-              <Av name={by} s={44} />
-              <div className="flex-1 min-w-0">
-                <b className="font-semibold">{by}</b>
-                <p className="text-xs text-slate-500 truncate">
-                  {(p.author?.role || "").charAt(0) + (p.author?.role || "").slice(1).toLowerCase()}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {timeAgo(p.created_at)} ·{" "}
-                  <Ic n={p.visibility === "CONNECTIONS" ? "users" : "globe"} s={11} c="inline" />
-                </p>
-              </div>
-              {user && (
-                <details className="relative">
-                  <summary
-                    aria-label={"Post options for " + by}
-                    className="list-none cursor-pointer text-slate-500 p-2"
-                  >
-                    <Ic n="more" />
-                  </summary>
-                  <div className="absolute right-0 top-9 z-10 w-48 rounded-lg bg-white border border-slate-200 shadow-lg p-2">
-                    {mine && (
-                      <>
-                        <button
-                          className="rap-nav"
-                          onClick={() => {
-                            setEdit(p.id);
-                            setDraft(p.content);
-                            setAudience(p.visibility === "CONNECTIONS" ? "Connections" : "Public");
-                            setCompose(true);
-                          }}
-                        >
-                          Edit post
-                        </button>
-                        <button className="rap-nav" onClick={() => remove(p.id)}>
-                          Delete post
-                        </button>
-                      </>
-                    )}
-                    {!mine && (
-                      <button className="rap-nav" onClick={() => setReport(p.id)}>
-                        Report post
-                      </button>
-                    )}
-                    <button className="rap-nav" onClick={() => patch(p.id, { hidden: true })}>
-                      Hide from my feed
-                    </button>
+            <input
+              aria-label="Search post content"
+              maxLength={200}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search post content"
+              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2"
+            />
+            <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-white">
+              Search posts
+            </button>
+            {query && (
+              <button
+                type="button"
+                className="text-blue-600"
+                onClick={() => {
+                  setSearch("");
+                  setQuery("");
+                  setPage(1);
+                }}
+              >
+                Clear search
+              </button>
+            )}
+          </form>
+          {feed.error && (
+            <div role="alert">
+              Couldn’t load posts.{" "}
+              <button type="button" onClick={feed.reload}>
+                Retry
+              </button>
+            </div>
+          )}
+          {feed.loading && !feed.data && (
+            <div className="rap-panel p-8 text-center text-slate-500">Loading your feed…</div>
+          )}
+          {sorted.map((p: any) => {
+            const by = p.author?.full_name || "Member";
+            const mine = p.author_id === user?.id;
+            return (
+              <article key={p.id} className="rap-panel overflow-hidden">
+                <header className="flex items-start gap-3 p-5 pb-3">
+                  <Av name={by} s={44} />
+                  <div className="flex-1 min-w-0">
+                    <b className="font-semibold">{by}</b>
+                    <p className="text-xs text-slate-500 truncate">
+                      {(p.author?.role || "").charAt(0) + (p.author?.role || "").slice(1).toLowerCase()}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {timeAgo(p.created_at)} ·{" "}
+                      <Ic n={p.visibility === "CONNECTIONS" ? "users" : "globe"} s={11} c="inline" />
+                    </p>
                   </div>
-                </details>
+                  {user && (
+                    <details className="relative">
+                      <summary
+                        aria-label={"Post options for " + by}
+                        className="list-none cursor-pointer text-slate-500 p-2"
+                      >
+                        <Ic n="more" />
+                      </summary>
+                      <div className="absolute right-0 top-9 z-10 w-48 rounded-lg bg-white border border-slate-200 shadow-lg p-2">
+                        {mine && (
+                          <>
+                            <button
+                              className="rap-nav"
+                              onClick={() => {
+                                setEdit(p.id);
+                                setDraft(p.content);
+                                setAudience(p.visibility === "CONNECTIONS" ? "Connections" : "Public");
+                                setCompose(true);
+                              }}
+                            >
+                              Edit post
+                            </button>
+                            <button className="rap-nav" onClick={() => remove(p.id)}>
+                              Delete post
+                            </button>
+                          </>
+                        )}
+                        {!mine && (
+                          <button className="rap-nav" onClick={() => setReport(p.id)}>
+                            Report post
+                          </button>
+                        )}
+                        <button className="rap-nav" onClick={() => patch(p.id, { hidden: true })}>
+                          Hide from my feed
+                        </button>
+                      </div>
+                    </details>
+                  )}
+                </header>
+                <p className="px-5 pb-5 whitespace-pre-line leading-7">{p.content}</p>
+                {p.link_url && (
+                  <a
+                    href={safeHref(p.link_url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mx-5 mb-4 block rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-blue-600"
+                  >
+                    {p.link_preview_title || p.link_url}
+                  </a>
+                )}
+                <div className="mx-5 flex items-center justify-between border-b border-slate-200 py-3 text-sm text-slate-500">
+                  <span className="flex items-center gap-2">
+                    <span className="rounded-full bg-blue-600 p-1 text-white">
+                      <Ic n="thumb" s={11} />
+                    </span>
+                    {p.like_count}
+                  </span>
+                  <button onClick={() => openComments(p.id)}>{p.comment_count} comments</button>
+                </div>
+                <div className="flex p-2 px-4">
+                  <button
+                    onClick={() => like(p)}
+                    className={cx(
+                      "flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 font-semibold text-sm hover:bg-slate-100",
+                      p.liked_by_me ? "text-blue-600" : "text-slate-500",
+                    )}
+                  >
+                    <Ic n="thumb" s={19} />
+                    {p.liked_by_me ? (REACTION_LABEL[p.my_reaction] ?? "Liked") : "Like"}
+                  </button>
+                  <select
+                    aria-label="Choose a reaction"
+                    value={p.my_reaction ?? ""}
+                    onChange={(e) => react(p, e.target.value)}
+                    className="rounded-lg bg-transparent px-1 text-sm text-slate-500 hover:bg-slate-100"
+                  >
+                    <option value="">React…</option>
+                    {Object.entries(REACTION_LABEL).map(([k, label]) => (
+                      <option key={k} value={k}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => openComments(p.id)}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 font-semibold text-sm text-slate-500 hover:bg-slate-100"
+                  >
+                    <Ic n="comment" s={19} />
+                    Comment
+                  </button>
+                </div>
+                {comment === p.id && (
+                  <div className="p-5 pt-1 space-y-4">
+                    {(comments[p.id] || []).map((c: any) => (
+                      <div key={c.id} className="flex gap-2">
+                        <Av name={c.author?.full_name || "Member"} s={32} />
+                        <div className="rounded-2xl bg-slate-100 px-4 py-2">
+                          <b className="text-xs">{c.author?.full_name || "Member"}</b>
+                          <p className="text-sm">{c.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {user && (
+                      <form
+                        className="flex gap-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          sendComment(p);
+                        }}
+                      >
+                        <Av name={me} s={32} />
+                        <input
+                          aria-label="Write a comment"
+                          placeholder="Write a comment…"
+                          className="min-w-0 flex-1 rounded-full bg-slate-100 px-4 text-sm"
+                          value={txt}
+                          onChange={(e) => setTxt(e.target.value)}
+                        />
+                        <button aria-label="Send comment" className="p-2 text-blue-600">
+                          <Ic n="send" s={18} />
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+          {!feed.loading && !feed.error && !sorted.length && (
+            <div className="rap-panel v2-empty">
+              <Ic n="users" s={36} c="mx-auto" />
+              <h3>{query ? "No matching posts" : "Your feed is quiet"}</h3>
+              <p>
+                {query
+                  ? "Try another search or discover public posts."
+                  : "Connect with people, discover public posts, or share an update."}
+              </p>
+              {!query && (
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <Btn v="outline" sm onClick={() => go("network")}>
+                    People you may know
+                  </Btn>
+                  <Btn v="outline" sm onClick={() => go("groups")}>
+                    Join a community
+                  </Btn>
+                  <Btn v="outline" sm onClick={() => go("companies")}>
+                    Browse companies
+                  </Btn>
+                  <Btn v="gray" sm onClick={() => setView("web")}>
+                    Read from around the web
+                  </Btn>
+                </div>
               )}
-            </header>
-            <p className="px-5 pb-5 whitespace-pre-line leading-7">{p.content}</p>
-            {p.link_url && (
-              <a
-                href={safeHref(p.link_url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mx-5 mb-4 block rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-blue-600"
-              >
-                {p.link_preview_title || p.link_url}
-              </a>
-            )}
-            <div className="mx-5 flex items-center justify-between border-b border-slate-200 py-3 text-sm text-slate-500">
-              <span className="flex items-center gap-2">
-                <span className="rounded-full bg-blue-600 p-1 text-white">
-                  <Ic n="thumb" s={11} />
-                </span>
-                {p.like_count}
-              </span>
-              <button onClick={() => openComments(p.id)}>{p.comment_count} comments</button>
             </div>
-            <div className="flex p-2 px-4">
+          )}
+          {(page > 1 || feed.data?.has_more) && (
+            <nav aria-label="Feed pages" className="flex items-center justify-center gap-4 py-5">
               <button
-                onClick={() => like(p)}
-                className={cx(
-                  "flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 font-semibold text-sm hover:bg-slate-100",
-                  p.liked_by_me ? "text-blue-600" : "text-slate-500",
-                )}
+                type="button"
+                className="text-blue-600 disabled:text-slate-400"
+                disabled={page === 1 || feed.loading}
+                onClick={() => setPage(page - 1)}
               >
-                <Ic n="thumb" s={19} />
-                {p.liked_by_me ? (REACTION_LABEL[p.my_reaction] ?? "Liked") : "Like"}
+                Previous posts
               </button>
-              <select
-                aria-label="Choose a reaction"
-                value={p.my_reaction ?? ""}
-                onChange={(e) => react(p, e.target.value)}
-                className="rounded-lg bg-transparent px-1 text-sm text-slate-500 hover:bg-slate-100"
-              >
-                <option value="">React…</option>
-                {Object.entries(REACTION_LABEL).map(([k, label]) => (
-                  <option key={k} value={k}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <span aria-live="polite">Page {page}</span>
               <button
-                onClick={() => openComments(p.id)}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 font-semibold text-sm text-slate-500 hover:bg-slate-100"
+                type="button"
+                className="text-blue-600 disabled:text-slate-400"
+                disabled={!feed.data?.has_more || feed.loading}
+                onClick={() => setPage(page + 1)}
               >
-                <Ic n="comment" s={19} />
-                Comment
+                Next posts
               </button>
-            </div>
-            {comment === p.id && (
-              <div className="p-5 pt-1 space-y-4">
-                {(comments[p.id] || []).map((c: any) => (
-                  <div key={c.id} className="flex gap-2">
-                    <Av name={c.author?.full_name || "Member"} s={32} />
-                    <div className="rounded-2xl bg-slate-100 px-4 py-2">
-                      <b className="text-xs">{c.author?.full_name || "Member"}</b>
-                      <p className="text-sm">{c.content}</p>
-                    </div>
-                  </div>
-                ))}
-                {user && (
-                  <form
-                    className="flex gap-2"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      sendComment(p);
-                    }}
-                  >
-                    <Av name={me} s={32} />
-                    <input
-                      aria-label="Write a comment"
-                      placeholder="Write a comment…"
-                      className="min-w-0 flex-1 rounded-full bg-slate-100 px-4 text-sm"
-                      value={txt}
-                      onChange={(e) => setTxt(e.target.value)}
-                    />
-                    <button aria-label="Send comment" className="p-2 text-blue-600">
-                      <Ic n="send" s={18} />
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
-          </article>
-        );
-      })}
-      {!feed.loading && !feed.error && !sorted.length && (
-        <div className="rap-panel v2-empty">
-          <Ic n="users" s={36} c="mx-auto" />
-          <h3>{query ? "No matching posts" : "Your feed is quiet"}</h3>
-          <p>
-            {query
-              ? "Try another search or discover public posts."
-              : "Connect with people, discover public posts, or share an update."}
-          </p>
-        </div>
-      )}
-      {(page > 1 || feed.data?.has_more) && (
-        <nav aria-label="Feed pages" className="flex items-center justify-center gap-4 py-5">
-          <button
-            type="button"
-            className="text-blue-600 disabled:text-slate-400"
-            disabled={page === 1 || feed.loading}
-            onClick={() => setPage(page - 1)}
-          >
-            Previous posts
-          </button>
-          <span aria-live="polite">Page {page}</span>
-          <button
-            type="button"
-            className="text-blue-600 disabled:text-slate-400"
-            disabled={!feed.data?.has_more || feed.loading}
-            onClick={() => setPage(page + 1)}
-          >
-            Next posts
-          </button>
-        </nav>
+            </nav>
+          )}
+        </>
       )}
       <Modal open={compose} onClose={() => setCompose(false)} title={edit ? "Edit post" : "Create a post"}>
         <div className="flex gap-3 items-center mb-5">

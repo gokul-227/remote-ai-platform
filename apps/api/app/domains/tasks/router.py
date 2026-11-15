@@ -191,6 +191,7 @@ async def list_sources(
 
     service = TaskService(db)
     await service.ensure_sources([a.source_name for a in AGGREGATORS])
+    await service.ensure_news_sources()
     sources = (await db.execute(select(JobSource).order_by(JobSource.name))).scalars().all()
     checkpoints = {
         cp.source: cp for cp in (await db.execute(select(JobImportCheckpoint))).scalars().all()
@@ -246,6 +247,11 @@ async def patch_source(
         request=request,
     )
     await db.commit()
+    if source.name.startswith("NEWS_") and changes.get("permission_confirmed", {}).get("to") is False:
+        # Permission withdrawn: everything this source contributed is removed.
+        from app.domains.social.news import purge_source
+
+        await purge_source(db, source.name)
     await db.refresh(source)
     return SourceOut.model_validate(source)
 
@@ -266,7 +272,7 @@ async def run_source_now(
             status.HTTP_409_CONFLICT, "Source permission is not confirmed; imports are blocked"
         )
     run, created = await TaskService(db).enqueue(
-        TASK_IMPORT_SOURCE,
+        "news.import_source" if source.name.startswith("NEWS_") else TASK_IMPORT_SOURCE,
         {"source": source.name, "limit": source.max_per_run},
         idempotency_key=f"manual:{source.name}:{uuid.uuid4().hex[:12]}",
         max_attempts=1,

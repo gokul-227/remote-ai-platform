@@ -338,6 +338,29 @@ class TaskService:
         if added:
             await self.db.commit()
 
+    async def ensure_news_sources(self) -> None:
+        """Register the external-reading sources (NEWS_*) as job_sources rows,
+        paused until staff confirm where the source's terms need a human check."""
+        from app.domains.social.news import NEWS_SOURCES
+
+        existing = set((await self.db.execute(select(JobSource.name))).scalars().all())
+        added = False
+        for src in NEWS_SOURCES:
+            if src.name in existing:
+                continue
+            self.db.add(
+                JobSource(
+                    name=src.name,
+                    cron=src.cron,
+                    max_per_run=50,
+                    rate_limit_per_minute=10,
+                    permission_confirmed=src.permission_default,
+                )
+            )
+            added = True
+        if added:
+            await self.db.commit()
+
     async def due_sources(self, now: datetime | None = None) -> list[TaskRun]:
         """Enqueue one import per source whose cron slot has passed since its last
         enqueue. One run per (source, slot): a second scheduler tick is a no-op."""
@@ -356,8 +379,9 @@ class TaskService:
             last = _aware(source.last_enqueued_at)
             if slot is None or (last is not None and last >= slot):
                 continue
+            is_news = source.name.startswith("NEWS_")
             run, created = await self.enqueue(
-                TASK_IMPORT_SOURCE,
+                "news.import_source" if is_news else TASK_IMPORT_SOURCE,
                 {"source": source.name, "limit": source.max_per_run},
                 idempotency_key=f"import:{source.name}:{slot.strftime('%Y%m%dT%H%M')}",
             )

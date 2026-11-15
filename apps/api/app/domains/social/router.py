@@ -9,15 +9,15 @@ can be introduced later via the feed algorithm abstraction.
 import uuid
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.core.database import get_db
-from app.domains.auth.dependencies import get_current_user
-from app.domains.auth.models import User
+from app.domains.auth.dependencies import get_current_user, require_role
+from app.domains.auth.models import User, UserRole
 from app.domains.network.models import Connection
 from app.domains.social.models import Post, PostComment, PostLike
 from app.domains.social.schemas import (
@@ -504,3 +504,91 @@ async def delete_comment(
     post = await _get_post_or_404(post_id, db)
     post.comment_count = max(0, post.comment_count - 1)
     await db.delete(comment)
+
+
+# ── External reading ("From around the web") ────────────────────────────────
+# Attributed links from public sources (app/domains/social/news.py). Never
+# presented as member posts; sent with noindex because no source grants us
+# the right to have its headlines indexed as our pages.
+
+
+@router.get("/external", summary="External reading from public sources (attributed links)")
+async def list_external(
+    response: Response,
+    page: int = Query(default=1, ge=1, le=50),
+    page_size: int = Query(default=20, ge=1, le=50),
+    source: str | None = Query(default=None, max_length=50),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    from app.domains.social.models import NewsItem
+    from app.domains.social.news import SOURCES_BY_NAME
+    from app.domains.tasks.models import JobSource
+
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    allowed = set(
+        (
+            await db.execute(
+                select(JobSource.name).where(
+                    JobSource.name.like("NEWS\\_%", escape="\\"),
+                    JobSource.enabled.is_(True),
+                    JobSource.permission_confirmed.is_(True),
+                )
+            )
+        ).scalars()
+    )
+    if source:
+        allowed &= {source.upper()}
+    filters: list[ColumnElement[bool]] = [NewsItem.source.in_(allowed or {"-"})]
+    total = await db.scalar(select(func.count(NewsItem.id)).where(*filters)) or 0
+    rows = (
+        await db.execute(
+            select(NewsItem)
+            .where(*filters)
+            .order_by(NewsItem.published_at.desc(), NewsItem.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    ).scalars().all()
+    items = []
+    for r in rows:
+        src = SOURCES_BY_NAME.get(r.source)
+        items.append(
+            {
+                "id": r.id,
+                "title": r.title,
+                "excerpt": r.excerpt,
+                "url": r.url,
+                "discussion_url": r.discussion_url,
+                "tags": r.tags or [],
+                "published_at": r.published_at,
+                "source": {
+                    "name": r.source,
+                    "label": src.label if src else r.source,
+                    "homepage": src.homepage if src else None,
+                },
+            }
+        )
+    return {
+        "items": items,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "has_more": page * page_size < total,
+        "external": True,
+    }
+
+
+@router.delete(
+    "/external/{item_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Staff: remove an external item",
+)
+async def remove_external(
+    item_id: uuid.UUID,
+    _admin: User = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    from app.domains.social.models import NewsItem
+
+    await db.execute(delete(NewsItem).where(NewsItem.id == item_id))
+    await db.commit()

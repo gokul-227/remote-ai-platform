@@ -1,0 +1,5 @@
+[
+  {"id": 1, "title": "Async standups that work", "description": "How a <b>distributed</b> team replaced its daily call.", "url": "https://dev.to/someone/async-standups-1a2b", "canonical_url": "https://example.org/blog/async-standups?utm_source=devto", "tag_list": ["remote", "productivity"], "published_at": "2026-11-10T09:00:00Z", "body_markdown": "FULL TEXT MUST NOT BE STORED"},
+  {"id": 2, "title": "", "url": "https://dev.to/x/empty"},
+  {"id": 3, "title": "Bad link", "url": "javascript:alert(1)"}
+]

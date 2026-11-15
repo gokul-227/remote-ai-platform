@@ -211,7 +211,7 @@ features:
     label: Notifications
   api:
   - domain: network
-    prefix: /api/v1/{blocks,connections,conversations,messages}
+    prefix: /api/v1/{blocks,connections,conversations,invites,messages}
   - domain: notifications
     prefix: /api/v1/notifications
   - domain: meetings
@@ -500,7 +500,7 @@ api:
   - domain: meetings
     prefix: /meetings
   - domain: network
-    prefix: /{blocks,connections,conversations,messages}
+    prefix: /{blocks,connections,conversations,invites,messages}
   - domain: notifications
     prefix: /notifications
   - domain: payments

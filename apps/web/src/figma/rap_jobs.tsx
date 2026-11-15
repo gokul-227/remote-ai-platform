@@ -1,3 +1,4 @@
+import { InviteBanner, InviteLink, PeopleYouMayKnow } from "./NetworkColdStart";
 import { JobSource } from "@/components/JobSource";
 import { useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
@@ -928,14 +929,6 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
       setNotice(extractErrorMessage(e, "Couldn't update that invitation."));
     }
   };
-  const invite = async () => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/#register`);
-      setNotice("Sign-up link copied — share it with your teammates.");
-    } catch {
-      setNotice(`Share this link: ${window.location.origin}/#register`);
-    }
-  };
   const open = (id?: string | null) => {
     if (!id) return;
     goRoute(`engineer/${encodeURIComponent(String(id))}`);
@@ -964,6 +957,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
           ))}
         </Card>
         <main className="min-w-0 space-y-3">
+          <InviteBanner onNotice={setNotice} />
           {view === "invitations" && (
             <Card c="rounded-lg" p={false}>
               <div className="flex items-center justify-between p-4">
@@ -999,9 +993,25 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
           )}
           {view === "connections" && !accepted.length && (
             <Card c="rounded-lg">
-              <p className="text-sm text-slate-500">No connections yet. Find people to connect with in People.</p>
+              <p className="font-bold">Start your network</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Connect with people you know from your organisation and communities, join groups that match your work,
+                or invite colleagues with a personal link.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Btn v="outline" sm onClick={() => goRoute("engineers")}>
+                  Browse professionals
+                </Btn>
+                <Btn v="outline" sm onClick={() => goRoute("groups")}>
+                  Join a community
+                </Btn>
+                <Btn v="outline" sm onClick={() => goRoute("companies")}>
+                  Browse companies
+                </Btn>
+              </div>
             </Card>
           )}
+          {view === "connections" && user && <PeopleYouMayKnow onNotice={setNotice} />}
           {view === "connections" && accepted.length > 0 && (
             <Card c="rounded-lg" p={false}>
               <p className="p-4 font-bold">Your connections ({accepted.length})</p>
@@ -1032,15 +1042,7 @@ export function Network({ view = "connections" }: { view?: "connections" | "invi
         </main>
         <aside className="self-start">
           <Card c="rounded-lg" p={false}>
-            <div style={{ background: "#175CD3" }} className="rounded-lg p-4">
-              <p className="font-black text-white">Grow your network faster</p>
-              <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.85)" }}>
-                Invite teammates to Remote-AI-Platform.
-              </p>
-              <Btn v="gray" sm c="mt-3" onClick={invite}>
-                Invite
-              </Btn>
-            </div>
+            {user ? <InviteLink onNotice={setNotice} /> : null}
           </Card>
         </aside>
       </div>
