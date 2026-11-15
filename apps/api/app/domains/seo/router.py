@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import RedisCache
 from app.core.database import get_db
 from app.domains.auth.models import User
 from app.domains.companies.models import CompanyProfile
@@ -124,10 +125,15 @@ async def sitemap_counts(
     No content or private identities are returned. The frontend uses these
     counts to discover bounded sitemap shards instead of truncating inventory.
     """
+    response.headers["Cache-Control"] = "public, max-age=900"
+    cache = RedisCache("seo")
+    cached = await cache.get_json("sitemap-counts")
+    if cached is not None:
+        return {k: int(v) for k, v in cached.items()}
     counts = {"jobs": await JobRepository(db).sitemap_count()}
     kinds: tuple[Literal["people", "companies", "posts"], ...] = ("people", "companies", "posts")
     for kind in kinds:
         query = _sitemap_query(kind).order_by(None).subquery()
         counts[kind] = int(await db.scalar(select(func.count()).select_from(query)) or 0)
-    response.headers["Cache-Control"] = "public, max-age=900"
+    await cache.set_json("sitemap-counts", counts, ttl_seconds=900)
     return counts

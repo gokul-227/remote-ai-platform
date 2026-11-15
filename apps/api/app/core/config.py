@@ -84,8 +84,8 @@ class Settings(BaseSettings):
     # Per uvicorn worker. Supabase's free session pooler allows ~15 backend
     # connections in total: 2 workers x (3 + 2) = 10 leaves room for
     # migrations, job sync and admin tools. Beyond that, requests queue.
-    DATABASE_POOL_SIZE: int = 3
-    DATABASE_MAX_OVERFLOW: int = 2
+    DATABASE_POOL_SIZE: int = 8
+    DATABASE_MAX_OVERFLOW: int = 4
     DATABASE_POOL_TIMEOUT: int = 30
     DATABASE_POOL_RECYCLE: int = 1800
     # Longest a single SQL statement may run before the request fails.

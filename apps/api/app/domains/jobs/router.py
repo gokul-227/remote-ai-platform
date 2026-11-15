@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import RedisCache
 from app.core.database import get_db
 from app.domains.admin.repository import AdminRepository
 from app.domains.auth.dependencies import get_optional_user, require_role
@@ -51,7 +52,9 @@ def _clean(values: list[str] | None, allowed: tuple[str, ...] | None = None) -> 
     if allowed is not None:
         bad = [v for v in out if v not in allowed]
         if bad:
-            raise HTTPException(status_code=422, detail=f"Unknown filter value(s): {', '.join(bad)}")
+            raise HTTPException(
+                status_code=422, detail=f"Unknown filter value(s): {', '.join(bad)}"
+            )
     return out or None
 
 
@@ -181,6 +184,13 @@ async def job_facets(
     return JobFacets.model_validate(await service.facets_cached(search_params))
 
 
+# Public SEO read models (landing pages, sitemaps) are the same for every visitor
+# and crawlers fetch thousands of them; aggregate queries over the whole catalogue
+# are shared through Redis so crawls can't exhaust the database pool.
+SEO_CACHE_TTL = 1800
+_seo_cache = RedisCache("seo")
+
+
 @router.get("/sitemap-entries", response_model=list[JobSitemapEntry])
 async def list_sitemap_entries(
     response: Response,
@@ -192,9 +202,14 @@ async def list_sitemap_entries(
     job list caps pages at 100 full postings; this returns small rows so the
     sitemap covers the whole public inventory cheaply. Public: the same jobs
     the anonymous list shows."""
-    rows = await JobRepository(db).sitemap_entries(skip=skip, limit=limit)
     response.headers["Cache-Control"] = "public, max-age=900"
-    return [JobSitemapEntry(id=i, posted_at=p, updated_at=u) for i, p, u in rows]
+    key = f"sitemap:{skip}:{limit}"
+    cached = await _seo_cache.get_json(key)
+    if cached is None:
+        rows = await JobRepository(db).sitemap_entries(skip=skip, limit=limit)
+        cached = [{"id": str(i), "posted_at": p, "updated_at": u} for i, p, u in rows]
+        await _seo_cache.set_json(key, cached, ttl_seconds=SEO_CACHE_TTL)
+    return [JobSitemapEntry.model_validate(r) for r in cached]
 
 
 @router.get("/landing-stats", response_model=JobLandingStats)
@@ -209,10 +224,14 @@ async def landing_stats(
     """Aggregates for a public landing page (remote jobs by role, skill, place or
     employer): totals, new this week, top employers and published pay. Public:
     computed only from the jobs the anonymous list shows."""
-    stats = await JobRepository(db).landing_stats(
-        query=query, job_type=job_type, location=location, employer=employer, is_remote=True
-    )
     response.headers["Cache-Control"] = "public, max-age=1800"
+    key = f"landing:{query}|{job_type}|{location}|{employer}".lower()
+    stats = await _seo_cache.get_json(key)
+    if stats is None:
+        stats = await JobRepository(db).landing_stats(
+            query=query, job_type=job_type, location=location, employer=employer, is_remote=True
+        )
+        await _seo_cache.set_json(key, stats, ttl_seconds=SEO_CACHE_TTL)
     return JobLandingStats.model_validate(stats)
 
 
@@ -224,8 +243,12 @@ async def list_employers(
     db: AsyncSession = Depends(get_db),
 ) -> list[JobEmployer]:
     """Employers with live remote jobs, most openings first (public landing pages)."""
-    rows = await JobRepository(db).employers(min_jobs=min_jobs, limit=limit, is_remote=True)
     response.headers["Cache-Control"] = "public, max-age=1800"
+    key = f"employers:{min_jobs}:{limit}"
+    rows = await _seo_cache.get_json(key)
+    if rows is None:
+        rows = await JobRepository(db).employers(min_jobs=min_jobs, limit=limit, is_remote=True)
+        await _seo_cache.set_json(key, rows, ttl_seconds=SEO_CACHE_TTL)
     return [JobEmployer.model_validate(r) for r in rows]
 
 
