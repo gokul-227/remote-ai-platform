@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { permanentRedirect } from "next/navigation";
 import { SITE_URL } from "@/lib/site";
 import { fetchLandingJobs, lastPage, pageHref, parsePage } from "@/lib/landing";
-import { PLACES, TOPICS } from "@/lib/seo";
+import { PLACES, TOPICS, topicForSearch } from "@/lib/seo";
 import { PublicFrame } from "../PublicChrome";
 import { JobList, JoinCta } from "./JobList";
 import { PublicFilterForm, fetchFilteredJobs } from "./PublicFilters";
 import { activeCount, parseFilters } from "@/lib/jobFilters";
 
 export const dynamic = "force-dynamic";
-
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 const searchTerm = (raw: string | string[] | undefined) => (typeof raw === "string" ? raw.trim().slice(0, 100) : "");
 
@@ -36,6 +36,10 @@ export default async function RemoteJobsIndex({ searchParams }: Props) {
   const page = parsePage(sp.page) ?? 1;
   // Structured filters (workplace, seniority, ...) beyond the keyword search.
   const filters = { ...parseFilters(sp), ...(q ? { query: q } : {}) };
+  // A plain search that is exactly a category ("python", "React") goes to that
+  // category's landing page: one URL per topic instead of a noindex duplicate.
+  const topic = q && Object.keys(sp).every((k) => k === "q") ? topicForSearch(q) : null;
+  if (topic) permanentRedirect(`/remote-jobs/${topic.slug}`);
   const filtered = activeCount({ ...filters, query: undefined }) > 0 || !!filters.sort;
   const result = filtered ? await fetchFilteredJobs(filters) : null;
   const { jobs: latest, total } = result ?? (await fetchLandingJobs(q ? { query: q } : {}, page));

@@ -9,6 +9,7 @@ import {
   fetchLandingJobs,
   fetchLandingStats,
   landingIntro,
+  landingTotal,
   lastPage,
   pageHref,
   parsePage,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/landing";
 import { Breadcrumbs, JsonLd, PublicFrame } from "../PublicChrome";
 import { JobList, JoinCta } from "./JobList";
+import { LandingInsights } from "./LandingInsights";
 
 export type LandingSpec = {
   path: string;
@@ -34,18 +36,20 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 export async function landingMetadata(spec: LandingSpec | null, searchParams: Search): Promise<Metadata> {
   if (!spec) return { title: "Not found | Remote AI Platform", robots: { index: false } };
   const page = parsePage((await searchParams).page);
-  const stats = await fetchLandingStats(spec.filter);
-  const total = stats?.total ?? 0;
+  const { total, stats } = await landingTotal(spec.filter);
   const suffix = page && page > 1 ? ` – page ${page}` : "";
-  const title = `${spec.heading} (${total.toLocaleString("en-US")})${suffix} | Remote AI Platform`;
+  const count = total ? ` (${total.toLocaleString("en-US")})` : "";
+  const title = `${spec.heading}${count}${suffix} | Remote AI Platform`;
   const top = stats?.top_companies.slice(0, 2).map((c) => c.name) ?? [];
   const description =
-    `${total.toLocaleString("en-US")} open ${spec.subject}` +
+    (total ? `${total.toLocaleString("en-US")} open ${spec.subject}` : `Open ${spec.subject}`) +
     (stats?.new_last_7_days ? `, ${stats.new_last_7_days} new this week` : "") +
     (top.length ? `, at employers like ${top.join(" and ")}` : "") +
     ". Each listing links to the employer or original job board.";
   const path = pageHref(spec.path, page ?? 1);
-  const thin = total < MIN_INDEXABLE_JOBS || !page || page > lastPage(total);
+  // Unknown totals (API slow or down) keep the page indexable: only a known
+  // small count makes it thin.
+  const thin = !page || (total !== null && (total < MIN_INDEXABLE_JOBS || page > lastPage(total)));
   return {
     title,
     description,
@@ -107,6 +111,7 @@ export async function LandingPage({ spec, searchParams }: { spec: LandingSpec | 
           )}
         </nav>
       )}
+      {page === 1 && <LandingInsights subject={spec.subject} stats={stats} />}
       <JoinCta />
       {spec.related
         ?.filter((r) => r.links.length)

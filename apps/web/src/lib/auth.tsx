@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useSyncExternalStore } from "react";
-import { supabase } from "@/lib/supabase";
-import { WORKOS_ENABLED, signOut as workosSignOut } from "@/lib/workos";
+import { WORKOS_ENABLED } from "@/lib/workos";
 
 interface User {
   id: string;
@@ -139,8 +138,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // token) alive, so the next visit could silently sign the user back in.
     // "local" revokes this device's refresh token; "global" revokes all of them.
     try {
-      if (WORKOS_ENABLED) await workosSignOut(localStorage.getItem(TOKEN_KEY), everywhere);
-      else await supabase.auth.signOut({ scope: everywhere ? "global" : "local" });
+      // Loaded on demand: public pages render this provider, and the Supabase
+      // client (plus axios) would otherwise ship to every visitor.
+      if (WORKOS_ENABLED) await (await import("@/lib/workos")).signOut(localStorage.getItem(TOKEN_KEY), everywhere);
+      else await (await import("@/lib/supabase")).supabase.auth.signOut({ scope: everywhere ? "global" : "local" });
     } catch {
       // Offline or already signed out: still clear this device below.
     }

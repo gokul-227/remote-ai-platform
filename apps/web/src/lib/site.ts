@@ -24,7 +24,64 @@ export type PublicJob = {
   salary_max?: number | null;
   salary_period?: string | null;
   currency?: string | null;
+  workplace_type?: string | null;
+  seniority?: string | null;
+  region?: string | null;
+  tz_min?: number | null;
+  tz_max?: number | null;
+  visa_sponsorship?: boolean | null;
+  experience_level?: string | null;
+  language?: string | null;
 };
+
+const utc = (h: number) => `UTC${h === 0 ? "" : h > 0 ? `+${h}` : `−${Math.abs(h)}`}`;
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/[_-]+/g, " ");
+
+/**
+ * The facts a job listing states, as label/value pairs for the "At a glance"
+ * box. Only fields the listing actually has; nothing is inferred beyond the
+ * countries named in its location text.
+ */
+export function jobHighlights(job: PublicJob): [string, string][] {
+  const out: [string, string][] = [];
+  const unit = { year: "a year", month: "a month", week: "a week", day: "a day", hour: "an hour" }[
+    job.salary_period || ""
+  ];
+  if ((job.salary_min || job.salary_max) && job.currency && unit) {
+    const f = (v: number) => {
+      try {
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: job.currency!,
+          maximumFractionDigits: 0,
+        }).format(v);
+      } catch {
+        return `${v} ${job.currency}`;
+      }
+    };
+    const range =
+      job.salary_min && job.salary_max && job.salary_min !== job.salary_max
+        ? `${f(job.salary_min)} – ${f(job.salary_max)}`
+        : f((job.salary_min || job.salary_max)!);
+    out.push(["Salary", `${range} ${unit}`]);
+  }
+  const workplace = job.workplace_type ? cap(job.workplace_type) : job.is_remote ? "Remote" : null;
+  if (workplace) out.push(["Workplace", workplace]);
+  if (job.location) out.push(["Location", job.location]);
+  const countries = inferCountries(job.location);
+  if (job.is_remote && countries.length) out.push(["Hiring in", countries.join(", ") + " (as named in the listing)"]);
+  if (job.region) out.push(["Region", cap(job.region)]);
+  if (job.tz_min != null && job.tz_max != null)
+    out.push(["Time zones", job.tz_min === job.tz_max ? utc(job.tz_min) : `${utc(job.tz_min)} to ${utc(job.tz_max)}`]);
+  const type = (job.job_type || "").toLowerCase();
+  if (type && type !== "unspecified") out.push(["Employment type", cap(type)]);
+  if (job.seniority) out.push(["Seniority", cap(job.seniority)]);
+  else if (job.experience_level) out.push(["Experience", cap(job.experience_level)]);
+  if (job.visa_sponsorship != null) out.push(["Visa sponsorship", job.visa_sponsorship ? "Offered" : "Not offered"]);
+  if (job.skills?.length) out.push(["Skills", job.skills.slice(0, 12).join(", ")]);
+  if (job.posted_at) out.push(["Posted", new Date(job.posted_at).toISOString().slice(0, 10)]);
+  return out;
+}
 
 // ISO 3166 alpha-2 codes for country names (and common spellings) found in free-text locations.
 const COUNTRY_NAMES: [RegExp, string][] = [

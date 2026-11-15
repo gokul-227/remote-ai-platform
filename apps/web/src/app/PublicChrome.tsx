@@ -68,6 +68,21 @@ export function PublicFooter() {
                 Work from anywhere
               </Link>
             </li>
+            <li>
+              <Link className={linkClass} href="/remote-jobs/at">
+                Companies hiring
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/guides">
+                Remote work guides
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/sitemap">
+                Site map
+              </Link>
+            </li>
           </ul>
         </nav>
         <nav aria-label="Trust and legal">

@@ -42,9 +42,36 @@ test("home declares Organization and WebSite with a working SearchAction", async
     await page.goto("/");
     const site = (await ld(page)).find((x) => x["@type"] === "WebSite");
     expect(site.potentialAction["@type"]).toBe("SearchAction");
-    const res = await page.goto("/remote-jobs?q=analyst");
+    // A free-text search (not exactly a category name) stays a noindex results page.
+    const res = await page.goto("/remote-jobs?q=analyst%20payments");
     expect(res?.status()).toBe(200);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  } finally {
+    await context.close();
+  }
+});
+
+test("guides, the HTML site map and category searches are crawlable without JavaScript", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    for (const path of ["/guides", "/guides/how-to-find-a-remote-job", "/guides/remote-salary-guide", "/sitemap"]) {
+      const res = await page.goto(path);
+      expect(res?.status(), path).toBe(200);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`${path}$`));
+    }
+    await page.goto("/guides/remote-salary-guide");
+    const article = (await ld(page)).find((x) => x["@type"] === "Article");
+    expect(article?.author?.["@type"]).toBe("Organization");
+    await page.goto("/sitemap");
+    await expect(page.locator('main a[href="/remote-jobs/python"]').first()).toBeVisible();
+    await expect(page.locator('footer a[href="/sitemap"]')).toHaveCount(1);
+    await page.goto("/remote-jobs?q=Python");
+    expect(new URL(page.url()).pathname).toBe("/remote-jobs/python");
   } finally {
     await context.close();
   }

@@ -58,6 +58,15 @@ export const TOPICS: Topic[] = [
 
 export const topicBySlug = (slug: string) => TOPICS.find((t) => t.slug === slug);
 
+/** The keyword topic a search term names exactly (slug, name or query), if any. */
+export function topicForSearch(q: string): Topic | null {
+  const term = q.trim().toLowerCase();
+  return (
+    TOPICS.find((t) => !t.jobType && [t.slug, t.name.toLowerCase(), (t.query || "").toLowerCase()].includes(term)) ??
+    null
+  );
+}
+
 /** Up to `limit` newest jobs for a topic, and how many match in total. */
 export async function fetchTopicJobs(topic: Topic, limit = 50): Promise<{ jobs: PublicJob[]; total: number }> {
   const params = new URLSearchParams({ limit: String(limit) });

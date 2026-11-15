@@ -723,7 +723,7 @@ class JobRepository:
                 .limit(5)
             )
         ).all()
-        salary_rows = (
+        salary_rows: Sequence[Any] = (
             await self.db.execute(
                 self._filtered(
                     select(
@@ -731,6 +731,7 @@ class JobRepository:
                         JobPost.salary_max,
                         JobPost.currency,
                         JobPost.salary_period,
+                        JobPost.seniority,
                     ),
                     **filters,
                 )
@@ -743,11 +744,22 @@ class JobRepository:
                 .limit(2000)
             )
         ).all()
+        # The newest matching jobs (bounded) for skills and the weekly trend.
+        recent_rows: Sequence[Any] = (
+            await self.db.execute(
+                self._filtered(select(JobPost.skills, JobPost.posted_at), **filters)
+                .order_by(JobPost.posted_at.desc())
+                .limit(2000)
+            )
+        ).all()
         return {
             "total": total,
             "new_last_7_days": recent,
             "top_companies": [{"name": n, "count": int(c)} for n, c in companies if n],
-            "salary": salary_summary(salary_rows),
+            "salary": salary_summary([r[:4] for r in salary_rows]),
+            "salary_by_seniority": salary_by_seniority(salary_rows),
+            "top_skills": top_skills([r[0] for r in recent_rows]),
+            "weekly_new": weekly_counts([r[1] for r in recent_rows]),
         }
 
     async def employers(
@@ -888,6 +900,57 @@ def salary_summary(rows: Sequence[Any]) -> dict[str, Any] | None:
         "median": pct(0.5),
         "high": pct(0.9),
     }
+
+
+SENIORITY_ORDER = ("intern", "junior", "mid", "senior", "lead", "staff", "principal", "executive")
+
+
+def salary_by_seniority(rows: Sequence[Any]) -> list[dict[str, Any]]:
+    """Pay per seniority level, from rows of (min, max, currency, period, seniority),
+    all in the overall most common currency and period so levels compare. A level
+    needs at least 3 published salaries to be shown."""
+    overall = salary_summary([r[:4] for r in rows])
+    if not overall:
+        return []
+    by_level: dict[str, list[Any]] = {}
+    for lo, hi, currency, period, level in rows:
+        if not level or str(currency).upper() != overall["currency"]:
+            continue
+        if str(period).lower() != overall["period"]:
+            continue
+        by_level.setdefault(str(level).lower(), []).append((lo, hi, currency, period))
+    out = []
+    for level, items in by_level.items():
+        s = salary_summary(items)
+        if s and s["count"] >= 3:
+            out.append({"seniority": level, **s})
+    rank = {v: i for i, v in enumerate(SENIORITY_ORDER)}
+    return sorted(out, key=lambda r: rank.get(r["seniority"], len(rank)))
+
+
+def top_skills(skill_lists: Sequence[Any], limit: int = 10) -> list[dict[str, Any]]:
+    """The skills most often listed by the given jobs (each job counts once)."""
+    counts: dict[str, int] = {}
+    for skills in skill_lists:
+        for s in {str(x) for x in (skills or []) if x}:
+            counts[s] = counts.get(s, 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0].lower()))[:limit]
+    return [{"name": k, "count": v} for k, v in ranked if v >= 2]
+
+
+def weekly_counts(dates: Sequence[Any], weeks: int = 4) -> list[int]:
+    """Jobs posted in each of the last `weeks` 7-day windows, oldest first."""
+    now = datetime.now(UTC)
+    out = [0] * weeks
+    for d in dates:
+        if d is None:
+            continue
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=UTC)
+        age = (now - d).days // 7
+        if 0 <= age < weeks:
+            out[weeks - 1 - age] += 1
+    return out
 
 
 def _as_list(value: Any) -> list[Any]:

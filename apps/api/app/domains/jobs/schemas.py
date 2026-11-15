@@ -188,6 +188,15 @@ class LandingSalary(BaseModel):
     high: float
 
 
+class LandingSeniorityPay(LandingSalary):
+    seniority: str
+
+
+class LandingSkill(BaseModel):
+    name: str
+    count: int
+
+
 class JobLandingStats(BaseModel):
     """Aggregates behind a public landing page's intro text (all from real rows)."""
 
@@ -195,6 +204,12 @@ class JobLandingStats(BaseModel):
     new_last_7_days: int
     top_companies: list[LandingCompany]
     salary: LandingSalary | None = None
+    # Published pay per seniority level (same currency/period as `salary`, >= 3 each).
+    salary_by_seniority: list[LandingSeniorityPay] = []
+    # Skills most often listed by the newest matching jobs.
+    top_skills: list[LandingSkill] = []
+    # Matching jobs posted in each of the last four weeks, oldest first.
+    weekly_new: list[int] = []
 
 
 class JobEmployer(BaseModel):

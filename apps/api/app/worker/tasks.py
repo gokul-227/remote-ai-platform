@@ -402,6 +402,24 @@ def cost_guard() -> dict[str, Any]:
     return runtime.run(go())
 
 
+@shared_task(name="ops.seo_weekly_report")
+def seo_weekly_report() -> dict[str, Any]:
+    from app.worker import ops
+
+    return runtime.run(ops.seo_weekly_report())
+
+
+@shared_task(name="seo.indexing_sweep")
+def seo_indexing_sweep() -> dict[str, Any]:
+    from app.services.search.indexing import sweep_unannounced
+
+    async def go() -> dict[str, Any]:
+        async with runtime.session_factory()() as db:
+            return await sweep_unannounced(db)
+
+    return runtime.run(go())
+
+
 # ── job search filters ──────────────────────────────────────────────────────
 
 

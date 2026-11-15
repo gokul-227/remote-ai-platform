@@ -93,9 +93,9 @@ async def test_expired_jobs_are_sent_as_url_deleted_after_new_ones(google, monke
     kinds: list[str] = []
     real_publish = ix._publish
 
-    async def spy(client, token, urls, kind):
+    async def spy(client, token, urls, kind, *rest):
         kinds.extend([kind] * len(urls))
-        return await real_publish(client, token, urls, kind)
+        return await real_publish(client, token, urls, kind, *rest)
 
     monkeypatch.setattr(ix, "_publish", spy)
 

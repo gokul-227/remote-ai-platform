@@ -1,4 +1,5 @@
 import { API_URL, SITE_URL } from "./site";
+import { GUIDES } from "./guides";
 import { MIN_INDEXABLE_JOBS, fetchEmployers, fetchLandingStats, landingCandidates } from "./landing";
 
 export const SITEMAP_PAGE_SIZE = 5000;
@@ -11,7 +12,10 @@ export const escapeXml = (value: string) =>
   value.replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" })[c]!);
 export const xmlResponse = (body: string) =>
   new Response(body, {
-    headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=900" },
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, max-age=900, s-maxage=3600, stale-while-revalidate=86400",
+    },
   });
 export const emptySitemap = () => `${XML_HEADER}<urlset ${XML_NS}></urlset>`;
 
@@ -77,7 +81,18 @@ export function urlSet(entries: { url: string; changed?: string }[]): string {
 
 export function staticSitemap(): string {
   return urlSet(
-    ["/", "/remote-jobs", "/privacy", "/terms", "/impressum", "/trust", "/remote-jobs/at"].map((path) => ({
+    [
+      "/",
+      "/remote-jobs",
+      "/privacy",
+      "/terms",
+      "/impressum",
+      "/trust",
+      "/remote-jobs/at",
+      "/sitemap",
+      "/guides",
+      ...GUIDES.map((g) => `/guides/${g.slug}`),
+    ].map((path) => ({
       url: `${SITE_URL}${path}`,
     })),
   );
@@ -92,13 +107,19 @@ export function resourceSitemap(kind: SitemapKind, entries: Entry[]): string {
   );
 }
 
-/** Run `fn` over `items` with at most `limit` in flight. */
-async function pooled<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length);
+/** Run `fn` over `items` with at most `limit` in flight; items not started before
+ * `deadline` (ms since epoch) are skipped and stay undefined. */
+async function pooled<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+  deadline = Infinity,
+): Promise<(R | undefined)[]> {
+  const out: (R | undefined)[] = new Array(items.length);
   let next = 0;
   await Promise.all(
     Array.from({ length: Math.min(limit, items.length) }, async () => {
-      while (next < items.length) {
+      while (next < items.length && Date.now() < deadline) {
         const i = next++;
         out[i] = await fn(items[i]);
       }
@@ -107,12 +128,29 @@ async function pooled<T, R>(items: T[], limit: number, fn: (item: T) => Promise<
   return out;
 }
 
-/** Landing pages with at least MIN_INDEXABLE_JOBS live roles (thin ones answer noindex). */
-export async function landingSitemap(): Promise<string> {
+/** How long the landing sitemap may spend on stats before answering. */
+export const LANDING_SITEMAP_BUDGET_MS = 40_000;
+
+/** /remote-jobs/<topic> and /remote-jobs/in/<place>: the hubs every combination hangs off. */
+export const isLandingHub = (path: string) => /^\/remote-jobs\/(in\/)?[a-z0-9-]+$/.test(path);
+
+/**
+ * Landing pages worth crawling. Employer pages come straight from the employer
+ * list (already >= MIN_INDEXABLE_JOBS each). Category and place hubs are always
+ * listed unless their count is known to be thin; combinations are listed only
+ * when their count is known to be big enough. Stats lookups share a time
+ * budget so the sitemap always answers quickly (it used to time out).
+ */
+export async function landingSitemap(budgetMs = LANDING_SITEMAP_BUDGET_MS): Promise<string> {
   const employers = await fetchEmployers(MIN_INDEXABLE_JOBS, 2000);
-  const candidates = landingCandidates(employers);
-  const stats = await pooled(candidates, 8, (c) => fetchLandingStats(c.filter));
-  const keep = candidates.filter((_, i) => (stats[i]?.total ?? 0) >= MIN_INDEXABLE_JOBS);
-  const latest = new Map(employers.map((e) => [`/remote-jobs/at/${e.slug}`, e.latest_posted_at ?? undefined]));
-  return urlSet(keep.map((c) => ({ url: `${SITE_URL}${c.path}`, changed: latest.get(c.path) })));
+  const candidates = landingCandidates([]);
+  const stats = await pooled(candidates, 8, (c) => fetchLandingStats(c.filter), Date.now() + budgetMs);
+  const keep = candidates.filter((c, i) => {
+    const s = stats[i];
+    return s ? s.total >= MIN_INDEXABLE_JOBS : isLandingHub(c.path);
+  });
+  const urls: { url: string; changed?: string }[] = keep.map((c) => ({ url: `${SITE_URL}${c.path}` }));
+  for (const e of employers)
+    urls.push({ url: `${SITE_URL}/remote-jobs/at/${e.slug}`, changed: e.latest_posted_at ?? undefined });
+  return urlSet(urls);
 }

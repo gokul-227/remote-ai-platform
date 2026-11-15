@@ -21,6 +21,7 @@ import base64
 import json
 import time
 import uuid
+from typing import Any
 
 import httpx
 import jwt
@@ -93,9 +94,14 @@ async def _reserve_google_quota(wanted: int) -> int:
 
 
 async def _publish(
-    client: httpx.AsyncClient, token: str, urls: list[str], kind: str
+    client: httpx.AsyncClient,
+    token: str,
+    urls: list[str],
+    kind: str,
+    ok: list[str] | None = None,
 ) -> tuple[int, bool]:
-    """Send Google notifications; returns (accepted, quota_exhausted)."""
+    """Send Google notifications; returns (accepted, quota_exhausted). Accepted
+    URLs are appended to `ok` when given."""
     accepted = 0
     for url in urls:
         r = await client.post(
@@ -105,12 +111,88 @@ async def _publish(
         )
         if r.status_code == 429:
             return accepted, True  # daily quota used up; the sitemap still covers the rest
-        accepted += int(r.status_code == 200)
+        if r.status_code == 200:
+            accepted += 1
+            if ok is not None:
+                ok.append(url)
     return accepted, False
 
 
+ANNOUNCED_TTL = 7 * 86400
+
+
+def _announced_key() -> str:
+    return settings.redis_key("indexing:google:announced")
+
+
+async def _mark_announced(urls: list[str]) -> None:
+    """Remember which URLs Google accepted (a sorted set scored by time, pruned
+    after a week), so the catch-up sweep only sends what no run has sent."""
+    if not urls:
+        return
+    from redis.asyncio import Redis
+
+    client = Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
+    try:
+        now = time.time()
+        await client.zadd(_announced_key(), dict.fromkeys(urls, now))
+        await client.zremrangebyscore(_announced_key(), 0, now - ANNOUNCED_TTL)
+        await client.expire(_announced_key(), ANNOUNCED_TTL)
+    except Exception:
+        return
+    finally:
+        await client.aclose()
+
+
+async def _already_announced(urls: list[str]) -> set[str]:
+    if not urls:
+        return set()
+    from redis.asyncio import Redis
+
+    client = Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
+    try:
+        scores = await client.zmscore(_announced_key(), urls)
+        return {u for u, sc in zip(urls, scores, strict=True) if sc is not None}
+    except Exception:
+        return set(urls)  # without Redis the sweep can't tell: send nothing extra
+    finally:
+        await client.aclose()
+
+
+async def sweep_unannounced(db: Any, hours: int = 48) -> dict[str, int]:
+    """Catch-up for the Indexing API (beat, every few hours): indexable jobs posted
+    in the last `hours` that no import run announced (per-run cap or quota),
+    newest first, within today's shared budget."""
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import select
+
+    from app.domains.jobs.models import JobPost
+    from app.domains.jobs.repository import JobRepository
+
+    if settings.APP_ENV != "production" or not settings.SEO_INDEXING_SWEEP_ENABLED:
+        return {"candidates": 0, "google": 0}
+    since = datetime.now(UTC) - timedelta(hours=hours)
+    ids = list(
+        (
+            await db.execute(
+                select(JobPost.id).where(JobPost.posted_at >= since).limit(5000)
+            )
+        ).scalars()
+    )
+    repo = JobRepository(db)
+    ordered = await repo.indexable_newest_first(ids)
+    done = await _already_announced(job_urls(ordered))
+    todo = [i for i, u in zip(ordered, job_urls(ordered), strict=True) if u not in done]
+    sent = await notify_jobs(todo[: settings.GOOGLE_INDEXING_PER_RUN], indexnow=False)
+    return {"candidates": len(todo), "google": sent["google"]}
+
+
 async def notify_jobs(
-    new_ids: list[uuid.UUID], removed_ids: list[uuid.UUID] | None = None
+    new_ids: list[uuid.UUID],
+    removed_ids: list[uuid.UUID] | None = None,
+    *,
+    indexnow: bool = True,
 ) -> dict[str, int]:
     """Announce new job pages (URL_UPDATED) and expired ones (URL_DELETED) to Google,
     and every changed URL to IndexNow. Returns how many each accepted."""
@@ -129,7 +211,11 @@ async def notify_jobs(
                 budget = await _reserve_google_quota(len(want_new) + len(want_gone))
                 want_new = want_new[:budget]
                 want_gone = want_gone[: max(0, budget - len(want_new))]
-                sent["google"], exhausted = await _publish(client, token, want_new, "URL_UPDATED")
+                ok: list[str] = []
+                sent["google"], exhausted = await _publish(
+                    client, token, want_new, "URL_UPDATED", ok
+                )
+                await _mark_announced(ok)
                 if not exhausted:
                     sent["google_deleted"], _ = await _publish(
                         client, token, want_gone, "URL_DELETED"
@@ -137,7 +223,7 @@ async def notify_jobs(
         except Exception as exc:  # never let indexing break an import
             logger.warning("Google indexing notification failed", error=type(exc).__name__)
         changed = (new_urls + gone_urls)[:10000]
-        if settings.INDEXNOW_KEY and changed:
+        if indexnow and settings.INDEXNOW_KEY and changed:
             try:
                 host = _site().split("://", 1)[-1]
                 r = await client.post(
@@ -172,7 +258,7 @@ SEARCH_CONSOLE_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly"
 SEARCH_CONSOLE_SITE = "https://remoteaiplatform.com/"
 
 
-async def search_console_report(days: int = 28) -> dict:
+async def search_console_report(days: int = 28, offset_days: int = 0) -> dict:
     """What Google shows for the site: sitemap and indexed counts, and the searches,
     pages, clicks and average position over the last `days` days (Search Console API)."""
     from datetime import UTC, datetime, timedelta
@@ -180,7 +266,7 @@ async def search_console_report(days: int = 28) -> dict:
 
     site = quote(SEARCH_CONSOLE_SITE, safe="")
     base = f"https://www.googleapis.com/webmasters/v3/sites/{site}"
-    end = datetime.now(UTC).date()
+    end = datetime.now(UTC).date() - timedelta(days=offset_days)
     start = end - timedelta(days=days)
     async with httpx.AsyncClient(timeout=30) as client:
         token = await _google_token(client, SEARCH_CONSOLE_SCOPE)

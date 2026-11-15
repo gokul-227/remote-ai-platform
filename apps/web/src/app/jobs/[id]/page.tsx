@@ -4,10 +4,10 @@ import { socialMetadata } from "@/lib/share";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
-import { SITE_URL, fetchPublicJob, jobPostingJsonLd, summary } from "@/lib/site";
+import { SITE_URL, fetchPublicJob, jobHighlights, jobPostingJsonLd, summary } from "@/lib/site";
 import { permitsGoogleJobs, jobSourceName, originalJobUrl } from "@/lib/jobSources";
 import { PLACES, topicsForJob } from "@/lib/seo";
-import { fetchLandingJobs, topicFilter } from "@/lib/landing";
+import { fetchLandingJobs, topicFilter, topicHeading } from "@/lib/landing";
 import { JobList } from "../../remote-jobs/JobList";
 
 const employerSlug = (name: string) =>
@@ -45,12 +45,15 @@ export default async function JobPage({ params }: Props) {
   if (!job) notFound();
   const where = job.location || (job.is_remote ? "Remote" : "On-site");
   const site = SITE_URL || "https://remoteaiplatform.com";
+  const highlights = jobHighlights(job);
+  const topics = topicsForJob(job);
+  // Hub and spoke: home → all jobs → the job's main category → the job.
   const trail: [string, string][] = [
     ["Remote AI Platform", "/"],
     ["Remote jobs", "/remote-jobs"],
+    ...(topics[0] ? [[topicHeading(topics[0]), `/remote-jobs/${topics[0].slug}`] as [string, string]] : []),
     [job.title, `/jobs/${job.id}`],
   ];
-  const topics = topicsForJob(job);
   const places = PLACES.filter((p) => (job.location || "").toLowerCase().includes(p.match)).slice(0, 3);
   const [sameEmployer, sameTopic] = await Promise.all([
     fetchLandingJobs({ employer: job.company_name }),
@@ -114,6 +117,21 @@ export default async function JobPage({ params }: Props) {
             label="Share this job"
           />
         </div>
+        {highlights.length > 0 && (
+          <section className="mt-8 rounded-lg bg-slate-50 p-4" aria-labelledby="job-glance">
+            <h2 id="job-glance" className="mb-2 text-lg font-bold">
+              At a glance
+            </h2>
+            <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[max-content_1fr]">
+              {highlights.map(([k, v]) => (
+                <div key={k} className="contents">
+                  <dt className="font-semibold text-slate-700">{k}</dt>
+                  <dd className="text-slate-700">{v}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
         <section className="mt-8" aria-labelledby="about-job">
           <h2 id="about-job" className="mb-3 text-xl font-bold">
             About the job

@@ -225,7 +225,7 @@ async def landing_stats(
     employer): totals, new this week, top employers and published pay. Public:
     computed only from the jobs the anonymous list shows."""
     response.headers["Cache-Control"] = "public, max-age=1800"
-    key = f"landing:{query}|{job_type}|{location}|{employer}".lower()
+    key = f"landing:v2:{query}|{job_type}|{location}|{employer}".lower()
     stats = await _seo_cache.get_json(key)
     if stats is None:
         stats = await JobRepository(db).landing_stats(

@@ -61,6 +61,14 @@ celery_app.conf.update(
             "schedule": crontab(hour=2, minute=50),
         },
         "cost-guard":{"task": "ops.cost_guard", "schedule": crontab(hour="*/6", minute=15)},
+        "seo-indexing-sweep": {
+            "task": "seo.indexing_sweep",
+            "schedule": crontab(hour="*/4", minute=25),
+        },
+        "seo-weekly-report": {
+            "task": "ops.seo_weekly_report",
+            "schedule": crontab(day_of_week=1, hour=7, minute=30),
+        },
     },
 )
 

@@ -16,7 +16,20 @@ export type LandingStats = {
   total: number;
   new_last_7_days: number;
   top_companies: { name: string; count: number }[];
-  salary?: { currency: string; period: string; count: number; low: number; median: number; high: number } | null;
+  salary?: SalaryBand | null;
+  /** Published pay per seniority level, same currency/period as `salary` (>= 3 each). */
+  salary_by_seniority?: (SalaryBand & { seniority: string })[];
+  top_skills?: { name: string; count: number }[];
+  /** Matching jobs posted in each of the last four weeks, oldest first. */
+  weekly_new?: number[];
+};
+export type SalaryBand = {
+  currency: string;
+  period: string;
+  count: number;
+  low: number;
+  median: number;
+  high: number;
 };
 export type Employer = { slug: string; name: string; count: number; latest_posted_at?: string | null };
 
@@ -87,13 +100,38 @@ export function parsePage(raw: string | string[] | undefined): number | null {
 export const pageHref = (path: string, page: number) => (page <= 1 ? path : `${path}?page=${page}`);
 export const lastPage = (total: number) => Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-const money = (value: number, currency: string) => {
+export const money = (value: number, currency: string) => {
   try {
     return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(value);
   } catch {
     return `${Math.round(value)} ${currency}`;
   }
 };
+
+export const perPeriod = (period: string) =>
+  ({ year: "a year", month: "a month", week: "a week", day: "a day", hour: "an hour" })[period] ?? period;
+
+/**
+ * Live job count for a landing filter: the aggregate when it answers, else the
+ * job list's count, else null. null means "unknown" and must never be treated
+ * as a thin page: an API timeout used to mark every landing page noindex.
+ */
+export async function landingTotal(
+  filter: LandingFilter,
+): Promise<{ total: number | null; stats: LandingStats | null }> {
+  const stats = await fetchLandingStats(filter);
+  if (stats) return { total: stats.total, stats };
+  const list = await fetchLandingJobs(filter);
+  return { total: list.total || list.jobs.length || null, stats: null };
+}
+
+/** A factual sentence about new listings over the last four weeks, or null. */
+export function trendSentence(weekly?: number[]): string | null {
+  if (!weekly || weekly.length < 4 || weekly.every((n) => !n)) return null;
+  const f = (n: number) => n.toLocaleString("en-US");
+  const [a, b, c, d] = weekly;
+  return `New listings per 7-day period over the last four weeks, oldest first: ${f(a)}, ${f(b)}, ${f(c)} and ${f(d)}.`;
+}
 
 /** Intro paragraphs built only from real aggregates; empty when there are none. */
 export function landingIntro(subject: string, stats: LandingStats | null): string[] {
@@ -109,8 +147,7 @@ export function landingIntro(subject: string, stats: LandingStats | null): strin
     out.push(`Employers with the most openings: ${top.map((c) => `${c.name} (${c.count})`).join(", ")}.`);
   const s = stats.salary;
   if (s && s.count >= MIN_INDEXABLE_JOBS) {
-    const per =
-      { year: "a year", month: "a month", week: "a week", day: "a day", hour: "an hour" }[s.period] ?? s.period;
+    const per = perPeriod(s.period);
     out.push(
       `${s.count} of these listings publish pay in ${s.currency}: typically ${money(s.low, s.currency)} to ${money(s.high, s.currency)} ${per}, with a median of ${money(s.median, s.currency)}. Many employers don't publish pay, so treat this as a guide.`,
     );

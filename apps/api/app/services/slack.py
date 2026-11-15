@@ -36,6 +36,7 @@ CHANNELS: dict[str, str] = {
     "signups": "SLACK_CHANNEL_SIGNUPS",
     "security": "SLACK_CHANNEL_SECURITY",
     "costs": "SLACK_CHANNEL_COSTS",
+    "seo": "SLACK_CHANNEL_SEO",
 }
 
 _seen: dict[str, float] = {}

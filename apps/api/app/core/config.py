@@ -438,6 +438,12 @@ class Settings(BaseSettings):
     SITEMAP_JOB_MAX_AGE_DAYS: int = 90
     # A job expired longer ago than this (or removed) answers 410 Gone on its public page.
     JOB_GONE_AFTER_DAYS: int = 30
+    # Weekly Search Console summary to Slack (#seo, else #signups), Mondays 07:30 UTC.
+    # Uses the Indexing API service account, which needs read access to the property.
+    SEO_WEEKLY_REPORT_ENABLED: bool = False
+    # Catch-up sweep every 4 h: announce indexable jobs from the last 2 days that no
+    # import run has announced yet (per-run caps and quota misses), within the budget.
+    SEO_INDEXING_SWEEP_ENABLED: bool = True
     # IndexNow key: public by design, served by the web app at /indexnow.txt.
     INDEXNOW_KEY: str = "bd088b5c4cf346dbf16c906aff9aeb97"
     # Keep as many imported jobs as the free database allows: above this size the oldest
@@ -527,6 +533,7 @@ class Settings(BaseSettings):
     SLACK_CHANNEL_SIGNUPS: str = ""
     SLACK_CHANNEL_SECURITY: str = ""
     SLACK_CHANNEL_COSTS: str = ""
+    SLACK_CHANNEL_SEO: str = ""  # weekly Search Console summary; empty -> #signups
     ADMIN_URL: str = ""  # staff console base URL, linked from Slack messages
     SLACK_DEDUP_SECONDS: int = 900  # identical dedup keys are dropped inside this window
     SLACK_MAX_PER_MINUTE: int = 20  # per channel, per process

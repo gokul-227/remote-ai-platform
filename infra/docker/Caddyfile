@@ -36,6 +36,23 @@
 	@public_assets path /brand/* /icons/* /brand-mark.svg /favicon.ico /icon.svg /apple-icon.png /opengraph-image.png /twitter-image.png
 	header @public_assets Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
 	# /_next/static/* is content-hashed; Next already sends immutable caching.
+	#
+	# Public, server-rendered pages are the same HTML for every visitor (sign-in
+	# state lives in the browser), so Cloudflare may cache them: a short shared
+	# TTL plus stale-while-revalidate keeps TTFB low for crawlers and people
+	# while data stays at most minutes old. Browsers always revalidate
+	# (max-age=0). RSC requests (rsc header / _rsc query) and the app's own
+	# routes keep Next's private no-store. Cloudflare only stores HTML when a
+	# Cache Rule marks these paths "Eligible for cache" (docs/operations/seo.md).
+	@public_html {
+		method GET HEAD
+		path / /remote-jobs /remote-jobs/* /jobs/* /guides /guides/* /sitemap /companies/* /people/* /posts/* /trust /privacy /terms /impressum
+		not header Rsc *
+		not query _rsc=*
+	}
+	header @public_html >Cache-Control "public, max-age=0, s-maxage=600, stale-while-revalidate=86400, stale-if-error=86400"
+	header @public_html >Cloudflare-CDN-Cache-Control "public, s-maxage=600, stale-while-revalidate=86400, stale-if-error=86400"
+	header @public_html >Vary "Accept-Encoding"
 	reverse_proxy web:3000 {
 		health_uri /api/version
 		health_interval 30s

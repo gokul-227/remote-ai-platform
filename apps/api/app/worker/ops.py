@@ -5,6 +5,8 @@ Owner-facing operational checks that post to Slack (app/services/slack.py).
     daily_import_summary  07:00 UTC -> #job-imports
     check_backups         08:00 UTC: missed backup / unverified restore -> #backups (+ critical)
     cost_guard            every 6 h: free-tier usage at COST_WARN/CRITICAL_PERCENT -> #costs
+    seo_weekly_report     Mondays 07:30 UTC: Search Console clicks, impressions, top
+                          queries/pages and sitemap coverage -> #seo (else #signups)
 
 Each returns a plain dict for the task run log and never raises on a failed probe.
 """
@@ -255,3 +257,69 @@ async def cost_guard(db: AsyncSession) -> dict[str, Any]:
             fields={"detail": m.get("detail")} if m.get("detail") else None,
         )
     return {"metrics": metrics, "alerts": alerts}
+
+
+def _delta(now: float, before: float) -> str:
+    if not before:
+        return ""
+    pct = (now - before) / before * 100
+    return f" ({pct:+.0f}% vs previous 7 days)"
+
+
+async def seo_weekly_report(db: AsyncSession | None = None) -> dict[str, Any]:
+    """Weekly Search Console summary to Slack, behind SEO_WEEKLY_REPORT_ENABLED.
+    Uses the Indexing API service account (it needs read access to the
+    property; see docs/operations/seo.md). Never raises."""
+    from app.services.search.indexing import search_console_report
+
+    if not settings.SEO_WEEKLY_REPORT_ENABLED:
+        return {"skipped": "disabled"}
+    try:
+        # Search Console data lags ~2-3 days: compare the latest full week with the one before.
+        cur = await search_console_report(days=7, offset_days=3)
+        prev = await search_console_report(days=7, offset_days=10)
+    except Exception as exc:
+        logger.warning("Search Console report failed", error=type(exc).__name__)
+        await slack.post(
+            "seo" if slack.channel_id("seo") else "signups",
+            f":warning: Weekly Search Console report failed ({type(exc).__name__}). "
+            "Check that the service account can read the property.",
+            dedup_key=f"seo-weekly-failed:{_now():%Y%W}",
+        )
+        return {"error": type(exc).__name__}
+    if not cur.get("configured"):
+        return {"skipped": "no credentials"}
+    sitemaps = cur.get("sitemaps", [])
+    submitted = sum(m["submitted"] for m in sitemaps)
+    indexed = sum(m["indexed"] for m in sitemaps)
+    errors = sum(m["errors"] for m in sitemaps)
+
+    def top(rows: list[dict[str, Any]], n: int = 5) -> str:
+        return "; ".join(
+            f"{r['key']} ({r['clicks']} clicks, {r['impressions']} impr., pos {r['position']})"
+            for r in rows[:n]
+        ) or "none yet"
+
+    channel = "seo" if slack.channel_id("seo") else "signups"
+    await slack.post(
+        channel,
+        ":mag: Search Console, last 7 days: "
+        f"{cur['clicks']} clicks{_delta(cur['clicks'], prev.get('clicks', 0))}, "
+        f"{cur['impressions']} impressions{_delta(cur['impressions'], prev.get('impressions', 0))}, "
+        f"average position {cur['average_position']}",
+        dedup_key=f"seo-weekly:{_now():%Y%W}",
+        fields={
+            "top queries": top(cur.get("top_queries", [])),
+            "top pages": top(cur.get("top_pages", []), 3),
+            # Search Console no longer reports per-sitemap indexed counts for most
+            # properties; 0 indexed with many submitted is normal, see the Pages report.
+            "sitemaps": f"{len(sitemaps)} read, {submitted} URLs submitted, "
+            f"{indexed} reported indexed, {errors} errors",
+        },
+    )
+    return {
+        "clicks": cur["clicks"],
+        "impressions": cur["impressions"],
+        "submitted": submitted,
+        "indexed": indexed,
+    }

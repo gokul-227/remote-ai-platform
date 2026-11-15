@@ -17,6 +17,7 @@ messages, and GitHub Actions (`deploy-notify.yml`, `infra/ops/slack-notify.sh`).
 | `#signups` | `SLACK_CHANNEL_SIGNUPS` | Each new account (email domain only), sign-up spikes |
 | `#security` | `SLACK_CHANNEL_SECURITY` | Role/staff/flag changes, session revocations, auth-failure bursts, identity conflicts, spikes |
 | `#costs` | `SLACK_CHANNEL_COSTS` | Free-tier usage at 70 % / 90 % |
+| `#seo` | `SLACK_CHANNEL_SEO` | Weekly Search Console summary (`SEO_WEEKLY_REPORT_ENABLED`; empty channel → `#signups`) |
 
 Non-production senders prefix messages with `[<APP_ENV>]`.
 
