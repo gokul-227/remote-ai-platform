@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Ic, Brand, inputCls } from "./rap_kit";
+import { Ic, Logo, inputCls } from "./rap_kit";
 import {
   supabase,
   fetchBackendUser,
@@ -174,10 +174,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
     <div className="min-h-screen bg-[#F0F2F5] text-[#1c1e21]">
       <main className="mx-auto grid min-h-[calc(100vh-110px)] max-w-[1080px] items-center gap-16 px-6 py-12 lg:grid-cols-[1fr_420px]">
         <section>
-          <div className="flex items-center gap-3">
-            <Brand s={52} />
-            <span className="text-2xl font-bold text-brand">Remote AI Platform</span>
-          </div>
+          <Logo variant="primary" h={64} />
           <h1 className="mt-7 text-5xl">
             Your network.
             <br />

@@ -145,7 +145,7 @@ export function Lg({ name, s = 48, r = 8 }: { name: string; s?: number; r?: numb
     </div>
   );
 }
-export { Brand } from "@/components/Brand";
+export { Brand, Logo } from "@/components/Brand";
 export function Btn({
   children,
   v = "primary",

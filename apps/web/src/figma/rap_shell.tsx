@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState, useEffect, useRef, type ReactNode } from "react";
 import { AssistantDock } from "./rap_collab";
-import { Ic, Av, Brand, cx, useDialogFocus } from "./rap_kit";
+import { Ic, Av, Brand, Logo, cx, useDialogFocus } from "./rap_kit";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { isMember, timeAgo, useApi } from "./live";
@@ -549,7 +549,7 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
         <footer>
           <button onClick={() => go("privacy")}>Privacy</button> · <button onClick={() => go("terms")}>Terms</button> ·{" "}
           <button onClick={() => go("help")}>Help</button>
-          <p>Remote AI Platform</p>
+          <Logo h={24} />
         </footer>
       </aside>
       {user && r !== "assistant" && <AssistantDock go={go} />}
