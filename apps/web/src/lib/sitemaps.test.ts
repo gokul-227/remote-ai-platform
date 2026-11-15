@@ -7,7 +7,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 describe("sitemap shards", () => {
   it("discovers every shard after 50,000 combined resources", () => {
     const xml = sitemapIndex({ jobs: 50001, people: 20001, companies: 1, posts: 10000 });
-    expect(xml.match(/<sitemap>/g)).toHaveLength(20);
+    expect(xml.match(/<sitemap>/g)).toHaveLength(21); // static + landing + 19 resource shards
     expect(xml).toContain("/sitemaps/jobs/10.xml");
     expect(xml).toContain("/sitemaps/people/4.xml");
     expect(xml).toContain("/sitemaps/posts/1.xml");

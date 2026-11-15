@@ -17,6 +17,9 @@ from app.domains.companies.models import HIRING_ROLES, CompanyProfile
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import (
+    JobAvailability,
+    JobEmployer,
+    JobLandingStats,
     JobPostCreate,
     JobPostResponse,
     JobPostUpdate,
@@ -58,6 +61,9 @@ async def list_jobs(
     location: str | None = Query(
         None, max_length=60, description="Text in the posting's location (e.g. Germany)"
     ),
+    employer: str | None = Query(
+        None, max_length=200, description="Exact employer name (case-insensitive)"
+    ),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: JobService = Depends(get_job_service),
@@ -90,6 +96,7 @@ async def list_jobs(
         source=source,
         company_id=company_id,
         location=location,
+        employer=employer,
         skip=skip,
         limit=limit,
     )
@@ -112,6 +119,50 @@ async def list_sitemap_entries(
     rows = await JobRepository(db).sitemap_entries(skip=skip, limit=limit)
     response.headers["Cache-Control"] = "public, max-age=900"
     return [JobSitemapEntry(id=i, posted_at=p, updated_at=u) for i, p, u in rows]
+
+
+@router.get("/landing-stats", response_model=JobLandingStats)
+async def landing_stats(
+    response: Response,
+    query: str | None = Query(None, max_length=100),
+    job_type: str | None = Query(None, max_length=30),
+    location: str | None = Query(None, max_length=60),
+    employer: str | None = Query(None, max_length=200),
+    db: AsyncSession = Depends(get_db),
+) -> JobLandingStats:
+    """Aggregates for a public landing page (remote jobs by role, skill, place or
+    employer): totals, new this week, top employers and published pay. Public:
+    computed only from the jobs the anonymous list shows."""
+    stats = await JobRepository(db).landing_stats(
+        query=query, job_type=job_type, location=location, employer=employer, is_remote=True
+    )
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    return JobLandingStats.model_validate(stats)
+
+
+@router.get("/employers", response_model=list[JobEmployer])
+async def list_employers(
+    response: Response,
+    min_jobs: int = Query(1, ge=1, le=1000),
+    limit: int = Query(500, ge=1, le=5000),
+    db: AsyncSession = Depends(get_db),
+) -> list[JobEmployer]:
+    """Employers with live remote jobs, most openings first (public landing pages)."""
+    rows = await JobRepository(db).employers(min_jobs=min_jobs, limit=limit, is_remote=True)
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    return [JobEmployer.model_validate(r) for r in rows]
+
+
+@router.get("/employers/{slug}", response_model=JobEmployer)
+async def get_employer(
+    slug: str, response: Response, db: AsyncSession = Depends(get_db)
+) -> JobEmployer:
+    """One employer by URL slug; 404 when it has no live remote jobs."""
+    found = await JobRepository(db).employer_by_slug(slug[:80])
+    if not found:
+        raise HTTPException(status_code=404, detail="Employer not found")
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    return JobEmployer.model_validate(found)
 
 
 @router.get("/company", response_model=list[JobPostResponse])
@@ -182,6 +233,19 @@ async def get_job_by_id(
     if not job.is_active and not is_admin and not await _owns_job(db, job, current_user):
         raise HTTPException(status_code=404, detail="Job post not found")
     return JobPostResponse.model_validate(job)
+
+
+@router.get("/{job_id}/availability", response_model=JobAvailability)
+async def get_job_availability(
+    job_id: uuid.UUID, response: Response, db: AsyncSession = Depends(get_db)
+) -> JobAvailability:
+    """Whether a public job page is live, recently expired, or long gone (the web
+    app answers 410 Gone for those). Reveals nothing but that state."""
+    state = await JobRepository(db).availability(job_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Job post not found")
+    response.headers["Cache-Control"] = "public, max-age=900"
+    return JobAvailability(state=state)
 
 
 @router.patch("/{job_id}", response_model=JobPostResponse)

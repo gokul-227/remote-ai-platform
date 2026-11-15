@@ -109,6 +109,7 @@ class JobSearchQuery(BaseModel):
     source: str | None = None
     company_id: uuid.UUID | None = None
     location: str | None = None
+    employer: str | None = None
     skip: int = 0
     limit: int = 20
 
@@ -123,3 +124,41 @@ class JobSitemapEntry(BaseModel):
     id: uuid.UUID
     posted_at: datetime
     updated_at: datetime
+
+
+class LandingCompany(BaseModel):
+    name: str
+    count: int
+
+
+class LandingSalary(BaseModel):
+    """Pay published by matching jobs, in their most common currency and period."""
+
+    currency: str
+    period: str
+    count: int
+    low: float
+    median: float
+    high: float
+
+
+class JobLandingStats(BaseModel):
+    """Aggregates behind a public landing page's intro text (all from real rows)."""
+
+    total: int
+    new_last_7_days: int
+    top_companies: list[LandingCompany]
+    salary: LandingSalary | None = None
+
+
+class JobEmployer(BaseModel):
+    slug: str
+    name: str
+    count: int
+    latest_posted_at: datetime | None = None
+
+
+class JobAvailability(BaseModel):
+    """live | expired | gone: whether the public job page answers 200 or 410."""
+
+    state: str

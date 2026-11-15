@@ -26,6 +26,48 @@ export type PublicJob = {
   currency?: string | null;
 };
 
+// ISO 3166 alpha-2 codes for country names (and common spellings) found in free-text locations.
+const COUNTRY_NAMES: [RegExp, string][] = [
+  [/\b(usa|u\.s\.a?\.?|united states)\b/i, "US"],
+  [/\b(canada)\b/i, "CA"],
+  [/\b(uk|united kingdom|england|scotland|wales|great britain)\b/i, "GB"],
+  [/\b(germany|deutschland)\b/i, "DE"],
+  [/\b(france)\b/i, "FR"],
+  [/\b(spain)\b/i, "ES"],
+  [/\b(netherlands)\b/i, "NL"],
+  [/\b(ireland)\b/i, "IE"],
+  [/\b(portugal)\b/i, "PT"],
+  [/\b(poland)\b/i, "PL"],
+  [/\b(italy)\b/i, "IT"],
+  [/\b(sweden)\b/i, "SE"],
+  [/\b(switzerland)\b/i, "CH"],
+  [/\b(austria)\b/i, "AT"],
+  [/\b(india)\b/i, "IN"],
+  [/\b(australia)\b/i, "AU"],
+  [/\b(new zealand)\b/i, "NZ"],
+  [/\b(brazil)\b/i, "BR"],
+  [/\b(mexico)\b/i, "MX"],
+  [/\b(argentina)\b/i, "AR"],
+  [/\b(colombia)\b/i, "CO"],
+  [/\b(philippines)\b/i, "PH"],
+  [/\b(singapore)\b/i, "SG"],
+  [/\b(japan)\b/i, "JP"],
+  [/\b(south africa)\b/i, "ZA"],
+];
+const US_STATES =
+  /,\s*(AL|AK|AZ|AR|CA|CO|CT|DE|DC|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\b/;
+const CA_PROVINCES = /,\s*(ON|BC|AB|QC|MB|SK|NS|NB|NL|PE)\b/;
+
+/** Countries a free-text location names (ISO codes), most specific evidence only. */
+export function inferCountries(location?: string | null): string[] {
+  if (!location) return [];
+  const out = new Set<string>();
+  for (const [re, code] of COUNTRY_NAMES) if (re.test(location)) out.add(code);
+  if (US_STATES.test(location)) out.add("US");
+  if (CA_PROVINCES.test(location)) out.add("CA");
+  return [...out];
+}
+
 const EMPLOYMENT: Record<string, string> = {
   fulltime: "FULL_TIME",
   parttime: "PART_TIME",
@@ -59,14 +101,24 @@ export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string
     directApply: Boolean(job.company_id),
   };
   if (type) ld.employmentType = type;
+  const countries = inferCountries(job.location);
   if (job.is_remote) {
     ld.jobLocationType = "TELECOMMUTE";
-    // Do not invent worldwide eligibility: imported roles may restrict residency.
-    // Add applicantLocationRequirements only when structured country data exists.
+    // Do not invent worldwide eligibility: only countries the posting names.
+    if (countries.length) ld.applicantLocationRequirements = countries.map((name) => ({ "@type": "Country", name }));
   }
   if (!job.is_remote && job.location && !/^remote$/i.test(job.location.trim())) {
-    ld.jobLocation = { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: job.location } };
+    ld.jobLocation = {
+      "@type": "Place",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: job.location,
+        ...(countries.length === 1 ? { addressCountry: countries[0] } : {}),
+      },
+    };
   }
+  if (job.company_id)
+    (ld.hiringOrganization as Record<string, unknown>).sameAs = `${siteUrl}/companies/${job.company_id}`;
   if ((job.salary_min != null || job.salary_max != null) && unit && job.currency) {
     ld.baseSalary = {
       "@type": "MonetaryAmount",

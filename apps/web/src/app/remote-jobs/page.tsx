@@ -1,21 +1,40 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE_URL, fetchRecentJobs } from "@/lib/site";
+import { SITE_URL } from "@/lib/site";
+import { fetchLandingJobs, lastPage, pageHref, parsePage } from "@/lib/landing";
 import { PLACES, TOPICS } from "@/lib/seo";
 import { PublicFrame } from "../PublicChrome";
 import { JobList, JoinCta } from "./JobList";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Remote jobs and freelance work | Remote AI Platform",
-  description:
-    "Explore remote jobs and freelance work from employers and job boards. Browse by role, skill and way of working.",
-  alternates: { canonical: "/remote-jobs" },
-};
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+const searchTerm = (raw: string | string[] | undefined) => (typeof raw === "string" ? raw.trim().slice(0, 100) : "");
 
-export default async function RemoteJobsIndex() {
-  const latest = (await fetchRecentJobs(30)).filter((j) => !j.expired_at);
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const sp = await searchParams;
+  const q = searchTerm(sp.q);
+  const page = parsePage(sp.page);
+  return {
+    title: q
+      ? `Remote jobs matching “${q}” | Remote AI Platform`
+      : `Remote jobs and freelance work${page && page > 1 ? ` – page ${page}` : ""} | Remote AI Platform`,
+    description:
+      "Explore remote jobs and freelance work from employers and job boards. Browse by role, skill, location and company.",
+    alternates: { canonical: q ? "/remote-jobs" : pageHref("/remote-jobs", page ?? 1) },
+    // Search results are for people; the category pages are what should rank.
+    robots: q || !page ? { index: false, follow: true } : undefined,
+  };
+}
+
+export default async function RemoteJobsIndex({ searchParams }: Props) {
+  const sp = await searchParams;
+  const q = searchTerm(sp.q);
+  const page = parsePage(sp.page) ?? 1;
+  const { jobs: latest, total } = await fetchLandingJobs(q ? { query: q } : {}, page);
+  const last = lastPage(total);
+  const base = q ? `/remote-jobs?q=${encodeURIComponent(q)}` : "/remote-jobs";
+  const href = (n: number) => (q ? (n <= 1 ? base : `${base}&page=${n}`) : pageHref(base, n));
   const groups = [...new Set(TOPICS.map((t) => t.group))];
   return (
     <PublicFrame wide>
@@ -61,8 +80,49 @@ export default async function RemoteJobsIndex() {
         </div>
       </section>
       <JoinCta />
-      <h2 className="mb-3 text-xl font-bold">Latest remote jobs</h2>
+      <p className="mb-4">
+        <Link href="/remote-jobs/at" className="font-semibold text-brand underline">
+          Companies hiring remotely
+        </Link>
+      </p>
+      <form action="/remote-jobs" method="get" role="search" className="mb-4 flex gap-2">
+        <label htmlFor="job-search" className="sr-only">
+          Search remote jobs
+        </label>
+        <input
+          id="job-search"
+          name="q"
+          defaultValue={q}
+          placeholder="Search remote jobs"
+          className="w-full max-w-md rounded-lg border border-slate-300 px-3 py-2"
+        />
+        <button className="rounded-full bg-brand px-5 py-2 font-semibold text-white">Search</button>
+      </form>
+      <h2 className="mb-3 text-xl font-bold">
+        {q ? `${total.toLocaleString("en-US")} remote jobs matching “${q}”` : "Latest remote jobs"}
+      </h2>
       <JobList jobs={latest} />
+      {last > 1 && (
+        <nav aria-label="Pagination" className="mt-6 flex items-center justify-between text-sm">
+          {page > 1 ? (
+            <a rel="prev" href={href(page - 1)} className="font-semibold text-brand underline">
+              ← Newer jobs
+            </a>
+          ) : (
+            <span />
+          )}
+          <span className="text-slate-600">
+            Page {page} of {last}
+          </span>
+          {page < last ? (
+            <a rel="next" href={href(page + 1)} className="font-semibold text-brand underline">
+              Older jobs →
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
