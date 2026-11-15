@@ -434,6 +434,7 @@ class Settings(BaseSettings):
     # had; no email was ever actually sent before this) or "resend".
     EMAIL_PROVIDER: str = "none"
     RESEND_API_KEY: str | None = None
+    BREVO_API_KEY: str | None = None  # EMAIL_PROVIDER=brevo
     # Resend's own sandbox sender -- works with zero domain setup, but can only
     # deliver to the account owner's verified email until a real sending
     # domain is added.
