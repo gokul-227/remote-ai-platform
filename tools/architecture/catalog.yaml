@@ -338,6 +338,7 @@ ignore:
     - WORKOS_API_KEY            # auth migration (WorkOS AuthKit, proxied sign-in)
     - WORKOS_API_URL            # auth migration (WorkOS API base)
     - WORKOS_AUTHORIZE_URL      # auth migration (custom auth domain or E2E mock)
+    - GOOGLE_OAUTH_CLIENT_SECRET  # opt-in Google contacts read (flag contacts_import, off)
     - AI_API_KEY                # generic LiteLLM override, unset in deploys
     - LITELLM_BASE_URL          # optional LiteLLM proxy, unset in deploys
     - OPENAI_API_KEY            # not in AI_FREE_TIER_CHAIN

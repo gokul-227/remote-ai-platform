@@ -118,6 +118,7 @@ components:
     - jobs
     - matching
     - meetings
+    - network.contacts
     - network
     - notifications
     - payments

@@ -212,6 +212,8 @@ features:
   api:
   - domain: network
     prefix: /api/v1/{blocks,connections,conversations,invites,messages}
+  - domain: network.contacts
+    prefix: /api/v1/contacts
   - domain: notifications
     prefix: /api/v1/notifications
   - domain: meetings
@@ -499,6 +501,8 @@ api:
     prefix: /matching
   - domain: meetings
     prefix: /meetings
+  - domain: network.contacts
+    prefix: /contacts
   - domain: network
     prefix: /{blocks,connections,conversations,invites,messages}
   - domain: notifications

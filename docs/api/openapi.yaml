@@ -457,7 +457,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AuthorizeIn'
+              $ref: '#/components/schemas/app__domains__auth__workos_router__AuthorizeIn'
         required: true
       responses:
         '200':
@@ -1061,7 +1061,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InviteIn'
+              $ref: '#/components/schemas/app__domains__companies__members_router__InviteIn'
       responses:
         '201':
           description: Successful Response
@@ -5842,6 +5842,171 @@ paths:
                 type: object
                 additionalProperties: true
                 title: Response Accept Invite Api V1 Invites Accept  Token  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/contacts/google/status:
+    get:
+      tags:
+      - Network
+      summary: Is the Google contacts finder available
+      operationId: google_status_api_v1_contacts_google_status_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+                title: Response Google Status Api V1 Contacts Google Status Get
+      security:
+      - HTTPBearer: []
+  /api/v1/contacts/google/authorize:
+    post:
+      tags:
+      - Network
+      summary: Start the Google contacts consent
+      operationId: google_authorize_api_v1_contacts_google_authorize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/app__domains__network__contacts__AuthorizeIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Google Authorize Api V1 Contacts Google Authorize Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/contacts/google/import:
+    post:
+      tags:
+      - Network
+      summary: Read Google contacts once and match them
+      operationId: google_import_api_v1_contacts_google_import_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Google Import Api V1 Contacts Google Import Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/contacts/invites:
+    post:
+      tags:
+      - Network
+      summary: Email invitations to selected Google contacts
+      operationId: send_contact_invites_api_v1_contacts_invites_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/app__domains__network__contacts__InviteIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Send Contact Invites Api V1 Contacts Invites Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/contacts/stop:
+    get:
+      tags:
+      - Network
+      summary: Stop invitations (confirm page)
+      description: A confirm button, so mail scanners that open links do not unsubscribe.
+      operationId: stop_invites_page_api_v1_contacts_stop_get
+      parameters:
+      - name: h
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 64
+          title: H
+      - name: t
+        in: query
+        required: true
+        schema:
+          type: string
+          maxLength: 64
+          title: T
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Network
+      summary: Stop invitations to this address
+      operationId: stop_invites_api_v1_contacts_stop_post
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_stop_invites_api_v1_contacts_stop_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            text/html:
+              schema:
+                type: string
         '422':
           description: Validation Error
           content:
@@ -12508,35 +12673,6 @@ components:
       - full_name
       - role
       title: AuthorSummary
-    AuthorizeIn:
-      properties:
-        provider:
-          type: string
-          title: Provider
-        redirect_uri:
-          type: string
-          maxLength: 512
-          title: Redirect Uri
-        state:
-          type: string
-          maxLength: 128
-          minLength: 16
-          pattern: ^[A-Za-z0-9_\-]+$
-          title: State
-        code_challenge:
-          anyOf:
-          - type: string
-            maxLength: 128
-            minLength: 43
-            pattern: ^[A-Za-z0-9_\-]+$
-          - type: 'null'
-          title: Code Challenge
-      type: object
-      required:
-      - provider
-      - redirect_uri
-      - state
-      title: AuthorizeIn
     BatchEvaluationRequest:
       properties:
         submissions:
@@ -12588,6 +12724,21 @@ components:
       required:
       - confirm
       title: Body_delete_my_account_api_v1_auth_me_delete
+    Body_stop_invites_api_v1_contacts_stop_post:
+      properties:
+        h:
+          type: string
+          maxLength: 64
+          title: H
+        t:
+          type: string
+          maxLength: 64
+          title: T
+      type: object
+      required:
+      - h
+      - t
+      title: Body_stop_invites_api_v1_contacts_stop_post
     Body_submit_document_api_v1_contracts__contract_id__deliverables_document_post:
       properties:
         milestone_id:
@@ -13317,6 +13468,27 @@ components:
       required:
       - status
       title: ConnectionStatusUpdate
+    ContactIn:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          title: Email
+        name:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+          title: Name
+        token:
+          type: string
+          maxLength: 128
+          title: Token
+      type: object
+      required:
+      - email
+      - token
+      title: ContactIn
     ContractCreate:
       properties:
         project_id:
@@ -15507,6 +15679,28 @@ components:
       - environment
       - timestamp
       title: HealthVersionResponse
+    ImportIn:
+      properties:
+        code:
+          type: string
+          maxLength: 512
+          minLength: 8
+          title: Code
+        state:
+          type: string
+          maxLength: 256
+          minLength: 16
+          title: State
+        redirect_uri:
+          type: string
+          maxLength: 512
+          title: Redirect Uri
+      type: object
+      required:
+      - code
+      - state
+      - redirect_uri
+      title: ImportIn
     IncidentIn:
       properties:
         reason:
@@ -15705,21 +15899,6 @@ components:
       required:
       - accept
       title: InvitationResponse
-    InviteIn:
-      properties:
-        email:
-          type: string
-          format: email
-          title: Email
-        role:
-          type: string
-          pattern: ^(admin|recruiter|member)$
-          title: Role
-          default: member
-      type: object
-      required:
-      - email
-      title: InviteIn
     JobMatchResponse:
       properties:
         id:
@@ -19271,6 +19450,35 @@ components:
       required:
       - status
       title: WorkSubmissionReview
+    app__domains__auth__workos_router__AuthorizeIn:
+      properties:
+        provider:
+          type: string
+          title: Provider
+        redirect_uri:
+          type: string
+          maxLength: 512
+          title: Redirect Uri
+        state:
+          type: string
+          maxLength: 128
+          minLength: 16
+          pattern: ^[A-Za-z0-9_\-]+$
+          title: State
+        code_challenge:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 43
+            pattern: ^[A-Za-z0-9_\-]+$
+          - type: 'null'
+          title: Code Challenge
+      type: object
+      required:
+      - provider
+      - redirect_uri
+      - state
+      title: AuthorizeIn
     app__domains__channels__router__MessageOut:
       properties:
         id:
@@ -19348,6 +19556,21 @@ components:
       - mentions
       - created_at
       title: MessageOut
+    app__domains__companies__members_router__InviteIn:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        role:
+          type: string
+          pattern: ^(admin|recruiter|member)$
+          title: Role
+          default: member
+      type: object
+      required:
+      - email
+      title: InviteIn
     app__domains__deliverables__schemas__DownloadLink:
       properties:
         url:
@@ -19429,6 +19652,29 @@ components:
       required:
       - principal_type
       title: ShareIn
+    app__domains__network__contacts__AuthorizeIn:
+      properties:
+        redirect_uri:
+          type: string
+          maxLength: 512
+          title: Redirect Uri
+      type: object
+      required:
+      - redirect_uri
+      title: AuthorizeIn
+    app__domains__network__contacts__InviteIn:
+      properties:
+        contacts:
+          items:
+            $ref: '#/components/schemas/ContactIn'
+          type: array
+          maxItems: 25
+          minItems: 1
+          title: Contacts
+      type: object
+      required:
+      - contacts
+      title: InviteIn
     app__domains__network__router__MessageCreate:
       properties:
         content:
