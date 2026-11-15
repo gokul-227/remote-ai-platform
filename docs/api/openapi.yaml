@@ -1564,6 +1564,17 @@ paths:
           description: Text in the posting's location (a city, e.g. Berlin)
           title: Location
         description: Text in the posting's location (a city, e.g. Berlin)
+      - name: employer
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          description: Exact employer name (case-insensitive)
+          title: Employer
+        description: Exact employer name (case-insensitive)
       - name: country
         in: query
         required: false
@@ -1925,6 +1936,17 @@ paths:
           description: Text in the posting's location (a city, e.g. Berlin)
           title: Location
         description: Text in the posting's location (a city, e.g. Berlin)
+      - name: employer
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          description: Exact employer name (case-insensitive)
+          title: Employer
+        description: Exact employer name (case-insensitive)
       - name: country
         in: query
         required: false
@@ -2107,6 +2129,135 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/landing-stats:
+    get:
+      tags:
+      - Job Posts
+      summary: Landing Stats
+      description: |-
+        Aggregates for a public landing page (remote jobs by role, skill, place or
+        employer): totals, new this week, top employers and published pay. Public:
+        computed only from the jobs the anonymous list shows.
+      operationId: landing_stats_api_v1_jobs_landing_stats_get
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Query
+      - name: job_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Job Type
+      - name: location
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 60
+          - type: 'null'
+          title: Location
+      - name: employer
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Employer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobLandingStats'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/employers:
+    get:
+      tags:
+      - Job Posts
+      summary: List Employers
+      description: Employers with live remote jobs, most openings first (public landing pages).
+      operationId: list_employers_api_v1_jobs_employers_get
+      parameters:
+      - name: min_jobs
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          default: 1
+          title: Min Jobs
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 5000
+          minimum: 1
+          default: 500
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobEmployer'
+                title: Response List Employers Api V1 Jobs Employers Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/employers/{slug}:
+    get:
+      tags:
+      - Job Posts
+      summary: Get Employer
+      description: One employer by URL slug; 404 when it has no live remote jobs.
+      operationId: get_employer_api_v1_jobs_employers__slug__get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobEmployer'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/jobs/company:
     get:
       tags:
@@ -2260,6 +2411,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobPostResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}/availability:
+    get:
+      tags:
+      - Job Posts
+      summary: Get Job Availability
+      description: |-
+        Whether a public job page is live, recently expired, or long gone (the web
+        app answers 410 Gone for those). Reveals nothing but that state.
+      operationId: get_job_availability_api_v1_jobs__job_id__availability_get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAvailability'
         '422':
           description: Validation Error
           content:
@@ -16516,6 +16697,39 @@ components:
       required:
       - accept
       title: InvitationResponse
+    JobAvailability:
+      properties:
+        state:
+          type: string
+          title: State
+      type: object
+      required:
+      - state
+      title: JobAvailability
+      description: 'live | expired | gone: whether the public job page answers 200 or 410.'
+    JobEmployer:
+      properties:
+        slug:
+          type: string
+          title: Slug
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+        latest_posted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Latest Posted At
+      type: object
+      required:
+      - slug
+      - name
+      - count
+      title: JobEmployer
     JobFacets:
       properties:
         total:
@@ -16533,6 +16747,30 @@ components:
       - total
       - facets
       title: JobFacets
+    JobLandingStats:
+      properties:
+        total:
+          type: integer
+          title: Total
+        new_last_7_days:
+          type: integer
+          title: New Last 7 Days
+        top_companies:
+          items:
+            $ref: '#/components/schemas/LandingCompany'
+          type: array
+          title: Top Companies
+        salary:
+          anyOf:
+          - $ref: '#/components/schemas/LandingSalary'
+          - type: 'null'
+      type: object
+      required:
+      - total
+      - new_last_7_days
+      - top_companies
+      title: JobLandingStats
+      description: Aggregates behind a public landing page's intro text (all from real rows).
     JobMatchResponse:
       properties:
         id:
@@ -17251,6 +17489,49 @@ components:
       - url
       - provider
       title: JoinLink
+    LandingCompany:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - name
+      - count
+      title: LandingCompany
+    LandingSalary:
+      properties:
+        currency:
+          type: string
+          title: Currency
+        period:
+          type: string
+          title: Period
+        count:
+          type: integer
+          title: Count
+        low:
+          type: number
+          title: Low
+        median:
+          type: number
+          title: Median
+        high:
+          type: number
+          title: High
+      type: object
+      required:
+      - currency
+      - period
+      - count
+      - low
+      - median
+      - high
+      title: LandingSalary
+      description: Pay published by matching jobs, in their most common currency and period.
     LogoutIn:
       properties:
         everywhere:

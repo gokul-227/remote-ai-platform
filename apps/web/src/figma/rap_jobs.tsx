@@ -1,3 +1,4 @@
+import { BRAND } from "@/lib/brand";
 import { InviteBanner, InviteLink, PeopleYouMayKnow } from "./NetworkColdStart";
 import { FindGoogleContacts } from "./GoogleContacts";
 import { JobSource } from "@/components/JobSource";
@@ -18,7 +19,7 @@ import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
-const BL = "#175CD3";
+const BL = BRAND.blue;
 export function Jobs() {
   // Live: real jobs, saved jobs, applications and AI match (markup is the Figma design).
   const { user } = useAuth();
@@ -154,7 +155,7 @@ export function Jobs() {
           className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2.5"
           role="search"
         >
-          <div className="flex h-10 min-w-0 flex-1 basis-60 items-center gap-2 rounded-md bg-[#E8F0FC] px-3">
+          <div className="flex h-10 min-w-0 flex-1 basis-60 items-center gap-2 rounded-md bg-brand-soft px-3">
             <Ic n="search" s={18} c="text-slate-500" />
             <input
               value={q}
@@ -175,8 +176,7 @@ export function Jobs() {
             <button
               type="button"
               onClick={saveSearch}
-              className="h-10 rounded-full border px-4 text-sm font-bold"
-              style={{ borderColor: BL, color: BL }}
+              className="h-10 rounded-full border border-brand px-4 text-sm font-bold text-brand"
             >
               Save this search
             </button>
@@ -243,7 +243,7 @@ export function Jobs() {
                   type="button"
                   onClick={() => setSelId(j.id)}
                   aria-current={sel?.id === j.id ? "true" : undefined}
-                  className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175CD3]"
+                  className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 >
                   <Lg name={j.co} s={56} r={4} />
                   <div className="min-w-0 flex-1">
@@ -260,7 +260,7 @@ export function Jobs() {
                       {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
                       {j.easy && (
                         <span className="flex items-center gap-1 font-semibold">
-                          <Ic n="bolt" s={12} c="text-[#175CD3]" />
+                          <Ic n="bolt" s={12} c="text-brand" />
                           Easy Apply
                         </span>
                       )}
@@ -277,7 +277,7 @@ export function Jobs() {
                     }}
                     className="self-start p-1 text-slate-500"
                   >
-                    <Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-[#175CD3]" : ""} />
+                    <Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-brand" : ""} />
                   </button>
                 )}
               </div>
@@ -459,7 +459,7 @@ export function Jobs() {
       </div>
       <Modal open={apply && !!sel} onClose={() => setApply(false)} title={"Apply to " + (sel?.co ?? "")}>
         <div className="mb-4">
-          <Bar v={((step + 1) / steps.length) * 100} c="bg-[#175CD3]" />
+          <Bar v={((step + 1) / steps.length) * 100} c="bg-brand" />
           <p className="mt-1 text-xs font-semibold text-slate-500">
             Step {step + 1} of {steps.length} - {steps[step]}
           </p>
@@ -648,7 +648,7 @@ export function Profile() {
       <div className="mx-auto grid max-w-[1200px] gap-5 px-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-3">
           <Card p={false} c="overflow-hidden rounded-lg">
-            <div className="h-48 bg-gradient-to-r from-[#031B4E] via-[#175CD3] to-[#5B4BDB]" />
+            <div className="h-48 bg-gradient-to-r from-[#031B4E] via-brand to-[#5B4BDB]" />
             <div className="relative px-6 pb-6">
               <div className="-mt-20 flex justify-between">
                 <div className="rounded-full border-4 border-white bg-white">
@@ -667,7 +667,7 @@ export function Profile() {
                   <h1 className="text-2xl font-black">
                     {name}
                     {p.is_verified && (
-                      <span className="ml-1 rounded bg-[#E8F0FC] px-1.5 py-0.5 align-middle text-xs font-bold text-[#175CD3]">
+                      <span className="ml-1 rounded bg-brand-soft px-1.5 py-0.5 align-middle text-xs font-bold text-brand">
                         Verified
                       </span>
                     )}
@@ -726,7 +726,7 @@ export function Profile() {
                 )}
               </div>
               {p.is_open_to_work !== false && (
-                <div className="mt-4 rounded-lg bg-[#E8F0FC] p-3 text-sm">
+                <div className="mt-4 rounded-lg bg-brand-soft p-3 text-sm">
                   <p className="font-bold">Open to work</p>
                   <p>
                     {[p.primary_role, p.remote_preference, p.availability].filter(Boolean).join(" - ") ||
@@ -1211,7 +1211,7 @@ export function Company() {
       <div className="mx-auto grid max-w-[1200px] gap-5 px-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px]">
         <main className="min-w-0 space-y-3">
           <Card p={false} c="overflow-hidden rounded-lg">
-            <div className="h-40 bg-gradient-to-r from-slate-800 via-[#175CD3] to-cyan-500" />
+            <div className="h-40 bg-gradient-to-r from-slate-800 via-brand to-cyan-500" />
             <div className="px-6 pb-2">
               <div className="-mt-12 rounded-lg border-4 border-white bg-white inline-block">
                 <Lg name={c.name} s={96} r={6} />
@@ -1327,7 +1327,7 @@ export function PreferenceBar() {
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2 text-sm">
         <Ic n="settings" s={16} c="text-slate-500" />
         <span className="text-slate-700">{summary.data?.summary ?? "Jobs based on your preferences"}</span>
-        <button type="button" className="font-semibold text-[#175CD3]" onClick={edit}>
+        <button type="button" className="font-semibold text-brand" onClick={edit}>
           {summary.data?.configured ? "Edit preferences" : "Set preferences"}
         </button>
       </div>

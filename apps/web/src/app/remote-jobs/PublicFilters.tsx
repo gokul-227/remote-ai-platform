@@ -72,7 +72,7 @@ export function PublicFilterForm({ value }: { value: Filters }) {
         <label className="flex flex-col gap-1 text-xs font-semibold text-slate-600 sm:col-span-2">
           Keywords
           <input
-            name="query"
+            name="q"
             defaultValue={value.query ?? ""}
             placeholder='Title, skill or company — "exact phrase"'
             className="h-10 rounded-md border border-slate-300 px-3 text-sm"
@@ -111,7 +111,7 @@ export function PublicFilterForm({ value }: { value: Filters }) {
           />
           Visa sponsorship
         </label>
-        <button type="submit" className="ml-auto h-10 rounded-full bg-[#175CD3] px-6 text-sm font-bold text-white">
+        <button type="submit" className="ml-auto h-10 rounded-full bg-brand px-6 text-sm font-bold text-white">
           Show jobs
         </button>
         {active.length > 0 && (

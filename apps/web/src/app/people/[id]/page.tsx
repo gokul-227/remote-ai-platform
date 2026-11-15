@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { ShareButtons } from "@/figma/ShareButtons";
 import { socialMetadata } from "@/lib/share";
 import { notFound } from "next/navigation";
-import { ActionLink, PublicFrame } from "../../PublicChrome";
+import { ActionLink, Breadcrumbs, PublicFrame } from "../../PublicChrome";
+import { breadcrumbJsonLd } from "@/lib/brand";
 import { fetchPerson, ldJson } from "@/lib/publicPages";
 import { SITE_URL, summary } from "@/lib/site";
 
@@ -32,9 +33,15 @@ export default async function PersonPage({ params }: Props) {
   const app = `/#engineer/${p.id}`;
   return (
     <PublicFrame>
+      <Breadcrumbs
+        trail={[
+          ["Remote AI Platform", "/"],
+          [name, `/people/${p.id}`],
+        ]}
+      />
       <section className="rounded-xl border border-slate-200 bg-white p-6">
         <div className="flex items-center gap-4">
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-[#175CD3] text-3xl font-bold text-white">
+          <div className="grid h-20 w-20 place-items-center rounded-full bg-brand text-3xl font-bold text-white">
             {name.charAt(0)}
           </div>
           <div>
@@ -78,20 +85,26 @@ export default async function PersonPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: ldJson({
-            "@context": "https://schema.org",
-            "@type": "ProfilePage",
-            dateModified: p.updated_at,
-            mainEntity: {
-              "@type": "Person",
-              name,
-              jobTitle: p.headline || p.primary_role || undefined,
-              description: p.bio || undefined,
-              address: p.location || undefined,
-              knowsAbout: p.skills,
-              url: `${SITE_URL}/people/${p.id}`,
+          __html: ldJson([
+            breadcrumbJsonLd(SITE_URL || "https://remoteaiplatform.com", [
+              ["Remote AI Platform", "/"],
+              [name, `/people/${p.id}`],
+            ]),
+            {
+              "@context": "https://schema.org",
+              "@type": "ProfilePage",
+              dateModified: p.updated_at,
+              mainEntity: {
+                "@type": "Person",
+                name,
+                jobTitle: p.headline || p.primary_role || undefined,
+                description: p.bio || undefined,
+                address: p.location || undefined,
+                knowsAbout: p.skills,
+                url: `${SITE_URL}/people/${p.id}`,
+              },
             },
-          }),
+          ]),
         }}
       />
     </PublicFrame>

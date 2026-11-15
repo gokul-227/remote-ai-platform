@@ -17,7 +17,7 @@ const workflows = [
 export default function Home() {
   return (
     <AppEntry>
-      <div className="min-h-screen bg-[#F5F8FC] text-[#1F2937]">
+      <div className="min-h-screen bg-mist text-charcoal">
         <header className="border-b border-slate-200 bg-white">
           <nav
             aria-label="Main navigation"
@@ -25,13 +25,13 @@ export default function Home() {
           >
             <BrandLockup size={40} />
             <div className="flex items-center gap-5 text-sm font-semibold">
-              <Link href="/remote-jobs" className="text-[#175CD3] hover:underline">
+              <Link href="/remote-jobs" className="text-brand hover:underline">
                 Find jobs
               </Link>
               <a href="#login" className="hover:underline">
                 Sign in
               </a>
-              <a href="#register" className="rounded-lg bg-[#175CD3] px-4 py-2 text-white">
+              <a href="#register" className="rounded-lg bg-brand px-4 py-2 text-white">
                 Join free
               </a>
             </div>
@@ -40,7 +40,7 @@ export default function Home() {
         <main id="main" className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
           <section className="grid items-center gap-10 md:grid-cols-2">
             <div>
-              <p className="font-semibold text-[#175CD3]">Your professional network and workspace</p>
+              <p className="font-semibold text-brand">Your professional network and workspace</p>
               <h1 className="mt-4 font-bold" style={{ fontSize: "clamp(2.25rem, 4vw, 3.5rem)", lineHeight: 1.12 }}>
                 Connect. Find work.
                 <br />
@@ -51,12 +51,12 @@ export default function Home() {
                 Remote AI Platform.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <a href="#register" className="rounded-lg bg-[#175CD3] px-6 py-3 font-semibold text-white">
+                <a href="#register" className="rounded-lg bg-brand px-6 py-3 font-semibold text-white">
                   Create your free account
                 </a>
                 <Link
                   href="/remote-jobs"
-                  className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-[#175CD3]"
+                  className="rounded-lg border border-slate-300 bg-white px-6 py-3 font-semibold text-brand"
                 >
                   Explore remote jobs
                 </Link>
@@ -68,15 +68,15 @@ export default function Home() {
               <h2 className="mt-5 text-2xl font-bold">From opportunity to delivery</h2>
               <ol className="mt-5 space-y-4 text-slate-600">
                 <li>
-                  <strong className="text-[#175CD3]">1. Build your profile.</strong> Share your skills and what you are
+                  <strong className="text-brand">1. Build your profile.</strong> Share your skills and what you are
                   looking for.
                 </li>
                 <li>
-                  <strong className="text-[#175CD3]">2. Find your next connection.</strong> Explore jobs, people and
+                  <strong className="text-brand">2. Find your next connection.</strong> Explore jobs, people and
                   companies.
                 </li>
                 <li>
-                  <strong className="text-[#175CD3]">3. Work together.</strong> Organise tasks, discuss ideas and share
+                  <strong className="text-brand">3. Work together.</strong> Organise tasks, discuss ideas and share
                   deliverables.
                 </li>
               </ol>
@@ -87,7 +87,7 @@ export default function Home() {
               <article key={title} className="rounded-xl border border-slate-200 bg-white p-6">
                 <h2 className="text-xl font-bold">{title}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-slate-600">{text}</p>
-                <a href={href} className="mt-4 inline-block font-semibold text-[#175CD3] hover:underline">
+                <a href={href} className="mt-4 inline-block font-semibold text-brand hover:underline">
                   Explore {title.toLowerCase()} →
                 </a>
               </article>
@@ -100,13 +100,13 @@ export default function Home() {
                 <Link
                   key={topic.slug}
                   href={`/remote-jobs/${topic.slug}`}
-                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#175CD3] hover:border-[#175CD3]"
+                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-brand hover:border-brand"
                 >
                   {topic.name} jobs
                 </Link>
               ))}
             </div>
-            <Link href="/remote-jobs" className="mt-5 inline-block font-semibold text-[#175CD3] hover:underline">
+            <Link href="/remote-jobs" className="mt-5 inline-block font-semibold text-brand hover:underline">
               Browse all categories →
             </Link>
           </section>
@@ -117,7 +117,7 @@ export default function Home() {
                 <Link
                   key={place.slug}
                   href={`/remote-jobs/in/${place.slug}`}
-                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[#175CD3] hover:border-[#175CD3]"
+                  className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-brand hover:border-brand"
                 >
                   Remote jobs in {place.name}
                 </Link>

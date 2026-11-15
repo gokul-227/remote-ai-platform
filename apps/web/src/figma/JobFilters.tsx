@@ -25,8 +25,6 @@ import {
 } from "@/lib/jobFilters";
 import { cx, Ic } from "./rap_kit";
 
-const BL = "#175CD3";
-
 /**
  * Job search filters. Quick chips + "All filters" on every size; the full
  * panel is a sidebar on desktop (xl), a collapsible side panel on tablet
@@ -83,7 +81,7 @@ export function JobFilterChips({
           aria-controls="job-filters-panel"
           className={cx(
             "flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 text-sm font-semibold xl:hidden",
-            n ? "border-[#175CD3] bg-[#175CD3] text-white" : "border-slate-400 text-slate-700 hover:bg-slate-50",
+            n ? "border-brand bg-brand text-white" : "border-slate-400 text-slate-700 hover:bg-slate-50",
           )}
         >
           <Ic n="filter" s={14} />
@@ -125,7 +123,7 @@ export function ActiveChips({ value, onChange }: { value: Filters; onChange: (f:
             type="button"
             onClick={() => onChange(c.remove(value))}
             aria-label={`Remove filter ${c.label}`}
-            className="flex items-center gap-1 rounded-full bg-[#E8F0FC] px-3 py-1 text-xs font-semibold text-[#175CD3] hover:bg-[#D6E4FA]"
+            className="flex items-center gap-1 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand hover:bg-brand-soft/70"
           >
             {c.label} <span aria-hidden>×</span>
           </button>
@@ -179,7 +177,7 @@ function Checks({
               type="checkbox"
               checked={checked}
               onChange={() => onChange(toggle(value, name, o.value))}
-              className="h-4 w-4 accent-[#175CD3]"
+              className="h-4 w-4 accent-brand"
             />
             <span className={cx("flex-1", n === 0 && !checked && "text-slate-400")}>{o.label}</span>
             {n != null && <span className="text-xs text-slate-500">{n.toLocaleString()}</span>}
@@ -216,7 +214,7 @@ function Radios({
               name={`jf-${name}`}
               checked={current === o.value}
               onChange={() => onChange(withValue(value, name, o.value || undefined))}
-              className="h-4 w-4 accent-[#175CD3]"
+              className="h-4 w-4 accent-brand"
             />
             <span className="flex-1">{o.label}</span>
             {n != null && <span className="text-xs text-slate-500">{n.toLocaleString()}</span>}
@@ -261,7 +259,7 @@ function FacetPicker({
               type="checkbox"
               checked={selected.includes(v)}
               onChange={() => onChange(toggle(value, name, v))}
-              className="h-4 w-4 accent-[#175CD3]"
+              className="h-4 w-4 accent-brand"
             />
             <span className="flex-1 truncate">{v}</span>
             {n != null && <span className="text-xs text-slate-500">{n.toLocaleString()}</span>}
@@ -392,7 +390,7 @@ export function JobFilterPanel({
                 type="checkbox"
                 checked={value.has_salary === "true"}
                 onChange={() => onChange(withValue(value, "has_salary", value.has_salary ? undefined : "true"))}
-                className="h-4 w-4 accent-[#175CD3]"
+                className="h-4 w-4 accent-brand"
               />
               <span className="flex-1">Has salary</span>
               {facetCount(facets, "has_salary", true) != null && (
@@ -447,7 +445,7 @@ export function JobFilterPanel({
                 type="checkbox"
                 checked={value.verified === "true"}
                 onChange={() => onChange(withValue(value, "verified", value.verified ? undefined : "true"))}
-                className="h-4 w-4 accent-[#175CD3]"
+                className="h-4 w-4 accent-brand"
               />
               Verified companies only
             </label>
@@ -473,7 +471,7 @@ export function JobFilterPanel({
                   type="checkbox"
                   checked={value.apply === v}
                   onChange={() => onChange(withValue(value, "apply", value.apply === v ? undefined : v))}
-                  className="h-4 w-4 accent-[#175CD3]"
+                  className="h-4 w-4 accent-brand"
                 />
                 <span className="flex-1">{label}</span>
                 {facetCount(facets, "apply", v) != null && (
@@ -496,7 +494,7 @@ export function JobFilterPanel({
                   onChange={() =>
                     onChange(withValue(value, "visa_sponsorship", value.visa_sponsorship === v ? undefined : v))
                   }
-                  className="h-4 w-4 accent-[#175CD3]"
+                  className="h-4 w-4 accent-brand"
                 />
                 <span className="flex-1">{label}</span>
                 {facetCount(facets, "visa_sponsorship", v === "true") != null && (
@@ -513,7 +511,7 @@ export function JobFilterPanel({
                 type="checkbox"
                 checked={value.tz != null}
                 onChange={() => onChange(withValue(value, "tz", value.tz != null ? undefined : String(tz)))}
-                className="h-4 w-4 accent-[#175CD3]"
+                className="h-4 w-4 accent-brand"
               />
               Overlaps my hours (UTC{tz >= 0 ? "+" : ""}
               {tz}, ±3h)
@@ -531,8 +529,7 @@ export function JobFilterPanel({
             <button
               type="button"
               onClick={onSave}
-              className="flex-1 rounded-full border px-3 py-2 text-sm font-bold"
-              style={{ borderColor: BL, color: BL }}
+              className="flex-1 rounded-full border border-brand px-3 py-2 text-sm font-bold text-brand"
             >
               Save this search
             </button>
@@ -540,8 +537,7 @@ export function JobFilterPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-full px-3 py-2 text-sm font-bold text-white xl:hidden"
-            style={{ background: BL }}
+            className="flex-1 rounded-full bg-brand px-3 py-2 text-sm font-bold text-white xl:hidden"
           >
             Show {total != null ? total.toLocaleString() : ""} results
           </button>

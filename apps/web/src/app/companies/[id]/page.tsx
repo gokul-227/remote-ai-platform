@@ -3,7 +3,8 @@ import { ShareButtons } from "@/figma/ShareButtons";
 import { socialMetadata } from "@/lib/share";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ActionLink, PublicFrame } from "../../PublicChrome";
+import { ActionLink, Breadcrumbs, PublicFrame } from "../../PublicChrome";
+import { breadcrumbJsonLd } from "@/lib/brand";
 import { fetchCompany, fetchCompanyJobs, ldJson } from "@/lib/publicPages";
 import { SITE_URL, summary } from "@/lib/site";
 
@@ -31,6 +32,13 @@ export default async function CompanyPage({ params }: Props) {
   const jobs = (await fetchCompanyJobs(c.id)).filter((j) => !j.expired_at);
   return (
     <PublicFrame>
+      <Breadcrumbs
+        trail={[
+          ["Remote AI Platform", "/"],
+          ["Companies hiring", "/remote-jobs/at"],
+          [c.name, `/companies/${c.id}`],
+        ]}
+      />
       <section className="rounded-xl border border-slate-200 bg-white p-6">
         <h1 className="text-2xl font-bold">{c.name}</h1>
         <p className="text-slate-600">
@@ -66,7 +74,7 @@ export default async function CompanyPage({ params }: Props) {
           <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
             {jobs.map((j) => (
               <li key={j.id} className="p-4">
-                <Link href={`/jobs/${j.id}`} className="font-semibold text-[#175CD3] hover:underline">
+                <Link href={`/jobs/${j.id}`} className="font-semibold text-brand hover:underline">
                   {j.title}
                 </Link>
                 <p className="text-sm text-slate-600">{j.location || (j.is_remote ? "Remote" : "On-site")}</p>
@@ -80,15 +88,22 @@ export default async function CompanyPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: ldJson({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            name: c.name,
-            description: c.description || undefined,
-            url: `${SITE_URL}/companies/${c.id}`,
-            sameAs: c.website ? [c.website] : undefined,
-            address: c.location || undefined,
-          }),
+          __html: ldJson([
+            breadcrumbJsonLd(SITE_URL || "https://remoteaiplatform.com", [
+              ["Remote AI Platform", "/"],
+              ["Companies hiring", "/remote-jobs/at"],
+              [c.name, `/companies/${c.id}`],
+            ]),
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: c.name,
+              description: c.description || undefined,
+              url: `${SITE_URL}/companies/${c.id}`,
+              sameAs: c.website ? [c.website] : undefined,
+              address: c.location || undefined,
+            },
+          ]),
         }}
       />
     </PublicFrame>

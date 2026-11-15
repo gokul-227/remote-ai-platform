@@ -28,7 +28,7 @@ export default async function StatusPage() {
   ];
   return (
     <PublicFrame>
-      <h1 className="text-3xl font-bold text-[#102A43]">Service status</h1>
+      <h1 className="text-3xl font-bold text-navy">Service status</h1>
       <p className="mt-2 text-slate-600">Checked {new Date().toUTCString()}.</p>
       <ul className="mt-6 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white" aria-live="polite">
         {rows.map(([name, ok]) => (

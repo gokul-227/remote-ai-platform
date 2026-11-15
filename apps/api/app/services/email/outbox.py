@@ -39,8 +39,8 @@ def email_enabled() -> bool:
     return settings.EMAIL_PROVIDER != "none"
 
 
-# Brand palette (Enterprise Brand Identity): blue, navy, charcoal, mist.
-_BLUE, _NAVY, _CHARCOAL, _MIST = "#175CD3", "#102A43", "#1F2937", "#F5F8FC"
+# Brand palette (tools/brand/tokens.json, Figma Enterprise Brand Identity).
+_BLUE, _NAVY, _CHARCOAL, _MIST, _MUTED = "#175CD3", "#102A43", "#1F2937", "#F5F8FC", "#526579"
 _FONT = "Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif"
 
 
@@ -70,11 +70,11 @@ def render_email(title: str, body: str, link_path: str | None = None) -> str:
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">',
             f'<tr><td style="padding:0 0 16px">{logo}</td></tr>',
             '<tr><td style="background:#ffffff;border:1px solid #e4e6eb;border-radius:12px;padding:28px">',
-            f'<h2 style="margin:0 0 12px;font-size:20px;color:{_NAVY}">{html_lib.escape(title)}</h2>',
+            f'<h2 style="margin:0 0 12px;font-size:20px;font-weight:600;color:{_NAVY}">{html_lib.escape(title)}</h2>',
             f'<p style="margin:0;font-size:15px;line-height:1.5">{html_lib.escape(body)}</p>',
             button,
             "</td></tr>",
-            '<tr><td style="padding:16px 4px;font-size:12px;color:#65676b">You receive this because of '
+            f'<tr><td style="padding:16px 4px;font-size:12px;color:{_MUTED}">You receive this because of '
             "activity on your Remote AI Platform account.</td></tr>",
             "</table></td></tr></table>",
         ]

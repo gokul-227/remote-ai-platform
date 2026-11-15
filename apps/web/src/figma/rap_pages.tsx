@@ -115,7 +115,7 @@ export function EngineerDetail() {
   return (
     <Wrap>
       <Card p={false} c="overflow-hidden rounded-xl">
-        <div className="h-44 bg-gradient-to-r from-[#031B4E] via-[#175CD3] to-[#5B9BFF]" />
+        <div className="h-44 bg-gradient-to-r from-[#031B4E] via-brand to-[#5B9BFF]" />
         <div className="px-6 pb-4">
           <div className="-mt-14 flex flex-wrap items-end justify-between gap-3">
             <div className="rounded-full border-4 border-white">
@@ -219,7 +219,7 @@ export function EngineerDetail() {
                         href={safeHref(x.url)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#175CD3] hover:underline"
+                        className="text-brand hover:underline"
                       >
                         {x.title}
                       </a>
@@ -261,7 +261,7 @@ export function EngineerDetail() {
               )}
               {p0.profile_score != null && (
                 <div className="mt-3">
-                  <Bar v={p.score} c="bg-[#175CD3]" />
+                  <Bar v={p.score} c="bg-brand" />
                   <p className="mt-1 text-xs text-slate-500">Profile completeness {p.score}/100</p>
                 </div>
               )}
@@ -398,7 +398,7 @@ export function JobDetail() {
       <div className="grid gap-4 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-4">
           <Card c="rounded-xl overflow-hidden" p="p-0">
-            <div className="h-20 bg-gradient-to-r from-[#175CD3] to-[#0A7CFF]" />
+            <div className="h-20 bg-gradient-to-r from-brand to-[#0A7CFF]" />
             <div className="px-6 pb-5">
               <div className="-mt-8 flex flex-wrap items-end justify-between gap-3">
                 <div className="flex items-start gap-4">
@@ -456,9 +456,7 @@ export function JobDetail() {
                   onClick={() => setTab(x)}
                   className={cx(
                     "border-b-[3px] px-4 py-3 text-sm font-semibold",
-                    tab === x
-                      ? "border-[#175CD3] text-[#175CD3]"
-                      : "border-transparent text-slate-600 hover:bg-slate-50",
+                    tab === x ? "border-brand text-brand" : "border-transparent text-slate-600 hover:bg-slate-50",
                   )}
                 >
                   {x}
@@ -525,7 +523,7 @@ export function JobDetail() {
                         <span>{l}</span>
                         <span>{Math.round(v)}%</span>
                       </div>
-                      <Bar v={v} c="bg-[#175CD3]" />
+                      <Bar v={v} c="bg-brand" />
                     </div>
                   ))}
                   {m.reasoning && <p className="mt-3 text-sm text-slate-600">{m.reasoning}</p>}
@@ -673,7 +671,7 @@ export function ContractSign() {
             <h3 className="mt-5">Milestones</h3>
             {c.milestones.map((m: any, i: number) => (
               <div key={m.id} className="mt-2 flex items-center gap-3 rounded-lg border border-slate-200 p-3">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E8F0FC] text-sm font-bold text-[#175CD3]">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand">
                   {i + 1}
                 </span>
                 <span className="flex-1">{m.title}</span>
@@ -682,7 +680,7 @@ export function ContractSign() {
             ))}
           </>
         )}
-        <div className="mt-5 flex items-center gap-2 rounded-lg bg-[#E8F0FC] p-3 text-sm text-[#175CD3]">
+        <div className="mt-5 flex items-center gap-2 rounded-lg bg-brand-soft p-3 text-sm text-brand">
           <Ic n="shieldcheck" s={18} />
           The client approves each milestone. Payment is made directly between you, outside the platform — approval does
           not move money.
@@ -810,7 +808,7 @@ export function Workspace() {
           <Card key={x[0]} c="rounded-xl" p="p-4">
             <p className="text-sm text-slate-500">{x[0]}</p>
             <p className="text-2xl font-bold">{x[1]}</p>
-            <p className="text-sm text-[#175CD3]">{x[2]}</p>
+            <p className="text-sm text-brand">{x[2]}</p>
           </Card>
         ))}
       </div>
@@ -820,7 +818,7 @@ export function Workspace() {
             <Card c="rounded-xl" p="p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[17px] font-bold">My tasks</h2>
-                <button className="text-sm text-[#175CD3]" onClick={() => nav("taskmarket")}>
+                <button className="text-sm text-brand" onClick={() => nav("taskmarket")}>
                   Task offers →
                 </button>
               </div>
@@ -848,7 +846,7 @@ export function Workspace() {
             <Card c="rounded-xl" p="p-5">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-[17px] font-bold">Your projects</h2>
-                <button className="text-sm text-[#175CD3]" onClick={() => nav("projects")}>
+                <button className="text-sm text-brand" onClick={() => nav("projects")}>
                   Open board →
                 </button>
               </div>
@@ -874,13 +872,13 @@ export function Workspace() {
                   <div className="min-w-0 flex-1">
                     <button
                       onClick={() => nav("contracts")}
-                      className="text-[15px] font-semibold text-[#175CD3] hover:underline"
+                      className="text-[15px] font-semibold text-brand hover:underline"
                     >
                       {c.title}
                     </button>
                     <p className="text-sm text-slate-500">{other?.full_name || ""}</p>
                     <div className="mt-1 h-2 rounded-full bg-slate-100">
-                      <div className="h-2 rounded-full bg-[#175CD3]" style={{ width: prog(c) + "%" }} />
+                      <div className="h-2 rounded-full bg-brand" style={{ width: prog(c) + "%" }} />
                     </div>
                   </div>
                   <span className="text-sm font-semibold">{prog(c)}%</span>
@@ -945,7 +943,7 @@ export function Workspace() {
               .slice(0, 5)
               .map((x: any) => (
                 <div key={x[0]} className="flex items-center gap-3 py-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-brand">
                     <Ic n={x[2]} s={18} />
                   </span>
                   <div>
@@ -1057,7 +1055,7 @@ export function Quality() {
       {state === "idle" && !r && (
         <Card c="rounded-xl" p="p-10">
           <div className="text-center text-slate-500">
-            <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
+            <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand-soft text-brand">
               <Ic n="code" s={26} />
             </span>
             <p className="font-semibold text-slate-900">No review yet</p>
@@ -1068,7 +1066,7 @@ export function Quality() {
       {state === "run" && (
         <Card c="rounded-xl" p="p-10">
           <div className="text-center">
-            <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-[#E8F0FC] border-t-[#175CD3]" />
+            <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand" />
             <p className="font-semibold">Reviewing your code…</p>
             <p className="text-sm text-slate-500">AI review of correctness, security and maintainability</p>
           </div>
@@ -1079,7 +1077,7 @@ export function Quality() {
           <div className="space-y-4">
             <Card c="rounded-xl" p="p-5">
               <p className="text-sm text-slate-500">Overall quality score</p>
-              <p className="text-5xl font-bold text-[#175CD3]">
+              <p className="text-5xl font-bold text-brand">
                 {r.overall_score}
                 <span className="text-xl text-slate-400">/100</span>
               </p>
@@ -1208,7 +1206,7 @@ export function Security() {
           <Card key={x[0]} c="rounded-xl" p="p-4">
             <div className="flex items-center justify-between text-slate-500">
               <span className="text-sm">{x[0]}</span>
-              <Ic n={x[2]} s={18} c="text-[#175CD3]" />
+              <Ic n={x[2]} s={18} c="text-brand" />
             </div>
             <p className="mt-1 text-2xl font-bold">{x[1]}</p>
           </Card>
@@ -1239,7 +1237,7 @@ export function Security() {
         <Card c="rounded-xl" p="p-5">
           <h2 className="mb-2 text-[17px] font-bold">Where you are signed in</h2>
           <div className="flex items-center gap-3 border-t border-slate-100 py-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-soft text-brand">
               <Ic n="lock" s={18} />
             </span>
             <div className="flex-1">
@@ -1287,7 +1285,7 @@ export function Security() {
             ["Passwordless sign-in", "Email codes and SSO — no password to leak.", "lock"],
           ].map((x: any) => (
             <div key={x[0]} className="flex items-start gap-3 border-t border-slate-100 py-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
                 <Ic n={x[2]} s={18} />
               </span>
               <div>
@@ -1349,7 +1347,7 @@ export function Search() {
               >
                 <Lg name={j.company_name || j.title} s={44} r={8} />
                 <div className="flex-1">
-                  <p className="font-semibold text-[#175CD3]">{j.title}</p>
+                  <p className="font-semibold text-brand">{j.title}</p>
                   <p className="text-sm text-slate-500">
                     {j.company_name} - {j.location || "Remote"}
                   </p>
@@ -1369,7 +1367,7 @@ export function Search() {
               >
                 <Av name={p.full_name || "Professional"} s={44} />
                 <div className="flex-1">
-                  <p className="font-semibold text-[#175CD3]">{p.full_name || "Professional"}</p>
+                  <p className="font-semibold text-brand">{p.full_name || "Professional"}</p>
                   <p className="text-sm text-slate-500">{p.headline || p.primary_role}</p>
                 </div>
                 <Tag t="gray">Person</Tag>
@@ -1386,7 +1384,7 @@ export function Search() {
                 }}
               >
                 <Lg name={c.name} s={44} r={8} />
-                <p className="flex-1 font-semibold text-[#175CD3]">{c.name}</p>
+                <p className="flex-1 font-semibold text-brand">{c.name}</p>
                 <Tag t="gray">Company</Tag>
               </button>
             </Card>
@@ -1400,7 +1398,7 @@ export function Search() {
                     onClick={() => goRoute(h.route.replace(/^#/, ""))}
                   >
                     <div className="flex-1">
-                      <p className="font-semibold text-[#175CD3]">{h.title}</p>
+                      <p className="font-semibold text-brand">{h.title}</p>
                       {h.subtitle && <p className="text-sm text-slate-500">{h.subtitle}</p>}
                     </div>
                     <Tag t="gray">{kind}</Tag>
@@ -1807,7 +1805,7 @@ export const Impressum = () => <Legal kind="impressum" />;
 export function NotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center bg-[#F0F2F5] p-6 text-center">
-      <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[#E8F0FC] text-[#175CD3]">
+      <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-soft text-brand">
         <Ic n="compass" s={36} />
       </span>
       <h1 className="mt-5">This page is not available</h1>

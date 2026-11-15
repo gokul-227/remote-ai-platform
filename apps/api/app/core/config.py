@@ -178,6 +178,8 @@ class Settings(BaseSettings):
     # Contact invitations a member may send per rolling 24 hours.
     CONTACT_INVITES_PER_DAY: int = 25
     WORKOS_API_URL: str = "https://api.workos.com"
+    # Social sign-in providers configured in the WorkOS dashboard (comma list, "*" = all).
+    WORKOS_OAUTH_PROVIDERS: str = "*"
     # Where browsers are sent to start an OAuth sign-in. Empty = WORKOS_API_URL;
     # set it to a WorkOS custom auth domain (or the E2E mock's host address).
     WORKOS_AUTHORIZE_URL: str = ""
@@ -391,6 +393,8 @@ class Settings(BaseSettings):
     GOOGLE_INDEXING_DAILY_QUOTA: int = 180
     # Sitemaps list only jobs posted within this many days (stale listings aren't promoted).
     SITEMAP_JOB_MAX_AGE_DAYS: int = 90
+    # A job expired longer ago than this (or removed) answers 410 Gone on its public page.
+    JOB_GONE_AFTER_DAYS: int = 30
     # IndexNow key: public by design, served by the web app at /indexnow.txt.
     INDEXNOW_KEY: str = "bd088b5c4cf346dbf16c906aff9aeb97"
     # Keep as many imported jobs as the free database allows: above this size the oldest
@@ -501,9 +505,7 @@ class Settings(BaseSettings):
     COST_DISK_PATH: str = "/"
     COST_EMAIL_DAILY_LIMIT: int = 100  # Resend free: 100/day, 3000/month
     COST_EMAIL_MONTHLY_LIMIT: int = 3000
-    OCI_S3_ENDPOINT: str = (
-        "https://frizbfn1ukyy.compat.objectstorage.eu-frankfurt-1.oraclecloud.com"
-    )
+    OCI_S3_ENDPOINT: str = ""  # set in Infisical prod /vm
     OCI_S3_REGION: str = "eu-frankfurt-1"
     OCI_S3_ACCESS_KEY_ID: str = ""
     OCI_S3_SECRET_ACCESS_KEY: str = ""

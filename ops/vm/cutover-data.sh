@@ -4,8 +4,8 @@
 #   ops/vm/cutover-data.sh files   copy every object Supabase Storage -> OCI buckets, then verify
 # Read-only on Supabase. Secrets are passed over SSH stdin, never on a command line or in output.
 set -euo pipefail
-P=237deba5-a70e-4571-8529-26597d6e4631
-T="opc@${VM_HOST:-79.76.118.213}"; K="${VM_SSH_KEY_FILE:-$HOME/.ssh/oci_rap}"
+P="${INFISICAL_PROJECT_ID:?set INFISICAL_PROJECT_ID}"
+T="opc@${VM_HOST:?set VM_HOST}"; K="${VM_SSH_KEY_FILE:-$HOME/.ssh/oci_rap}"
 get(){ infisical secrets get "$1" --projectId "$P" --env prod --path "$2" --plain --silent; }
 vm(){ ssh -i "$K" -o BatchMode=yes "$T" "$@"; }
 C="docker compose -p rap-prod -f /opt/rap/repo/infra/docker/docker-compose.prod.yml --env-file /opt/rap/.env"

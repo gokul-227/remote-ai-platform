@@ -318,6 +318,13 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
       last_message?: { content?: string; created_at?: string } | null;
     }[]
   >(user && menu === "messages" ? "/conversations" : null);
+  // Phones and small tablets hide the sidebar; "Menu" opens it as a drawer.
+  // It is tied to the route it was opened on, so navigating closes it.
+  const [drawerAt, setDrawerAt] = useState<string | null>(null);
+  const drawer = drawerAt === r;
+  const setDrawer = (open: boolean) => setDrawerAt(open ? r : null);
+  const drawerBox = useRef<HTMLElement>(null);
+  useDialogFocus(drawerBox, drawer, () => setDrawer(false));
   useEffect(() => {
     setMenu("");
   }, [r]);
@@ -481,8 +488,35 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           )}
         </div>
       </header>
-      <aside className={cx("rap-sidebar", home && "rap-sidebar-home")}>
-        {home ? (
+      {drawer && <div className="rap-drawer-scrim" onClick={() => setDrawer(false)} />}
+      <aside
+        id="rap-sidebar"
+        ref={drawerBox}
+        tabIndex={drawer ? -1 : undefined}
+        role={drawer ? "dialog" : undefined}
+        aria-modal={drawer ? true : undefined}
+        aria-label={drawer ? "Menu" : undefined}
+        className={cx("rap-sidebar", home && !drawer && "rap-sidebar-home", drawer && "open")}
+      >
+        {drawer && (
+          <nav className="rap-drawer-sections" aria-label="Sections">
+            {tabs.map(([p, l, i, area]) => (
+              <button
+                key={p}
+                aria-current={section === area ? "page" : undefined}
+                className={section === area ? "active" : ""}
+                onClick={() => {
+                  choose(area);
+                  go(p);
+                }}
+              >
+                <Ic n={i} s={20} />
+                <span>{l}</span>
+              </button>
+            ))}
+          </nav>
+        )}
+        {home && !drawer ? (
           <ProfileCard go={go} name={me} />
         ) : (
           <>
@@ -607,13 +641,24 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
           )}
         </aside>
       )}
-      <nav className="rap-mobile">
-        {tabs.map(([p, l, i]) => (
-          <button key={p} onClick={() => go(p)}>
+      <nav className="rap-mobile" aria-label="Mobile navigation">
+        {tabs.slice(0, 4).map(([p, l, i, area]) => (
+          <button
+            key={p}
+            aria-current={section === area ? "page" : undefined}
+            onClick={() => {
+              choose(area);
+              go(p);
+            }}
+          >
             <Ic n={i} />
             <span>{l}</span>
           </button>
         ))}
+        <button aria-label="Menu" aria-controls="rap-sidebar" aria-expanded={drawer} onClick={() => setDrawer(!drawer)}>
+          <Ic n={drawer ? "x" : "layers"} />
+          <span>Menu</span>
+        </button>
       </nav>
       {menu && (
         <div className="rap-overlay" onClick={() => setMenu("")}>

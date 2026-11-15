@@ -350,14 +350,25 @@ class JobService:
 
         if run_maintenance:
             await self.maintain_catalogue()
-        # Newest first: the per-run Google quota goes to the freshest listings.
-        sent = await notify_new_jobs(list(reversed(new_job_ids)))
+        # Newest posting first, and only pages Google may index: the shared daily
+        # Indexing API budget goes to the freshest indexable listings.
+        try:
+            announce = await self.repo.indexable_newest_first(new_job_ids)
+        except Exception as exc:  # never let ordering break an import
+            logger.warning(f"Could not order new jobs for indexing: {type(exc).__name__}")
+            announce = list(reversed(new_job_ids))
+        sent = await notify_new_jobs(announce)
         if any(sent.values()):
             logger.info(f"Search engines notified: {sent}")
         # Expired syndicated pages: ask Google to drop them (shares the daily budget).
         fresh = set(new_job_ids)
         gone = [i for i in getattr(self.repo, "expired_job_ids", []) if i not in fresh]
         self.repo.expired_job_ids = []
+        if gone:
+            try:
+                gone = await self.repo.syndicated(gone)  # noindex pages were never in Google
+            except Exception as exc:
+                logger.warning(f"Could not filter expired jobs: {type(exc).__name__}")
         if gone:
             removed = await notify_removed_jobs(gone)
             if any(removed.values()):

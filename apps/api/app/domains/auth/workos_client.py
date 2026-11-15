@@ -26,6 +26,20 @@ OAUTH_PROVIDERS = {
     "linkedin": "LinkedInOAuth",
 }
 
+
+
+def enabled_providers() -> list[str]:
+    """Providers switched on in the WorkOS dashboard (WORKOS_OAUTH_PROVIDERS, comma
+    list; "*" = all). Unconfigured providers are hidden instead of failing."""
+    from app.core.config import settings
+
+    raw = (settings.WORKOS_OAUTH_PROVIDERS or "").strip()
+    if raw == "*":
+        return list(OAUTH_PROVIDERS)
+    wanted = [p.strip().lower() for p in raw.split(",") if p.strip()]
+    return [p for p in OAUTH_PROVIDERS if p in wanted]
+
+
 _ID = re.compile(r"^[A-Za-z0-9_]{1,64}$")
 TIMEOUT = 10
 # Tests swap in an httpx.MockTransport; None means the real network.

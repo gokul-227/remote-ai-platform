@@ -1,3 +1,4 @@
+import { BRAND } from "@/lib/brand";
 import { useState } from "react";
 import { Av, Btn, Card, Tag } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
@@ -106,7 +107,7 @@ export function InviteLink({ onNotice }: { onNotice: (m: string) => void }) {
       )}`
     : undefined;
   return (
-    <div style={{ background: "#175CD3" }} className="rounded-lg p-4">
+    <div style={{ background: BRAND.blue }} className="rounded-lg p-4">
       <p className="font-black text-white">Invite people you work with</p>
       <p className="mt-1 text-sm" style={{ color: "rgba(255,255,255,0.85)" }}>
         Create a personal link. Anyone who joins with it sends you a connection request.

@@ -1105,7 +1105,7 @@ export function Messenger() {
                       title={timeAgo(m.created_at)}
                       className={cx(
                         "max-w-[75%] rounded-2xl px-4 py-3 text-sm whitespace-pre-line",
-                        mine ? "bg-[#175CD3] text-white" : "bg-slate-100",
+                        mine ? "bg-brand text-white" : "bg-slate-100",
                       )}
                     >
                       {m.content}

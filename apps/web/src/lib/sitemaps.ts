@@ -1,5 +1,5 @@
 import { API_URL, SITE_URL } from "./site";
-import { PLACES, TOPICS } from "./seo";
+import { MIN_INDEXABLE_JOBS, fetchEmployers, fetchLandingStats, landingCandidates } from "./landing";
 
 export const SITEMAP_PAGE_SIZE = 5000;
 export const SITEMAP_KINDS = ["jobs", "people", "companies", "posts"] as const;
@@ -56,7 +56,7 @@ export async function sitemapEntries(kind: SitemapKind, skip: number): Promise<E
 }
 
 export function sitemapIndex(counts: Record<SitemapKind, number>): string {
-  const urls = [`${SITE_URL}/sitemaps/static/0.xml`];
+  const urls = [`${SITE_URL}/sitemaps/static/0.xml`, `${SITE_URL}/sitemaps/landing/0.xml`];
   for (const kind of SITEMAP_KINDS) {
     const pages = Math.ceil(counts[kind] / SITEMAP_PAGE_SIZE);
     if (pages > 50000 - urls.length) throw new Error("Sitemap index capacity exceeded");
@@ -77,16 +77,7 @@ export function urlSet(entries: { url: string; changed?: string }[]): string {
 
 export function staticSitemap(): string {
   return urlSet(
-    [
-      "/",
-      "/remote-jobs",
-      "/privacy",
-      "/terms",
-      "/impressum",
-      "/trust",
-      ...TOPICS.map((t) => `/remote-jobs/${t.slug}`),
-      ...PLACES.map((p) => `/remote-jobs/in/${p.slug}`),
-    ].map((path) => ({
+    ["/", "/remote-jobs", "/privacy", "/terms", "/impressum", "/trust", "/remote-jobs/at"].map((path) => ({
       url: `${SITE_URL}${path}`,
     })),
   );
@@ -99,4 +90,29 @@ export function resourceSitemap(kind: SitemapKind, entries: Entry[]): string {
       changed: entry.updated_at ?? entry.posted_at,
     })),
   );
+}
+
+/** Run `fn` over `items` with at most `limit` in flight. */
+async function pooled<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    }),
+  );
+  return out;
+}
+
+/** Landing pages with at least MIN_INDEXABLE_JOBS live roles (thin ones answer noindex). */
+export async function landingSitemap(): Promise<string> {
+  const employers = await fetchEmployers(MIN_INDEXABLE_JOBS, 2000);
+  const candidates = landingCandidates(employers);
+  const stats = await pooled(candidates, 8, (c) => fetchLandingStats(c.filter));
+  const keep = candidates.filter((_, i) => (stats[i]?.total ?? 0) >= MIN_INDEXABLE_JOBS);
+  const latest = new Map(employers.map((e) => [`/remote-jobs/at/${e.slug}`, e.latest_posted_at ?? undefined]));
+  return urlSet(keep.map((c) => ({ url: `${SITE_URL}${c.path}`, changed: latest.get(c.path) })));
 }
