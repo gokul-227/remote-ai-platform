@@ -8,6 +8,7 @@ on:
   workflow_run:
     workflows:
       - "Deploy production (VM)"
+      - "CI"
       - "Publish API image (GHCR)"
     types: [requested, completed]
 
