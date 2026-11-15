@@ -9,6 +9,7 @@ from app.domains.jobs.aggregators.base import (
     BaseAggregator,
     SourceDisabledError,
     SourceFetchError,
+    parse_posted_at,
     require_list,
 )
 from app.domains.jobs.schemas import JobPostCreate
@@ -71,6 +72,7 @@ class TheMuseAggregator(BaseAggregator):
                         external_id=ext_id,
                         external_url=item.get("refs", {}).get("landing_page"),
                         source=self.source_name,
+                        posted_at=parse_posted_at(item.get("publication_date")),
                     )
                     jobs.append(job)
 

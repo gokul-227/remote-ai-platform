@@ -21,6 +21,7 @@ from app.domains.jobs.aggregators.base import (
     BaseAggregator,
     SourceDisabledError,
     SourceFetchError,
+    parse_posted_at,
     require_list,
 )
 from app.domains.jobs.schemas import JobPostCreate
@@ -63,6 +64,7 @@ class _Board(BaseAggregator):
         remote: bool | None = None,
         salary: tuple[float | None, float | None, str | None] = (None, None, None),
         tags: list[str] | None = None,
+        posted_at: object = None,
     ) -> JobPostCreate | None:
         title = self.clean_text(title)
         if not title:
@@ -88,11 +90,13 @@ class _Board(BaseAggregator):
             salary_max=high,
             salary_period="year" if low or high else None,
             currency=(currency or "USD")[:3],
+            posted_at=parse_posted_at(posted_at),
         )
 
     async def _many(self, boards: list[str], fetch, limit: int) -> list[JobPostCreate]:
         """Fetch boards concurrently; one bad board never fails the whole source."""
-        sem = asyncio.Semaphore(3)  # few boards in memory at once: the API instance has 512 MB
+        # Few boards in memory at once (small instances), and a polite pause per request.
+        sem = asyncio.Semaphore(max(1, settings.ATS_BOARD_CONCURRENCY))
         answered = 0
         async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
 
@@ -100,6 +104,8 @@ class _Board(BaseAggregator):
                 async with sem:
                     try:
                         nonlocal answered
+                        if settings.JOB_SOURCE_REQUEST_DELAY_SECONDS > 0:
+                            await asyncio.sleep(settings.JOB_SOURCE_REQUEST_DELAY_SECONDS)
                         result = await fetch(client, board)
                         answered += 1
                         return result
@@ -138,6 +144,7 @@ class GreenhouseAggregator(_Board):
                     url=it.get("absolute_url"),
                     description=html.unescape(it.get("content") or ""),
                     location=(it.get("location") or {}).get("name"),
+                    posted_at=it.get("first_published") or it.get("updated_at"),
                 )
                 if job:
                     out.append(job)
@@ -168,6 +175,7 @@ class LeverAggregator(_Board):
                     job_type=cat.get("commitment"),
                     remote=(it.get("workplaceType") == "remote") if it.get("workplaceType") else None,
                     tags=[cat.get("team") or ""],
+                    posted_at=it.get("createdAt"),
                 )
                 if job:
                     out.append(job)
@@ -200,6 +208,7 @@ class AshbyAggregator(_Board):
                     job_type=it.get("employmentType"),
                     remote=it.get("isRemote") if isinstance(it.get("isRemote"), bool) else None,
                     tags=[it.get("department") or ""],
+                    posted_at=it.get("publishedAt"),
                 )
                 if job:
                     out.append(job)
@@ -233,12 +242,111 @@ class SmartRecruitersAggregator(_Board):
                     job_type=(it.get("typeOfEmployment") or {}).get("label"),
                     remote=loc.get("remote") if isinstance(loc.get("remote"), bool) else None,
                     tags=[dept],
+                    posted_at=it.get("releasedDate"),
                 )
                 if job:
                     out.append(job)
             return out
 
         return await self._many(_shard(_boards(settings.SMARTRECRUITERS_COMPANIES)), fetch, limit)
+
+
+class WorkableAggregator(_Board):
+    """Workable public job-board widget API (no key), one call per account."""
+
+    source_name = "WORKABLE"
+
+    async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        async def fetch(client: httpx.AsyncClient, account: str) -> list[JobPostCreate]:
+            r = await client.get(
+                f"https://apply.workable.com/api/v1/widget/accounts/{account}",
+                params={"details": "true"},
+            )
+            r.raise_for_status()
+            payload = r.json()
+            company = (payload.get("name") if isinstance(payload, dict) else None) or account
+            out = []
+            for it in require_list(payload, "jobs"):
+                place = ", ".join(
+                    x for x in (it.get("city"), it.get("state"), it.get("country")) if x
+                )
+                remote = it.get("telecommuting")
+                job = self._job(
+                    ext_id=f"{account}_{it.get('shortcode') or it.get('code')}",
+                    title=it.get("title", ""),
+                    company=company,
+                    url=it.get("url") or it.get("shortlink"),
+                    description=it.get("description") or "",
+                    location=("Remote" + (f" ({place})" if place else "")) if remote else place,
+                    job_type=it.get("employment_type"),
+                    remote=remote if isinstance(remote, bool) else None,
+                    tags=[it.get("department") or ""],
+                    posted_at=it.get("published_on") or it.get("created_at"),
+                )
+                if job:
+                    out.append(job)
+            return out
+
+        return await self._many(_shard(_boards(settings.WORKABLE_ACCOUNTS)), fetch, limit)
+
+
+def _rss_items(body: bytes) -> list[dict[str, str]]:
+    """RSS 2.0 <item>s as flat dicts of child tag -> text. Entities are not
+    resolved and nothing is fetched (untrusted XML)."""
+    from lxml import etree
+
+    parser = etree.XMLParser(resolve_entities=False, no_network=True, huge_tree=False)
+    try:
+        root = etree.fromstring(body, parser=parser)
+    except etree.XMLSyntaxError as exc:
+        raise SourceFetchError("malformed RSS") from exc
+    if root is None or root.find("channel") is None:
+        raise SourceFetchError("payload is not RSS")
+    items = []
+    for item in root.iter("item"):
+        items.append(
+            {
+                etree.QName(child).localname: (child.text or "").strip()
+                for child in item
+                if isinstance(child.tag, str)
+            }
+        )
+    return items
+
+
+class WeWorkRemotelyAggregator(_Board):
+    """We Work Remotely category RSS feeds (public, no key). Item titles are
+    "Company: Role"; each job links back to the posting on weworkremotely.com."""
+
+    source_name = "WEWORKREMOTELY"
+
+    async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
+        async def fetch(client: httpx.AsyncClient, feed: str) -> list[JobPostCreate]:
+            r = await client.get(f"https://weworkremotely.com/categories/{feed}.rss")
+            r.raise_for_status()
+            out = []
+            for it in _rss_items(r.content):
+                company, _, role = (it.get("title") or "").partition(":")
+                if not role:
+                    company, role = "", company
+                link = it.get("link") or it.get("guid")
+                job = self._job(
+                    ext_id=(link or "").rstrip("/").rsplit("/", 1)[-1] or str(it.get("guid")),
+                    title=role,
+                    company=company,
+                    url=link,
+                    description=it.get("description") or "",
+                    location="Remote" + (f" ({it['region']})" if it.get("region") else ""),
+                    job_type=it.get("type"),
+                    remote=True,
+                    tags=[it.get("category") or ""],
+                    posted_at=it.get("pubDate"),
+                )
+                if job:
+                    out.append(job)
+            return out
+
+        return await self._many(_boards(settings.WEWORKREMOTELY_FEEDS), fetch, limit)
 
 
 async def _cursor_jobs(url: str, limit: int, page_size: int) -> list[dict]:
@@ -296,6 +404,7 @@ class JobicyAggregator(_Board):
                     it.get("annualSalaryMax"),
                     it.get("salaryCurrency"),
                 ),
+                posted_at=it.get("pubDate"),
             )
             if job:
                 out.append(job)
@@ -321,6 +430,7 @@ class HimalayasAggregator(_Board):
                 remote=True,
                 tags=it.get("categories") or [],
                 salary=(it.get("minSalary"), it.get("maxSalary"), it.get("currency")),
+                posted_at=it.get("pubDate"),
             )
             if job:
                 out.append(job)
@@ -352,6 +462,7 @@ class WorkingNomadsAggregator(_Board):
                 location=it.get("location") or "Remote",
                 remote=True,
                 tags=[it.get("category_name") or "", *tags],
+                posted_at=it.get("pub_date"),
             )
             if job:
                 out.append(job)
@@ -396,6 +507,7 @@ class AdzunaAggregator(_Board):
                     location=(it.get("location") or {}).get("display_name"),
                     job_type=it.get("contract_type") or it.get("contract_time"),
                     salary=(it.get("salary_min"), it.get("salary_max"), None),
+                    posted_at=it.get("created"),
                 )
                 if job:
                     out.append(job)
@@ -434,6 +546,7 @@ class JoobleAggregator(_Board):
                 description=it.get("snippet") or "",
                 location=it.get("location"),
                 job_type=it.get("type"),
+                posted_at=it.get("updated"),
             )
             if job:
                 out.append(job)
@@ -512,6 +625,7 @@ class HackerNewsAggregator(_Board):
                 location=where or "See post",
                 remote=_remote(first) or None,
                 tags=parts[2:],
+                posted_at=p.get("created_at"),
             )
             if job:
                 out.append(job)

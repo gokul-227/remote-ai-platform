@@ -17,13 +17,16 @@ if TYPE_CHECKING:
 
 
 class JobPost(Base):
+    """A job listing. Storage at scale (migration 070): low-selectivity boolean
+    indexes and btree duplicates of the trigram indexes are gone; listing by
+    recency uses partial indexes over live rows only (see that migration)."""
+
     __tablename__ = "job_posts"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
-        index=True,
     )
     company_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -32,14 +35,14 @@ class JobPost(Base):
         index=True,
     )
 
-    title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str] = mapped_column(Text, nullable=False)
 
-    company_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    company_name: Mapped[str] = mapped_column(String(255), nullable=False)
     company_logo: Mapped[str | None] = mapped_column(Text, nullable=True)
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    is_remote: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+    is_remote: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     job_type: Mapped[str] = mapped_column(
         String(50), default="unspecified", nullable=False
@@ -72,9 +75,11 @@ class JobPost(Base):
     source: Mapped[str] = mapped_column(
         String(50), default="DIRECT", nullable=False, index=True
     )  # REMOTEOK, ARBEITNOW, REMOTIVE, USAJOBS, THEMUSE, DIRECT
+    # md5 of normalized title|company|location: one listing per posting across sources.
+    dedup_key: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
 
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Imported jobs: when a sync last saw it, and when it expired for not being
     # seen. Separate from is_active, which is the moderation switch.
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -9,6 +9,7 @@ from app.domains.jobs.aggregators.base import (
     BaseAggregator,
     SourceDisabledError,
     SourceFetchError,
+    parse_posted_at,
     require_list,
 )
 from app.domains.jobs.schemas import JobPostCreate
@@ -63,6 +64,7 @@ class USAJobsAggregator(BaseAggregator):
                         external_id=ext_id,
                         external_url=item.get("PositionURI"),
                         source=self.source_name,
+                        posted_at=parse_posted_at(item.get("PublicationStartDate")),
                     )
                     jobs.append(job)
 

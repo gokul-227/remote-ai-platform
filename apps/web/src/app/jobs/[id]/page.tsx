@@ -63,7 +63,7 @@ export default async function JobPage({ params }: Props) {
         </p>
         {job.expired_at && (
           <p role="status" className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-            This listing is over a month old and may no longer be open.
+            This job is no longer available: its source stopped listing it or it was posted more than 90 days ago.
           </p>
         )}
         {originalJobUrl(job.external_url) && (

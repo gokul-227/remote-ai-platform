@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.domains.jobs.aggregators.base import (
     BaseAggregator,
     SourceFetchError,
+    parse_posted_at,
     require_list,
 )
 from app.domains.jobs.schemas import JobPostCreate
@@ -66,6 +67,7 @@ class RemoteOKAggregator(BaseAggregator):
                         external_url=item.get("url")
                         or f"https://remoteok.com/remote-jobs/{item.get('id')}",
                         source=self.source_name,
+                        posted_at=parse_posted_at(item.get("epoch") or item.get("date")),
                     )
                     jobs.append(job)
 

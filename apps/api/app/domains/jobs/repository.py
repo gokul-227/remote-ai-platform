@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Select, Text, cast, delete, func, or_, select, text, update
+from sqlalchemy import Select, Text, cast, delete, func, literal_column, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -16,6 +16,12 @@ from app.domains.applications.models import JobApplication
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate
 from app.domains.jobs.source_policy import SEARCH_SYNDICATION_BLOCKED_SOURCES
+
+# Must stay identical to FTS_EXPR in alembic/versions/070_jobs_scale_storage.py.
+JOB_FTS_EXPR = (
+    "to_tsvector('simple'::regconfig, job_posts.title || ' ' || job_posts.company_name"
+    " || ' ' || left(job_posts.description, 1000))"
+)
 
 
 def slugify(text: str) -> str:
@@ -73,8 +79,11 @@ class JobRepository:
             external_id=data.external_id,
             external_url=data.external_url,
             source=data.source,
+            dedup_key=data.dedup_key,
             is_active=True,
         )
+        if data.posted_at is not None:
+            job.posted_at = data.posted_at
         self.db.add(job)
         await self.db.flush()
         await self.db.refresh(job)
@@ -112,6 +121,7 @@ class JobRepository:
             existing.is_remote = data.is_remote
             existing.skills = data.skills
             existing.external_url = data.external_url or existing.external_url
+            existing.dedup_key = data.dedup_key or existing.dedup_key
             if data.salary_min:
                 existing.salary_min = data.salary_min
             if data.salary_max:
@@ -140,6 +150,8 @@ class JobRepository:
             if not d.external_id:
                 continue
             rows[d.external_id] = {  # last one wins within a batch
+                "posted_at": d.posted_at or now,
+                "dedup_key": d.dedup_key,
                 "id": uuid.uuid4(),
                 "company_id": d.company_id,
                 "title": d.title,
@@ -169,9 +181,28 @@ class JobRepository:
             return [], 0
         insert = pg_insert(JobPost).values(list(rows.values()))
         ex = insert.excluded
+        # Re-listing an unchanged job only touches the row when last_seen_at is
+        # stale (or it was expired): at millions of rows, rewriting every row (and
+        # its TOASTed description) on every 3-hourly run is most of the table bloat.
+        stale_seen = func.coalesce(JobPost.last_seen_at, JobPost.created_at) < ex.last_seen_at - timedelta(
+            hours=settings.JOB_LAST_SEEN_REFRESH_HOURS
+        )
+        changed = or_(
+            JobPost.expired_at.is_not(None),
+            stale_seen,
+            JobPost.title.is_distinct_from(ex.title),
+            JobPost.description.is_distinct_from(ex.description),
+            JobPost.location.is_distinct_from(ex.location),
+            JobPost.is_remote.is_distinct_from(ex.is_remote),
+            JobPost.external_url.is_distinct_from(ex.external_url),
+            JobPost.salary_min.is_distinct_from(ex.salary_min),
+            JobPost.salary_max.is_distinct_from(ex.salary_max),
+        )
         stmt = insert.on_conflict_do_update(
             index_elements=[JobPost.external_id],
+            where=changed,
             set_={
+                "dedup_key": func.coalesce(ex.dedup_key, JobPost.dedup_key),
                 "title": ex.title,
                 "description": ex.description,
                 "company_name": func.coalesce(ex.company_name, JobPost.company_name),
@@ -215,26 +246,97 @@ class JobRepository:
         self.expired_job_ids.extend(ids)
         return int(getattr(result, "rowcount", 0) or 0)  # CursorResult for UPDATE
 
-    async def purge_old_imported_jobs(self, days: int) -> tuple[int, int]:
-        """Retention for imported jobs posted more than `days` ago: delete the ones
-        nobody applied to (saved entries and matches cascade), and only hide the
-        ones with applications so applicants keep their history. Posted jobs
-        (owned by a company on the platform) are never touched."""
+    async def duplicates_elsewhere(
+        self, jobs: list[JobPostCreate]
+    ) -> set[str]:
+        """External ids in `jobs` that are the same posting as a live job already
+        stored under a different external id (same dedup key or same canonical
+        apply URL), usually the same opening on another board. The first source to
+        list a posting keeps it; later copies are skipped."""
+        keys = {j.dedup_key for j in jobs if j.dedup_key}
+        urls = {j.external_url for j in jobs if j.external_url}
+        if not keys and not urls:
+            return set()
+        ext_ids = [j.external_id for j in jobs if j.external_id]
+        stmt = select(JobPost.dedup_key, JobPost.external_url).where(
+            or_(JobPost.dedup_key.in_(keys), JobPost.external_url.in_(urls)),
+            JobPost.external_id.not_in(ext_ids),
+            JobPost.is_deleted.is_(False),
+            JobPost.expired_at.is_(None),
+        )
+        taken_keys: set[str] = set()
+        taken_urls: set[str] = set()
+        for key, url in (await self.db.execute(stmt)).all():
+            if key:
+                taken_keys.add(key)
+            if url:
+                taken_urls.add(url)
+        return {
+            j.external_id
+            for j in jobs
+            if j.external_id and (j.dedup_key in taken_keys or j.external_url in taken_urls)
+        }
+
+    def _referenced(self):  # noqa: ANN202 - a SQL expression
+        """Jobs a member holds on to: applied to or saved. Retention keeps these
+        rows (hidden from listings) so applications and saved lists never break."""
+        from app.domains.saved_jobs.models import SavedJob
+
+        return or_(
+            JobPost.id.in_(select(JobApplication.job_id)),
+            JobPost.id.in_(select(SavedJob.job_id)),
+        )
+
+    async def purge_old_imported_jobs(
+        self, days: int, batch_size: int | None = None, max_batches: int | None = None
+    ) -> tuple[int, int]:
+        """Retention for imported jobs posted (or, without a source date, first seen)
+        more than `days` ago, in batches so millions of rows never sit in one
+        transaction: delete the ones nobody applied to or saved (matches and
+        reports cascade), and only expire the referenced ones so members keep
+        their history. Posted jobs (owned by a company on the platform) are never
+        touched. Returns (deleted, expired)."""
+        batch_size = batch_size or settings.JOB_RETENTION_BATCH_SIZE
+        max_batches = max_batches or settings.JOB_RETENTION_MAX_BATCHES
         cutoff = datetime.now(UTC) - timedelta(days=days)
         old = (JobPost.company_id.is_(None), JobPost.source != "DIRECT", JobPost.posted_at < cutoff)
-        applied = select(JobApplication.job_id)
-        removed = await self.db.execute(
-            delete(JobPost)
-            .where(*old, JobPost.id.not_in(applied))
-            .execution_options(synchronize_session=False)
-        )
-        hidden = await self.db.execute(
-            update(JobPost)
-            .where(*old, JobPost.expired_at.is_(None))
-            .values(expired_at=datetime.now(UTC))
-            .execution_options(synchronize_session=False)
-        )
-        return int(getattr(removed, "rowcount", 0) or 0), int(getattr(hidden, "rowcount", 0) or 0)
+        removed = hidden = 0
+        for _ in range(max_batches):
+            ids = (
+                await self.db.execute(
+                    select(JobPost.id).where(*old, ~self._referenced()).limit(batch_size)
+                )
+            ).scalars().all()
+            if not ids:
+                break
+            result = await self.db.execute(
+                delete(JobPost)
+                .where(JobPost.id.in_(ids))
+                .execution_options(synchronize_session=False)
+            )
+            removed += int(getattr(result, "rowcount", 0) or 0)
+            await self.db.commit()
+            if len(ids) < batch_size:
+                break
+        for _ in range(max_batches):
+            ids = (
+                await self.db.execute(
+                    select(JobPost.id).where(*old, JobPost.expired_at.is_(None)).limit(batch_size)
+                )
+            ).scalars().all()
+            if not ids:
+                break
+            result = await self.db.execute(
+                update(JobPost)
+                .where(JobPost.id.in_(ids))
+                .values(expired_at=datetime.now(UTC))
+                .execution_options(synchronize_session=False)
+            )
+            hidden += int(getattr(result, "rowcount", 0) or 0)
+            await self.db.commit()
+            if len(ids) < batch_size:
+                break
+        return removed, hidden
 
     async def database_megabytes(self) -> float | None:
         """Current database size (PostgreSQL only; None elsewhere)."""
@@ -260,7 +362,7 @@ class JobRepository:
             )
         ).one()
         db_bytes, job_bytes, jobs = int(row[0]), int(row[1]), int(row[2])
-        if not jobs:
+        if not jobs or budget_mb <= 0:  # 0 = no budget (a self-hosted database)
             return 0
         per_job = job_bytes / jobs
         room = budget_mb * 1024 * 1024 - (db_bytes - job_bytes)
@@ -273,7 +375,7 @@ class JobRepository:
             .where(
                 JobPost.company_id.is_(None),
                 JobPost.source != "DIRECT",
-                JobPost.id.not_in(select(JobApplication.job_id)),
+                ~self._referenced(),
             )
             .order_by(JobPost.posted_at.asc())
             .limit(excess)
@@ -373,17 +475,14 @@ class JobRepository:
         if query:
             dialect_name = self.db.get_bind().dialect.name
             if dialect_name == "postgresql":
-                document = func.to_tsvector(
-                    "simple",
-                    func.concat_ws(
-                        " ",
-                        JobPost.title,
-                        JobPost.description,
-                        JobPost.company_name,
-                        cast(JobPost.skills, Text),
-                    ),
+                # Exactly the expression of the partial GIN index ix_job_posts_live_fts
+                # (migration 070), so search uses the index instead of parsing every
+                # description. Skills are extracted from these same fields.
+                stmt = stmt.where(
+                    literal_column(JOB_FTS_EXPR).op("@@")(
+                        func.plainto_tsquery(literal_column("'simple'::regconfig"), query)
+                    )
                 )
-                stmt = stmt.where(document.op("@@")(func.plainto_tsquery("simple", query)))
             else:
                 keyword = f"%{query.strip()}%"
                 stmt = stmt.where(

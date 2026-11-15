@@ -1,8 +1,12 @@
+import hashlib
 import html
 import re
 import unicodedata
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from app.domains.jobs.schemas import JobPostCreate
 
@@ -238,3 +242,74 @@ class BaseAggregator(ABC):
             if re.search(rf"\b{re.escape(tech.upper())}\b", text_upper):
                 found.add(tech)
         return sorted(found)
+
+
+# ── shared normalisation for storage and cross-source dedup ──────────────────
+
+_TRACKING_PARAMS = re.compile(
+    r"^(utm_[a-z]+|ref|referrer|source|src|gh_src|lever-source.*|fbclid|gclid)$", re.I
+)
+_NON_WORD = re.compile(r"[\W_]+", re.UNICODE)
+
+
+def parse_posted_at(value: object) -> datetime | None:
+    """A source's posting time as an aware UTC datetime, or None when absent or
+    unparseable. Accepts epoch seconds/milliseconds, ISO 8601 and RFC 2822 (RSS)."""
+    if value is None or value == "" or isinstance(value, bool):
+        return None
+    try:
+        if isinstance(value, int | float):
+            ts = float(value)
+            if ts > 1e12:  # milliseconds
+                ts /= 1000
+            parsed = datetime.fromtimestamp(ts, tz=UTC)
+        elif isinstance(value, str):
+            raw = value.strip()
+            if raw.isdigit():
+                return parse_posted_at(int(raw))
+            try:
+                parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                parsed = parsedate_to_datetime(raw)
+        else:
+            return None
+    except (ValueError, TypeError, OverflowError, OSError, IndexError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    # A date in the future (time zones, typos) is clamped to now.
+    return min(parsed.astimezone(UTC), datetime.now(UTC))
+
+
+def canonical_url(url: str | None) -> str | None:
+    """The apply URL without tracking parameters, fragment or trailing slash, with a
+    lowercase scheme and host; non-http(s) values are dropped."""
+    if not url:
+        return None
+    try:
+        parts = urlsplit(url.strip())
+    except ValueError:
+        return None
+    scheme = parts.scheme.lower()
+    if scheme not in {"http", "https"} or not parts.netloc:
+        return None
+    query = urlencode(
+        [
+            (k, v)
+            for k, v in parse_qsl(parts.query, keep_blank_values=True)
+            if not _TRACKING_PARAMS.match(k)
+        ]
+    )
+    return urlunsplit((scheme, parts.netloc.lower(), parts.path.rstrip("/") or "/", query, ""))
+
+
+def _norm(value: str | None) -> str:
+    return _NON_WORD.sub("", (value or "").lower())
+
+
+def dedup_key(title: str, company: str | None, location: str | None) -> str:
+    """Cross-source identity of a posting: normalized title + company + location
+    (case, punctuation and spacing ignored), hashed to 32 hex characters. Matches
+    the SQL backfill in migration 070 for ASCII text."""
+    raw = f"{_norm(title)}|{_norm(company)}|{_norm(location)}"
+    return hashlib.md5(raw.encode("utf-8"), usedforsecurity=False).hexdigest()
