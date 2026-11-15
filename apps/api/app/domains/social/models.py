@@ -4,9 +4,10 @@ Social domain models — Posts, PostLikes, PostComments.
 
 import uuid
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -69,3 +70,24 @@ class PostComment(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class NewsItem(Base):
+    """An external, attributed link ("From around the web"). Not a member post:
+    no author, no personal data, title/short excerpt/link only (see news.py)."""
+
+    __tablename__ = "news_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    # sha256 of the canonical URL: dedup across sources.
+    url_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    discussion_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    excerpt: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    tags: Mapped[list[Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), default=list, nullable=False
+    )
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)

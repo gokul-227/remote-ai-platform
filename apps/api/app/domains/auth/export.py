@@ -72,6 +72,7 @@ SOURCES: tuple[Source, ...] = (
     Source("group_posts", ("author_id",)),
     Source("connections", ("sender_id", "receiver_id")),
     Source("user_blocks", ("blocker_id",)),
+    Source("member_invites", ("inviter_id",), drop=frozenset({"token_hash"})),
     Source("conversations", ("participant_one_id", "participant_two_id")),
     # Both directions of the user's own conversations.
     Source("messages", ("conversation_id",), scope="conversation"),

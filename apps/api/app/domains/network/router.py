@@ -18,7 +18,7 @@ from app.domains.auth.dependencies import authenticate_bearer_token, get_current
 from app.domains.auth.models import User
 from app.domains.engineers.models import EngineerProfile
 from app.domains.files.attachments import accessible_file
-from app.domains.network.models import Connection, Conversation, Message, UserBlock
+from app.domains.network.models import Connection, Conversation, MemberInvite, Message, UserBlock
 from app.services.notifications import notify_user as send_notification
 
 router = APIRouter(tags=["Network"])
@@ -687,3 +687,261 @@ async def websocket_messages(
                 await manager.broadcast(conversation_id, broadcast_payload)
         except WebSocketDisconnect:
             manager.disconnect(conversation_id, websocket)
+
+
+# ── Cold start: suggestions from on-platform signals, personal invite links ──
+# No contact-book uploads and no imported graphs. Suggestions use only what
+# members chose to make visible: public profiles, public groups and shared
+# organisations. Blocked pairs, existing connections or requests (any status),
+# inactive and staff accounts and hidden profiles are never suggested.
+
+SUGGESTION_POOL = 500
+
+
+@router.get("/connections/suggestions", summary="People you may know (on-platform signals only)")
+async def connection_suggestions(
+    limit: int = Query(10, ge=1, le=30),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, Any]]:
+    from app.domains.applications.models import JobApplication
+    from app.domains.auth.models import UserRole
+    from app.domains.companies.models import CompanyProfile, OrganisationMember
+    from app.domains.groups.models import Group, GroupMembership
+
+    me = current_user.id
+    excluded: set[uuid.UUID] = {me}
+    for a, b in (await db.execute(
+        select(Connection.sender_id, Connection.receiver_id).where(
+            or_(Connection.sender_id == me, Connection.receiver_id == me)
+        )
+    )).all():
+        excluded |= {a, b}
+    for a, b in (await db.execute(
+        select(UserBlock.blocker_id, UserBlock.blocked_id).where(
+            or_(UserBlock.blocker_id == me, UserBlock.blocked_id == me)
+        )
+    )).all():
+        excluded |= {a, b}
+
+    score: dict[uuid.UUID, float] = defaultdict(float)
+    reasons: dict[uuid.UUID, list[str]] = defaultdict(list)
+
+    # Same organisation (owner or active member).
+    my_orgs = set(
+        (await db.execute(
+            select(OrganisationMember.company_id).where(
+                OrganisationMember.user_id == me, OrganisationMember.status == "active"
+            )
+        )).scalars()
+    ) | set((await db.execute(select(CompanyProfile.id).where(CompanyProfile.user_id == me))).scalars())
+    if my_orgs:
+        colleagues = set(
+            (await db.execute(
+                select(OrganisationMember.user_id).where(
+                    OrganisationMember.company_id.in_(my_orgs), OrganisationMember.status == "active"
+                )
+            )).scalars()
+        ) | set(
+            (await db.execute(select(CompanyProfile.user_id).where(CompanyProfile.id.in_(my_orgs)))).scalars()
+        )
+        for uid in colleagues - excluded:
+            score[uid] += 5
+            reasons[uid].append("Same organisation")
+
+    # Public groups both belong to (private groups are never used as a signal).
+    my_groups = dict(
+        (await db.execute(
+            select(Group.id, Group.name)
+            .join(GroupMembership, GroupMembership.group_id == Group.id)
+            .where(GroupMembership.user_id == me, GroupMembership.status == "active", Group.is_private.is_(False))
+        )).all()
+    )
+    if my_groups:
+        for uid, gid in (await db.execute(
+            select(GroupMembership.user_id, GroupMembership.group_id).where(
+                GroupMembership.group_id.in_(my_groups), GroupMembership.status == "active"
+            ).limit(SUGGESTION_POOL * 4)
+        )).all():
+            if uid in excluded:
+                continue
+            score[uid] += 2
+            if len(reasons[uid]) < 3:
+                reasons[uid].append(f"Also in {my_groups[gid]}")
+
+    # Shared skills, from public profiles only.
+    my_skills = {
+        str(s).strip().lower()
+        for s in (await db.scalar(select(EngineerProfile.skills).where(EngineerProfile.user_id == me)) or [])
+        if str(s).strip()
+    }
+    if my_skills:
+        for uid, skills in (await db.execute(
+            select(EngineerProfile.user_id, EngineerProfile.skills)
+            .where(EngineerProfile.is_public.is_(True))
+            .order_by(EngineerProfile.updated_at.desc())
+            .limit(SUGGESTION_POOL)
+        )).all():
+            if uid in excluded:
+                continue
+            shared = sorted(my_skills & {str(s).strip().lower() for s in (skills or [])})
+            if len(shared) >= 2:
+                score[uid] += min(len(shared), 5)
+                reasons[uid].append("Shared skills: " + ", ".join(shared[:3]))
+
+    # Applying to the same roles only strengthens an existing signal and is
+    # never shown as a reason: who applied where stays private.
+    if score:
+        my_jobs = select(JobApplication.job_id).where(JobApplication.user_id == me)
+        for (uid,) in (await db.execute(
+            select(JobApplication.user_id).where(
+                JobApplication.job_id.in_(my_jobs), JobApplication.user_id.in_(list(score))
+            )
+        )).all():
+            score[uid] += 0.5
+
+    if not score:
+        return []
+    # Visibility gate: active, non-staff accounts with a public profile.
+    visible = set(
+        (await db.execute(
+            select(User.id)
+            .join(EngineerProfile, EngineerProfile.user_id == User.id)
+            .where(
+                User.id.in_(list(score)),
+                User.is_active.is_(True),
+                User.role != UserRole.ADMIN,
+                EngineerProfile.is_public.is_(True),
+            )
+        )).scalars()
+    )
+    ranked = sorted((u for u in score if u in visible), key=lambda u: (-score[u], str(u)))[:limit]
+    people = await user_summaries(db, set(ranked))
+    return [{**people[u], "reasons": reasons[u][:3]} for u in ranked if u in people]
+
+
+INVITE_TTL_DAYS = 30
+INVITE_MAX_PER_DAY = 5
+INVITE_MAX_USES = 25
+
+
+def _invite_hash(token: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _aware_dt(ts: Any) -> Any:
+    from datetime import UTC
+
+    return ts if ts is None or ts.tzinfo else ts.replace(tzinfo=UTC)
+
+
+async def _active_invite(db: AsyncSession, token: str) -> MemberInvite | None:
+    from datetime import UTC, datetime
+
+    invite = await db.scalar(select(MemberInvite).where(MemberInvite.token_hash == _invite_hash(token)))
+    if (
+        invite is None
+        or invite.revoked_at is not None
+        or _aware_dt(invite.expires_at) < datetime.now(UTC)
+        or invite.uses >= INVITE_MAX_USES
+    ):
+        return None
+    return invite
+
+
+@router.post("/invites", status_code=status.HTTP_201_CREATED, summary="Create a personal invite link")
+async def create_invite(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """The token is returned once; only its hash is stored. No invitee address
+    is collected: the member shares the link themselves."""
+    import secrets
+    from datetime import UTC, datetime, timedelta
+
+    now = datetime.now(UTC)
+    recent = await db.scalar(
+        select(func.count(MemberInvite.id)).where(
+            MemberInvite.inviter_id == current_user.id, MemberInvite.created_at >= now - timedelta(days=1)
+        )
+    )
+    if (recent or 0) >= INVITE_MAX_PER_DAY:
+        raise HTTPException(status_code=429, detail="You can create up to 5 invite links a day.")
+    token = secrets.token_urlsafe(24)
+    invite = MemberInvite(
+        inviter_id=current_user.id,
+        token_hash=_invite_hash(token),
+        expires_at=now + timedelta(days=INVITE_TTL_DAYS),
+        created_at=now,
+    )
+    db.add(invite)
+    await db.flush()
+    return {"id": invite.id, "token": token, "expires_at": invite.expires_at, "max_uses": INVITE_MAX_USES}
+
+
+@router.get("/invites", summary="My invite links")
+async def list_invites(
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> list[dict[str, Any]]:
+    rows = (await db.execute(
+        select(MemberInvite).where(MemberInvite.inviter_id == current_user.id).order_by(MemberInvite.created_at.desc()).limit(50)
+    )).scalars().all()
+    return [
+        {"id": r.id, "uses": r.uses, "expires_at": r.expires_at, "revoked": r.revoked_at is not None, "created_at": r.created_at}
+        for r in rows
+    ]
+
+
+@router.delete("/invites/{invite_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Revoke an invite link")
+async def revoke_invite(
+    invite_id: uuid.UUID, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> None:
+    from datetime import UTC, datetime
+
+    invite = await db.get(MemberInvite, invite_id)
+    if invite is None or invite.inviter_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Invite not found")
+    invite.revoked_at = invite.revoked_at or datetime.now(UTC)
+
+
+@router.get("/invites/resolve/{token}", summary="Who sent this invite link (public)")
+async def resolve_invite(token: str, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    invite = await _active_invite(db, token[:200])
+    if invite is None:
+        raise HTTPException(status_code=404, detail="This invite link is no longer valid.")
+    person = (await user_summaries(db, {invite.inviter_id})).get(invite.inviter_id) or {}
+    return {"inviter": {"full_name": person.get("full_name"), "headline": person.get("headline")}}
+
+
+@router.post("/invites/accept/{token}", status_code=status.HTTP_201_CREATED, summary="Use an invite link")
+async def accept_invite(
+    token: str, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> dict[str, Any]:
+    """Sends the inviter a connection request (they still approve it)."""
+    invite = await _active_invite(db, token[:200])
+    if invite is None:
+        raise HTTPException(status_code=404, detail="This invite link is no longer valid.")
+    inviter = invite.inviter_id
+    if inviter == current_user.id:
+        raise HTTPException(status_code=400, detail="This is your own invite link.")
+    if await _blocked_between(db, current_user.id, inviter):
+        raise _BLOCKED
+    existing = await db.scalar(
+        select(Connection).where(
+            or_(
+                (Connection.sender_id == current_user.id) & (Connection.receiver_id == inviter),
+                (Connection.sender_id == inviter) & (Connection.receiver_id == current_user.id),
+            )
+        )
+    )
+    if existing is not None:
+        return {"status": existing.status, "created": False}
+    db.add(Connection(sender_id=current_user.id, receiver_id=inviter, status="PENDING"))
+    invite.uses += 1
+    await notify(
+        db, inviter, "Your invite was used", f"{current_user.full_name} joined from your invite and wants to connect.", "connection_request"
+    )
+    await db.flush()
+    return {"status": "PENDING", "created": True}
