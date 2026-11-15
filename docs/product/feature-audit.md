@@ -48,6 +48,11 @@ support tickets, AI usage, assistant activity, feature flags, announcements, sta
 operations inventory, service catalogue, backups, usage, audit and security events) is reachable and
 loads; `feature-visibility.spec.ts` opens each one as staff.
 
+Still open: at a 820px (tablet) width the console scrolls horizontally by 84px on the sign-in screen,
+Staff & roles and Feature flags (`responsive.spec.ts` staff console test). This change does not touch the
+console. The console must be built with `NEXT_PUBLIC_DEPLOY_ENV` matching the API environment, or every
+write control is disabled.
+
 ## Feature flags
 
 No flag changed. The two flags that are off by default are off for readiness reasons, not oversight:
