@@ -7,6 +7,7 @@ import {
   GUIDELINES,
   IMPRESSUM,
   LAST_UPDATED,
+  LEGAL_PAGES,
   PRIVACY,
   SECURITY,
   TERMS,
@@ -1801,6 +1802,13 @@ export function Legal({ kind }: { kind: string }) {
       <Card c="rounded-xl">
         <h1>{title}</h1>
         <p className="mt-1 text-sm text-slate-500">Last updated {LAST_UPDATED}</p>
+        <nav aria-label="Legal policies" className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          {LEGAL_PAGES.map((page) => (
+            <a key={page.href} href={page.href} className="text-blue-700 underline">
+              {page.title}
+            </a>
+          ))}
+        </nav>
         {sections.map((s, i) => (
           <section key={s.h} className="mt-5">
             <h3>

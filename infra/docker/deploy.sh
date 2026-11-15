@@ -35,11 +35,13 @@ set_tag() {
 current_tag() { local img; img=$(env_get WEB_IMAGE); [[ "$img" == *:* ]] && echo "${img##*:}" || true; }
 
 health_gate() {
-  local sha=$1 live
+  local sha=$1 live api_sha
   for _ in $(seq 1 30); do
     live=$(curl -fsS --max-time 5 http://127.0.0.1:3000/api/version 2>/dev/null \
       | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || true)
-    if [ "$live" = "$sha" ] \
+    api_sha=$(compose exec -T api curl -fsS --max-time 5 http://localhost:8000/health/version 2>/dev/null \
+      | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || true)
+    if [ "$live" = "$sha" ] && [ "$api_sha" = "$sha" ] \
       && curl -fsS --max-time 5 http://127.0.0.1:3000/ -o /dev/null \
       && curl -fsS --max-time 5 http://127.0.0.1:3000/robots.txt -o /dev/null \
       && curl -fsS --max-time 5 http://127.0.0.1:3002/ | grep -q "Operations console" \
@@ -49,7 +51,7 @@ health_gate() {
     fi
     sleep 5
   done
-  echo "health gate FAILED for $sha (web reported '${live:-nothing}')" >&2
+  echo "health gate FAILED for $sha (web reported '${live:-nothing}', API '${api_sha:-nothing}')" >&2
   return 1
 }
 
