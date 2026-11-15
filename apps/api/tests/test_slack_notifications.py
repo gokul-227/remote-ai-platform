@@ -93,7 +93,7 @@ async def test_post_dedup_rate_limit_and_failures(sent, monkeypatch):
 async def test_notify_runs_in_background_and_drains(sent):
     slack.notify("deploys", "hello")
     await slack.drain()
-    assert channels(sent, "C_DEP") == ["[development] hello"]
+    assert channels(sent, "C_DEP") == [f"[{settings.APP_ENV}] hello"]
 
 
 @pytest.mark.asyncio
@@ -208,7 +208,7 @@ async def test_signup_and_spike(sent, monkeypatch):
         await db.commit()
     await slack.drain()
     sign = channels(sent, "C_SIGN")
-    assert sign.count("[development] :wave: New sign-up (@corp.example)") == 2
+    assert sign.count(f"[{settings.APP_ENV}] :wave: New sign-up (@corp.example)") == 2
     assert any("spike" in t for t in sign)
     assert any("spike" in t for t in channels(sent, "C_SEC"))
 
