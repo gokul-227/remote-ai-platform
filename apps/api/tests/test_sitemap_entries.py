@@ -76,3 +76,21 @@ async def test_sources_that_prohibit_search_syndication_are_not_in_sitemap(db):
     repo = JobRepository(db)
     rows = await repo.sitemap_entries(0, 5000)
     assert len(rows) == await repo.sitemap_count() == 1
+
+
+@pytest.mark.asyncio
+async def test_sitemap_lists_only_jobs_posted_in_the_last_90_days(client: AsyncClient):
+    from datetime import timedelta
+
+    fresh = await _jobs(posted_at=datetime.now(UTC) - timedelta(days=10))
+    stale = await _jobs(posted_at=datetime.now(UTC) - timedelta(days=120))
+    seen: set[str] = set()
+    skip = 0
+    while True:
+        page = (await client.get(f"/api/v1/jobs/sitemap-entries?skip={skip}&limit=500")).json()
+        seen |= {e["id"] for e in page}
+        if len(page) < 500:
+            break
+        skip += 500
+    assert str(fresh[0]) in seen
+    assert str(stale[0]) not in seen

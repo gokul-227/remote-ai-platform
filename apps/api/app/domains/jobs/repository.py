@@ -28,6 +28,7 @@ def slugify(text: str) -> str:
 class JobRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.expired_job_ids: list[uuid.UUID] = []
 
     async def get_by_id(self, job_id: uuid.UUID) -> JobPost | None:
         stmt = select(JobPost).where(JobPost.id == job_id)
@@ -197,16 +198,21 @@ class JobRepository:
         (a freshness policy: they may still be open at the source). Called only
         after that source synced successfully; posted jobs never auto-expire."""
         cutoff = datetime.now(UTC) - timedelta(days=settings.JOB_UNSEEN_EXPIRY_DAYS)
+        stale = (
+            JobPost.source == source,
+            JobPost.company_id.is_(None),
+            JobPost.expired_at.is_(None),
+            JobPost.last_seen_at < cutoff,
+        )
+        # Remembered so the import can tell search engines these pages are gone.
+        ids = list((await self.db.scalars(select(JobPost.id).where(*stale))).all())
         result = await self.db.execute(
             update(JobPost)
-            .where(
-                JobPost.source == source,
-                JobPost.company_id.is_(None),
-                JobPost.expired_at.is_(None),
-                JobPost.last_seen_at < cutoff,
-            )
+            .where(JobPost.id.in_(ids), JobPost.expired_at.is_(None))
             .values(expired_at=datetime.now(UTC))
+            .execution_options(synchronize_session=False)
         )
+        self.expired_job_ids.extend(ids)
         return int(getattr(result, "rowcount", 0) or 0)  # CursorResult for UPDATE
 
     async def purge_old_imported_jobs(self, days: int) -> tuple[int, int]:
@@ -285,17 +291,24 @@ class JobRepository:
         """id/posted/updated of every publicly listed job (any location), oldest
         first so pages stay stable while new jobs arrive."""
         stmt = self._filtered(select(JobPost.id, JobPost.posted_at, JobPost.updated_at)).where(
-            JobPost.source.not_in(SEARCH_SYNDICATION_BLOCKED_SOURCES)
+            *self._sitemap_scope()
         )
         stmt = stmt.order_by(JobPost.posted_at.asc(), JobPost.id.asc()).offset(skip).limit(limit)
         return [(r[0], r[1], r[2]) for r in (await self.db.execute(stmt)).all()]
 
     async def sitemap_count(self) -> int:
         """Count the same public, syndication-eligible rows as sitemap_entries."""
-        stmt = self._filtered(select(func.count(JobPost.id))).where(
-            JobPost.source.not_in(SEARCH_SYNDICATION_BLOCKED_SOURCES)
-        )
+        stmt = self._filtered(select(func.count(JobPost.id))).where(*self._sitemap_scope())
         return int((await self.db.scalar(stmt)) or 0)
+
+    @staticmethod
+    def _sitemap_scope() -> tuple:
+        """Syndication-eligible jobs posted within SITEMAP_JOB_MAX_AGE_DAYS."""
+        fresh = datetime.now(UTC) - timedelta(days=settings.SITEMAP_JOB_MAX_AGE_DAYS)
+        return (
+            JobPost.source.not_in(SEARCH_SYNDICATION_BLOCKED_SOURCES),
+            JobPost.posted_at >= fresh,
+        )
 
     def _filtered(
         self,

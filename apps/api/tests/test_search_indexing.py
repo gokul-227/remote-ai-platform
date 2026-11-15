@@ -86,3 +86,44 @@ async def test_search_console_oauth_uses_readonly_scope_instead_of_indexing_scop
     async with httpx.AsyncClient() as client:
         assert await ix._google_token(client, ix.SEARCH_CONSOLE_SCOPE) == "tok"
     assert google["scopes"] == [ix.SEARCH_CONSOLE_SCOPE]
+
+
+@pytest.mark.asyncio
+async def test_expired_jobs_are_sent_as_url_deleted_after_new_ones(google, monkeypatch):
+    kinds: list[str] = []
+    real_publish = ix._publish
+
+    async def spy(client, token, urls, kind):
+        kinds.extend([kind] * len(urls))
+        return await real_publish(client, token, urls, kind)
+
+    monkeypatch.setattr(ix, "_publish", spy)
+
+    async def budget(wanted):
+        return wanted
+
+    monkeypatch.setattr(ix, "_reserve_google_quota", budget)
+    new, gone = [uuid.uuid4()], [uuid.uuid4()]
+    sent = await ix.notify_jobs(new, gone)
+    assert kinds == ["URL_UPDATED", "URL_DELETED"]
+    assert sent["google"] == 1
+    assert sent["google_deleted"] == 1
+    assert google["indexnow"][0]["urlList"] == ix.job_urls(new + gone)
+
+
+@pytest.mark.asyncio
+async def test_shared_daily_budget_limits_google_requests(google, monkeypatch):
+    async def budget(wanted):
+        return 1  # the rest of today's quota was used by earlier runs
+
+    monkeypatch.setattr(ix, "_reserve_google_quota", budget)
+    sent = await ix.notify_jobs([uuid.uuid4(), uuid.uuid4()], [uuid.uuid4()])
+    assert sent["google"] == 1
+    assert sent["google_deleted"] == 0
+    assert len(google["published"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_quota_reservation_falls_back_to_per_run_cap_without_redis(monkeypatch):
+    monkeypatch.setattr(settings, "REDIS_URL", "redis://127.0.0.1:1/0")
+    assert await ix._reserve_google_quota(5) == 5

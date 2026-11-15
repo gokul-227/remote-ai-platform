@@ -304,6 +304,10 @@ class Settings(BaseSettings):
     # Base64 of a Google service-account JSON that owns the Search Console property.
     GOOGLE_INDEXING_CREDENTIALS_B64: str | None = None
     GOOGLE_INDEXING_PER_RUN: int = 24  # 8 runs a day stays under Google's free 200/day
+    # Shared per-UTC-day budget across all runs (Redis); headroom under the 200/day quota.
+    GOOGLE_INDEXING_DAILY_QUOTA: int = 180
+    # Sitemaps list only jobs posted within this many days (stale listings aren't promoted).
+    SITEMAP_JOB_MAX_AGE_DAYS: int = 90
     # IndexNow key: public by design, served by the web app at /indexnow.txt.
     INDEXNOW_KEY: str = "bd088b5c4cf346dbf16c906aff9aeb97"
     # Keep as many imported jobs as the free database allows: above this size the oldest

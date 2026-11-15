@@ -37,7 +37,7 @@ from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import JobPostCreate, JobPostResponse, JobPostUpdate, JobSearchQuery
 from app.domains.jobs.source_policy import SEARCH_SYNDICATION_BLOCKED_SOURCES
 from app.domains.marketplace.models import AIReport
-from app.services.search.indexing import notify_new_jobs
+from app.services.search.indexing import notify_new_jobs, notify_removed_jobs
 
 logger = get_logger("jobs.service")
 
@@ -278,6 +278,14 @@ class JobService:
         sent = await notify_new_jobs(list(reversed(new_job_ids)))
         if any(sent.values()):
             logger.info(f"Search engines notified: {sent}")
+        # Expired syndicated pages: ask Google to drop them (shares the daily budget).
+        fresh = set(new_job_ids)
+        gone = [i for i in getattr(self.repo, "expired_job_ids", []) if i not in fresh]
+        self.repo.expired_job_ids = []
+        if gone:
+            removed = await notify_removed_jobs(gone)
+            if any(removed.values()):
+                logger.info(f"Search engines told of expired jobs: {removed}")
         if raise_on_failure and failed_sources:
             raise SourceFetchError(f"Job source sync failed: {', '.join(failed_sources)}")
         return stats

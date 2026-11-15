@@ -5,8 +5,11 @@ waiting for them to re-crawl the sitemap.
 - Google Indexing API (allowed for JobPosting pages): a service account that is
   an Owner of the Search Console property. Credentials come from
   GOOGLE_INDEXING_CREDENTIALS_B64 (base64 of the service-account JSON, kept in
-  Infisical). Free quota is 200 notifications a day, so each run sends at most
-  GOOGLE_INDEXING_PER_RUN, newest first.
+  Infisical). Free quota is 200 publish requests a day: each run sends at most
+  GOOGLE_INDEXING_PER_RUN, newest first, and every run draws from one shared
+  daily budget (GOOGLE_INDEXING_DAILY_QUOTA, counted in Redis per UTC day) so
+  frequent imports cannot exhaust it. New pages are announced as URL_UPDATED
+  before expired ones are announced as URL_DELETED.
 - IndexNow (Bing, Yandex, Seznam, Naver; Bing powers DuckDuckGo, Yahoo and
   ChatGPT search): a public key served at /indexnow.txt by the web app.
 
@@ -65,28 +68,76 @@ async def _google_token(client: httpx.AsyncClient, scope: str = GOOGLE_SCOPE) ->
     return str(r.json()["access_token"])
 
 
-async def notify_new_jobs(job_ids: list[uuid.UUID]) -> dict[str, int]:
-    """Announce new job pages to Google and IndexNow. Returns how many each accepted."""
-    sent = {"google": 0, "indexnow": 0}
-    if settings.APP_ENV != "production" or not job_ids:
+async def _reserve_google_quota(wanted: int) -> int:
+    """Take up to `wanted` publish requests from today's shared budget. Without
+    Redis, fall back to the per-run cap alone (the pre-budget behaviour)."""
+    if wanted <= 0:
+        return 0
+    from datetime import UTC, datetime
+
+    from redis.asyncio import Redis
+
+    key = settings.redis_key(f"indexing:google:{datetime.now(UTC).date().isoformat()}")
+    client = Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
+    try:
+        used = int(await client.incrby(key, wanted))
+        await client.expire(key, 2 * 86400)
+        granted = max(0, min(wanted, settings.GOOGLE_INDEXING_DAILY_QUOTA - (used - wanted)))
+        if granted < wanted:
+            await client.decrby(key, wanted - granted)  # return what we won't use
+        return granted
+    except Exception:
+        return wanted
+    finally:
+        await client.aclose()
+
+
+async def _publish(
+    client: httpx.AsyncClient, token: str, urls: list[str], kind: str
+) -> tuple[int, bool]:
+    """Send Google notifications; returns (accepted, quota_exhausted)."""
+    accepted = 0
+    for url in urls:
+        r = await client.post(
+            GOOGLE_PUBLISH,
+            headers={"Authorization": f"Bearer {token}"},
+            json={"url": url, "type": kind},
+        )
+        if r.status_code == 429:
+            return accepted, True  # daily quota used up; the sitemap still covers the rest
+        accepted += int(r.status_code == 200)
+    return accepted, False
+
+
+async def notify_jobs(
+    new_ids: list[uuid.UUID], removed_ids: list[uuid.UUID] | None = None
+) -> dict[str, int]:
+    """Announce new job pages (URL_UPDATED) and expired ones (URL_DELETED) to Google,
+    and every changed URL to IndexNow. Returns how many each accepted."""
+    removed_ids = removed_ids or []
+    sent = {"google": 0, "google_deleted": 0, "indexnow": 0}
+    if settings.APP_ENV != "production" or not (new_ids or removed_ids):
         return sent
-    urls = job_urls(job_ids)
+    new_urls, gone_urls = job_urls(new_ids), job_urls(removed_ids)
     async with httpx.AsyncClient(timeout=20) as client:
         try:
             token = await _google_token(client)
             if token:
-                for url in urls[: settings.GOOGLE_INDEXING_PER_RUN]:
-                    r = await client.post(
-                        GOOGLE_PUBLISH,
-                        headers={"Authorization": f"Bearer {token}"},
-                        json={"url": url, "type": "URL_UPDATED"},
+                cap = settings.GOOGLE_INDEXING_PER_RUN
+                want_new = new_urls[:cap]
+                want_gone = gone_urls[: max(0, cap - len(want_new))]
+                budget = await _reserve_google_quota(len(want_new) + len(want_gone))
+                want_new = want_new[:budget]
+                want_gone = want_gone[: max(0, budget - len(want_new))]
+                sent["google"], exhausted = await _publish(client, token, want_new, "URL_UPDATED")
+                if not exhausted:
+                    sent["google_deleted"], _ = await _publish(
+                        client, token, want_gone, "URL_DELETED"
                     )
-                    if r.status_code == 429:
-                        break  # daily quota used up; the sitemap still covers the rest
-                    sent["google"] += int(r.status_code == 200)
         except Exception as exc:  # never let indexing break an import
             logger.warning("Google indexing notification failed", error=type(exc).__name__)
-        if settings.INDEXNOW_KEY:
+        changed = (new_urls + gone_urls)[:10000]
+        if settings.INDEXNOW_KEY and changed:
             try:
                 host = _site().split("://", 1)[-1]
                 r = await client.post(
@@ -95,14 +146,26 @@ async def notify_new_jobs(job_ids: list[uuid.UUID]) -> dict[str, int]:
                         "host": host,
                         "key": settings.INDEXNOW_KEY,
                         "keyLocation": f"{_site()}/indexnow.txt",
-                        "urlList": urls[:10000],
+                        "urlList": changed,
                     },
                 )
                 if r.status_code in (200, 202):
-                    sent["indexnow"] = len(urls[:10000])
+                    sent["indexnow"] = len(changed)
             except Exception as exc:
                 logger.warning("IndexNow notification failed", error=type(exc).__name__)
     return sent
+
+
+async def notify_new_jobs(job_ids: list[uuid.UUID]) -> dict[str, int]:
+    """Announce new job pages to Google and IndexNow. Returns how many each accepted."""
+    sent = await notify_jobs(job_ids)
+    return {"google": sent["google"], "indexnow": sent["indexnow"]}
+
+
+async def notify_removed_jobs(job_ids: list[uuid.UUID]) -> dict[str, int]:
+    """Tell Google and IndexNow that expired job pages are gone (URL_DELETED)."""
+    sent = await notify_jobs([], job_ids)
+    return {"google": sent["google_deleted"], "indexnow": sent["indexnow"]}
 
 
 SEARCH_CONSOLE_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly"
