@@ -12,6 +12,11 @@ class RedisCache:
     def __init__(self, namespace: str = "app"):
         self.namespace = namespace
 
+    @property
+    def enabled(self) -> bool:
+        # Only deployed environments cache: tests and local runs share one Redis across cases.
+        return settings.APP_ENV in ("production", "staging")
+
     def _client(self) -> Redis:
         return Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
 
@@ -19,6 +24,8 @@ class RedisCache:
         return settings.redis_key(f"{self.namespace}:{key}")
 
     async def get_json(self, key: str) -> Any | None:
+        if not self.enabled:
+            return None
         client = self._client()
         try:
             value = await client.get(self._key(key))
@@ -29,6 +36,8 @@ class RedisCache:
             await client.aclose()
 
     async def set_json(self, key: str, value: Any, ttl_seconds: int = 30) -> None:
+        if not self.enabled:
+            return
         client = self._client()
         try:
             await client.set(self._key(key), json.dumps(value, default=str), ex=ttl_seconds)
