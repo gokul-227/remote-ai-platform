@@ -178,6 +178,8 @@ class Settings(BaseSettings):
     # Contact invitations a member may send per rolling 24 hours.
     CONTACT_INVITES_PER_DAY: int = 25
     WORKOS_API_URL: str = "https://api.workos.com"
+    # Social sign-in providers configured in the WorkOS dashboard (comma list, "*" = all).
+    WORKOS_OAUTH_PROVIDERS: str = "*"
     # Where browsers are sent to start an OAuth sign-in. Empty = WORKOS_API_URL;
     # set it to a WorkOS custom auth domain (or the E2E mock's host address).
     WORKOS_AUTHORIZE_URL: str = ""
