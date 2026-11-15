@@ -264,7 +264,6 @@ components:
   icon: githubactions
   status: active
   evidence:
-  - .github/workflows/deploy-frontend.yml ~ /deploy\.sh|api\.render\.com/
   - .github/workflows/deploy-vm.yml ~ /deploy\.sh|api\.render\.com/
 - id: gha-monitor
   name: Canary & keep-warm
@@ -275,7 +274,6 @@ components:
   status: active
   evidence:
   - .github/workflows/ci.yml ~ /health/(ready|live)/
-  - .github/workflows/deploy-frontend.yml ~ /health/(ready|live)/
   - .github/workflows/deploy-vm.yml ~ /health/(ready|live)/
   - .github/workflows/keep-render-warm.yml ~ /health/(ready|live)/
   - .github/workflows/production-canary.yml ~ /health/(ready|live)/
