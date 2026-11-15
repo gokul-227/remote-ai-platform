@@ -15450,6 +15450,17 @@ components:
           type: string
           title: Source
           default: DIRECT
+        posted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Posted At
+        dedup_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dedup Key
       type: object
       required:
       - title

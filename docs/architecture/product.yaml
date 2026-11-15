@@ -550,8 +550,8 @@ platform:
 - id: job-boards
   name: Job boards
   technology: Adzuna · Arbeitnow · Ashby boards · Greenhouse boards · Hacker News (Who is hiring) · Himalayas ·
-    Jobicy · Jooble · Lever boards · RemoteOK · Remotive · SmartRecruiters boards · The Muse · USAJOBS · Working
-    Nomads
+    Jobicy · Jooble · Lever boards · RemoteOK · Remotive · SmartRecruiters boards · The Muse · USAJOBS · We Work
+    Remotely (RSS) · Workable boards · Working Nomads
   icon: null
   status: active
 - id: redis
@@ -796,6 +796,16 @@ infrastructure:
     status: active
   - id: board-usajobs
     name: USAJOBS
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-weworkremotely
+    name: We Work Remotely (RSS)
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-workable
+    name: Workable boards
     technology: Jobs API
     group: job-boards
     status: active

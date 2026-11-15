@@ -45,6 +45,10 @@ class JobPostCreate(JobPostBase):
     company_id: uuid.UUID | None = None
     external_id: str | None = None
     source: str = "DIRECT"
+    # When the source says it was posted; None means "first seen now".
+    posted_at: datetime | None = None
+    # Cross-source identity (normalized title + company + location); set on import.
+    dedup_key: str | None = None
 
 
 class JobPostUpdate(BaseModel):

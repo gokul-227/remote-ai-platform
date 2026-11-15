@@ -233,6 +233,8 @@ job_boards:
   LEVER: {name: Lever boards}
   ASHBY: {name: Ashby boards}
   SMARTRECRUITERS: {name: SmartRecruiters boards}
+  WORKABLE: {name: Workable boards}
+  WEWORKREMOTELY: {name: We Work Remotely (RSS)}
   ADZUNA: {name: Adzuna}
   JOOBLE: {name: Jooble}
   HACKERNEWS: {name: Hacker News (Who is hiring)}

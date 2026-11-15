@@ -255,7 +255,8 @@ class Settings(BaseSettings):
     WORKINGNOMADS_PERMISSION_CONFIRMED: bool = False
     # Arbeitnow serves 100 jobs per page; read this many pages per sync.
     ARBEITNOW_MAX_PAGES: int = 50
-    # Public company career boards (comma-separated board names), verified live.
+    # Public company career boards (comma-separated board names). The original lists
+    # were verified live; later additions are best-effort (a missing board is skipped).
     GREENHOUSE_BOARDS: str = (
         "stripe,gitlab,cloudflare,datadog,figma,discord,duolingo,reddit,coinbase,robinhood,elastic,"
         "mongodb,twilio,dropbox,asana,instacart,gusto,vercel,anthropic,databricks,samsara,okta,brex,"
@@ -270,17 +271,46 @@ class Settings(BaseSettings):
         "flexport,formlabs,forter,gemini,gofundme,gostudent,greenhouse,hudl,jumio,justworks,launchdarkly,"
         "lithic,masterclass,mercury,mirakl,modernhealth,motive,nuro,onetrust,oscar,pendo,raisin,"
         "relativity,ripple,roblox,rubrik,salsify,seatgeek,splice,stackadapt,stitchfix,sweetgreen,tanium,"
-        "tide,tripactions,twitch,upgrade,upstart,veriff,verkada,wolt,yext,zocdoc,zuora"
+        "tide,tripactions,twitch,upgrade,upstart,veriff,verkada,wolt,yext,zocdoc,zuora,"
+        "hubspot,nextdoor,niantic,opendoor,quizlet,remitly,riotgames,scopely,thoughtworks,"
+        "unity3d,whoop,zillow,airtable,hashicorp,netlify,postman,sourcegraph,gitguardian,"
+        "segment,webflow,benchling,chainalysis,kraken,plaid,niche,sezzle,remote,doordash"
     )
     # Company boards are split into this many groups; each import handles one group in
     # full (rotating every run), so every company refreshes twice a day on the
     # 3-hourly schedule without one run overloading the small API instance.
     ATS_BOARD_SHARDS: int = 4
-    # Long descriptions are cut here: keeps ~50k jobs inside the free 500 MB database.
-    JOB_DESCRIPTION_MAX_CHARS: int = 6000
+    # Long descriptions are cut here (every source, at import): the detail page links
+    # to the original posting for the rest. The main lever on per-row size.
+    JOB_DESCRIPTION_MAX_CHARS: int = 5000
+    # Boards fetched at once per source, and a polite pause before each request.
+    ATS_BOARD_CONCURRENCY: int = 3
+    JOB_SOURCE_REQUEST_DELAY_SECONDS: float = 0.25
+    # Workable public job-board accounts (apply.workable.com/<account>).
+    WORKABLE_ACCOUNTS: str = (
+        "workable,hotjar,taxfix,personio,blueground,omnipresent,remote,deel,papaya-global,"
+        "toggl,doist,automattic,buffer,zapier,hubstaff,teamviewer,skroutz,efood,beat,pollfish,"
+        "viva-wallet,epignosis,orfium,hackthebox,instashop,plum,huspy,yassir,kaizen-gaming"
+    )
+    # We Work Remotely publishes public RSS feeds per category (attribution kept).
+    WEWORKREMOTELY_FEEDS: str = (
+        "remote-programming-jobs,remote-full-stack-programming-jobs,remote-back-end-programming-jobs,"
+        "remote-front-end-programming-jobs,remote-devops-sysadmin-jobs,remote-design-jobs,"
+        "remote-product-jobs,remote-customer-support-jobs,remote-sales-and-marketing-jobs,"
+        "remote-management-and-finance-jobs,all-other-remote-jobs"
+    )
+    # Cross-source dedup: skip a posting another source already lists (same
+    # normalized title + company + location, or same canonical apply URL).
+    JOB_DEDUP_ACROSS_SOURCES: bool = True
+    # Re-listing an unchanged job rewrites its row at most this often.
+    JOB_LAST_SEEN_REFRESH_HOURS: int = 20
+    # Retention works in batches of this many rows (each its own transaction).
+    JOB_RETENTION_BATCH_SIZE: int = 5000
+    JOB_RETENTION_MAX_BATCHES: int = 2000
     LEVER_BOARDS: str = (
         "spotify,outreach,gopuff,aircall,wealthfront,contentsquare,neon,arcadia,blablacar,houzz,metabase,"
-        "olo,palantir,pipedrive,swile,tala"
+        "olo,palantir,pipedrive,swile,tala,netflix,shopify,kraken,lucidmotors,"
+        "matchgroup,coupa,eventbrite,mistral,whoop,zoox,veeva"
     )
     ASHBY_BOARDS: str = (
         "openai,ramp,notion,linear,vanta,supabase,posthog,zapier,cursor,snowflake,clickhouse,doctolib,"
@@ -308,6 +338,7 @@ class Settings(BaseSettings):
     INDEXNOW_KEY: str = "bd088b5c4cf346dbf16c906aff9aeb97"
     # Keep as many imported jobs as the free database allows: above this size the oldest
     # imported jobs nobody applied to are removed after each import (Supabase Free = 500 MB).
+    # 0 disables the budget (self-hosted PostgreSQL holding millions of jobs).
     DATABASE_SIZE_BUDGET_MB: int = 420
     # Imported jobs posted longer ago than this are removed (or, if someone applied, hidden).
     JOB_RETENTION_DAYS: int = 90

@@ -6,6 +6,7 @@ import json
 import time
 import uuid
 from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 
 from app.agents.job_enricher import JobEnricherAgent
 from app.agents.llm_client import AIProviderError
@@ -15,7 +16,12 @@ from app.core.logging import get_logger
 from app.domains.admin.repository import AdminRepository
 from app.domains.jobs import list_cache
 from app.domains.jobs.aggregators.arbeitnow import ArbeitnowAggregator
-from app.domains.jobs.aggregators.base import SourceDisabledError, SourceFetchError
+from app.domains.jobs.aggregators.base import (
+    SourceDisabledError,
+    SourceFetchError,
+    canonical_url,
+    dedup_key,
+)
 from app.domains.jobs.aggregators.public_boards import (
     AdzunaAggregator,
     AshbyAggregator,
@@ -26,6 +32,8 @@ from app.domains.jobs.aggregators.public_boards import (
     JoobleAggregator,
     LeverAggregator,
     SmartRecruitersAggregator,
+    WeWorkRemotelyAggregator,
+    WorkableAggregator,
     WorkingNomadsAggregator,
 )
 from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
@@ -57,9 +65,47 @@ AGGREGATORS = (
     LeverAggregator,
     AshbyAggregator,
     SmartRecruitersAggregator,
+    WorkableAggregator,
+    WeWorkRemotelyAggregator,
     AdzunaAggregator,
     JoobleAggregator,
 )
+
+
+def prepare_for_storage(jobs: list[JobPostCreate]) -> list[JobPostCreate]:
+    """What every imported job looks like on disk, whatever the source: description
+    capped at JOB_DESCRIPTION_MAX_CHARS, canonical apply URL, no inline (data:)
+    logos, a cross-source dedup key, and nothing posted before the retention window
+    (it would be deleted by the next retention run anyway). Duplicates within the
+    batch (same dedup key) keep the first."""
+    cutoff = datetime.now(UTC) - timedelta(days=settings.JOB_RETENTION_DAYS)
+    cap = settings.JOB_DESCRIPTION_MAX_CHARS
+    out: list[JobPostCreate] = []
+    seen: set[str] = set()
+    for job in jobs:
+        if job.posted_at is not None and job.posted_at < cutoff:
+            continue
+        description = job.description
+        if len(description) > cap:
+            description = description[: cap - 1].rstrip() + "…"
+        logo = job.company_logo
+        if logo and (len(logo) > 1000 or not logo.startswith(("http://", "https://"))):
+            logo = None
+        key = dedup_key(job.title, job.company_name, job.location)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(
+            job.model_copy(
+                update={
+                    "description": description,
+                    "company_logo": logo,
+                    "external_url": canonical_url(job.external_url) or job.external_url,
+                    "dedup_key": key,
+                }
+            )
+        )
+    return out
 
 
 class JobService:
@@ -179,15 +225,23 @@ class JobService:
             started = time.monotonic()
             try:
                 fetched_jobs = await aggregator.fetch_jobs(limit=limit_per_source)
+                to_save = prepare_for_storage(fetched_jobs)
+                duplicates = 0
+                if settings.JOB_DEDUP_ACROSS_SOURCES and to_save:
+                    dupes: set[str] = set()
+                    for start in range(0, len(to_save), 1000):
+                        dupes |= await self.repo.duplicates_elsewhere(to_save[start : start + 1000])
+                    duplicates = len(dupes)
+                    to_save = [j for j in to_save if j.external_id not in dupes]
                 inserted = updated = 0
                 source_new_ids: list[uuid.UUID] = []
                 skipped = 0
                 bind = self.repo.db.bind
                 bulk = bind is not None and bind.dialect.name == "postgresql"
                 # PostgreSQL: 500 jobs per statement instead of a round trip per job.
-                step = 500 if bulk else max(1, len(fetched_jobs))
-                for start in range(0, len(fetched_jobs), step):
-                    batch = fetched_jobs[start : start + step]
+                step = 500 if bulk else max(1, len(to_save))
+                for start in range(0, len(to_save), step):
+                    batch = to_save[start : start + step]
                     if bulk:
                         try:
                             async with self.repo.db.begin_nested():
@@ -236,7 +290,9 @@ class JobService:
                         f"{aggregator.source_name} answered with no jobs; expiry skipped"
                     )
                 logger.info(
-                    f"Aggregated {aggregator.source_name}: {inserted} new, {updated} updated"
+                    f"Aggregated {aggregator.source_name}: {inserted} new, {updated} updated, "
+                    f"{duplicates} duplicates of other sources, "
+                    f"{len(fetched_jobs) - len(to_save) - duplicates} older than retention or invalid"
                 )
                 # A partial save must not look healthy or expire unseen rows.
                 status = "FAILED" if skipped else "SUCCESS"

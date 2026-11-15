@@ -431,6 +431,22 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=USAJOBS'
+- id: board-weworkremotely
+  name: We Work Remotely (RSS)
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=WEWORKREMOTELY'
+- id: board-workable
+  name: Workable boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=WORKABLE'
 - id: board-workingnomads
   name: Working Nomads
   type: external
