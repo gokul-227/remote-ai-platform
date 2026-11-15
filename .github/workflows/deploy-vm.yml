@@ -59,7 +59,8 @@ jobs:
           DISPATCH_DEPLOY: ${{ inputs.deploy }}
         run: |
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          echo "branch=$(echo "$BRANCH" | tr -c 'a-zA-Z0-9._-\n' '-')" >> "$GITHUB_OUTPUT"
+          safe="${BRANCH//[^a-zA-Z0-9._-]/-}"
+          echo "branch=${safe:-unknown}" >> "$GITHUB_OUTPUT"
           echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           deploy=false
           if [ "$BRANCH" = "prod" ]; then
