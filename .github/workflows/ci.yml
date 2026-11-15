@@ -222,6 +222,18 @@ jobs:
           E2E_ADMIN_BASE_URL: http://localhost:13001
         run: npx playwright test
 
+      - name: WorkOS AuthKit sign-in journeys (migration target)
+        # Same stack rebuilt with the web app signing in through WorkOS (mock in
+        # tests/e2e/mock-workos; no real WorkOS account or secret is used).
+        run: |
+          ISSUER=http://host.docker.internal:9998/user_management/client_e2e PORT=9998 nohup python3 tests/e2e/mock-workos/server.py > mock-workos.log 2>&1 &
+          timeout 30 sh -c 'until curl -sf http://localhost:9998/sso/jwks/client_e2e; do sleep 1; done'
+          docker compose -p rap-e2e -f infra/docker/docker-compose.yml -f tests/e2e/docker-compose.e2e.yml \
+            -f tests/e2e/docker-compose.e2e-workos.yml up -d --build api web
+          timeout 180 sh -c 'until curl -sf http://localhost:18000/health/ready; do sleep 3; done'
+          timeout 120 sh -c 'until curl -sf http://localhost:13000/; do sleep 3; done'
+          cd tests/e2e && E2E_AUTH_PROVIDER=workos npx playwright test auth-workos.spec.ts privacy.spec.ts --project=chromium
+
       # Keeping this permanently (not just for this investigation): it's what
       # actually surfaced the real root cause of a prior E2E failure -- a
       # captured `POST .../auth/v1/otp` -> 429 network entry in trace.zip --

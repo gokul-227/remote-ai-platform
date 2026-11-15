@@ -127,6 +127,10 @@ class DeletedIdentity(Base):
         Integer, default=0, server_default="0", nullable=False
     )
     last_error: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Which identity provider holds `pending_subject`: "supabase" or "workos".
+    provider: Mapped[str] = mapped_column(
+        String(32), default="supabase", server_default="supabase", nullable=False
+    )
 
 
 def identity_hash(subject: str, provider: str = "supabase") -> str:

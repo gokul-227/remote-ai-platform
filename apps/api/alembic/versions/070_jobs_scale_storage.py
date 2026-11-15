@@ -15,7 +15,7 @@ stores job text smaller than lz4 (lz4 is faster, not smaller).
 PostgreSQL only for the index part (SQLite tests build from models).
 
 Revision ID: 070_jobs_scale_storage
-Revises: 068_backup_runs
+Revises: 069_deleted_identity_provider
 """
 
 import sqlalchemy as sa
@@ -23,7 +23,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "070_jobs_scale_storage"
-down_revision = "068_backup_runs"
+down_revision = "069_deleted_identity_provider"
 branch_labels = None
 depends_on = None
 

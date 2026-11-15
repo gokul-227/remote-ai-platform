@@ -158,6 +158,49 @@ class Settings(BaseSettings):
     # secret: never exposed to the browser.
     SUPABASE_SERVICE_ROLE_KEY: str = ""
 
+    # ── WorkOS AuthKit (migration target for sign-in) ───────────────────────────
+    # Set WORKOS_CLIENT_ID to accept WorkOS access tokens next to Supabase's.
+    # AUTH_PRIMARY_PROVIDER decides which provider the web/admin apps sign in
+    # with ("supabase" until cut-over, then "workos"); AUTH_ACCEPT_SUPABASE=false
+    # turns Supabase tokens off once every active user has moved.
+    WORKOS_CLIENT_ID: str = ""
+    # Server-side secret (sk_...): magic-auth codes, OAuth code exchange,
+    # refresh, sign-out and user erasure. Never exposed to the browser.
+    WORKOS_API_KEY: str = ""
+    WORKOS_API_URL: str = "https://api.workos.com"
+    # Where browsers are sent to start an OAuth sign-in. Empty = WORKOS_API_URL;
+    # set it to a WorkOS custom auth domain (or the E2E mock's host address).
+    WORKOS_AUTHORIZE_URL: str = ""
+    # Comma-separated accepted `iss` values; empty means WorkOS's defaults for
+    # this client (the per-client issuer and the generic one). Add a custom
+    # auth domain here when one is configured.
+    WORKOS_ISSUERS_RAW: str = Field(default="", validation_alias="WORKOS_ISSUERS")
+    AUTH_PRIMARY_PROVIDER: str = "supabase"
+    AUTH_ACCEPT_SUPABASE: bool = True
+
+    @property
+    def workos_enabled(self) -> bool:
+        return bool(self.WORKOS_CLIENT_ID)
+
+    @property
+    def WORKOS_JWKS_URL(self) -> str:  # noqa: N802
+        return f"{self.WORKOS_API_URL.rstrip('/')}/sso/jwks/{self.WORKOS_CLIENT_ID}"
+
+    @property
+    def workos_issuers(self) -> set[str]:
+        raw = {i.strip().rstrip("/") for i in self.WORKOS_ISSUERS_RAW.split(",") if i.strip()}
+        if raw:
+            return raw
+        base = self.WORKOS_API_URL.rstrip("/")
+        return {f"{base}/user_management/{self.WORKOS_CLIENT_ID}", base}
+
+    @property
+    def auth_primary_provider(self) -> str:
+        primary = self.AUTH_PRIMARY_PROVIDER.strip().lower()
+        if primary == "workos" and self.workos_enabled:
+            return "workos"
+        return "supabase"
+
     @property
     def SUPABASE_JWKS_URL(self) -> str | None:  # noqa: N802
         if not self.SUPABASE_URL:
@@ -465,8 +508,16 @@ class Settings(BaseSettings):
             errors.append(
                 "DEBUG must not be enabled in production (it exposes verbose tracebacks/internals to clients)"
             )
-        if not self.SUPABASE_URL:
-            errors.append("SUPABASE_URL must be configured (it is the only sign-in path)")
+        if not self.SUPABASE_URL and self.AUTH_ACCEPT_SUPABASE:
+            errors.append("SUPABASE_URL must be configured while Supabase sign-in is accepted")
+        if not self.AUTH_ACCEPT_SUPABASE and not self.workos_enabled:
+            errors.append(
+                "AUTH_ACCEPT_SUPABASE=false needs WORKOS_CLIENT_ID (no sign-in path left)"
+            )
+        if self.AUTH_PRIMARY_PROVIDER.strip().lower() == "workos" and not (
+            self.workos_enabled and self.WORKOS_API_KEY
+        ):
+            errors.append("AUTH_PRIMARY_PROVIDER=workos needs WORKOS_CLIENT_ID and WORKOS_API_KEY")
         uses_minio = self.STORAGE_PROVIDER != "r2" or self.STORAGE_LEGACY_FALLBACK
         if self.STORAGE_PROVIDER not in {"s3", "r2"}:
             errors.append("STORAGE_PROVIDER must be 's3' or 'r2'")
@@ -502,7 +553,11 @@ class Settings(BaseSettings):
         # Redis instance (e.g. Upstash free tier) or accept the degraded behaviour.
         if self.JOB_SYNC_TOKEN and len(self.JOB_SYNC_TOKEN) < 32:
             errors.append("JOB_SYNC_TOKEN must be at least 32 characters")
-        if not self.SUPABASE_SERVICE_ROLE_KEY:
+        if self.workos_enabled and not self.WORKOS_API_KEY:
+            errors.append(
+                "WORKOS_CLIENT_ID is set without WORKOS_API_KEY (sign-in and deletion need it)"
+            )
+        if self.AUTH_ACCEPT_SUPABASE and not self.SUPABASE_SERVICE_ROLE_KEY:
             import warnings
 
             # The privacy notice says deletion removes the sign-in account too.

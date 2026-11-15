@@ -53,8 +53,8 @@ make postman-sync DRY_RUN=1   # OpenAPI -> Postman collection; CI pushes it to t
 
 `apps/api/app/domains/` holds one subpackage per bounded context (`models.py` / `schemas.py` /
 `router.py`, plus `repository.py` / `service.py` where they exist); all routers mount under `/api/v1` in
-`apps/api/app/main.py`. **Supabase Auth is the only identity provider**: the API verifies Supabase access
-tokens (JWKS) in `app/domains/auth/dependencies.py` and never issues tokens; role lives in the app's own
+`apps/api/app/main.py`. **Identity is Supabase Auth, moving to WorkOS AuthKit** (`AUTH_PRIMARY_PROVIDER`, `NEXT_PUBLIC_AUTH_PROVIDER`; `AUTH_ACCEPT_SUPABASE=false` turns Supabase off): the API verifies access
+tokens (JWKS) in `app/domains/auth/supabase_auth.py`, links WorkOS users by verified email through `user_identities`, proxies WorkOS sign-in in `auth/workos_router.py` and never mints tokens; role lives in the app's own
 `users` table. AI calls go through LiteLLM only (`app/agents/*` → `app/services/ai/service.py` →
 `app/agents/llm_client.py`), using the free-tier chain in `AI_FREE_TIER_CHAIN` with per-user token
 allowances (`app/services/ai/metering.py`). Background work runs on Celery (`app/worker/`: worker +

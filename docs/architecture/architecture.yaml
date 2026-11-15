@@ -101,6 +101,7 @@ components:
     - applications
     - assistant
     - auth
+    - auth.workos
     - browser
     - channels
     - companies.members

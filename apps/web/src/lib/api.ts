@@ -1,5 +1,6 @@
 import axios from "axios";
 import { supabase } from "@/lib/supabase";
+import { WORKOS_ENABLED, refreshTokens } from "@/lib/workos";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -48,6 +49,15 @@ const readToken = (): string | null => {
 let refreshing: Promise<string> | null = null;
 function refreshAccessToken(): Promise<string> {
   refreshing ??= (async () => {
+    if (WORKOS_ENABLED) {
+      // WorkOS rotates refresh tokens: store the new one every time.
+      const stored = localStorage.getItem("remote_ai_platform_refresh_token");
+      if (!stored) throw new Error("No session");
+      const tokens = await refreshTokens(stored);
+      localStorage.setItem("remote_ai_platform_token", tokens.access_token);
+      if (tokens.refresh_token) localStorage.setItem("remote_ai_platform_refresh_token", tokens.refresh_token);
+      return tokens.access_token;
+    }
     const { data, error: refreshError } = await supabase.auth.refreshSession();
     if (refreshError || !data.session) throw refreshError || new Error("No session");
     const { access_token, refresh_token } = data.session;
@@ -104,7 +114,7 @@ api.interceptors.response.use(
           if (config.headers) config.headers.Authorization = `Bearer ${current}`;
           return api(config);
         }
-        await supabase.auth.signOut();
+        if (!WORKOS_ENABLED) await supabase.auth.signOut();
         try {
           localStorage.removeItem("remote_ai_platform_token");
           localStorage.removeItem("remote_ai_platform_refresh_token");

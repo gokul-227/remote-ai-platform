@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useSyncExternalStore } from "react";
 import { supabase } from "@/lib/supabase";
+import { WORKOS_ENABLED, signOut as workosSignOut } from "@/lib/workos";
 
 interface User {
   id: string;
@@ -138,7 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // token) alive, so the next visit could silently sign the user back in.
     // "local" revokes this device's refresh token; "global" revokes all of them.
     try {
-      await supabase.auth.signOut({ scope: everywhere ? "global" : "local" });
+      if (WORKOS_ENABLED) await workosSignOut(localStorage.getItem(TOKEN_KEY), everywhere);
+      else await supabase.auth.signOut({ scope: everywhere ? "global" : "local" });
     } catch {
       // Offline or already signed out: still clear this device below.
     }

@@ -5,7 +5,8 @@ Order matters:
 2. Tombstone written and the user row deleted in one commit. From here on
    every token for the subject is refused (auth/service.py), including tokens
    minted later by refreshing an old session.
-3. The Supabase user is erased (email, OAuth links, sessions). If that fails
+3. The identity-provider users (Supabase, and WorkOS once linked) are erased
+   (email, OAuth links, sessions). If that fails
    the tombstone keeps the subject in `pending_subject` and the erasure is
    retried by `retry_pending_erasures` (six-hourly scheduled sync and the
    admin endpoint) until it succeeds.
@@ -19,11 +20,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.storage import get_storage
-from app.domains.auth import supabase_admin
+from app.domains.auth import supabase_admin, workos_client
 from app.domains.auth.models import DeletedIdentity, User, UserIdentity, identity_hash
 from app.domains.engineers.models import EngineerProfile
 
 logger = get_logger("auth.erasure")
+
+# Identity providers whose user this app can erase: module with
+# is_configured() and async delete_identity(subject).
+ERASERS = {"supabase": supabase_admin, "workos": workos_client}
 
 
 async def erase_account(db: AsyncSession, user: User) -> None:
@@ -39,36 +44,39 @@ async def erase_account(db: AsyncSession, user: User) -> None:
             settings.MINIO_BUCKET_RESUMES, _resume_object_key(profile.resume_url)
         )
 
-    subject = user.auth_subject
     user_id = str(user.id)
-    tombstone: DeletedIdentity | None = None
-    if subject:
-        tombstone = await db.merge(
-            DeletedIdentity(
-                subject_hash=identity_hash(subject),
-                deleted_at=datetime.now(UTC),
-                pending_subject=subject,
-                provider_erased_at=None,
-                provider_attempts=0,
-                last_error=None,
+    # Every identity that can sign in to this account: the Supabase subject and
+    # each linked identity (WorkOS, extra issuers). Each gets a tombstone; only
+    # providers this app can erase keep a pending subject.
+    subjects: list[tuple[str, str]] = []
+    if user.auth_subject:
+        subjects.append(("supabase", user.auth_subject))
+    linked = (await db.scalars(select(UserIdentity).where(UserIdentity.user_id == user.id))).all()
+    subjects.extend((row.provider, row.subject) for row in linked)
+    tombstones: list[DeletedIdentity] = []
+    for provider, subject in subjects:
+        erasable = provider in ERASERS
+        tombstones.append(
+            await db.merge(
+                DeletedIdentity(
+                    subject_hash=identity_hash(subject, provider),
+                    deleted_at=datetime.now(UTC),
+                    # Other extra issuers are only blocked locally.
+                    pending_subject=subject if erasable else None,
+                    provider_erased_at=None,
+                    provider_attempts=0,
+                    last_error=None,
+                    provider=provider,
+                )
             )
         )
-    links = (await db.scalars(select(UserIdentity).where(UserIdentity.user_id == user.id))).all()
-    for link in links:
-        await db.merge(
-            DeletedIdentity(
-                subject_hash=identity_hash(link.subject, link.provider),
-                deleted_at=datetime.now(UTC),
-                # Extra identities are blocked locally, never sent to Supabase erasure.
-                pending_subject=None,
-            )
-        )
+    for link in linked:
         await db.delete(link)
     await db.delete(user)
     await db.commit()
     logger.info("Account deleted", user_id=user_id)
 
-    if tombstone is not None:
+    for tombstone in tombstones:
         await erase_provider_identity(db, tombstone)
 
 
@@ -77,17 +85,18 @@ async def erase_provider_identity(db: AsyncSession, tombstone: DeletedIdentity) 
     subject = tombstone.pending_subject
     if not subject:
         return True
-    if not supabase_admin.is_configured():
+    eraser = ERASERS.get(tombstone.provider or "supabase")
+    if eraser is None or not eraser.is_configured():
         # Nothing can erase it here; stays pending and visible to operators.
         return False
     try:
-        await supabase_admin.delete_identity(subject)
+        await eraser.delete_identity(subject)
     except Exception as exc:  # noqa: BLE001 - recorded and retried, never undoes the app erasure
         tombstone.provider_attempts = (tombstone.provider_attempts or 0) + 1
         tombstone.last_error = type(exc).__name__[:64]
         await db.commit()
         logger.warning(
-            "Supabase identity not erased; will retry",
+            "Identity-provider user not erased; will retry",
             subject_hash=tombstone.subject_hash[:12],
             attempts=tombstone.provider_attempts,
             error=tombstone.last_error,

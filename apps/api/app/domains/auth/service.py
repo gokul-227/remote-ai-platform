@@ -10,12 +10,43 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 
 from app.core.logging import get_logger
+from app.domains.auth import workos_client
 from app.domains.auth.models import DeletedIdentity, User, UserIdentity, UserRole, identity_hash
 from app.domains.auth.repository import UserRepository
 from app.domains.auth.schemas import UserCreate
 from app.domains.auth.supabase_auth import SupabaseIdentity
 
 logger = get_logger("auth.service")
+
+
+async def _workos_verified_identity(identity: SupabaseIdentity) -> SupabaseIdentity:
+    """Fill email/email_verified for a first-seen WorkOS subject from the WorkOS API.
+
+    AuthKit access tokens carry no email. The API's `email_verified` is the
+    only thing that may link this identity to an existing account; if WorkOS
+    cannot be asked, sign-in fails closed rather than guessing.
+    """
+    from dataclasses import replace
+
+    if not workos_client.is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Sign-in is temporarily unavailable. Please try again shortly.",
+        )
+    try:
+        wos_user = await workos_client.get_user(identity.user_id)
+    except Exception as exc:  # noqa: BLE001 - logged; never echo provider internals
+        logger.warning("WorkOS user lookup failed", error=type(exc).__name__)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Sign-in is temporarily unavailable. Please try again shortly.",
+        ) from exc
+    email = wos_user.get("email") or None
+    return replace(
+        identity,
+        email=email.strip().lower() if isinstance(email, str) else None,
+        email_verified=bool(email and wos_user.get("email_verified") is True),
+    )
 
 
 class AuthService:
@@ -108,6 +139,9 @@ class AuthService:
             user = await self.user_repo.get_by_id(linked.user_id)
             if user is not None:
                 return user
+        if identity.verify_email_with_provider:
+            # WorkOS access tokens carry no email: ask WorkOS, once, before linking.
+            identity = await _workos_verified_identity(identity)
         user = None
         if identity.email:
             user = await self.user_repo.get_by_email(identity.email)
@@ -122,7 +156,9 @@ class AuthService:
                     ),
                 )
         if identity.email_verified is not True:
-            raise HTTPException(status_code=409, detail="Verify your email with your sign-in provider.")
+            raise HTTPException(
+                status_code=409, detail="Verify your email with your sign-in provider."
+            )
         if user is None:
             user = await self.user_repo.create(
                 UserCreate(

@@ -25,12 +25,18 @@ export function deployEnvProblems(env: Env): string[] {
   const problems: string[] = [];
   const api = env.NEXT_PUBLIC_API_URL;
   if (!httpsUrl(api) || isLocal(api ?? "")) problems.push("NEXT_PUBLIC_API_URL must be an https URL that is not local");
-  const supabase = env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!httpsUrl(supabase) || isLocal(supabase ?? "") || /placeholder/i.test(supabase ?? "")) {
-    problems.push("NEXT_PUBLIC_SUPABASE_URL must be the project's https URL");
+  // With WorkOS sign-in (NEXT_PUBLIC_AUTH_PROVIDER=workos) Supabase is not used at all.
+  const provider = env.NEXT_PUBLIC_AUTH_PROVIDER ?? "supabase";
+  if (provider !== "supabase" && provider !== "workos")
+    problems.push('NEXT_PUBLIC_AUTH_PROVIDER must be "supabase" or "workos"');
+  if (provider !== "workos") {
+    const supabase = env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!httpsUrl(supabase) || isLocal(supabase ?? "") || /placeholder/i.test(supabase ?? "")) {
+      problems.push("NEXT_PUBLIC_SUPABASE_URL must be the project's https URL");
+    }
+    const key = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    if (!key || /placeholder/i.test(key)) problems.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing");
   }
-  const key = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!key || /placeholder/i.test(key)) problems.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing");
   // Canonical URLs and the sitemap need the public address of the production site.
   if (target === "production" && (!httpsUrl(env.NEXT_PUBLIC_SITE_URL) || isLocal(env.NEXT_PUBLIC_SITE_URL ?? "")))
     problems.push("NEXT_PUBLIC_SITE_URL must be the site's https URL");

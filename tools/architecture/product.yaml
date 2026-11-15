@@ -25,7 +25,7 @@ features:
     step: 1
     personas: [professional, organisation]
     screens: [onboarding, settings, security, privacydata, apps]
-    api: [auth]
+    api: [auth, auth.workos]
     uses: [auth, resend]
   - id: profiles
     icon: concepts/user

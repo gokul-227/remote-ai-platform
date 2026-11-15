@@ -45,6 +45,8 @@ features:
   api:
   - domain: auth
     prefix: /api/v1/auth
+  - domain: auth.workos
+    prefix: /api/v1/auth/workos
   uses:
   - id: auth
     name: Supabase Auth
@@ -463,6 +465,8 @@ api:
     prefix: /assistant
   - domain: auth
     prefix: /auth
+  - domain: auth.workos
+    prefix: /auth/workos
   - domain: browser
     prefix: /browser
   - domain: channels

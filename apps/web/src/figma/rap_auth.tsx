@@ -11,6 +11,7 @@ import {
 import { extractErrorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { takeReturnTo } from "./live";
+import * as workos from "@/lib/workos";
 
 const OAUTH_LABELS: [OAuthProvider, string][] = [
   ["google", "Google"],
@@ -35,7 +36,7 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
   const [providers, setProviders] = useState<OAuthProvider[] | null>(null);
   useEffect(() => {
     let live = true;
-    enabledOAuthProviders().then((p) => live && setProviders(p));
+    (workos.WORKOS_ENABLED ? workos.enabledProviders() : enabledOAuthProviders()).then((p) => live && setProviders(p));
     return () => {
       live = false;
     };
@@ -53,6 +54,9 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
   const reset = route === "reset";
   const msg = (e: unknown) => (e as { message?: string })?.message || "";
   const requestCode = async () => {
+    // WorkOS: one code flow for sign-in and sign-up (the account is created
+    // on first verification, as with OAuth).
+    if (workos.WORKOS_ENABLED) return workos.sendCode(email);
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: join ? { shouldCreateUser: true, data: { full_name: name.trim() } } : { shouldCreateUser: false },
@@ -98,23 +102,32 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
   const verify = async () => {
     setBusy(true);
     setError("");
+    let signedInWith: string | null = null;
     try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: code,
-        type: "email",
-      });
-      if (verifyError || !data.session) throw verifyError || new Error("Verification failed");
-      let user = await fetchBackendUser(data.session);
-      user = await applyPendingRegistration(data.session, user);
-      login(data.session.access_token, user, data.session.refresh_token);
+      let session: { access_token: string; refresh_token: string | null };
+      if (workos.WORKOS_ENABLED) {
+        session = await workos.verifyCode(email, code);
+        signedInWith = session.access_token;
+      } else {
+        const { data, error: verifyError } = await supabase.auth.verifyOtp({
+          email: email.trim(),
+          token: code,
+          type: "email",
+        });
+        if (verifyError || !data.session) throw verifyError || new Error("Verification failed");
+        session = data.session;
+      }
+      let user = await fetchBackendUser(session);
+      user = await applyPendingRegistration(session, user);
+      login(session.access_token, user, session.refresh_token);
       go(join ? "onboarding" : takeReturnTo(homeFor()));
     } catch (e) {
       // The API's own explanation (e.g. an account that uses another sign-in
       // method) beats axios's generic "Request failed with status code …".
       const server = extractErrorMessage(e, "");
       // The app refused this sign-in: don't leave a Supabase session behind.
-      if (server) void supabase.auth.signOut({ scope: "local" }).catch(() => {});
+      if (server && workos.WORKOS_ENABLED) void workos.signOut(signedInWith);
+      else if (server) void supabase.auth.signOut({ scope: "local" }).catch(() => {});
       setError(
         server ||
           (/expired|invalid/i.test(msg(e))
@@ -139,6 +152,14 @@ export function AuthFlow({ route, go }: { route: string; go: (r: string) => void
     setError("");
     // Keep the "Find work"/"Hire talent" choice for the account the provider creates.
     if (join) rememberOAuthSignUp("ENGINEER", name.trim());
+    if (workos.WORKOS_ENABLED) {
+      try {
+        window.location.assign(await workos.startOAuth(provider, `${window.location.origin}/auth/callback`));
+      } catch {
+        setError("That sign-in option isn't available right now. Use an email code instead.");
+      }
+      return;
+    }
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },

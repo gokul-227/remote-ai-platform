@@ -26,6 +26,14 @@ describe("deployEnvProblems", () => {
     expect(deployEnvProblems({ ...good, NEXT_PUBLIC_DEPLOY_ENV: "dev", NEXT_PUBLIC_SITE_URL: undefined })).toEqual([]);
   });
 
+  it("needs no Supabase settings once sign-in is on WorkOS", () => {
+    const workos = { ...good, NEXT_PUBLIC_AUTH_PROVIDER: "workos" };
+    delete (workos as Record<string, string | undefined>).NEXT_PUBLIC_SUPABASE_URL;
+    delete (workos as Record<string, string | undefined>).NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    expect(deployEnvProblems(workos)).toEqual([]);
+    expect(deployEnvProblems({ ...good, NEXT_PUBLIC_AUTH_PROVIDER: "auth0" })).toHaveLength(1);
+  });
+
   it("does not constrain local, CI or E2E builds", () => {
     expect(deployEnvProblems({})).toEqual([]);
     expect(deployEnvProblems({ NEXT_PUBLIC_API_URL: "http://localhost:18000" })).toEqual([]);

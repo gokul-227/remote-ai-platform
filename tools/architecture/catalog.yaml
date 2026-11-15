@@ -315,6 +315,9 @@ ignore:
     - REDIS_URL                 # redis
     - CELERY_BROKER_URL         # legacy alias of REDIS_URL (the worker reads REDIS_URL)
     - SUPABASE_SERVICE_ROLE_KEY # auth (Admin API)
+    - WORKOS_API_KEY            # auth migration (WorkOS AuthKit, proxied sign-in)
+    - WORKOS_API_URL            # auth migration (WorkOS API base)
+    - WORKOS_AUTHORIZE_URL      # auth migration (custom auth domain or E2E mock)
     - AI_API_KEY                # generic LiteLLM override, unset in deploys
     - LITELLM_BASE_URL          # optional LiteLLM proxy, unset in deploys
     - OPENAI_API_KEY            # not in AI_FREE_TIER_CHAIN
