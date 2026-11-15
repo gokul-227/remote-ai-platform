@@ -4,6 +4,13 @@ for (const [path, title] of [
   ["privacy", "Privacy Policy"],
   ["terms", "Terms of Service"],
   ["impressum", "Legal notice"],
+  ["legal", "Legal"],
+  ["cookies", "Cookie Policy"],
+  ["community-guidelines", "Community Guidelines"],
+  ["employer-terms", "Job Posting and Employer Terms"],
+  ["copyright", "Copyright and Takedown Policy"],
+  ["security", "Security Policy"],
+  ["accessibility", "Accessibility Statement"],
 ]) {
   test(`${path} is public HTML with the single public contact address`, async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
@@ -16,6 +23,12 @@ for (const [path, title] of [
     await context.close();
   });
 }
+
+test("security.txt is served with the contact address", async ({ request }) => {
+  const response = await request.get("/.well-known/security.txt");
+  expect(response.ok()).toBeTruthy();
+  expect(await response.text()).toContain("Contact: mailto:contact@remoteaiplatform.com");
+});
 
 test("legacy private navigation pages opt out of indexing", async ({ request }) => {
   const response = await request.get("/settings");
