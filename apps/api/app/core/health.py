@@ -316,6 +316,7 @@ async def health_readiness(
         overall = "HEALTHY"
         response.status_code = status.HTTP_200_OK
 
+    _alert_degradations(services)
     return HealthReadyResponse(
         status=overall,
         version=settings.APP_VERSION,
@@ -377,6 +378,7 @@ async def health_dependencies(
         overall = "HEALTHY"
         response.status_code = status.HTTP_200_OK
 
+    _alert_degradations(services)
     return HealthReadyResponse(
         status=overall,
         version=settings.APP_VERSION,
@@ -502,3 +504,20 @@ async def ingestion_health(db: AsyncSession = Depends(get_db)) -> dict[str, Any]
         "sources": sources,
         "identity_erasures_overdue": int(overdue or 0),
     }
+
+
+def _alert_degradations(services: dict[str, ServiceCheckResult]) -> None:
+    """#alerts-critical when a health component is DOWN/DEGRADED (deduplicated per
+    component by SLACK_DEDUP_SECONDS). A stale worker/scheduler heartbeat shows up here
+    because the uptime monitors poll /health/ready every minute."""
+    from app.services import slack
+
+    for key, result in services.items():
+        if result.status in ("DOWN", "DEGRADED"):
+            detail = result.error or (result.details or {}).get("newest_age_seconds")
+            slack.notify(
+                "critical",
+                f":red_circle: {result.service} is {result.status}",
+                dedup_key=f"health:{key}:{result.status}",
+                fields={"component": key, "detail": detail, "env": settings.APP_ENV},
+            )

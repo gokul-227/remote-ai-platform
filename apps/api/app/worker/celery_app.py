@@ -50,6 +50,12 @@ celery_app.conf.update(
         "prune-runs": {"task": "tasks.prune_runs", "schedule": crontab(hour=4, minute=5)},
         "send-digests": {"task": "notifications.send_digests", "schedule": 300.0},
         "sweep-file-trash": {"task": "files.sweep_trash", "schedule": crontab(hour=4, minute=30)},
+        "daily-import-summary": {
+            "task": "ops.daily_import_summary",
+            "schedule": crontab(hour=7, minute=0),
+        },
+        "check-backups": {"task": "ops.check_backups", "schedule": crontab(hour=8, minute=0)},
+        "cost-guard": {"task": "ops.cost_guard", "schedule": crontab(hour="*/6", minute=15)},
     },
 )
 

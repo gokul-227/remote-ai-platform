@@ -70,4 +70,7 @@ async def record_audit_event(
     )
     db.add(event)
     await db.flush()
+    from app.services import slack
+
+    slack.audit_hook(action, resource_type, event.resource_id, actor_id, event.payload or {})
     return event

@@ -6,7 +6,7 @@ Additive: two new tables, no changes to existing data.
 - member_invites: personal invite links (token hash only, no invitee address).
 
 Revision ID: 072_news_and_invites
-Revises: 070_jobs_scale_storage
+Revises: 071_web_push_keys
 """
 
 import sqlalchemy as sa
@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from alembic import op
 
 revision = "072_news_and_invites"
-down_revision = "070_jobs_scale_storage"
+down_revision = "071_web_push_keys"
 branch_labels = None
 depends_on = None
 

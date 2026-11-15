@@ -125,7 +125,7 @@ class NotificationDigestItem(Base):
 
 
 class PushSubscription(Base):
-    """A browser/device registration token for push (Firebase Cloud Messaging)."""
+    """A Web Push subscription: `token` is the push endpoint URL, plus the browser keys."""
 
     __tablename__ = "push_subscriptions"
 
@@ -135,6 +135,8 @@ class PushSubscription(Base):
     )
     token: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
     platform: Mapped[str] = mapped_column(String(16), nullable=False, default="web")
+    p256dh: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    auth_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

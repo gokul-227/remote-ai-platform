@@ -1,7 +1,7 @@
 /* Remote AI Platform push service worker.
  *
- * Firebase Cloud Messaging delivers standard Web Push messages; this worker
- * shows them and opens the linked screen. It loads no third-party scripts and
+ * The API sends standard Web Push messages (VAPID, RFC 8291 encryption; the
+ * browser decrypts them); this worker shows them and opens the linked screen. It loads no third-party scripts and
  * never reads page data. Notification text comes from our own API.
  */
 self.addEventListener("push", (event) => {
@@ -11,8 +11,10 @@ self.addEventListener("push", (event) => {
   } catch {
     payload = {};
   }
-  const n = payload.notification || {};
-  const data = payload.data || {};
+  // Payload: {title, body, link, url}. The nested {notification, data} shape is
+  // still read so a message queued before the switch renders correctly.
+  const n = payload.notification || payload;
+  const data = payload.data || payload;
   const title = typeof n.title === "string" && n.title ? n.title.slice(0, 120) : "Remote AI Platform";
   const body = typeof n.body === "string" ? n.body.slice(0, 240) : "";
   const link = typeof data.link === "string" && data.link.startsWith("#") ? data.link : "#notifications";

@@ -43,7 +43,39 @@ class UserRepository:
         self.db.add(user)
         await self.db.flush()
         await self.db.refresh(user)
+        await self._announce_signup(user)
         return user
+
+    async def _announce_signup(self, user: User) -> None:
+        """#signups: one line per new account (email domain only) and an hourly spike alert."""
+        from datetime import UTC, datetime, timedelta
+
+        from app.core.config import settings
+        from app.services import slack
+
+        if not slack.enabled():
+            return
+        try:
+            domain = (user.email or "").rsplit("@", 1)[-1]
+            slack.notify("signups", f":wave: New sign-up (@{domain})")
+            since = datetime.now(UTC) - timedelta(hours=1)
+            recent = await self.db.scalar(
+                select(func.count()).select_from(User).where(User.created_at >= since)
+            )
+            if (recent or 0) > settings.SLACK_SIGNUP_SPIKE_PER_HOUR:
+                slack.notify(
+                    "signups",
+                    f":chart_with_upwards_trend: Sign-up spike: {recent} in the last hour "
+                    f"(threshold {settings.SLACK_SIGNUP_SPIKE_PER_HOUR})",
+                    dedup_key=f"signup-spike:{datetime.now(UTC):%Y%m%d%H}",
+                )
+                slack.notify(
+                    "security",
+                    f":warning: Sign-up spike ({recent}/h) - check for automated account creation",
+                    dedup_key=f"signup-spike:{datetime.now(UTC):%Y%m%d%H}",
+                )
+        except Exception:
+            pass
 
     async def update(self, user: User, data: UserUpdate) -> User:
         update_dict = data.model_dump(exclude_unset=True)

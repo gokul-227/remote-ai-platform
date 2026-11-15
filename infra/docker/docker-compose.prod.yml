@@ -116,6 +116,8 @@ services:
 
   worker:
     <<: *api-image
+    # edge: imports, Slack alerts and AI providers need outbound internet.
+    networks: [internal, edge]
     command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "default,imports", "--concurrency", "2", "--max-tasks-per-child", "100", "--loglevel", "INFO"]
     depends_on:
       redis:
@@ -136,6 +138,7 @@ services:
 
   scheduler:
     <<: *api-image
+    networks: [internal, edge]
     command: ["celery", "-A", "app.worker.celery_app", "beat", "--loglevel", "INFO", "--schedule", "/tmp/celerybeat-schedule"]
     depends_on:
       redis:

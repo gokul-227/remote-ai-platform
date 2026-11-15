@@ -1,0 +1,49 @@
+name: Deploy notifications (Slack)
+
+# Posts start / success / failure of every deploy workflow to #deploys.
+# Secret SLACK_BOT_TOKEN and variable SLACK_CHANNEL_DEPLOYS; without them this
+# job prints "skipped" and succeeds. workflow_run always runs the default
+# branch's copy of this file.
+on:
+  workflow_run:
+    workflows:
+      - "Deploy production (VM)"
+      - "Deploy backend (Render)"
+      - "Publish API image (GHCR)"
+    types: [requested, completed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.workflow_run.conclusion != 'skipped'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: infra/ops
+      - name: Post to Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ vars.SLACK_CHANNEL_DEPLOYS }}
+          WF: ${{ github.event.workflow_run.name }}
+          ACTION: ${{ github.event.action }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          URL: ${{ github.event.workflow_run.html_url }}
+          ACTOR: ${{ github.event.workflow_run.actor.login }}
+        run: |
+          short="${SHA:0:7}"
+          if [ "$ACTION" = "requested" ]; then
+            icon=":rocket:"; state="started"
+          elif [ "$CONCLUSION" = "success" ]; then
+            icon=":white_check_mark:"; state="succeeded"
+          elif [ "$CONCLUSION" = "cancelled" ]; then
+            icon=":no_entry_sign:"; state="cancelled"
+          else
+            icon=":x:"; state="FAILED ($CONCLUSION)"
+          fi
+          bash infra/ops/slack-notify.sh "$icon $WF $state on $BRANCH @ $short by $ACTOR - $URL"

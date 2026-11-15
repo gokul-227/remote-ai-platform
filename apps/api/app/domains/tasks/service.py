@@ -187,6 +187,14 @@ class TaskService:
                 )
             )
             await self.db.commit()
+            from app.services import slack
+
+            await slack.post(
+                "critical",
+                f":skull: Task moved to dead letters: {run.task_name}",
+                dedup_key=f"dead:{run.task_name}",
+                fields={"run_id": str(run.id), "attempts": run.attempts, "error": error[:300]},
+            )
             return TASK_DEAD, None
         delay = BACKOFF_SECONDS[min(run.attempts - 1, len(BACKOFF_SECONDS) - 1)]
         run.status = TASK_RETRYING

@@ -23,6 +23,28 @@ from app.services.ai.metering import set_ai_actor
 
 logger = structlog.get_logger(__name__)
 
+_auth_failures: list[float] = []
+
+
+def record_auth_failure(kind: str) -> None:
+    """Count rejected bearer tokens; a burst inside 10 minutes posts to #security."""
+    import time
+
+    from app.services import slack
+
+    now = time.monotonic()
+    _auth_failures.append(now)
+    while _auth_failures and _auth_failures[0] < now - 600:
+        _auth_failures.pop(0)
+    if len(_auth_failures) >= settings.SLACK_AUTH_FAILURE_BURST:
+        slack.notify(
+            "security",
+            f":rotating_light: {len(_auth_failures)} rejected sign-in tokens in 10 minutes",
+            dedup_key="auth-failure-burst",
+            fields={"latest": kind},
+        )
+
+
 security_scheme = HTTPBearer(auto_error=False)
 
 
@@ -118,9 +140,12 @@ async def get_current_user(
     token = credentials.credentials
     try:
         return await authenticate_bearer_token(token, db)
-    except HTTPException:
+    except HTTPException as e:
+        if e.status_code == status.HTTP_401_UNAUTHORIZED:
+            record_auth_failure("rejected token")
         raise
     except AuthenticationError as e:
+        record_auth_failure("invalid token")
         # AuthenticationError messages are authored by this app's own code
         # (see app.domains.auth.service) -- e.g. "Invalid token: missing
         # subject (sub)" -- so they're safe to return to the client verbatim.
@@ -137,6 +162,7 @@ async def get_current_user(
         # column names, driver/connection details, or library-internal state.
         # Log the real exception server-side; return a generic 401 detail.
         logger.warning("Authentication failed with an unexpected error", error=str(e), exc_info=e)
+        record_auth_failure("unexpected error")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",

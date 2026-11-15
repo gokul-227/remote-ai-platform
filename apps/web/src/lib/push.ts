@@ -1,27 +1,18 @@
 import api from "@/lib/api";
 
 /*
- * Browser push. The Firebase SDK is used only to obtain this browser's
- * messaging token; the notifications themselves are shown by /push-sw.js.
- * Public Firebase web config comes from NEXT_PUBLIC_FIREBASE_CONFIG (JSON);
- * the VAPID key and on/off state come from the API, so nothing is enabled
- * unless the backend is configured too.
+ * Browser push over the standard Web Push protocol (no Firebase, no SDK).
+ * The browser's own PushManager subscribes with the API's VAPID public key;
+ * the subscription (endpoint + keys) is sent to the API, which encrypts and
+ * signs each message. Notifications are shown by /push-sw.js. Nothing is
+ * enabled unless the backend has VAPID keys configured.
  */
 
 export type PushState = "unsupported" | "unconfigured" | "denied" | "off" | "on";
 
-const TOKEN_KEY = "rap-push-token";
+const ENDPOINT_KEY = "rap-push-endpoint";
 
-function firebaseConfig(): Record<string, string> | null {
-  const raw = process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
-  if (!raw) return null;
-  try {
-    const cfg = JSON.parse(raw);
-    return cfg && cfg.apiKey && cfg.projectId && cfg.messagingSenderId && cfg.appId ? cfg : null;
-  } catch {
-    return null;
-  }
-}
+type ServerConfig = { enabled: boolean; vapid_key: string | null };
 
 export function pushSupported(): boolean {
   return (
@@ -29,72 +20,92 @@ export function pushSupported(): boolean {
   );
 }
 
-const storedToken = () => {
+/** base64url VAPID public key -> bytes for PushManager.subscribe. */
+export function vapidKeyBytes(key: string): Uint8Array<ArrayBuffer> {
+  const padded = (key + "=".repeat((4 - (key.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(padded);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+const storedEndpoint = () => {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(ENDPOINT_KEY);
   } catch {
     return null;
   }
 };
 
-export async function pushState(): Promise<PushState> {
-  if (!pushSupported()) return "unsupported";
-  if (!firebaseConfig()) return "unconfigured";
-  const cfg = await api
-    .get<{ enabled: boolean }>("/notifications/push/config")
+async function serverConfig(): Promise<ServerConfig | null> {
+  return api
+    .get<ServerConfig>("/notifications/push/config")
     .then((r) => r.data)
     .catch(() => null);
-  if (!cfg?.enabled) return "unconfigured";
-  if (Notification.permission === "denied") return "denied";
-  return Notification.permission === "granted" && storedToken() ? "on" : "off";
 }
 
-/** Ask permission, register the worker, get the FCM token and send it to the API. */
+export async function pushState(): Promise<PushState> {
+  if (!pushSupported()) return "unsupported";
+  const cfg = await serverConfig();
+  if (!cfg?.enabled) return "unconfigured";
+  if (Notification.permission === "denied") return "denied";
+  return Notification.permission === "granted" && storedEndpoint() ? "on" : "off";
+}
+
+/** Ask permission, register the worker, subscribe with the VAPID key and send the subscription to the API. */
 export async function enablePush(): Promise<PushState> {
-  const cfg = firebaseConfig();
-  if (!pushSupported() || !cfg) return "unsupported";
-  const server = (await api.get<{ enabled: boolean; vapid_key: string | null }>("/notifications/push/config")).data;
-  if (!server.enabled || !server.vapid_key) return "unconfigured";
+  if (!pushSupported()) return "unsupported";
+  const server = await serverConfig();
+  if (!server?.enabled || !server.vapid_key) return "unconfigured";
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission === "denied" ? "denied" : "off";
   const registration = await navigator.serviceWorker.register("/push-sw.js", { scope: "/" });
-  const { initializeApp, getApps } = await import("firebase/app");
-  const { getMessaging, getToken } = await import("firebase/messaging");
-  const app = getApps()[0] ?? initializeApp(cfg);
-  const token = await getToken(getMessaging(app), {
-    vapidKey: server.vapid_key,
-    serviceWorkerRegistration: registration,
+  await navigator.serviceWorker.ready;
+  const subscription =
+    (await registration.pushManager.getSubscription()) ??
+    (await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: vapidKeyBytes(server.vapid_key),
+    }));
+  const json = subscription.toJSON();
+  if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return "off";
+  await api.post("/notifications/push/subscriptions", {
+    endpoint: json.endpoint,
+    keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+    platform: "web",
   });
-  if (!token) return "off";
-  await api.post("/notifications/push/subscriptions", { token, platform: "web" });
   try {
-    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(ENDPOINT_KEY, json.endpoint);
   } catch {
-    /* storage blocked: the API still has the token */
+    /* storage blocked: the API still has the subscription */
   }
   return "on";
 }
 
-/** Stop push on this browser (the API revokes the token; permission stays with the browser). */
+/** Stop push on this browser (unsubscribe locally and revoke on the API). */
 export async function disablePush(): Promise<PushState> {
-  const token = storedToken();
-  if (token) {
-    await api.delete("/notifications/push/subscriptions", { data: { token, platform: "web" } }).catch(() => undefined);
+  let endpoint = storedEndpoint();
+  if (pushSupported()) {
     try {
-      localStorage.removeItem(TOKEN_KEY);
-    } catch {
-      /* ignore */
-    }
-  }
-  if (firebaseConfig()) {
-    try {
-      const { getApps } = await import("firebase/app");
-      const { getMessaging, deleteToken } = await import("firebase/messaging");
-      const app = getApps()[0];
-      if (app) await deleteToken(getMessaging(app));
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        endpoint = endpoint ?? subscription.endpoint;
+        await subscription.unsubscribe();
+      }
     } catch {
       /* the API revocation is what matters */
     }
+  }
+  if (endpoint) {
+    await api
+      .delete("/notifications/push/subscriptions", { data: { endpoint, platform: "web" } })
+      .catch(() => undefined);
+  }
+  try {
+    localStorage.removeItem(ENDPOINT_KEY);
+  } catch {
+    /* ignore */
   }
   return "off";
 }

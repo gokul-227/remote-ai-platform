@@ -1,0 +1,142 @@
+# Owner tooling on the production VM, independent of the app stack
+# (docker-compose.prod.yml). Free and self-hosted; every alert goes to Slack.
+#
+#   docker compose --env-file /opt/rap/ops.env -f infra/docker/docker-compose.ops.yml up -d
+#
+#   glitchtip-*   Sentry-compatible error tracking (own PostgreSQL + Valkey; the
+#                 Sentry SDKs only need SENTRY_DSN pointed here)
+#   uptime-kuma   uptime / TLS-expiry monitors -> Slack #alerts-critical
+#
+# Nothing is published publicly: the UIs listen on 127.0.0.1 only. Reach them with
+#   ssh -i ~/.ssh/oci_rap -L 8001:127.0.0.1:8001 -L 3001:127.0.0.1:3001 opc@<vm>
+# then http://localhost:8001 (GlitchTip) and http://localhost:3001 (Uptime Kuma).
+# glitchtip-web also joins rap-prod_edge so the API container can send events to
+# http://glitchtip-web:8080 (the DSN host). Browser (web/admin) events need a public
+# ingest hostname through Caddy; see infra/ops/README.md.
+#
+# ops.env (from Infisical prod /automation, see infra/ops/README.md):
+#   GLITCHTIP_SECRET_KEY, GLITCHTIP_DB_PASSWORD, GLITCHTIP_DOMAIN
+
+name: rap-ops
+
+networks:
+  ops:
+    driver: bridge
+  rap-edge:
+    name: rap-prod_edge
+    external: true
+
+volumes:
+  glitchtip_pg:
+  glitchtip_uploads:
+  uptime_kuma:
+
+x-glitchtip: &glitchtip
+  image: glitchtip/glitchtip:v5.1
+  restart: unless-stopped
+  environment:
+    DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD:?set GLITCHTIP_DB_PASSWORD}@glitchtip-postgres:5432/glitchtip
+    REDIS_URL: redis://glitchtip-valkey:6379/0
+    SECRET_KEY: ${GLITCHTIP_SECRET_KEY:?set GLITCHTIP_SECRET_KEY}
+    GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-http://localhost:8001}
+    DEFAULT_FROM_EMAIL: glitchtip@remoteaiplatform.com
+    EMAIL_URL: consolemail://        # no email: alerts go to Slack webhooks
+    ENABLE_USER_REGISTRATION: "False"
+    ENABLE_ORGANIZATION_CREATION: "False"
+    GLITCHTIP_MAX_EVENT_LIFE_DAYS: "30"
+    CELERY_WORKER_AUTOSCALE: "1,2"
+  volumes:
+    - glitchtip_uploads:/code/uploads
+  depends_on:
+    glitchtip-postgres:
+      condition: service_healthy
+    glitchtip-valkey:
+      condition: service_started
+  networks: [ops]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+services:
+  glitchtip-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD:?set GLITCHTIP_DB_PASSWORD}
+    volumes:
+      - glitchtip_pg:/var/lib/postgresql/data
+    networks: [ops]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: { memory: 1G, cpus: "0.5" }
+
+  glitchtip-valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: valkey-server --save "" --maxmemory 128mb --maxmemory-policy allkeys-lru
+    networks: [ops]
+    deploy:
+      resources:
+        limits: { memory: 192M }
+
+  glitchtip-web:
+    <<: *glitchtip
+    ports:
+      - "127.0.0.1:8001:8080"
+    networks: [ops, rap-edge]
+    deploy:
+      resources:
+        limits: { memory: 768M, cpus: "0.5" }
+
+  glitchtip-worker:
+    <<: *glitchtip
+    command: ./bin/run-celery-with-beat.sh
+    deploy:
+      resources:
+        limits: { memory: 768M, cpus: "0.5" }
+
+  glitchtip-migrate:
+    <<: *glitchtip
+    restart: "no"
+    command: ./bin/run-migrate.sh
+
+  # GlitchTip / Uptime Kuma "Slack" notifications post here (incoming-webhook
+  # format) and the relay forwards with the bot token: http://slack-relay:8080/<channel>
+  slack-relay:
+    image: python:3.12-alpine
+    restart: unless-stopped
+    command: ["python", "-u", "/relay/relay.py"]
+    environment:
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SLACK_CHANNEL_ALERTS_CRITICAL: ${SLACK_CHANNEL_ALERTS_CRITICAL:-}
+      SLACK_CHANNEL_ALERTS_ERRORS: ${SLACK_CHANNEL_ALERTS_ERRORS:-}
+      SLACK_CHANNEL_BACKUPS: ${SLACK_CHANNEL_BACKUPS:-}
+      SLACK_CHANNEL_COSTS: ${SLACK_CHANNEL_COSTS:-}
+    volumes:
+      - ../ops/slack-relay/relay.py:/relay/relay.py:ro
+    networks: [ops]
+    deploy:
+      resources:
+        limits: { memory: 64M, cpus: "0.1" }
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - uptime_kuma:/app/data
+    networks: [ops]
+    deploy:
+      resources:
+        limits: { memory: 512M, cpus: "0.5" }
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

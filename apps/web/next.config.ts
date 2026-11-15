@@ -33,8 +33,8 @@ const sentryOrigin = (() => {
 // per-request middleware -- worth doing if the app ever renders rich user HTML.
 const csp = [
   "default-src 'self'",
-  // Firebase endpoints are only contacted when browser push is configured and switched on.
-  `connect-src 'self' ${apiUrl} ${supabaseUrl} ${sentryOrigin} https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com`.replace(
+  // Web Push needs no extra origin: the browser talks to its push service itself.
+  `connect-src 'self' ${apiUrl} ${supabaseUrl} ${sentryOrigin}`.replace(
     /\s+/g,
     " ",
   ),
