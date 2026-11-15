@@ -35,6 +35,11 @@ async def write_heartbeat(identity: str, kind: str, queues: list[str]) -> None:
 
                 active = len(active_requests)
             await TaskService(db).heartbeat(identity, kind, queues, active_runs=active)
+            if kind == "scheduler":
+                # The scheduler watches the workers (a dead worker cannot report itself).
+                from app.worker.ops import check_liveness
+
+                await check_liveness(db)
     finally:
         await engine.dispose()
 

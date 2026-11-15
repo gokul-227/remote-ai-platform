@@ -95,6 +95,15 @@ async def import_source_async(
                 await TaskService(db).record_import(
                     source, run_id, ok=False, error=run.error, cursor=None
                 )
+                from app.services import slack
+
+                await slack.post(
+                    "job_imports",
+                    f":warning: Job import {source} failed ({run.status.lower()}, "
+                    f"attempt {run.attempts}/{run.max_attempts})",
+                    dedup_key=f"import-fail:{source}:{run.status}",
+                    fields={"run_id": str(run_id), "error": (run.error or "")[:300]},
+                )
 
 
 async def _task_run_model():  # noqa: ANN202
@@ -284,3 +293,39 @@ def send_push_task(
     run_id: str, aggregate_id: str, payload: dict[str, Any] | None = None, **_: Any
 ) -> dict[str, Any]:
     return runtime.run(send_push_async(_uuid(run_id), aggregate_id, payload or {}))
+
+
+# ── owner notifications (Slack) ─────────────────────────────────────────────
+
+
+@shared_task(name="ops.daily_import_summary")
+def daily_import_summary() -> dict[str, Any]:
+    from app.worker import ops
+
+    async def go() -> dict[str, Any]:
+        async with runtime.session_factory()() as db:
+            return await ops.daily_import_summary(db)
+
+    return runtime.run(go())
+
+
+@shared_task(name="ops.check_backups")
+def check_backups() -> dict[str, Any]:
+    from app.worker import ops
+
+    async def go() -> dict[str, Any]:
+        async with runtime.session_factory()() as db:
+            return await ops.check_backups(db)
+
+    return runtime.run(go())
+
+
+@shared_task(name="ops.cost_guard")
+def cost_guard() -> dict[str, Any]:
+    from app.worker import ops
+
+    async def go() -> dict[str, Any]:
+        async with runtime.session_factory()() as db:
+            return await ops.cost_guard(db)
+
+    return runtime.run(go())

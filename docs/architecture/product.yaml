@@ -650,8 +650,13 @@ infrastructure:
     group: cache
     status: active
   - id: fcm
-    name: Firebase Cloud Messaging
-    technology: Browser push (HTTP v1, service account) · only email-worthy events
+    name: Browser push services (Web Push)
+    technology: Standard Web Push (VAPID, RFC 8291) · no account · only email-worthy events
+    group: saas
+    status: active
+  - id: slack
+    name: Slack
+    technology: Owner alerts (chat.postMessage, per-channel routing)
     group: saas
     status: active
   - id: resend

@@ -17167,22 +17167,56 @@ components:
       - created_at
       - author
       title: PublicPost
+    PushKeysIn:
+      properties:
+        p256dh:
+          type: string
+          maxLength: 128
+          minLength: 80
+          pattern: ^[A-Za-z0-9_-]+=*$
+          title: P256Dh
+        auth:
+          type: string
+          maxLength: 64
+          minLength: 16
+          pattern: ^[A-Za-z0-9_-]+=*$
+          title: Auth
+      type: object
+      required:
+      - p256dh
+      - auth
+      title: PushKeysIn
     PushSubscribeIn:
       properties:
+        endpoint:
+          anyOf:
+          - type: string
+            maxLength: 512
+            minLength: 20
+            pattern: ^https://
+          - type: 'null'
+          title: Endpoint
         token:
-          type: string
-          maxLength: 512
-          minLength: 20
+          anyOf:
+          - type: string
+            maxLength: 512
+            minLength: 20
+          - type: 'null'
           title: Token
+        keys:
+          anyOf:
+          - $ref: '#/components/schemas/PushKeysIn'
+          - type: 'null'
         platform:
           type: string
           pattern: ^(web|android|ios)$
           title: Platform
           default: web
       type: object
-      required:
-      - token
       title: PushSubscribeIn
+      description: |-
+        A browser PushSubscription (`subscription.toJSON()`): endpoint + keys.
+        `token` is accepted as an alias of `endpoint` for unsubscribe calls.
     QualityIssue:
       properties:
         severity:

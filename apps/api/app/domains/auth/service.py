@@ -59,6 +59,9 @@ class AuthService:
                         "Sign-in refused: email belongs to an account with another identity",
                         user_id=str(user.id),
                     )
+                    _security_alert(
+                        "Sign-in refused: email claimed by a different identity", user.id
+                    )
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=(
@@ -114,6 +117,7 @@ class AuthService:
             if user is not None and not identity.email_verified:
                 # Someone else's account must never be reachable through an
                 # unverified email claim; merging is a manual support process.
+                _security_alert("Sign-in refused: unverified email matches an account", user.id)
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=(
@@ -122,7 +126,9 @@ class AuthService:
                     ),
                 )
         if identity.email_verified is not True:
-            raise HTTPException(status_code=409, detail="Verify your email with your sign-in provider.")
+            raise HTTPException(
+                status_code=409, detail="Verify your email with your sign-in provider."
+            )
         if user is None:
             user = await self.user_repo.create(
                 UserCreate(
@@ -151,3 +157,14 @@ class AuthService:
         )
         await db.flush()
         return user
+
+
+def _security_alert(title: str, user_id: object) -> None:
+    from app.services import slack
+
+    slack.notify(
+        "security",
+        f":warning: {title}",
+        dedup_key=f"identity-conflict:{user_id}",
+        fields={"user_id": str(user_id)},
+    )

@@ -130,10 +130,12 @@ class Settings(BaseSettings):
     FILES_MAX_UPLOAD_MB: int = 25
     FILES_USER_QUOTA_MB: int = 2048
     FILES_TRASH_RETENTION_DAYS: int = 30
-    # Browser push via Firebase Cloud Messaging (HTTP v1). Disabled while empty.
-    FCM_PROJECT_ID: str = ""
-    FCM_CREDENTIALS_B64: str = ""  # base64 of the service-account JSON
-    FCM_VAPID_KEY: str = ""  # public key, given to browsers
+    # Browser push via the standard Web Push protocol (RFC 8030/8291/8292, VAPID).
+    # Disabled while either key is empty. Public key: base64url uncompressed P-256
+    # point (given to browsers); private key: base64url raw 32-byte scalar or PEM.
+    WEB_PUSH_VAPID_PUBLIC_KEY: str = ""
+    WEB_PUSH_VAPID_PRIVATE_KEY: str = ""
+    WEB_PUSH_SUBJECT: str = "mailto:contact@remoteaiplatform.com"
     # Shared with ops/backup scripts so they can report run evidence (never a user credential).
     BACKUP_REPORT_TOKEN: str = ""
     PUSH_MAX_PER_USER_PER_HOUR: int = 20
@@ -383,6 +385,47 @@ class Settings(BaseSettings):
     # (Render env var / secret) once a real Sentry project exists.
     SENTRY_DSN: str = ""
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1
+
+    # ── Slack (owner notifications; app/services/slack.py) ───────────────────
+    # Disabled while SLACK_BOT_TOKEN is empty; a channel with an empty id is skipped.
+    SLACK_BOT_TOKEN: str = ""
+    SLACK_CHANNEL_ALERTS_CRITICAL: str = ""
+    SLACK_CHANNEL_ALERTS_ERRORS: str = ""
+    SLACK_CHANNEL_DEPLOYS: str = ""
+    SLACK_CHANNEL_BACKUPS: str = ""
+    SLACK_CHANNEL_JOB_IMPORTS: str = ""
+    SLACK_CHANNEL_SIGNUPS: str = ""
+    SLACK_CHANNEL_SECURITY: str = ""
+    SLACK_CHANNEL_COSTS: str = ""
+    ADMIN_URL: str = ""  # staff console base URL, linked from Slack messages
+    SLACK_DEDUP_SECONDS: int = 900  # identical dedup keys are dropped inside this window
+    SLACK_MAX_PER_MINUTE: int = 20  # per channel, per process
+    SLACK_TIMEOUT_SECONDS: float = 5.0
+    # Sign-ups in one hour above this post a spike alert.
+    SLACK_SIGNUP_SPIKE_PER_HOUR: int = 25
+    # Failed bearer authentications from one client IP inside 10 minutes.
+    SLACK_AUTH_FAILURE_BURST: int = 30
+    # UptimeRobot (and any monitor) webhook relay: POST /ops/uptime-hook?token=...
+    UPTIME_HOOK_TOKEN: str = ""
+
+    # ── Free-tier guard (worker task ops.cost_guard) ─────────────────────────
+    COST_WARN_PERCENT: int = 70
+    COST_CRITICAL_PERCENT: int = 90
+    COST_DB_LIMIT_MB: int = (
+        20_480  # VM PostgreSQL budget (Always Free block volume is 200 GB in all)
+    )
+    COST_STORAGE_LIMIT_GB: float = 20.0  # OCI Always Free object storage
+    COST_DISK_PATH: str = "/"
+    COST_EMAIL_DAILY_LIMIT: int = 100  # Resend free: 100/day, 3000/month
+    COST_EMAIL_MONTHLY_LIMIT: int = 3000
+    OCI_S3_ENDPOINT: str = (
+        "https://frizbfn1ukyy.compat.objectstorage.eu-frankfurt-1.oraclecloud.com"
+    )
+    OCI_S3_REGION: str = "eu-frankfurt-1"
+    OCI_S3_ACCESS_KEY_ID: str = ""
+    OCI_S3_SECRET_ACCESS_KEY: str = ""
+    # Comma-separated buckets to measure; empty = every bucket the key can list.
+    COST_BUCKETS: str = ""
 
     # ── Pagination ────────────────────────────────────────────────────────────
     DEFAULT_PAGE_SIZE: int = 20

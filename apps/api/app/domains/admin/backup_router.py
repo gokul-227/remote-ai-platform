@@ -17,7 +17,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field
 from sqlalchemy import JSON, BigInteger, DateTime, Integer, String, func, select
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -110,7 +110,74 @@ async def report_backup(
     )
     db.add(run)
     await db.flush()
+    from app.services import slack
+
+    ok = body.status == "success"
+    what = "Backup" if body.kind == "backup" else "Restore verification"
+    slack.notify(
+        "backups" if ok else "critical",
+        f"{':white_check_mark:' if ok else ':x:'} {what} {body.status} ({body.environment})",
+        fields={
+            "archive": body.archive_name,
+            "size_mb": round(body.size_bytes / 1_048_576, 1) if body.size_bytes else None,
+            "tables": body.tables,
+            "objects": body.objects,
+            "target": body.target_label,
+            "error": body.error,
+        },
+    )
+    if not ok:  # failures also land in #backups so its history is complete
+        slack.notify(
+            "backups", f":x: {what} failed ({body.environment})", fields={"error": body.error}
+        )
     return {"id": str(run.id)}
+
+
+@ops_router.post("/uptime-hook", status_code=status.HTTP_202_ACCEPTED, include_in_schema=False)
+async def uptime_hook(
+    request: Request,
+    token: str | None = Query(default=None, max_length=200),
+    x_uptime_hook_token: str | None = Header(default=None),
+) -> dict[str, bool]:
+    """Relay for external uptime monitors (UptimeRobot webhook alert contact) to
+    #alerts-critical. Authenticated by UPTIME_HOOK_TOKEN (query `token` or header)."""
+    expected = settings.UPTIME_HOOK_TOKEN
+    given = x_uptime_hook_token or token
+    if not expected or not given or not hmac.compare_digest(given, expected):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid hook token")
+    data: dict[str, Any] = {}
+    try:
+        if "json" in (request.headers.get("content-type") or ""):
+            parsed = await request.json()
+            data = parsed if isinstance(parsed, dict) else {}
+        else:
+            data = {k: str(v) for k, v in (await request.form()).items()}
+    except Exception:
+        data = {}
+    data = {**{k: v for k, v in request.query_params.items() if k != "token"}, **data}
+
+    def field(*names: str) -> str:
+        for n in names:
+            if data.get(n):
+                return str(data[n])[:300]
+        return ""
+
+    from app.services import slack
+
+    monitor = field("monitorFriendlyName", "monitor", "name") or "monitor"
+    kind = field("alertTypeFriendlyName", "alertType", "status") or "alert"
+    up = kind.lower() in {"up", "2"}
+    sent = await slack.post(
+        "critical",
+        f"{':large_green_circle:' if up else ':red_circle:'} External monitor: {monitor} is {kind}",
+        fields={
+            "url": field("monitorURL", "url"),
+            "details": field("alertDetails", "details", "msg"),
+            "duration_s": field("alertDuration", "duration"),
+            "source": "UptimeRobot (off-VM)",
+        },
+    )
+    return {"relayed": sent}
 
 
 async def backup_summary(db: AsyncSession) -> dict[str, Any]:
@@ -301,9 +368,9 @@ CATALOGUE: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "push",
-        "name": "Browser push (FCM)",
+        "name": "Browser push (Web Push, VAPID)",
         "kind": "external",
-        "host": "Firebase",
+        "host": "Browser push services (no account)",
         "owner": "Platform owner",
         "depends_on": ["worker"],
         "runbook": "transformation/owner-infrastructure-guide.md",

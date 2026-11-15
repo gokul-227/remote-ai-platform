@@ -110,9 +110,26 @@ async def put_preferences(
     }
 
 
+class PushKeysIn(BaseModel):
+    p256dh: str = Field(min_length=80, max_length=128, pattern="^[A-Za-z0-9_-]+=*$")
+    auth: str = Field(min_length=16, max_length=64, pattern="^[A-Za-z0-9_-]+=*$")
+
+
 class PushSubscribeIn(BaseModel):
-    token: str = Field(min_length=20, max_length=512)
+    """A browser PushSubscription (`subscription.toJSON()`): endpoint + keys.
+    `token` is accepted as an alias of `endpoint` for unsubscribe calls."""
+
+    endpoint: str | None = Field(default=None, min_length=20, max_length=512, pattern="^https://")
+    token: str | None = Field(default=None, min_length=20, max_length=512)
+    keys: PushKeysIn | None = None
     platform: str = Field(default="web", pattern="^(web|android|ios)$")
+
+    @property
+    def target(self) -> str:
+        value = self.endpoint or self.token
+        if not value:
+            raise HTTPException(status_code=422, detail="endpoint is required")
+        return value
 
 
 @router.get("/push/config", summary="Browser push configuration (public values only)")
@@ -122,7 +139,7 @@ async def push_config(current_user: User = Depends(get_current_user)) -> dict:
 
     return {
         "enabled": push_enabled(),
-        "vapid_key": settings.FCM_VAPID_KEY if push_enabled() else None,
+        "vapid_key": settings.WEB_PUSH_VAPID_PUBLIC_KEY if push_enabled() else None,
     }
 
 
@@ -141,17 +158,28 @@ async def push_subscribe(
 
     from app.domains.notifications.models import PushSubscription
 
-    existing = await db.scalar(select(PushSubscription).where(PushSubscription.token == body.token))
+    if body.endpoint is None or body.keys is None:
+        raise HTTPException(status_code=422, detail="endpoint and keys are required")
+    existing = await db.scalar(
+        select(PushSubscription).where(PushSubscription.token == body.endpoint)
+    )
     agent = (request.headers.get("user-agent") or "")[:255]
     if existing is None:
         db.add(
             PushSubscription(
-                user_id=current_user.id, token=body.token, platform=body.platform, user_agent=agent
+                user_id=current_user.id,
+                token=body.endpoint,
+                p256dh=body.keys.p256dh,
+                auth_secret=body.keys.auth,
+                platform=body.platform,
+                user_agent=agent,
             )
         )
     else:
-        # A token moves to whoever signed in on that browser last.
+        # A subscription moves to whoever signed in on that browser last.
         existing.user_id = current_user.id
+        existing.p256dh = body.keys.p256dh
+        existing.auth_secret = body.keys.auth
         existing.revoked_at = None
         existing.last_seen_at = datetime.now(UTC)
         existing.user_agent = agent
@@ -172,7 +200,7 @@ async def push_unsubscribe(
 
     existing = await db.scalar(
         select(PushSubscription).where(
-            PushSubscription.token == body.token, PushSubscription.user_id == current_user.id
+            PushSubscription.token == body.target, PushSubscription.user_id == current_user.id
         )
     )
     if existing is not None:

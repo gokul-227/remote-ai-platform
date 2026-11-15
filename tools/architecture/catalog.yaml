@@ -129,13 +129,20 @@ components:
       - python_dep: redis
 
   - id: fcm
-    name: Firebase Cloud Messaging
+    name: Browser push services (Web Push)
     type: external
-    technology: Browser push (HTTP v1, service account) · only email-worthy events
+    technology: Standard Web Push (VAPID, RFC 8291) · no account · only email-worthy events
     group: saas
     detect:
-      - node_dep: firebase
-      - setting: FCM_PROJECT_ID
+      - setting: WEB_PUSH_VAPID_PUBLIC_KEY
+
+  - id: slack
+    name: Slack
+    type: external
+    technology: Owner alerts (chat.postMessage, per-channel routing)
+    group: saas
+    detect:
+      - setting: SLACK_BOT_TOKEN
 
   - id: resend
     name: Resend
@@ -251,7 +258,8 @@ connections:
   - {from: api, to: job-boards, label: HTTPS pull}
   - {from: api, to: resend, label: Email API}
   - {from: api, to: fcm, label: Push (worker)}
-  - {from: web, to: fcm, label: Device token}
+  - {from: web, to: fcm, label: PushManager subscription}
+  - {from: api, to: slack, label: Alerts}
   - {from: api, to: stripe, label: Payments API}
   - {from: api, to: sentry, label: Errors}
   - {from: web, to: sentry, label: Errors}
@@ -306,6 +314,9 @@ ignore:
     # Matches the external-service pattern but is not a separate component.
     - API_URL                   # this API's own URL
     - BACKUP_REPORT_TOKEN       # shared secret for ops/backup run reports to this API
+    - UPTIME_HOOK_TOKEN         # shared secret for uptime-monitor webhooks to this API
+    - ADMIN_URL                 # staff console URL, linked from Slack messages
+    - OCI_S3_ENDPOINT           # object storage (storage component), measured by the cost guard
     - GITHUB_CALLBACK_URL       # this API's own OAuth callback
     - GITHUB_CLIENT_SECRET      # credential for the github component
     - JOOBLE_API_KEY            # credential for the Jooble job board (job_boards)
