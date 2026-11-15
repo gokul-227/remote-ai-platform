@@ -1687,9 +1687,12 @@ paths:
         required: false
         schema:
           type: integer
+          maximum: 10000
           minimum: 0
+          description: Offset; deeper pages use `after`
           default: 0
           title: Skip
+        description: Offset; deeper pages use `after`
       - name: limit
         in: query
         required: false
@@ -1699,6 +1702,17 @@ paths:
           minimum: 1
           default: 20
           title: Limit
+      - name: after
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
+          title: After
+        description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
       responses:
         '200':
           description: Successful Response
@@ -2059,9 +2073,12 @@ paths:
         required: false
         schema:
           type: integer
+          maximum: 10000
           minimum: 0
+          description: Offset; deeper pages use `after`
           default: 0
           title: Skip
+        description: Offset; deeper pages use `after`
       - name: limit
         in: query
         required: false
@@ -2071,6 +2088,17 @@ paths:
           minimum: 1
           default: 20
           title: Limit
+      - name: after
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
+          title: After
+        description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
       responses:
         '200':
           description: Successful Response

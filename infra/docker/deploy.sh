@@ -58,7 +58,9 @@ health_gate() {
 roll_out() {
   local sha=$1
   set_tag "$sha"
-  compose pull "${APP_SERVICES[@]}"
+  compose pull "${APP_SERVICES[@]}" job-cache
+  # Public query caches have an independent eviction policy from the broker.
+  compose up -d --no-deps job-cache
   compose run --rm --no-deps api alembic upgrade head
   compose up -d --no-deps --remove-orphans "${APP_SERVICES[@]}"
   if [ "$(env_get EDGE_ENABLED)" = "true" ]; then
