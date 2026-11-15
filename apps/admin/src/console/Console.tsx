@@ -331,7 +331,7 @@ export default function Console() {
         <div className="top-left">
           <button className="logo" aria-label="Operations console home" onClick={() => open("overview")}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand-mark.svg" width={36} height={36} alt="" />
+            <img src="/brand-lockup.svg" width={157} height={30} alt="" />
           </button>
           <div className="top-search">
             <Ic n="search" s={18} />
@@ -516,7 +516,9 @@ function SignIn() {
   };
   return (
     <div style={{ maxWidth: 380, margin: "80px auto" }} className="card">
-      <h2 style={{ marginTop: 0 }}>Staff sign in</h2>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand-lockup.svg" width={157} height={30} alt="Remote AI Platform" style={{ display: "block" }} />
+      <h2>Staff sign in</h2>
       <p className="muted">{envLabel(CONSOLE_ENV)} console. Staff accounts only.</p>
       <label>
         Work email

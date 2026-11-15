@@ -10,7 +10,7 @@ Additive only:
   millions of rows.
 - saved_job_searches: a member's saved filter set with alert channels.
 
-Indexes (PostgreSQL only, CREATE INDEX CONCURRENTLY outside the migration
+Indexes (PostgreSQL only, created inside the migration transaction; was CONCURRENTLY outside the migration
 transaction so the table is never locked for writes): every filter index is
 partial over live rows (same predicate as migration 070) and compound with
 (posted_at DESC, id DESC), so "filter X, newest first" is an index range
@@ -89,16 +89,17 @@ def upgrade() -> None:
     if op.get_bind().dialect.name != "postgresql":
         return
     op.execute("ALTER TABLE saved_job_searches ENABLE ROW LEVEL SECURITY")  # DATA-03
-    with op.get_context().autocommit_block():
-        for name, body in INDEXES.items():
-            op.execute(f"CREATE INDEX CONCURRENTLY IF NOT EXISTS {name} ON job_posts {body}")
+    # Plain CREATE INDEX inside the migration transaction: the catalogue is tens of
+    # thousands of rows at this revision, and leaving the transaction (CONCURRENTLY)
+    # would drop the migration lock that serialises concurrent migrators.
+    for name, body in INDEXES.items():
+        op.execute(f"CREATE INDEX IF NOT EXISTS {name} ON job_posts {body}")
 
 
 def downgrade() -> None:
     if op.get_bind().dialect.name == "postgresql":
-        with op.get_context().autocommit_block():
-            for name in INDEXES:
-                op.execute(f"DROP INDEX CONCURRENTLY IF EXISTS {name}")
+        for name in INDEXES:
+            op.execute(f"DROP INDEX IF EXISTS {name}")
     op.drop_index("ix_saved_job_searches_user_id", table_name="saved_job_searches")
     op.drop_table("saved_job_searches")
     for column in reversed(COLUMNS):

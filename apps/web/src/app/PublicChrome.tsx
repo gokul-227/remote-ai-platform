@@ -1,22 +1,15 @@
 import Link from "next/link";
-import { Brand } from "@/components/Brand";
+import { Logo } from "@/components/Brand";
 import { OPERATOR } from "@/figma/legal_content";
 import type { ReactNode } from "react";
 
 const focus = "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-sky";
 
 /** Brand lockup linking home (symbol + wordmark, "AI" in brand blue). */
-export function BrandLockup({ size = 32 }: { size?: number }) {
+export function BrandLockup({ size = 36, variant = "compact" }: { size?: number; variant?: "primary" | "compact" }) {
   return (
-    <Link
-      href="/"
-      aria-label="Remote AI Platform home"
-      className={`flex items-center gap-2 text-lg font-semibold tracking-tight text-navy ${focus}`}
-    >
-      <Brand s={size} decorative />
-      <span aria-hidden="true">
-        Remote <span className="text-brand">AI</span> Platform
-      </span>
+    <Link href="/" aria-label="Remote AI Platform home" className={`flex items-center ${focus}`}>
+      <Logo variant={variant} h={size} decorative />
     </Link>
   );
 }
@@ -54,8 +47,8 @@ export function PublicFooter() {
     <footer className="mt-16 border-t border-slate-200 bg-white">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <BrandLockup size={28} />
-          <p className="mt-3">Connect. Find work. Get work done.</p>
+          <BrandLockup size={48} variant="primary" />
+          <p className="sr-only">Connect. Find work. Get work done.</p>
         </div>
         <nav aria-label="Find work">
           <h2 className="mb-3 text-sm font-semibold text-navy">Find work</h2>
