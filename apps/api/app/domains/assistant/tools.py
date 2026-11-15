@@ -36,6 +36,7 @@ from app.domains.groups.models import Group, GroupMembership
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.router import list_jobs
+from app.domains.jobs.schemas import JobSearchQuery
 from app.domains.jobs.service import JobService
 from app.domains.marketplace.models import ProjectTask
 from app.domains.matching.router import FREELANCE_TYPES
@@ -210,9 +211,8 @@ def _link(route: str) -> str:
 async def _search_jobs(a: BaseModel, user: User, db: AsyncSession) -> dict[str, Any]:
     assert isinstance(a, SearchJobsArgs)
     jobs = await list_jobs(
-        Response(), query=a.query, is_remote=True, job_type=None, experience_level=None,
-        min_salary=None, max_salary=None, salary_currency=None, salary_period=None, skills=None,
-        source=None, company_id=None, skip=0, limit=5, service=JobService(JobRepository(db)),
+        Response(), search_params=JobSearchQuery(query=a.query, is_remote=True, limit=5),
+        service=JobService(JobRepository(db)),
     )
     return {"items": [{"title": j.title, "company": j.company_name, "link": _link(f"jobdetail/{j.id}")} for j in jobs]}
 

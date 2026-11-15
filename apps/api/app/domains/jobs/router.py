@@ -14,9 +14,22 @@ from app.domains.auth.dependencies import get_optional_user, require_role
 from app.domains.auth.models import User, UserRole
 from app.domains.companies.access import resolve_company_for
 from app.domains.companies.models import HIRING_ROLES, CompanyProfile
+from app.domains.jobs.derive import (
+    EMPLOYMENT_TYPES,
+    INDUSTRIES,
+    JOB_FUNCTIONS,
+    LANGUAGES,
+    REGIONS,
+    SENIORITY_LEVELS,
+    WORKPLACE_TYPES,
+)
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import (
+    JobAvailability,
+    JobEmployer,
+    JobFacets,
+    JobLandingStats,
     JobPostCreate,
     JobPostResponse,
     JobPostUpdate,
@@ -33,13 +46,29 @@ async def get_job_service(db: AsyncSession = Depends(get_db)) -> JobService:
     return JobService(repo)
 
 
-@router.get("", response_model=list[JobPostResponse])
-async def list_jobs(
-    response: Response,
-    query: str | None = Query(None, description="Keywords search in title or description"),
-    is_remote: bool = Query(True, description="Filter for remote jobs"),
-    job_type: str | None = Query(None, description="full-time, contract, part-time"),
-    experience_level: str | None = Query(None, description="junior, mid, senior, lead"),
+def _clean(values: list[str] | None, allowed: tuple[str, ...] | None = None) -> list[str] | None:
+    out = [v.strip() for v in values or [] if v and v.strip()]
+    if allowed is not None:
+        bad = [v for v in out if v not in allowed]
+        if bad:
+            raise HTTPException(status_code=422, detail=f"Unknown filter value(s): {', '.join(bad)}")
+    return out or None
+
+
+def job_search_query(
+    query: str | None = Query(
+        None,
+        max_length=200,
+        description='Keywords in title, company or description. "exact phrase", -exclude, OR',
+    ),
+    is_remote: bool | None = Query(
+        None, description="Legacy remote flag; defaults to remote-only unless `workplace` is set"
+    ),
+    workplace: list[str] | None = Query(None, description="remote | hybrid | onsite"),
+    job_type: list[str] | None = Query(None, description=", ".join(EMPLOYMENT_TYPES)),
+    experience_level: str | None = Query(None, description="Legacy: junior, mid, senior, lead"),
+    seniority: list[str] | None = Query(None, description=", ".join(SENIORITY_LEVELS)),
+    posted_within: str | None = Query(None, pattern="^(24h|3d|7d|30d|90d)$"),
     min_salary: float | None = Query(None, ge=0),
     max_salary: float | None = Query(None, ge=0),
     salary_currency: str | None = Query(
@@ -52,20 +81,34 @@ async def list_jobs(
         pattern="^(hour|day|week|month|year)$",
         description="Period of min/max_salary (required with them)",
     ),
+    has_salary: bool | None = Query(None, description="Only jobs that state a salary"),
     skills: list[str] | None = Query(None, description="Match any of these skills"),
-    source: str | None = Query(None, description="Filter by source (REMOTEOK, ARBEITNOW, etc.)"),
+    source: list[str] | None = Query(None, description="Job boards (REMOTEOK, DIRECT, ...)"),
     company_id: uuid.UUID | None = Query(None, description="Filter by company profile UUID"),
+    company: list[str] | None = Query(None, description="Company names (any of)"),
     location: str | None = Query(
-        None, max_length=60, description="Text in the posting's location (e.g. Germany)"
+        None, max_length=60, description="Text in the posting's location (a city, e.g. Berlin)"
     ),
+    employer: str | None = Query(
+        None, max_length=200, description="Exact employer name (case-insensitive)"
+    ),
+    country: list[str] | None = Query(None, description="ISO 3166-1 alpha-2 codes"),
+    region: list[str] | None = Query(None, description=", ".join(REGIONS)),
+    industry: list[str] | None = Query(None, description=", ".join(INDUSTRIES)),
+    job_function: list[str] | None = Query(None, description=", ".join(JOB_FUNCTIONS)),
+    language: list[str] | None = Query(
+        None, description="Posting language: " + ", ".join(LANGUAGES)
+    ),
+    apply: str | None = Query(None, pattern="^(platform|external)$"),
+    visa_sponsorship: bool | None = Query(None),
+    tz: int | None = Query(
+        None, ge=-12, le=14, description="Your UTC offset: jobs whose hours overlap within 3h"
+    ),
+    verified: bool | None = Query(None, description="Only verified companies"),
+    sort: str = Query("recent", pattern="^(recent|relevant|salary)$"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    service: JobService = Depends(get_job_service),
-) -> list[JobPostResponse]:
-    """Search & filter active remote jobs aggregated from public APIs.
-
-    The total number of matches is returned in the X-Total-Count header.
-    """
+) -> JobSearchQuery:
     if (min_salary is not None or max_salary is not None) and not (
         salary_currency and salary_period
     ):
@@ -77,25 +120,65 @@ async def list_jobs(
         )
     if min_salary is not None and max_salary is not None and min_salary > max_salary:
         raise HTTPException(status_code=422, detail="min_salary is greater than max_salary")
-    search_params = JobSearchQuery(
-        query=query,
-        is_remote=is_remote,
-        job_type=job_type,
+    places = _clean(workplace, WORKPLACE_TYPES)
+    return JobSearchQuery(
+        query=query.strip() if query and query.strip() else None,
+        # Remote-only stays the default; an explicit workplace choice replaces it.
+        is_remote=is_remote if is_remote is not None else (None if places else True),
+        workplace=places,
+        job_type=_clean([t.lower() for t in job_type or []], EMPLOYMENT_TYPES),
         experience_level=experience_level,
+        seniority=_clean(seniority, SENIORITY_LEVELS),
+        posted_within=posted_within,
         min_salary=min_salary,
         max_salary=max_salary,
         salary_currency=salary_currency.upper() if salary_currency else None,
         salary_period=salary_period,
-        skills=[skill.strip() for skill in skills or [] if skill.strip()] or None,
-        source=source,
+        has_salary=has_salary or None,
+        skills=_clean(skills),
+        source=_clean(source),
         company_id=company_id,
+        company=_clean(company),
         location=location,
+        employer=employer,
+        country=_clean([c.upper() for c in country or []]),
+        region=_clean(region, REGIONS),
+        industry=_clean(industry, INDUSTRIES),
+        job_function=_clean(job_function, JOB_FUNCTIONS),
+        language=_clean(language, LANGUAGES),
+        apply=apply,
+        visa_sponsorship=visa_sponsorship,
+        tz=tz,
+        verified=verified or None,
+        sort=sort,
         skip=skip,
         limit=limit,
     )
+
+
+@router.get("", response_model=list[JobPostResponse])
+async def list_jobs(
+    response: Response,
+    search_params: JobSearchQuery = Depends(job_search_query),
+    service: JobService = Depends(get_job_service),
+) -> list[JobPostResponse]:
+    """Search & filter active jobs (every filter of `job_search_query`).
+
+    The total number of matches is returned in the X-Total-Count header.
+    """
     raw_jobs, total = await service.search_jobs_cached(search_params)
     response.headers["X-Total-Count"] = str(total)
     return [JobPostResponse.model_validate(j) for j in raw_jobs]
+
+
+@router.get("/facets", response_model=JobFacets)
+async def job_facets(
+    search_params: JobSearchQuery = Depends(job_search_query),
+    service: JobService = Depends(get_job_service),
+) -> JobFacets:
+    """Counts per filter value for the current search. Each facet is counted
+    with every other filter applied, so its own alternatives stay visible."""
+    return JobFacets.model_validate(await service.facets_cached(search_params))
 
 
 @router.get("/sitemap-entries", response_model=list[JobSitemapEntry])
@@ -112,6 +195,50 @@ async def list_sitemap_entries(
     rows = await JobRepository(db).sitemap_entries(skip=skip, limit=limit)
     response.headers["Cache-Control"] = "public, max-age=900"
     return [JobSitemapEntry(id=i, posted_at=p, updated_at=u) for i, p, u in rows]
+
+
+@router.get("/landing-stats", response_model=JobLandingStats)
+async def landing_stats(
+    response: Response,
+    query: str | None = Query(None, max_length=100),
+    job_type: str | None = Query(None, max_length=30),
+    location: str | None = Query(None, max_length=60),
+    employer: str | None = Query(None, max_length=200),
+    db: AsyncSession = Depends(get_db),
+) -> JobLandingStats:
+    """Aggregates for a public landing page (remote jobs by role, skill, place or
+    employer): totals, new this week, top employers and published pay. Public:
+    computed only from the jobs the anonymous list shows."""
+    stats = await JobRepository(db).landing_stats(
+        query=query, job_type=job_type, location=location, employer=employer, is_remote=True
+    )
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    return JobLandingStats.model_validate(stats)
+
+
+@router.get("/employers", response_model=list[JobEmployer])
+async def list_employers(
+    response: Response,
+    min_jobs: int = Query(1, ge=1, le=1000),
+    limit: int = Query(500, ge=1, le=5000),
+    db: AsyncSession = Depends(get_db),
+) -> list[JobEmployer]:
+    """Employers with live remote jobs, most openings first (public landing pages)."""
+    rows = await JobRepository(db).employers(min_jobs=min_jobs, limit=limit, is_remote=True)
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    return [JobEmployer.model_validate(r) for r in rows]
+
+
+@router.get("/employers/{slug}", response_model=JobEmployer)
+async def get_employer(
+    slug: str, response: Response, db: AsyncSession = Depends(get_db)
+) -> JobEmployer:
+    """One employer by URL slug; 404 when it has no live remote jobs."""
+    found = await JobRepository(db).employer_by_slug(slug[:80])
+    if not found:
+        raise HTTPException(status_code=404, detail="Employer not found")
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    return JobEmployer.model_validate(found)
 
 
 @router.get("/company", response_model=list[JobPostResponse])
@@ -182,6 +309,19 @@ async def get_job_by_id(
     if not job.is_active and not is_admin and not await _owns_job(db, job, current_user):
         raise HTTPException(status_code=404, detail="Job post not found")
     return JobPostResponse.model_validate(job)
+
+
+@router.get("/{job_id}/availability", response_model=JobAvailability)
+async def get_job_availability(
+    job_id: uuid.UUID, response: Response, db: AsyncSession = Depends(get_db)
+) -> JobAvailability:
+    """Whether a public job page is live, recently expired, or long gone (the web
+    app answers 410 Gone for those). Reveals nothing but that state."""
+    state = await JobRepository(db).availability(job_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail="Job post not found")
+    response.headers["Cache-Control"] = "public, max-age=900"
+    return JobAvailability(state=state)
 
 
 @router.patch("/{job_id}", response_model=JobPostResponse)

@@ -3,7 +3,8 @@ import { ShareButtons } from "@/figma/ShareButtons";
 import { socialMetadata } from "@/lib/share";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ActionLink, PublicFrame } from "../../PublicChrome";
+import { ActionLink, Breadcrumbs, PublicFrame } from "../../PublicChrome";
+import { breadcrumbJsonLd } from "@/lib/brand";
 import { fetchPost, ldJson } from "@/lib/publicPages";
 import { SITE_URL, summary } from "@/lib/site";
 
@@ -28,6 +29,12 @@ export default async function PostPage({ params }: Props) {
   const by = p.author.name || "A member";
   return (
     <PublicFrame>
+      <Breadcrumbs
+        trail={[
+          ["Remote AI Platform", "/"],
+          ["Post", `/posts/${p.id}`],
+        ]}
+      />
       <article className="rounded-xl border border-slate-200 bg-white p-6">
         <header className="mb-4">
           {p.author.profile_id ? (
@@ -61,31 +68,37 @@ export default async function PostPage({ params }: Props) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: ldJson({
-            "@context": "https://schema.org",
-            "@type": "SocialMediaPosting",
-            headline: summary(p.content, 110),
-            articleBody: p.content,
-            datePublished: p.created_at,
-            url: `${SITE_URL}/posts/${p.id}`,
-            author: {
-              "@type": "Person",
-              name: by,
-              url: p.author.profile_id ? `${SITE_URL}/people/${p.author.profile_id}` : undefined,
+          __html: ldJson([
+            breadcrumbJsonLd(SITE_URL || "https://remoteaiplatform.com", [
+              ["Remote AI Platform", "/"],
+              ["Post", `/posts/${p.id}`],
+            ]),
+            {
+              "@context": "https://schema.org",
+              "@type": "SocialMediaPosting",
+              headline: summary(p.content, 110),
+              articleBody: p.content,
+              datePublished: p.created_at,
+              url: `${SITE_URL}/posts/${p.id}`,
+              author: {
+                "@type": "Person",
+                name: by,
+                url: p.author.profile_id ? `${SITE_URL}/people/${p.author.profile_id}` : undefined,
+              },
+              interactionStatistic: [
+                {
+                  "@type": "InteractionCounter",
+                  interactionType: "https://schema.org/LikeAction",
+                  userInteractionCount: p.like_count,
+                },
+                {
+                  "@type": "InteractionCounter",
+                  interactionType: "https://schema.org/CommentAction",
+                  userInteractionCount: p.comment_count,
+                },
+              ],
             },
-            interactionStatistic: [
-              {
-                "@type": "InteractionCounter",
-                interactionType: "https://schema.org/LikeAction",
-                userInteractionCount: p.like_count,
-              },
-              {
-                "@type": "InteractionCounter",
-                interactionType: "https://schema.org/CommentAction",
-                userInteractionCount: p.comment_count,
-              },
-            ],
-          }),
+          ]),
         }}
       />
     </PublicFrame>

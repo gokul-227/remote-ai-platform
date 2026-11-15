@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PublicFrame } from "../PublicChrome";
+import { Breadcrumbs, JsonLd, PublicFrame } from "../PublicChrome";
+import { breadcrumbJsonLd } from "@/lib/brand";
+import { SITE_URL } from "@/lib/site";
 import { OPERATOR } from "@/figma/legal_content";
 
 export const metadata: Metadata = {
@@ -12,8 +14,20 @@ export const metadata: Metadata = {
 export default function SecurityPage() {
   return (
     <PublicFrame>
+      <Breadcrumbs
+        trail={[
+          ["Remote AI Platform", "/"],
+          ["Trust and security", "/trust"],
+        ]}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd(SITE_URL || "https://remoteaiplatform.com", [
+          ["Remote AI Platform", "/"],
+          ["Trust and security", "/trust"],
+        ])}
+      />
       <article className="rounded-xl border border-slate-200 bg-white p-6 sm:p-10">
-        <h1 className="text-3xl font-bold text-[#102A43]">Trust and security</h1>
+        <h1 className="text-3xl font-bold text-navy">Trust and security</h1>
         <section className="mt-8 space-y-3 leading-relaxed">
           <h2 className="text-xl font-semibold">How we protect your account</h2>
           <ul className="list-disc space-y-2 pl-5 text-slate-700">
@@ -28,7 +42,7 @@ export default function SecurityPage() {
           <p className="text-slate-700">
             If you believe you have found a security issue, please email{" "}
             {OPERATOR.contactEmail ? (
-              <a className="font-semibold text-[#175CD3] underline" href={`mailto:${OPERATOR.contactEmail}`}>
+              <a className="font-semibold text-brand underline" href={`mailto:${OPERATOR.contactEmail}`}>
                 {OPERATOR.contactEmail}
               </a>
             ) : (
@@ -39,11 +53,11 @@ export default function SecurityPage() {
         </section>
         <p className="mt-8 text-sm text-slate-600">
           See also our{" "}
-          <Link href="/privacy" className="text-[#175CD3] underline">
+          <Link href="/privacy" className="text-brand underline">
             privacy notice
           </Link>{" "}
           and{" "}
-          <Link href="/status" className="text-[#175CD3] underline">
+          <Link href="/status" className="text-brand underline">
             service status
           </Link>
           .

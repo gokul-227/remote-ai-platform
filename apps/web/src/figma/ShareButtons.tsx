@@ -31,7 +31,7 @@ function Icon({ name }: { name: keyof typeof ICONS }) {
 }
 
 const btn =
-  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 hover:border-[#175CD3] hover:text-[#175CD3] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#175CD3]";
+  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 hover:border-brand hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-brand";
 
 /** Share a public page: networks as plain links, copy link, and the Web Share API where available. */
 export function ShareButtons({ url, title, label = "Share" }: { url: string; title: string; label?: string }) {

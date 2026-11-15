@@ -1,3 +1,5 @@
+@import "./brand-tokens.css";
+
 /* Staff console: same palette, type and layout as the product (apps/web) —
    white top bar with section tabs, a sidebar for the section in use, cards on a
    light grey canvas, and a Facebook-style dark mode. */
@@ -5,17 +7,17 @@
   --bg: #f0f2f5;
   --panel: #ffffff;
   --line: #e4e6eb;
-  --text: #1c1e21;
-  --muted: #65676b;
-  --brand: #175cd3;
-  --brand-hover: #124bad;
-  --brand-soft: #e7f0ff;
+  --text: var(--rap-charcoal);
+  --muted: var(--rap-muted);
+  --brand: var(--rap-blue);
+  --brand-hover: var(--rap-blue-hover);
+  --brand-soft: var(--rap-blue-soft);
   --hover: #f2f3f5;
   --chip: #e4e6eb;
   --danger: #e41e3f;
   --warn: #b45309;
   --ok: #15803d;
-  --shadow: 0 1px 2px #0000001a;
+  --shadow: var(--rap-shadow-card);
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -24,7 +26,7 @@
   --line: #3a3b3c;
   --text: #e4e6eb;
   --muted: #b0b3b8;
-  --brand: #8dbbff;
+  --brand: var(--rap-sky);
   --brand-hover: #4599ff;
   --brand-soft: #263951;
   --hover: #3a3b3c;
@@ -39,12 +41,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font:
-    15px/1.5 Inter,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
+  font: 15px/1.5 var(--rap-font-sans);
   -webkit-font-smoothing: antialiased;
 }
 button,
@@ -61,7 +58,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid #8cb8ff;
+  outline: 3px solid var(--rap-sky);
   outline-offset: 2px;
 }
 a {
@@ -201,7 +198,7 @@ h3 {
   height: 40px;
   border-radius: 50%;
   border: 0;
-  background: linear-gradient(135deg, #175cd3, #5b9dff);
+  background: linear-gradient(135deg, var(--rap-blue), var(--rap-sky));
   color: #fff;
   font-weight: 700;
   display: grid;
@@ -279,6 +276,21 @@ h3 {
 }
 .menu-item:hover {
   background: var(--hover);
+}
+
+.side-toggle {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--chip);
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* ── Sidebar and page ────────────────────────────────────── */
@@ -619,6 +631,17 @@ code {
   .side {
     position: static;
     height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .side-toggle {
+    display: flex;
+  }
+  .side:not(.open) nav {
+    display: none;
+  }
+  .side nav button {
+    min-height: 44px;
   }
   .tabs {
     overflow-x: auto;

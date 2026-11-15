@@ -217,6 +217,8 @@ export default function Console() {
   const [version, setVersion] = useState<Version | null>(null);
   const [screen, setScreen] = useState("overview");
   const [menu, setMenu] = useState(false);
+  // Phones: the section's screen list folds behind a toggle above the page.
+  const [sideOpen, setSideOpen] = useState(false);
   const [menuQ, setMenuQ] = useState("");
   const [theme, setTheme] = useState(() => {
     try {
@@ -417,7 +419,7 @@ export default function Console() {
         </div>
       </header>
       <div className="shell">
-        <aside className="side">
+        <aside className={sideOpen ? "side open" : "side"}>
           <div className="side-head">
             <span className="side-icon">
               <Ic n={section.icon} s={20} />
@@ -427,12 +429,28 @@ export default function Console() {
               <p>{section.blurb}</p>
             </div>
           </div>
-          <nav aria-label={`${section.name} navigation`}>
+          <button
+            className="side-toggle"
+            aria-expanded={sideOpen}
+            aria-controls="console-side-nav"
+            onClick={() => setSideOpen(!sideOpen)}
+          >
+            <Ic n="menu" s={20} />
+            {sideOpen ? "Hide screens" : "Show screens"}
+          </button>
+          <nav id="console-side-nav" aria-label={`${section.name} navigation`}>
             {section.groups.map((g) => (
               <div key={g.label || section.name}>
                 {g.label && <h2>{g.label}</h2>}
                 {g.items.map(([k, label, icon]) => (
-                  <button key={k} aria-current={screen === k ? "page" : undefined} onClick={() => open(k)}>
+                  <button
+                    key={k}
+                    aria-current={screen === k ? "page" : undefined}
+                    onClick={() => {
+                      setSideOpen(false);
+                      open(k);
+                    }}
+                  >
                     <span className="nav-icon">
                       <Ic n={icon} s={20} />
                     </span>

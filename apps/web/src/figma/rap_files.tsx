@@ -94,7 +94,7 @@ function NavButton({
       aria-current={view === k ? "page" : undefined}
       className={cx(
         "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm",
-        view === k ? "bg-[#E8F0FC] font-semibold text-[#175CD3]" : "text-slate-700 hover:bg-slate-100",
+        view === k ? "bg-brand-soft font-semibold text-brand" : "text-slate-700 hover:bg-slate-100",
       )}
     >
       <Ic n={icon} s={16} />
@@ -283,7 +283,7 @@ export function Files() {
             <div className="px-3 text-xs text-slate-500">
               <div className="mb-1 h-1.5 rounded bg-slate-200">
                 <div
-                  className="h-1.5 rounded bg-[#175CD3]"
+                  className="h-1.5 rounded bg-brand"
                   style={{ width: `${Math.min(100, (quota.data.used_bytes / quota.data.limit_bytes) * 100)}%` }}
                 />
               </div>
@@ -302,7 +302,7 @@ export function Files() {
                   aria-label="Folder path"
                   className="flex flex-1 flex-wrap items-center gap-1 text-lg font-semibold"
                 >
-                  <button type="button" className={cx(folder.length && "text-[#175CD3]")} onClick={() => setFolder([])}>
+                  <button type="button" className={cx(folder.length && "text-brand")} onClick={() => setFolder([])}>
                     {folder.length ? ([...VIEWS, ...TYPE_VIEWS].find((v) => v.key === view)?.label ?? "Files") : title}
                   </button>
                   {folder.map((c, i) => (
@@ -310,7 +310,7 @@ export function Files() {
                       <span className="text-slate-400">/</span>
                       <button
                         type="button"
-                        className={cx(i < folder.length - 1 && "text-[#175CD3]")}
+                        className={cx(i < folder.length - 1 && "text-brand")}
                         onClick={() => setFolder(folder.slice(0, i + 1))}
                       >
                         {c.name}
@@ -589,7 +589,7 @@ function Details({ node, onClose, onChanged }: { node: Node; onClose: () => void
                 {editable && v.version !== node.current_version && (
                   <button
                     type="button"
-                    className="text-[#175CD3]"
+                    className="text-brand"
                     onClick={() =>
                       run(
                         () => api.post(`/files/${node.id}/versions/${v.version}/restore`),
@@ -645,7 +645,7 @@ function Details({ node, onClose, onChanged }: { node: Node; onClose: () => void
                       Anyone with the link · <Tag>viewer</Tag>{" "}
                       <button
                         type="button"
-                        className="text-[#175CD3]"
+                        className="text-brand"
                         onClick={() => void navigator.clipboard?.writeText(linkUrl(s.token!))}
                       >
                         Copy link
@@ -751,7 +751,7 @@ export function SharedFile({ token }: { token: string | null }) {
             <p className="text-sm text-slate-500">{fmtSize(q.data.size)}</p>
             {q.data.download_url && (
               <a
-                className="mt-4 inline-block rounded-lg bg-[#175CD3] px-4 py-2 font-semibold text-white"
+                className="mt-4 inline-block rounded-lg bg-brand px-4 py-2 font-semibold text-white"
                 href={q.data.download_url}
                 rel="noopener noreferrer"
               >

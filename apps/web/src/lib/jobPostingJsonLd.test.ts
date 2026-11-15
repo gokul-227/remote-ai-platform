@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { jobPostingJsonLd } from "./site";
+import { inferCountries, jobPostingJsonLd } from "./site";
 
 describe("jobPostingJsonLd", () => {
   it("describes a remote job for Google's job search", () => {
@@ -35,13 +35,18 @@ describe("jobPostingJsonLd", () => {
     const ld = jobPostingJsonLd({ id: "x", title: "T", company_name: "C", description: "</script><b>" }, "https://s");
     expect(JSON.stringify(ld).replace(/</g, "\\u003c")).not.toContain("</script>");
   });
-  it("does not invent worldwide eligibility or an office address for restricted remote roles", () => {
+  it("states only the countries a remote posting names, and no office address", () => {
     const ld = jobPostingJsonLd(
       { id: "x", title: "T", company_name: "C", description: "D", is_remote: true, location: "Remote (Germany)" },
       "https://s",
     );
-    expect(ld.applicantLocationRequirements).toBeUndefined();
+    expect(ld.applicantLocationRequirements).toEqual([{ "@type": "Country", name: "DE" }]);
     expect(ld.jobLocation).toBeUndefined();
+    const anywhere = jobPostingJsonLd(
+      { id: "x", title: "T", company_name: "C", description: "D", is_remote: true, location: "Worldwide" },
+      "https://s",
+    );
+    expect(anywhere.applicantLocationRequirements).toBeUndefined();
     expect(ld.jobLocationType).toBe("TELECOMMUTE");
   });
   it("does not invent an annual salary when the source omits its pay period", () => {
@@ -50,5 +55,17 @@ describe("jobPostingJsonLd", () => {
       "https://s",
     );
     expect(ld.baseSalary).toBeUndefined();
+  });
+  it("adds addressCountry to on-site locations when it is unambiguous", () => {
+    const ld = jobPostingJsonLd(
+      { id: "x", title: "T", company_name: "C", description: "D", is_remote: false, location: "Pittsburgh, PA" },
+      "https://s",
+    );
+    expect((ld.jobLocation as { address: { addressCountry?: string } }).address.addressCountry).toBe("US");
+  });
+  it("infers countries conservatively", () => {
+    expect(inferCountries("Latin America")).toEqual([]);
+    expect(inferCountries("Toronto, ON; Remote USA")).toEqual(["US", "CA"]);
+    expect(inferCountries(null)).toEqual([]);
   });
 });

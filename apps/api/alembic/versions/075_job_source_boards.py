@@ -3,16 +3,16 @@
 Additive: one new table, job_source_boards (source, token) with the staff
 validation state. Rows are loaded from the bundled board lists by the API.
 
-Revision ID: 074_job_source_boards
-Revises: 073_contact_invites
+Revision ID: 075_job_source_boards
+Revises: 074_job_search_filters
 """
 
 import sqlalchemy as sa
 
 from alembic import op
 
-revision = "074_job_source_boards"
-down_revision = "073_contact_invites"
+revision = "075_job_source_boards"
+down_revision = "074_job_search_filters"
 branch_labels = None
 depends_on = None
 

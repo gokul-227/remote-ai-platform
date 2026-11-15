@@ -41,6 +41,11 @@ export function websiteJsonLd(siteUrl: string) {
     url: `${siteUrl}/`,
     publisher: { "@id": `${siteUrl}/#organization` },
     inLanguage: "en",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: { "@type": "EntryPoint", urlTemplate: `${siteUrl}/remote-jobs?q={search_term_string}` },
+      "query-input": "required name=search_term_string",
+    },
   };
 }
 

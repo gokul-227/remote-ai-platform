@@ -48,20 +48,8 @@ from the web app's routes, the API's routers and the user roles:
 - **apps/api** — FastAPI modular monolith (`app/domains/*`: auth, engineers, companies, jobs, applications,
   matching, network/messaging, social, groups, projects, contracts, payments, trust, moderation, admin …).
   Async SQLAlchemy 2 + Alembic.
-- **No background worker.** Resume parsing runs inline with a time budget; job import is a scheduled workflow
-  (`.github/workflows/scheduled-job-sync.yml`, every 3 hours, production only). Sources without keys: RemoteOK,
-  Arbeitnow (paginated), Remotive, The Muse, Jobicy, Himalayas, Working Nomads, and public company boards on
-  Greenhouse, Lever, Ashby and SmartRecruiters (company lists in settings). With free keys in Infisical: Adzuna,
-  Jooble, USAJOBS. Every job links to its original posting. Imported jobs unseen for 30 days leave the public
-  list; imported jobs posted over 90 days ago are deleted (or hidden, if someone applied), and beyond that the
-  catalogue grows until the database reaches `DATABASE_SIZE_BUDGET_MB` (420 of the free 500 MB, roughly 100k+
-  jobs), after which the oldest imported jobs nobody applied to make room. Public job pages carry
-  schema.org JobPosting data for Google's job search; only production is indexable. After each import, new job
-  pages are announced to Google (Indexing API, service account `remoteaiplatform-indexer@remoteaiplatform` in the Google Cloud
-  project **without billing**; key in Infisical as `GOOGLE_INDEXING_CREDENTIALS_B64`) and to IndexNow (Bing and others;
-  public key at `/indexnow.txt`). Messaging and notifications poll;
-  the WebSocket endpoints stay off (`FEATURE_REALTIME_WEBSOCKETS`).
-- **Secrets** live in Infisical and reach Render through an Infisical Secret Sync; never commit or paste them.
+- **Background worker.** Celery worker + Beat on the production VM run job imports, digests, retention and alerts; every run is recorded in PostgreSQL and visible in the staff console. Resume parsing runs inline with a time budget.
+- **Secrets** live in Infisical and are rendered onto the production VM by `ops/vm/render-env.sh`; never commit or paste them.
 - **Backups:** `ops/backup/` (encrypted dump + storage copy, self-verifying restore).
 - **Payments are switched off** (`MARKETPLACE_PAYMENTS_ENABLED=false`): nothing is charged or held. Freelance
   work is paid directly between client and professional.
@@ -128,10 +116,10 @@ duplicates or pin `POSTMAN_COLLECTION_ID`. *Failed to generate/convert the OpenA
 
 ## Local development
 
-Prerequisites: Node 22+, Python 3.11, Docker. Sign-in needs a Supabase project (use the dev project).
+Prerequisites: Node 22+, Python 3.11, Docker. Local sign-in uses the mock auth server (see E2E below) or your own Supabase/WorkOS test project.
 
 ```bash
-cp .env.example .env            # fill SUPABASE_URL / NEXT_PUBLIC_SUPABASE_* with the dev project
+cp .env.example .env            # fill auth settings for your own test project
 npm ci
 docker compose -f infra/docker/docker-compose.yml up -d postgres redis minio minio-init
 
@@ -164,12 +152,11 @@ cd tests/e2e && npx playwright test                # web :13000, API :18000
 ## Deployment
 
 `prod` deploys automatically after CI passes: web, admin, API and the Celery worker run on one Oracle VM
-under docker compose (`.github/workflows/deploy-vm.yml`), with Cloudflare as DNS/proxy only; until the
-cut-over completes the backend also deploys to Render. `dev` is a CI-only branch (no dev environment). Both report the deployed commit at
+under docker compose (`.github/workflows/deploy-vm.yml`), with Cloudflare as DNS/proxy only;  `dev` is a CI-only branch (no dev environment). Both report the deployed commit at
 `/api/version` (web) and `/health/version` (API), and the workflow waits for both to match. Migrations run
 on API start. Secrets live in Infisical and the providers' dashboards — never in this repository.
 
-More detail (architecture, operations, runbooks) is in the private companion repository.
+More detail (architecture, operations, runbooks, decisions) is in [`docs/`](docs/README.md).
 
 ## License
 

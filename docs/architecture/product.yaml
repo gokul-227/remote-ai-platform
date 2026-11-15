@@ -107,6 +107,8 @@ features:
     prefix: /api/v1/jobs
   - domain: jobs.preferences
     prefix: /api/v1/jobs/preferences
+  - domain: jobs.saved_searches
+    prefix: /api/v1/jobs/saved-searches
   - domain: saved_jobs
     prefix: /api/v1/saved-jobs
   - domain: search
@@ -497,6 +499,8 @@ api:
     prefix: /jobs/preferences
   - domain: jobs
     prefix: /jobs
+  - domain: jobs.saved_searches
+    prefix: /jobs/saved-searches
   - domain: matching
     prefix: /matching
   - domain: meetings

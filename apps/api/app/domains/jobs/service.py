@@ -44,6 +44,7 @@ from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.remotive import RemotiveAggregator
 from app.domains.jobs.aggregators.themuse import TheMuseAggregator
 from app.domains.jobs.aggregators.usajobs import USAJobsAggregator
+from app.domains.jobs.derive import derive_for_create
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
 from app.domains.jobs.schemas import JobPostCreate, JobPostResponse, JobPostUpdate, JobSearchQuery
@@ -81,7 +82,8 @@ AGGREGATORS = (
 
 def prepare_for_storage(jobs: list[JobPostCreate]) -> list[JobPostCreate]:
     """What every imported job looks like on disk, whatever the source: description
-    capped at JOB_DESCRIPTION_MAX_CHARS, canonical apply URL, no inline (data:)
+    capped at JOB_DESCRIPTION_MAX_CHARS, canonical apply URL, search-filter fields
+    derived (derive.py: structured source values first, then conservative text rules), no inline (data:)
     logos, a cross-source dedup key, and nothing posted before the retention window
     (it would be deleted by the next retention run anyway). Duplicates within the
     batch (same dedup key) keep the first."""
@@ -102,9 +104,11 @@ def prepare_for_storage(jobs: list[JobPostCreate]) -> list[JobPostCreate]:
         if key in seen:
             continue
         seen.add(key)
+        derived = derive_for_create(job.model_copy(update={"description": description}))
         out.append(
             job.model_copy(
                 update={
+                    **derived,
                     "description": description,
                     "company_logo": logo,
                     "external_url": canonical_url(job.external_url) or job.external_url,
@@ -136,6 +140,7 @@ class JobService:
     async def create_job(self, data: JobPostCreate) -> JobPost:
         if not data.company_name:
             raise ValueError("company_name is required to create a job post")
+        data = data.model_copy(update=derive_for_create(data))
         job = await self.repo.create(data)
         try:
             analysis = await JobEnricherAgent().enrich_job(job.title, job.description)
@@ -177,7 +182,9 @@ class JobService:
         return job
 
     async def search_jobs(self, query: JobSearchQuery) -> Sequence[JobPost]:
-        return await self.repo.search(**query.filters(), skip=query.skip, limit=query.limit)
+        return await self.repo.search(
+            **query.filters(), skip=query.skip, limit=query.limit, sort=query.sort
+        )
 
     async def search_jobs_cached(self, query: JobSearchQuery) -> tuple[list[dict], int]:
         """One page of matching jobs plus the total number of matches."""
@@ -190,6 +197,19 @@ class JobService:
         serialized = [JobPostResponse.model_validate(job).model_dump(mode="json") for job in jobs]
         list_cache.put(key, (serialized, total))
         return serialized, total
+
+    async def facets_cached(self, query: JobSearchQuery) -> dict:
+        """Facet counts for the filters (cached like list pages)."""
+        key = "facets:" + json.dumps(query.model_dump(mode="json", exclude={"skip", "limit", "sort"}), sort_keys=True)
+        cached = list_cache.get(key)
+        if cached is not None:
+            return dict(cached)
+        result = {
+            "total": await self.repo.count(**query.filters()),
+            "facets": await self.repo.facets(**query.filters()),
+        }
+        list_cache.put(key, result)
+        return result
 
     async def maintain_catalogue(self) -> dict[str, int]:
         """Retention after imports: drop imported jobs older than JOB_RETENTION_DAYS (hide
@@ -350,14 +370,25 @@ class JobService:
 
         if run_maintenance:
             await self.maintain_catalogue()
-        # Newest first: the per-run Google quota goes to the freshest listings.
-        sent = await notify_new_jobs(list(reversed(new_job_ids)))
+        # Newest posting first, and only pages Google may index: the shared daily
+        # Indexing API budget goes to the freshest indexable listings.
+        try:
+            announce = await self.repo.indexable_newest_first(new_job_ids)
+        except Exception as exc:  # never let ordering break an import
+            logger.warning(f"Could not order new jobs for indexing: {type(exc).__name__}")
+            announce = list(reversed(new_job_ids))
+        sent = await notify_new_jobs(announce)
         if any(sent.values()):
             logger.info(f"Search engines notified: {sent}")
         # Expired syndicated pages: ask Google to drop them (shares the daily budget).
         fresh = set(new_job_ids)
         gone = [i for i in getattr(self.repo, "expired_job_ids", []) if i not in fresh]
         self.repo.expired_job_ids = []
+        if gone:
+            try:
+                gone = await self.repo.syndicated(gone)  # noindex pages were never in Google
+            except Exception as exc:
+                logger.warning(f"Could not filter expired jobs: {type(exc).__name__}")
         if gone:
             removed = await notify_removed_jobs(gone)
             if any(removed.values()):

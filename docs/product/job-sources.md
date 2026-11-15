@@ -42,7 +42,7 @@ public API without a partner agreement).
   in settings, then checked once (one polite GET per board, robots.txt
   respected) when the list was built. Extra tokens can be added with the
   matching setting (`GREENHOUSE_BOARDS`, `RECRUITEE_COMPANIES`, …).
-* The lists are loaded into `job_source_boards` (migration 074) when staff open
+* The lists are loaded into `job_source_boards` (migration 075) when staff open
   the sources page. Imports fetch enabled boards whose status is not
   `not_found` or `robots_blocked`.
 * **Validation** is staff-run only ("Validate boards" in the console →

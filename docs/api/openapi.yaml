@@ -1266,13 +1266,116 @@ paths:
                 title: Response My Preference Summary Api V1 Jobs Preferences Me Summary Get
       security:
       - HTTPBearer: []
+  /api/v1/jobs/saved-searches:
+    get:
+      tags:
+      - Saved Job Searches
+      summary: List Saved Searches
+      operationId: list_saved_searches_api_v1_jobs_saved_searches_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SavedSearchOut'
+                type: array
+                title: Response List Saved Searches Api V1 Jobs Saved Searches Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Saved Job Searches
+      summary: Create Saved Search
+      operationId: create_saved_search_api_v1_jobs_saved_searches_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedSearchIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearchOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/jobs/saved-searches/{search_id}:
+    patch:
+      tags:
+      - Saved Job Searches
+      summary: Update Saved Search
+      operationId: update_saved_search_api_v1_jobs_saved_searches__search_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: search_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Search Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SavedSearchPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearchOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Saved Job Searches
+      summary: Delete Saved Search
+      operationId: delete_saved_search_api_v1_jobs_saved_searches__search_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: search_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Search Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/jobs:
     get:
       tags:
       - Job Posts
       summary: List Jobs
       description: |-
-        Search & filter active remote jobs aggregated from public APIs.
+        Search & filter active jobs (every filter of `job_search_query`).
 
         The total number of matches is returned in the X-Total-Count header.
       operationId: list_jobs_api_v1_jobs_get
@@ -1283,29 +1386,45 @@ paths:
         schema:
           anyOf:
           - type: string
+            maxLength: 200
           - type: 'null'
-          description: Keywords search in title or description
+          description: Keywords in title, company or description. "exact phrase", -exclude, OR
           title: Query
-        description: Keywords search in title or description
+        description: Keywords in title, company or description. "exact phrase", -exclude, OR
       - name: is_remote
         in: query
         required: false
         schema:
-          type: boolean
-          description: Filter for remote jobs
-          default: true
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Legacy remote flag; defaults to remote-only unless `workplace` is set
           title: Is Remote
-        description: Filter for remote jobs
+        description: Legacy remote flag; defaults to remote-only unless `workplace` is set
+      - name: workplace
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: remote | hybrid | onsite
+          title: Workplace
+        description: remote | hybrid | onsite
       - name: job_type
         in: query
         required: false
         schema:
           anyOf:
-          - type: string
+          - type: array
+            items:
+              type: string
           - type: 'null'
-          description: full-time, contract, part-time
+          description: full-time, part-time, contract, temporary, internship, volunteer, freelance
           title: Job Type
-        description: full-time, contract, part-time
+        description: full-time, part-time, contract, temporary, internship, volunteer, freelance
       - name: experience_level
         in: query
         required: false
@@ -1313,9 +1432,30 @@ paths:
           anyOf:
           - type: string
           - type: 'null'
-          description: junior, mid, senior, lead
+          description: 'Legacy: junior, mid, senior, lead'
           title: Experience Level
-        description: junior, mid, senior, lead
+        description: 'Legacy: junior, mid, senior, lead'
+      - name: seniority
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: internship, entry, associate, mid_senior, director, executive
+          title: Seniority
+        description: internship, entry, associate, mid_senior, director, executive
+      - name: posted_within
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(24h|3d|7d|30d|90d)$
+          - type: 'null'
+          title: Posted Within
       - name: min_salary
         in: query
         required: false
@@ -1356,6 +1496,16 @@ paths:
           description: Period of min/max_salary (required with them)
           title: Salary Period
         description: Period of min/max_salary (required with them)
+      - name: has_salary
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Only jobs that state a salary
+          title: Has Salary
+        description: Only jobs that state a salary
       - name: skills
         in: query
         required: false
@@ -1373,11 +1523,13 @@ paths:
         required: false
         schema:
           anyOf:
-          - type: string
+          - type: array
+            items:
+              type: string
           - type: 'null'
-          description: Filter by source (REMOTEOK, ARBEITNOW, etc.)
+          description: Job boards (REMOTEOK, DIRECT, ...)
           title: Source
-        description: Filter by source (REMOTEOK, ARBEITNOW, etc.)
+        description: Job boards (REMOTEOK, DIRECT, ...)
       - name: company_id
         in: query
         required: false
@@ -1389,6 +1541,18 @@ paths:
           description: Filter by company profile UUID
           title: Company Id
         description: Filter by company profile UUID
+      - name: company
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Company names (any of)
+          title: Company
+        description: Company names (any of)
       - name: location
         in: query
         required: false
@@ -1397,9 +1561,127 @@ paths:
           - type: string
             maxLength: 60
           - type: 'null'
-          description: Text in the posting's location (e.g. Germany)
+          description: Text in the posting's location (a city, e.g. Berlin)
           title: Location
-        description: Text in the posting's location (e.g. Germany)
+        description: Text in the posting's location (a city, e.g. Berlin)
+      - name: employer
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          description: Exact employer name (case-insensitive)
+          title: Employer
+        description: Exact employer name (case-insensitive)
+      - name: country
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: ISO 3166-1 alpha-2 codes
+          title: Country
+        description: ISO 3166-1 alpha-2 codes
+      - name: region
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: worldwide, north_america, latam, europe, africa, middle_east, apac
+          title: Region
+        description: worldwide, north_america, latam, europe, africa, middle_east, apac
+      - name: industry
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: software_it, finance, healthcare, education, ecommerce_retail, marketing_advertising, media_entertainment, gaming, crypto_web3, government, nonprofit, consulting, logistics, travel_hospitality, energy, telecom, real_estate, legal, manufacturing
+          title: Industry
+        description: software_it, finance, healthcare, education, ecommerce_retail, marketing_advertising, media_entertainment, gaming, crypto_web3, government, nonprofit, consulting, logistics, travel_hospitality, energy, telecom, real_estate, legal, manufacturing
+      - name: job_function
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: engineering, data, design, product, marketing, sales, customer_support, operations, finance_accounting, hr_recruiting, legal, writing_content, education, healthcare, project_management
+          title: Job Function
+        description: engineering, data, design, product, marketing, sales, customer_support, operations, finance_accounting, hr_recruiting, legal, writing_content, education, healthcare, project_management
+      - name: language
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: 'Posting language: en, de, fr, es, pt, nl, it, pl'
+          title: Language
+        description: 'Posting language: en, de, fr, es, pt, nl, it, pl'
+      - name: apply
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(platform|external)$
+          - type: 'null'
+          title: Apply
+      - name: visa_sponsorship
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Visa Sponsorship
+      - name: tz
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            maximum: 14
+            minimum: -12
+          - type: 'null'
+          description: 'Your UTC offset: jobs whose hours overlap within 3h'
+          title: Tz
+        description: 'Your UTC offset: jobs whose hours overlap within 3h'
+      - name: verified
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Only verified companies
+          title: Verified
+        description: Only verified companies
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(recent|relevant|salary)$
+          default: recent
+          title: Sort
       - name: skip
         in: query
         required: false
@@ -1460,6 +1742,348 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/facets:
+    get:
+      tags:
+      - Job Posts
+      summary: Job Facets
+      description: |-
+        Counts per filter value for the current search. Each facet is counted
+        with every other filter applied, so its own alternatives stay visible.
+      operationId: job_facets_api_v1_jobs_facets_get
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          description: Keywords in title, company or description. "exact phrase", -exclude, OR
+          title: Query
+        description: Keywords in title, company or description. "exact phrase", -exclude, OR
+      - name: is_remote
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Legacy remote flag; defaults to remote-only unless `workplace` is set
+          title: Is Remote
+        description: Legacy remote flag; defaults to remote-only unless `workplace` is set
+      - name: workplace
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: remote | hybrid | onsite
+          title: Workplace
+        description: remote | hybrid | onsite
+      - name: job_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: full-time, part-time, contract, temporary, internship, volunteer, freelance
+          title: Job Type
+        description: full-time, part-time, contract, temporary, internship, volunteer, freelance
+      - name: experience_level
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'Legacy: junior, mid, senior, lead'
+          title: Experience Level
+        description: 'Legacy: junior, mid, senior, lead'
+      - name: seniority
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: internship, entry, associate, mid_senior, director, executive
+          title: Seniority
+        description: internship, entry, associate, mid_senior, director, executive
+      - name: posted_within
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(24h|3d|7d|30d|90d)$
+          - type: 'null'
+          title: Posted Within
+      - name: min_salary
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+            minimum: 0
+          - type: 'null'
+          title: Min Salary
+      - name: max_salary
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+            minimum: 0
+          - type: 'null'
+          title: Max Salary
+      - name: salary_currency
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^[A-Za-z]{3}$
+          - type: 'null'
+          description: ISO currency of min/max_salary (required with them)
+          title: Salary Currency
+        description: ISO currency of min/max_salary (required with them)
+      - name: salary_period
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(hour|day|week|month|year)$
+          - type: 'null'
+          description: Period of min/max_salary (required with them)
+          title: Salary Period
+        description: Period of min/max_salary (required with them)
+      - name: has_salary
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Only jobs that state a salary
+          title: Has Salary
+        description: Only jobs that state a salary
+      - name: skills
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Match any of these skills
+          title: Skills
+        description: Match any of these skills
+      - name: source
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Job boards (REMOTEOK, DIRECT, ...)
+          title: Source
+        description: Job boards (REMOTEOK, DIRECT, ...)
+      - name: company_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter by company profile UUID
+          title: Company Id
+        description: Filter by company profile UUID
+      - name: company
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Company names (any of)
+          title: Company
+        description: Company names (any of)
+      - name: location
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 60
+          - type: 'null'
+          description: Text in the posting's location (a city, e.g. Berlin)
+          title: Location
+        description: Text in the posting's location (a city, e.g. Berlin)
+      - name: employer
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          description: Exact employer name (case-insensitive)
+          title: Employer
+        description: Exact employer name (case-insensitive)
+      - name: country
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: ISO 3166-1 alpha-2 codes
+          title: Country
+        description: ISO 3166-1 alpha-2 codes
+      - name: region
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: worldwide, north_america, latam, europe, africa, middle_east, apac
+          title: Region
+        description: worldwide, north_america, latam, europe, africa, middle_east, apac
+      - name: industry
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: software_it, finance, healthcare, education, ecommerce_retail, marketing_advertising, media_entertainment, gaming, crypto_web3, government, nonprofit, consulting, logistics, travel_hospitality, energy, telecom, real_estate, legal, manufacturing
+          title: Industry
+        description: software_it, finance, healthcare, education, ecommerce_retail, marketing_advertising, media_entertainment, gaming, crypto_web3, government, nonprofit, consulting, logistics, travel_hospitality, energy, telecom, real_estate, legal, manufacturing
+      - name: job_function
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: engineering, data, design, product, marketing, sales, customer_support, operations, finance_accounting, hr_recruiting, legal, writing_content, education, healthcare, project_management
+          title: Job Function
+        description: engineering, data, design, product, marketing, sales, customer_support, operations, finance_accounting, hr_recruiting, legal, writing_content, education, healthcare, project_management
+      - name: language
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: 'Posting language: en, de, fr, es, pt, nl, it, pl'
+          title: Language
+        description: 'Posting language: en, de, fr, es, pt, nl, it, pl'
+      - name: apply
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(platform|external)$
+          - type: 'null'
+          title: Apply
+      - name: visa_sponsorship
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Visa Sponsorship
+      - name: tz
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            maximum: 14
+            minimum: -12
+          - type: 'null'
+          description: 'Your UTC offset: jobs whose hours overlap within 3h'
+          title: Tz
+        description: 'Your UTC offset: jobs whose hours overlap within 3h'
+      - name: verified
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Only verified companies
+          title: Verified
+        description: Only verified companies
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: ^(recent|relevant|salary)$
+          default: recent
+          title: Sort
+      - name: skip
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Skip
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobFacets'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/jobs/sitemap-entries:
     get:
       tags:
@@ -1499,6 +2123,135 @@ paths:
                 items:
                   $ref: '#/components/schemas/JobSitemapEntry'
                 title: Response List Sitemap Entries Api V1 Jobs Sitemap Entries Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/landing-stats:
+    get:
+      tags:
+      - Job Posts
+      summary: Landing Stats
+      description: |-
+        Aggregates for a public landing page (remote jobs by role, skill, place or
+        employer): totals, new this week, top employers and published pay. Public:
+        computed only from the jobs the anonymous list shows.
+      operationId: landing_stats_api_v1_jobs_landing_stats_get
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Query
+      - name: job_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Job Type
+      - name: location
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 60
+          - type: 'null'
+          title: Location
+      - name: employer
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Employer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobLandingStats'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/employers:
+    get:
+      tags:
+      - Job Posts
+      summary: List Employers
+      description: Employers with live remote jobs, most openings first (public landing pages).
+      operationId: list_employers_api_v1_jobs_employers_get
+      parameters:
+      - name: min_jobs
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          default: 1
+          title: Min Jobs
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 5000
+          minimum: 1
+          default: 500
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobEmployer'
+                title: Response List Employers Api V1 Jobs Employers Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/employers/{slug}:
+    get:
+      tags:
+      - Job Posts
+      summary: Get Employer
+      description: One employer by URL slug; 404 when it has no live remote jobs.
+      operationId: get_employer_api_v1_jobs_employers__slug__get
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobEmployer'
         '422':
           description: Validation Error
           content:
@@ -1658,6 +2411,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobPostResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/{job_id}/availability:
+    get:
+      tags:
+      - Job Posts
+      summary: Get Job Availability
+      description: |-
+        Whether a public job page is live, recently expired, or long gone (the web
+        app answers 410 Gone for those). Reveals nothing but that state.
+      operationId: get_job_availability_api_v1_jobs__job_id__availability_get
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAvailability'
         '422':
           description: Validation Error
           content:
@@ -15274,6 +16057,21 @@ components:
       - title
       - start_date
       title: ExperienceItem
+    FacetValue:
+      properties:
+        value:
+          anyOf:
+          - type: string
+          - type: boolean
+          title: Value
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - value
+      - count
+      title: FacetValue
     FeatureFlagsResponse:
       properties:
         flags:
@@ -16072,6 +16870,80 @@ components:
       required:
       - accept
       title: InvitationResponse
+    JobAvailability:
+      properties:
+        state:
+          type: string
+          title: State
+      type: object
+      required:
+      - state
+      title: JobAvailability
+      description: 'live | expired | gone: whether the public job page answers 200 or 410.'
+    JobEmployer:
+      properties:
+        slug:
+          type: string
+          title: Slug
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+        latest_posted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Latest Posted At
+      type: object
+      required:
+      - slug
+      - name
+      - count
+      title: JobEmployer
+    JobFacets:
+      properties:
+        total:
+          type: integer
+          title: Total
+        facets:
+          additionalProperties:
+            items:
+              $ref: '#/components/schemas/FacetValue'
+            type: array
+          type: object
+          title: Facets
+      type: object
+      required:
+      - total
+      - facets
+      title: JobFacets
+    JobLandingStats:
+      properties:
+        total:
+          type: integer
+          title: Total
+        new_last_7_days:
+          type: integer
+          title: New Last 7 Days
+        top_companies:
+          items:
+            $ref: '#/components/schemas/LandingCompany'
+          type: array
+          title: Top Companies
+        salary:
+          anyOf:
+          - $ref: '#/components/schemas/LandingSalary'
+          - type: 'null'
+      type: object
+      required:
+      - total
+      - new_last_7_days
+      - top_companies
+      title: JobLandingStats
+      description: Aggregates behind a public landing page's intro text (all from real rows).
     JobMatchResponse:
       properties:
         id:
@@ -16164,6 +17036,60 @@ components:
       title: JobMatchResponse
     JobPostCreate:
       properties:
+        workplace_type:
+          anyOf:
+          - type: string
+            pattern: ^(remote|hybrid|onsite)$
+          - type: 'null'
+          title: Workplace Type
+        seniority:
+          anyOf:
+          - type: string
+            pattern: ^(internship|entry|associate|mid_senior|director|executive)$
+          - type: 'null'
+          title: Seniority
+        country_code:
+          anyOf:
+          - type: string
+            maxLength: 2
+            minLength: 2
+          - type: 'null'
+          title: Country Code
+        region:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Region
+        tz_min:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Tz Min
+        tz_max:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Tz Max
+        industry:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Industry
+        job_function:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Job Function
+        visa_sponsorship:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Visa Sponsorship
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language
         title:
           type: string
           maxLength: 255
@@ -16237,7 +17163,7 @@ components:
         salary_period:
           anyOf:
           - type: string
-            pattern: ^(year|month|hour|project)$
+            pattern: ^(year|month|week|day|hour|project)$
           - type: 'null'
           title: Salary Period
         currency:
@@ -16294,6 +17220,60 @@ components:
       title: JobPostCreate
     JobPostResponse:
       properties:
+        workplace_type:
+          anyOf:
+          - type: string
+            pattern: ^(remote|hybrid|onsite)$
+          - type: 'null'
+          title: Workplace Type
+        seniority:
+          anyOf:
+          - type: string
+            pattern: ^(internship|entry|associate|mid_senior|director|executive)$
+          - type: 'null'
+          title: Seniority
+        country_code:
+          anyOf:
+          - type: string
+            maxLength: 2
+            minLength: 2
+          - type: 'null'
+          title: Country Code
+        region:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Region
+        tz_min:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Tz Min
+        tz_max:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Tz Max
+        industry:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Industry
+        job_function:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Job Function
+        visa_sponsorship:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Visa Sponsorship
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language
         title:
           type: string
           maxLength: 255
@@ -16365,7 +17345,7 @@ components:
         salary_period:
           anyOf:
           - type: string
-            pattern: ^(year|month|hour|project)$
+            pattern: ^(year|month|week|day|hour|project)$
           - type: 'null'
           title: Salary Period
         currency:
@@ -16682,6 +17662,49 @@ components:
       - url
       - provider
       title: JoinLink
+    LandingCompany:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - name
+      - count
+      title: LandingCompany
+    LandingSalary:
+      properties:
+        currency:
+          type: string
+          title: Currency
+        period:
+          type: string
+          title: Period
+        count:
+          type: integer
+          title: Count
+        low:
+          type: number
+          title: Low
+        median:
+          type: number
+          title: Median
+        high:
+          type: number
+          title: High
+      type: object
+      required:
+      - currency
+      - period
+      - count
+      - low
+      - median
+      - high
+      title: LandingSalary
+      description: Pay published by matching jobs, in their most common currency and period.
     LogoutIn:
       properties:
         everywhere:
@@ -18303,6 +19326,92 @@ components:
       - result
       - created_at
       title: RunOut
+    SavedSearchIn:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+        alerts:
+          type: boolean
+          title: Alerts
+          default: true
+        frequency:
+          type: string
+          pattern: ^(daily|weekly)$
+          title: Frequency
+          default: daily
+      type: object
+      required:
+      - name
+      title: SavedSearchIn
+    SavedSearchOut:
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Name
+        params:
+          additionalProperties: true
+          type: object
+          title: Params
+        alerts:
+          type: boolean
+          title: Alerts
+          default: true
+        frequency:
+          type: string
+          pattern: ^(daily|weekly)$
+          title: Frequency
+          default: daily
+        id:
+          type: string
+          format: uuid
+          title: Id
+        last_notified_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Notified At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - name
+      - id
+      - created_at
+      title: SavedSearchOut
+    SavedSearchPatch:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 120
+            minLength: 1
+          - type: 'null'
+          title: Name
+        alerts:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Alerts
+        frequency:
+          anyOf:
+          - type: string
+            pattern: ^(daily|weekly)$
+          - type: 'null'
+          title: Frequency
+      type: object
+      title: SavedSearchPatch
     SearchHit:
       properties:
         id:

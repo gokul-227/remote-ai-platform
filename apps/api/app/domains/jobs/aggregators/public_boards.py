@@ -50,6 +50,12 @@ def _shard(boards: list[str], now: datetime | None = None) -> list[str]:
     return [b for i, b in enumerate(sorted(boards)) if i % shards == current]
 
 
+def _workplace(value: object) -> str | None:
+    """A board's structured workplace type (Lever/Ashby workplaceType)."""
+    key = str(value or "").lower().replace("-", "").replace("_", "").replace(" ", "")
+    return {"remote": "remote", "hybrid": "hybrid", "onsite": "onsite", "inoffice": "onsite"}.get(key)
+
+
 class _Board(BaseAggregator):
     """Shared helpers: build a job, fetch many company boards concurrently."""
 
@@ -93,6 +99,7 @@ class _Board(BaseAggregator):
         salary: tuple[float | None, float | None, str | None] = (None, None, None),
         tags: list[str] | None = None,
         posted_at: object = None,
+        workplace: str | None = None,
     ) -> JobPostCreate | None:
         title = self.clean_text(title)
         if not title:
@@ -119,6 +126,7 @@ class _Board(BaseAggregator):
             salary_period="year" if low or high else None,
             currency=(currency or "USD")[:3],
             posted_at=parse_posted_at(posted_at),
+            workplace_type=_workplace(workplace),
         )
 
     async def _many(self, boards: list[str], fetch, limit: int) -> list[JobPostCreate]:
@@ -216,9 +224,8 @@ class LeverAggregator(_Board):
                     description=it.get("descriptionPlain") or it.get("description") or "",
                     location=cat.get("location"),
                     job_type=cat.get("commitment"),
-                    remote=(it.get("workplaceType") == "remote")
-                    if it.get("workplaceType")
-                    else None,
+                    remote=(it.get("workplaceType") == "remote") if it.get("workplaceType") else None,
+                    workplace=it.get("workplaceType"),
                     tags=[cat.get("team") or ""],
                     posted_at=it.get("createdAt"),
                 )
@@ -254,6 +261,7 @@ class AshbyAggregator(_Board):
                     location=it.get("location"),
                     job_type=it.get("employmentType"),
                     remote=it.get("isRemote") if isinstance(it.get("isRemote"), bool) else None,
+                    workplace=it.get("workplaceType"),
                     tags=[it.get("department") or ""],
                     posted_at=it.get("publishedAt"),
                 )

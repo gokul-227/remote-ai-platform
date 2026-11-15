@@ -115,7 +115,7 @@ async def provider_config() -> ProviderConfig:
     return ProviderConfig(
         primary=settings.auth_primary_provider if workos else "supabase",
         workos_client_id=settings.WORKOS_CLIENT_ID or None,
-        oauth_providers=list(workos_client.OAUTH_PROVIDERS) if workos else [],
+        oauth_providers=workos_client.enabled_providers() if workos else [],
         accept_supabase=settings.AUTH_ACCEPT_SUPABASE,
     )
 
@@ -154,7 +154,7 @@ async def verify_code(body: VerifyIn, _: None = Depends(_require_workos)) -> Tok
 @router.post("/authorize")
 async def authorize(body: AuthorizeIn, _: None = Depends(_require_workos)) -> dict[str, str]:
     """The WorkOS URL that starts a Google/GitHub/Microsoft sign-in."""
-    if body.provider not in workos_client.OAUTH_PROVIDERS:
+    if body.provider not in workos_client.enabled_providers():
         raise HTTPException(status_code=422, detail="Unknown sign-in provider")
     if not _allowed_redirect(body.redirect_uri):
         raise HTTPException(status_code=422, detail="redirect_uri is not allowed")

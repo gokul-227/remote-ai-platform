@@ -5,8 +5,8 @@
 # Later keys win. Values are never printed; the local temp file is shredded.
 # Usage: ops/vm/render-env.sh [ssh-target]   (default opc@$VM_HOST)
 set -euo pipefail
-PROJECT=237deba5-a70e-4571-8529-26597d6e4631
-TARGET="${1:-opc@${VM_HOST:-79.76.118.213}}"
+PROJECT="${INFISICAL_PROJECT_ID:?set INFISICAL_PROJECT_ID}"
+TARGET="${1:-opc@${VM_HOST:?set VM_HOST}}"
 KEY="${VM_SSH_KEY_FILE:-$HOME/.ssh/oci_rap}"
 tmp="$(mktemp)"; trap 'rm -P "$tmp" 2>/dev/null || rm -f "$tmp"' EXIT
 python3 - "$PROJECT" "$tmp" <<'PY'
