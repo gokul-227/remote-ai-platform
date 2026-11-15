@@ -6,7 +6,7 @@ invitation only.
 ## Branches and releases
 
 - `prod` — production (https://remoteaiplatform.com). Default branch.
-- `dev` — staging (https://dev.remoteaiplatform.com).
+- `dev` — integration branch, checked by CI only (there is no dev environment).
 - Work happens on short-lived `feat/…`, `fix/…` or `chore/…` branches from
   `dev`, merged into `dev` by pull request. A release is a pull request from
   `dev` to `prod`; after the production deploy succeeds a dated GitHub Release

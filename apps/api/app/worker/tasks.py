@@ -127,7 +127,14 @@ async def maintain_catalogue_async(run_id: uuid.UUID) -> dict[str, Any]:
 
     async def work() -> dict[str, Any]:
         async with factory() as db:
-            return await JobService(JobRepository(db)).maintain_catalogue()
+            stats = await JobService(JobRepository(db)).maintain_catalogue()
+            await db.commit()
+            # Retry identity-provider erasures that failed at account deletion (DATA-04).
+            from app.domains.auth.erasure import retry_pending_erasures
+
+            erasures = await retry_pending_erasures(db)
+            await db.commit()
+            return {**stats, "identity_erasures_pending": erasures["pending"]}
 
     return await _with_run(run_id, work)
 

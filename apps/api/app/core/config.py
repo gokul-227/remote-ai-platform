@@ -401,12 +401,9 @@ class Settings(BaseSettings):
     JOB_RETENTION_DAYS: int = 90
 
     JOB_SYNC_SCHEDULE: str = (
-        "17 */3 * * *"  # Every 3 hours (.github/workflows/scheduled-job-sync.yml)
+        "17 */3 * * *"  # Every 3 hours (default cron for job_sources rows)
     )
     JOB_SYNC_MAX_PER_SOURCE: int = 10000
-    # Secret for the scheduled sync (POST /jobs/sync/scheduled). Grants that one
-    # action only; empty disables the endpoint. At least 32 characters.
-    JOB_SYNC_TOKEN: str = ""
     # Freshness policy: imported jobs that no sync has seen among their
     # source's recent listings (each sync reads each source's newest ~30) for
     # this long are taken off the public list; they may still be open.
@@ -606,8 +603,6 @@ class Settings(BaseSettings):
         # rate limiting, caching and the job queue will silently degrade to in-memory
         # fallbacks.  Operators should set REDIS_URL to a real
         # Redis instance (e.g. Upstash free tier) or accept the degraded behaviour.
-        if self.JOB_SYNC_TOKEN and len(self.JOB_SYNC_TOKEN) < 32:
-            errors.append("JOB_SYNC_TOKEN must be at least 32 characters")
         if self.workos_enabled and not self.WORKOS_API_KEY:
             errors.append(
                 "WORKOS_CLIENT_ID is set without WORKOS_API_KEY (sign-in and deletion need it)"

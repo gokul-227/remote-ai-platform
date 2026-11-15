@@ -1,5 +1,4 @@
-// Sentry edge-runtime configuration (middleware, edge API routes, and the
-// Cloudflare Workers runtime this app deploys to via @opennextjs/cloudflare).
+// Sentry edge-runtime configuration (middleware and edge API routes).
 //
 // Imported by src/instrumentation.ts's register() hook only when
 // NEXT_RUNTIME === "edge". Same no-op-until-configured behavior as

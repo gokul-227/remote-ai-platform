@@ -3,14 +3,14 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 import { deployEnvProblems, isIndexable } from "./src/lib/deployEnv";
 
-// A deployed build (production/dev) with a missing or local public env would
+// A deployed build with a missing or local public env would
 // otherwise ship pointing at localhost or a placeholder Supabase project.
 const envProblems = deployEnvProblems(process.env);
 if (envProblems.length) {
   throw new Error(`Refusing to build for ${process.env.NEXT_PUBLIC_DEPLOY_ENV}: ${envProblems.join("; ")}`);
 }
 
-// API_URL/SUPABASE_URL vary per environment (prod vs dev) -- baked in at
+// API_URL/SUPABASE_URL vary per environment -- baked in at
 // build time via NEXT_PUBLIC_* the same way the rest of the app consumes
 // them, so the CSP's connect-src matches whichever backend this build
 // actually talks to instead of hardcoding one environment's URL.
@@ -70,8 +70,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   // Self-contained Node server (.next/standalone/apps/web/server.js) for the
-  // VM's Docker image. OpenNext (the dev Worker) builds from standalone output
-  // too, so both deploy targets share this setting.
+  // VM's Docker image.
   output: "standalone",
   // Trace from the monorepo root so hoisted workspace dependencies are copied.
   outputFileTracingRoot: path.join(__dirname, "../.."),

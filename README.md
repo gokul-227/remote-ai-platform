@@ -16,7 +16,6 @@ can act across the product after confirmation — all on free-tier infrastructur
 | Environment | Product | Staff console |
 | --- | --- | --- |
 | Production | <https://remoteaiplatform.com> | <https://admin.remoteaiplatform.com> |
-| Development | <https://dev.remoteaiplatform.com> | <https://dev.admin.remoteaiplatform.com> |
 
 Contact: <contact@remoteaiplatform.com>
 
@@ -164,8 +163,9 @@ cd tests/e2e && npx playwright test                # web :13000, API :18000
 
 ## Deployment
 
-`prod` and `dev` branches deploy automatically after CI passes: the frontend to Cloudflare Workers, the
-backend to Render via a deploy hook pinned to the tested commit. Both report the deployed commit at
+`prod` deploys automatically after CI passes: web, admin, API and the Celery worker run on one Oracle VM
+under docker compose (`.github/workflows/deploy-vm.yml`), with Cloudflare as DNS/proxy only; until the
+cut-over completes the backend also deploys to Render. `dev` is a CI-only branch (no dev environment). Both report the deployed commit at
 `/api/version` (web) and `/health/version` (API), and the workflow waits for both to match. Migrations run
 on API start. Secrets live in Infisical and the providers' dashboards — never in this repository.
 

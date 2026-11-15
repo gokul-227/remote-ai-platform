@@ -59,8 +59,7 @@ const HelpCenter = lazy(() => import("./rap_enterprise").then((m) => ({ default:
 
 /** Administration now lives in the separate staff console. */
 function AdminMoved() {
-  const host = typeof window !== "undefined" ? window.location.hostname : "";
-  const url = host.startsWith("dev.") ? "https://dev.admin.remoteaiplatform.com" : "https://admin.remoteaiplatform.com";
+  const url = "https://admin.remoteaiplatform.com";
   return (
     <div className="v2-page">
       <div className="rounded-xl border border-slate-200 bg-white p-6">

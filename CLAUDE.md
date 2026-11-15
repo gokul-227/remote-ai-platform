@@ -15,7 +15,7 @@ alike); ownership checks (`!= ADMIN`, `require_project_owner`) decide who may ac
 Monorepo layout: npm workspaces (`apps/*`, `tests/*`) orchestrated by Turborepo.
 - `apps/api` — FastAPI backend (Python 3.11, async SQLAlchemy 2, Alembic, LiteLLM)
 - `apps/web` — Next.js 16 / React 19 frontend; the product UI lives in `apps/web/src/figma`
-- `apps/admin` — staff console (static Next.js export, deployed to admin./dev.admin.remoteaiplatform.com)
+- `apps/admin` — staff console (static Next.js export, deployed to admin.remoteaiplatform.com)
 - `tests/e2e` — Playwright journeys against an isolated stack + mock Supabase Auth
 - `infra/docker/docker-compose.yml` — local infra (Postgres, Redis, MinIO, API, web)
 
@@ -60,9 +60,10 @@ tokens (JWKS) in `app/domains/auth/supabase_auth.py`, links WorkOS users by veri
 allowances (`app/services/ai/metering.py`). Background work runs on Celery (`app/worker/`: worker +
 Beat scheduler, Redis as broker only) with every run, retry, dead letter, import checkpoint and heartbeat
 recorded in PostgreSQL (`app/domains/tasks/`); job imports are scheduled from the `job_sources` table and
-operated from the staff console (`/admin/background/*`). `.github/workflows/scheduled-job-sync.yml` is the
-transitional import path until the worker runs in production (gate: repo variable
-`JOB_SYNC_GITHUB_ENABLED=false`). Resume parsing is still inline with a time budget. Money movement is gated off
+operated from the staff console (`/admin/background/*`). Imports run only on the Celery worker on the
+production VM; GitHub Actions is for CI and deployments only. Production is one Oracle VM
+(`infra/docker/docker-compose.prod.yml`, deployed by `.github/workflows/deploy-vm.yml`); Cloudflare is
+DNS/proxy only (no Workers), and there is no dev environment. Resume parsing is still inline with a time budget. Money movement is gated off
 (`MARKETPLACE_PAYMENTS_ENABLED`); contract/milestone state rules live in `app/domains/contracts/lifecycle.py`.
 The frontend is a hash-routed client app in `apps/web/src/figma` (routes in `App.tsx`; the navigation
 catalog — seven sections and their groups — and the shell live in `rap_shell.tsx`), styled via its own

@@ -166,7 +166,6 @@ stack:
       - {name: TanStack Query, npm: "@tanstack/react-query", icon: reactquery}
       - {name: Zod, npm: zod, icon: zod}
       - {name: supabase-js, npm: "@supabase/supabase-js", icon: supabase}
-      - {name: OpenNext, npm: "@opennextjs/cloudflare", icon: cloudflare}
   - group: Backend (apps/api)
     items:
       - {name: Python 3.11, file: apps/api/Dockerfile, icon: python}
@@ -196,11 +195,9 @@ stack:
       - {name: Dependabot, file: .github/dependabot.yml, icon: dependabot}
       - {name: Docker, file: apps/api/Dockerfile, icon: docker}
       - {name: Turborepo, file: turbo.json, icon: turborepo}
-      - {name: Wrangler, npm: wrangler, icon: cloudflare}
   - group: Operations
     items:
       - {name: Infisical secrets, file_contains: {glob: README.md, regex: Infisical}, icon: concepts/key-round}
-      - {name: Scheduled job sync, file: .github/workflows/scheduled-job-sync.yml, icon: concepts/clock}
       - {name: Canary & keep-warm, file: .github/workflows/production-canary.yml, icon: concepts/radar}
       - {name: Prometheus /metrics, py: prometheus-fastapi-instrumentator, icon: prometheus}
       - {name: Structured logs, py: structlog, icon: concepts/activity}

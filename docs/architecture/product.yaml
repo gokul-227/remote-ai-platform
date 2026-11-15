@@ -434,8 +434,8 @@ features:
     name: Resend
     status: active
 web:
-  technology: Next.js 16 · OpenNext
-  provider: Cloudflare Workers
+  technology: Next.js 16 · standalone Node server
+  provider: Oracle Cloud VM (behind Cloudflare DNS/proxy)
   screens: 65
 api:
   technology: FastAPI 0.142 · Docker
@@ -584,6 +584,9 @@ infrastructure:
   - id: cloudflare
     name: Cloudflare
     icon: cloudflare
+  - id: vm
+    name: Oracle Cloud VM (docker compose)
+    icon: docker
   - id: render
     name: Render
     icon: render
@@ -612,9 +615,9 @@ infrastructure:
     status: active
   - id: web
     name: Web application
-    technology: Next.js 16 · OpenNext
+    technology: Next.js 16 · standalone Node server
     icon: nextdotjs
-    group: cloudflare
+    group: vm
     status: active
   - id: api
     name: Backend API
@@ -624,8 +627,8 @@ infrastructure:
     status: active
   - id: worker
     name: Background worker + scheduler
-    technology: Celery 5 · Beat (PostgreSQL lock) · task history in PostgreSQL
-    group: render
+    technology: Celery 5 · Beat (PostgreSQL lock) · job imports · task history in PostgreSQL
+    group: vm
     status: active
   - id: auth
     name: Supabase Auth
@@ -657,7 +660,7 @@ infrastructure:
     icon: redis
     group: cache
     status: active
-  - id: fcm
+  - id: webpush
     name: Browser push services (Web Push)
     technology: Standard Web Push (VAPID, RFC 8291) · no account · only email-worthy events
     group: saas
@@ -698,13 +701,7 @@ infrastructure:
     status: active
   - id: gha-deploy
     name: Deploy
-    technology: After CI on dev/prod
-    icon: githubactions
-    group: github
-    status: active
-  - id: gha-job-sync
-    name: Scheduled job sync
-    technology: Cron every 6 h
+    technology: After CI on prod (VM via SSH · Render until cut-over)
     icon: githubactions
     group: github
     status: active
@@ -853,9 +850,6 @@ stack:
   - name: supabase-js
     icon: supabase
     evidence: 'package.json: @supabase/supabase-js'
-  - name: OpenNext
-    icon: cloudflare
-    evidence: 'package.json: @opennextjs/cloudflare'
 - group: Backend (apps/api)
   items:
   - name: Python 3.11
@@ -931,17 +925,11 @@ stack:
   - name: Turborepo
     icon: turborepo
     evidence: turbo.json
-  - name: Wrangler
-    icon: cloudflare
-    evidence: 'package.json: wrangler'
 - group: Operations
   items:
   - name: Infisical secrets
     icon: concepts/key-round
     evidence: README.md ~ /Infisical/
-  - name: Scheduled job sync
-    icon: concepts/clock
-    evidence: .github/workflows/scheduled-job-sync.yml
   - name: Canary & keep-warm
     icon: concepts/radar
     evidence: .github/workflows/production-canary.yml

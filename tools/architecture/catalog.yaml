@@ -28,6 +28,7 @@ system:
 groups:
   - {id: clients, name: Clients, provider: Internet, column: 0}
   - {id: cloudflare, name: Cloudflare, provider: Cloudflare, icon: cloudflare, column: 1}
+  - {id: vm, name: Oracle Cloud VM (docker compose), provider: Oracle Cloud, icon: docker, column: 2}
   - {id: render, name: Render, provider: Render, icon: render, column: 2}
   - {id: supabase, name: Supabase (EU), provider: Supabase, icon: supabase, column: 3}
   - {id: cache, name: Managed Redis, provider: Redis host via REDIS_URL, icon: redis, column: 3}
@@ -49,12 +50,12 @@ components:
   - id: web
     name: Web application
     type: application
-    technology: "Next.js {node_dep_major:next} · OpenNext"
-    provider: Cloudflare Workers
-    group: cloudflare
+    technology: "Next.js {node_dep_major:next} · standalone Node server"
+    provider: Oracle Cloud VM (behind Cloudflare DNS/proxy)
+    group: vm
     icon: nextdotjs
     detect:
-      - file_contains: {glob: apps/web/wrangler.jsonc, regex: '"main"'}
+      - file_contains: {glob: infra/docker/docker-compose.prod.yml, regex: '\n  web:'}
 
   - id: api
     name: Backend API
@@ -69,8 +70,8 @@ components:
   - id: worker
     name: Background worker + scheduler
     type: worker
-    technology: "Celery {python_dep_major:celery} · Beat (PostgreSQL lock) · task history in PostgreSQL"
-    group: render
+    technology: "Celery {python_dep_major:celery} · Beat (PostgreSQL lock) · job imports · task history in PostgreSQL"
+    group: vm
     detect:
       - python_dep: celery
       - python_dep: rq
@@ -128,7 +129,7 @@ components:
     detect:
       - python_dep: redis
 
-  - id: fcm
+  - id: webpush
     name: Browser push services (Web Push)
     type: external
     technology: Standard Web Push (VAPID, RFC 8291) · no account · only email-worthy events
@@ -193,20 +194,11 @@ components:
   - id: gha-deploy
     name: Deploy
     type: pipeline
-    technology: After CI on dev/prod
+    technology: After CI on prod (VM via SSH · Render until cut-over)
     group: github
     icon: githubactions
     detect:
-      - file_contains: {glob: .github/workflows/*.yml, regex: 'wrangler deploy|api\.render\.com'}
-
-  - id: gha-job-sync
-    name: Scheduled job sync
-    type: scheduler
-    technology: Cron every 6 h
-    group: github
-    icon: githubactions
-    detect:
-      - file_contains: {glob: .github/workflows/*.yml, regex: 'jobs/sync/scheduled'}
+      - file_contains: {glob: .github/workflows/*.yml, regex: 'deploy\.sh|api\.render\.com'}
 
   - id: gha-monitor
     name: Canary & keep-warm
@@ -268,15 +260,14 @@ connections:
   - {from: api, to: job-boards, label: HTTPS pull}
   - {from: api, to: resend, label: Email API}
   - {from: api, to: brevo, label: Email API}
-  - {from: api, to: fcm, label: Push (worker)}
-  - {from: web, to: fcm, label: PushManager subscription}
+  - {from: api, to: webpush, label: Push (worker)}
+  - {from: web, to: webpush, label: PushManager subscription}
   - {from: api, to: slack, label: Alerts}
   - {from: api, to: stripe, label: Payments API}
   - {from: api, to: sentry, label: Errors}
   - {from: web, to: sentry, label: Errors}
-  - {from: gha-deploy, to: web, label: wrangler deploy}
+  - {from: gha-deploy, to: web, label: docker compose (deploy-vm)}
   - {from: gha-deploy, to: api, label: Render API deploy}
-  - {from: gha-job-sync, to: api, label: POST /jobs/sync/scheduled}
   - {from: gha-monitor, to: api, label: /health probes}
   - {from: infisical, to: api, label: Secret sync}
 
@@ -355,7 +346,6 @@ ignore:
     - USAJOBS_AUTH_KEY
     - THEMUSE_API_KEY          # The Muse registered-app credential; board from aggregator
     - THEMUSE_API_URL
-    - JOB_SYNC_TOKEN            # gha-job-sync credential
     - STRIPE_SECRET_KEY         # stripe
     - STRIPE_WEBHOOK_SECRET
     - SENTRY_DSN                # sentry

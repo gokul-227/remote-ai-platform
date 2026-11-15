@@ -1,8 +1,6 @@
 # ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 .next/
-.open-next/
-.wrangler/
 coverage/
 logs/
 uploads/

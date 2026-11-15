@@ -377,9 +377,9 @@ def render_product(model: dict[str, Any]) -> str:
     cv.container("edge", "<b>Edge · Cloudflare</b>", (bx, TOP, bw, platform_h), "#F38020", "#FFFFFF", icon="cloudflare")
     edge_tiles = [
         ("edge-dns", "remoteaiplatform.com", "DNS · TLS · CDN", "cloudflare"),
-        ("edge-workers", "Cloudflare Workers", "OpenNext runtime · prod + dev", "cloudflareworkers"),
-        ("edge-next", "Next.js app", "SSR job pages · sitemap · SPA", "nextdotjs"),
-        ("edge-logs", "Workers Logs", "observability", "concepts/activity"),
+        ("edge-proxy", "Cloudflare proxy", "DNS only · no Workers", "cloudflare"),
+        ("edge-next", "Next.js app (Oracle VM)", "standalone Node · SSR job pages · SPA", "nextdotjs"),
+        ("edge-caddy", "Caddy (VM)", "TLS origin · reverse proxy", "concepts/activity"),
     ]
     for i, (cid, title, sub, icon) in enumerate(edge_tiles):
         cv.tile(cid, title, sub, icon, (bx + 14, TOP + 48 + i * 90, bw - 28, 76), "edge")
@@ -459,13 +459,13 @@ def render_product(model: dict[str, Any]) -> str:
         t = cv.boxes[target]
         sy = api_y + 200 + i * 34
         channel_in = t[0] - 14 - i * 9
-        label = {"ext-ai-providers": "LiteLLM (free-tier chain)", "ext-job-boards": "HTTPS pull (6-hourly sync)", "ext-saas": "email · errors · payments"}[target]
+        label = {"ext-ai-providers": "LiteLLM (free-tier chain)", "ext-job-boards": "HTTPS pull (Celery worker)", "ext-saas": "email · errors · payments"}[target]
         cv.edge(f"f-api-{target}", "api", target, label, [(channel_in, sy), (channel_in, top + h // 2)], (right, sy), (t[0], top + h // 2), label_segment=0)
     band = cv.boxes["band"]
     deliveries = [
-        ("f-deploy-web", "edge", "wrangler deploy (after CI)", edge_box[0] + edge_box[2] // 2),
+        ("f-deploy-web", "edge", "deploy-vm (docker compose)", edge_box[0] + edge_box[2] // 2),
         ("f-deploy-api", "platform", "Render deploy · Docker image", cx + 260),
-        ("f-sync", "platform", "POST /jobs/sync/scheduled · every 6 h", cx + 620),
+        ("f-sync", "platform", "Celery Beat imports (VM)", cx + 620),
         ("f-secrets", "platform", "Infisical secret sync", cx + 960),
     ]
     for eid, target, label, x in deliveries:

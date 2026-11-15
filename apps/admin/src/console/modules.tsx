@@ -767,12 +767,12 @@ const INTEGRATIONS = [
     "Owner",
     "handbook/03-deployment-and-infrastructure.md",
   ],
-  ["Cloudflare Workers", "Web app and this console", "Owner", "handbook/05-cicd-pipeline.md"],
+  ["Oracle VM (docker compose)", "Web app and this console", "Owner", "handbook/05-cicd-pipeline.md"],
   ["Hosted Redis", "Rate limits and cache (disposable)", "Owner", "handbook/03-deployment-and-infrastructure.md"],
   ["LiteLLM free-tier chain", "AI features, metered per user", "Owner", "handbook/01-technical-architecture.md"],
   ["Resend", "Transactional email outbox", "Owner", "handbook/04-secrets-and-credentials.md"],
   ["Jitsi Meet (meet.jit.si)", "External meeting rooms; no data stored by us", "Owner", "handbook/11-feature-list.md"],
-  ["GitHub Actions", "CI, deploys, scheduled job sync, backups", "Owner", "handbook/05-cicd-pipeline.md"],
+  ["GitHub Actions", "CI, deploys, backups", "Owner", "handbook/05-cicd-pipeline.md"],
   ["Infisical", "Secrets source of truth", "Owner", "handbook/04-secrets-and-credentials.md"],
 ];
 

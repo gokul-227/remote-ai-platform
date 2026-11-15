@@ -221,7 +221,6 @@ FREE_LIMITS = {
 PROVIDER_DASHBOARDS = {
     "Supabase (database, sign-in, storage)": "https://supabase.com/dashboard/project/_/settings/billing/usage",
     "Render (API server hours)": "https://dashboard.render.com/billing",
-    "Cloudflare Workers (web requests per day)": "https://dash.cloudflare.com/?to=/:account/workers/plans",
     "Upstash Redis (commands per month)": "https://console.upstash.com",
     "Resend (all emails incl. sign-in codes)": "https://resend.com/emails",
     "Sentry (errors per month)": "https://sentry.io/stats/",

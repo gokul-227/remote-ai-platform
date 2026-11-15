@@ -8,8 +8,8 @@ Order matters:
 3. The identity-provider users (Supabase, and WorkOS once linked) are erased
    (email, OAuth links, sessions). If that fails
    the tombstone keeps the subject in `pending_subject` and the erasure is
-   retried by `retry_pending_erasures` (six-hourly scheduled sync and the
-   admin endpoint) until it succeeds.
+   retried by `retry_pending_erasures` (the daily Celery maintain-catalogue task
+   and the admin endpoint) until it succeeds.
 """
 
 from datetime import UTC, datetime

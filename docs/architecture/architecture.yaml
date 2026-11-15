@@ -15,6 +15,11 @@ groups:
   provider: Cloudflare
   icon: cloudflare
   column: 1
+- id: vm
+  name: Oracle Cloud VM (docker compose)
+  provider: Oracle Cloud
+  icon: docker
+  column: 2
 - id: render
   name: Render
   provider: Render
@@ -68,13 +73,13 @@ components:
 - id: web
   name: Web application
   type: application
-  technology: Next.js 16 · OpenNext
-  provider: Cloudflare Workers
-  group: cloudflare
+  technology: Next.js 16 · standalone Node server
+  provider: Oracle Cloud VM (behind Cloudflare DNS/proxy)
+  group: vm
   icon: nextdotjs
   status: active
   evidence:
-  - apps/web/wrangler.jsonc ~ /"main"/
+  - infra/docker/docker-compose.prod.yml ~ /\n  web:/
 - id: api
   name: Backend API
   type: application
@@ -135,8 +140,8 @@ components:
 - id: worker
   name: Background worker + scheduler
   type: worker
-  technology: Celery 5 · Beat (PostgreSQL lock) · task history in PostgreSQL
-  group: render
+  technology: Celery 5 · Beat (PostgreSQL lock) · job imports · task history in PostgreSQL
+  group: vm
   status: active
   evidence:
   - 'apps/api/pyproject.toml: celery'
@@ -189,7 +194,7 @@ components:
   status: active
   evidence:
   - 'apps/api/pyproject.toml: redis'
-- id: fcm
+- id: webpush
   name: Browser push services (Web Push)
   type: external
   technology: Standard Web Push (VAPID, RFC 8291) · no account · only email-worthy events
@@ -254,22 +259,13 @@ components:
 - id: gha-deploy
   name: Deploy
   type: pipeline
-  technology: After CI on dev/prod
+  technology: After CI on prod (VM via SSH · Render until cut-over)
   group: github
   icon: githubactions
   status: active
   evidence:
-  - .github/workflows/deploy-frontend-dev.yml ~ /wrangler deploy|api\.render\.com/
-  - .github/workflows/deploy-frontend.yml ~ /wrangler deploy|api\.render\.com/
-- id: gha-job-sync
-  name: Scheduled job sync
-  type: scheduler
-  technology: Cron every 6 h
-  group: github
-  icon: githubactions
-  status: active
-  evidence:
-  - .github/workflows/scheduled-job-sync.yml ~ /jobs/sync/scheduled/
+  - .github/workflows/deploy-frontend.yml ~ /deploy\.sh|api\.render\.com/
+  - .github/workflows/deploy-vm.yml ~ /deploy\.sh|api\.render\.com/
 - id: gha-monitor
   name: Canary & keep-warm
   type: scheduler
@@ -279,11 +275,8 @@ components:
   status: active
   evidence:
   - .github/workflows/ci.yml ~ /health/(ready|live)/
-  - .github/workflows/deploy-frontend-dev.yml ~ /health/(ready|live)/
   - .github/workflows/deploy-frontend.yml ~ /health/(ready|live)/
   - .github/workflows/deploy-vm.yml ~ /health/(ready|live)/
-  - .github/workflows/enforce-branch-flow.yml ~ /health/(ready|live)/
-  - .github/workflows/keep-dev-awake.yml ~ /health/(ready|live)/
   - .github/workflows/keep-render-warm.yml ~ /health/(ready|live)/
   - .github/workflows/production-canary.yml ~ /health/(ready|live)/
 - id: infisical
@@ -514,10 +507,10 @@ connections:
   to: brevo
   label: Email API
 - from: api
-  to: fcm
+  to: webpush
   label: Push (worker)
 - from: web
-  to: fcm
+  to: webpush
   label: PushManager subscription
 - from: api
   to: slack
@@ -533,13 +526,10 @@ connections:
   label: Errors
 - from: gha-deploy
   to: web
-  label: wrangler deploy
+  label: docker compose (deploy-vm)
 - from: gha-deploy
   to: api
   label: Render API deploy
-- from: gha-job-sync
-  to: api
-  label: POST /jobs/sync/scheduled
 - from: gha-monitor
   to: api
   label: /health probes

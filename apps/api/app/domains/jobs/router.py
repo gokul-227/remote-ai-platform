@@ -2,14 +2,12 @@
 API Router for Job Post domain.
 """
 
-import hmac
 import uuid
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.domains.admin.repository import AdminRepository
 from app.domains.auth.dependencies import get_optional_user, require_role
@@ -238,60 +236,6 @@ async def create_job(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return JobPostResponse.model_validate(job)
-
-
-@router.post("/sync/scheduled", response_model=dict[str, int], include_in_schema=False)
-async def scheduled_job_sync(
-    source: str | None = Query(None, max_length=40, description="Import just this source"),
-    step: str | None = Query(
-        None, pattern="^maintenance$", description="'maintenance' = retention, erasures, emails"
-    ),
-    x_job_sync_token: str | None = Header(default=None),
-    service: JobService = Depends(get_job_service),
-    db: AsyncSession = Depends(get_db),
-) -> dict[str, int]:
-    """The six-hourly sync (scheduled-job-sync.yml). Authorised by
-    JOB_SYNC_TOKEN, which allows this and nothing else, so the workflow no
-    longer needs an administrator's password."""
-    expected = settings.JOB_SYNC_TOKEN
-    if not expected:
-        raise HTTPException(status_code=404, detail="Not found")
-    if not x_job_sync_token or not hmac.compare_digest(
-        x_job_sync_token.encode(), expected.encode()
-    ):
-        raise HTTPException(status_code=403, detail="Forbidden")
-    # The workflow calls one source per request (small enough for the free API
-    # instance), then step=maintenance once. With neither, everything runs.
-    if source:
-        stats = await service.sync_all_job_sources(
-            limit_per_source=settings.JOB_SYNC_MAX_PER_SOURCE,
-            admin_repo=AdminRepository(db),
-            source_name=source,
-            run_maintenance=False,
-        )
-        await db.commit()
-        return stats
-    if step == "maintenance":
-        stats = await service.maintain_catalogue()
-    else:
-        stats = await service.sync_all_job_sources(
-            limit_per_source=settings.JOB_SYNC_MAX_PER_SOURCE, admin_repo=AdminRepository(db)
-        )
-    await db.commit()
-    # Same six-hourly tick: retry Supabase user erasures that failed at
-    # account deletion (DATA-04). There is no hosted worker to do it.
-    from app.domains.auth.erasure import retry_pending_erasures  # auth -> engineers -> jobs cycle
-
-    erasures = await retry_pending_erasures(db)
-    # Backstop for the in-process email dispatcher (MAIL-01).
-    from app.services.email.outbox import dispatch_due
-
-    emails = await dispatch_due(db, limit=100)
-    return {
-        **stats,
-        "identity_erasures_pending": erasures["pending"],
-        "emails_sent": emails["sent"],
-    }
 
 
 @router.post("/sync", response_model=dict[str, int])

@@ -116,7 +116,6 @@ jobs:
             NEXT_PUBLIC_API_URL=${{ vars.PROD_API_BASE_URL }}
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
-            NEXT_PUBLIC_FIREBASE_CONFIG=${{ vars.FIREBASE_WEB_CONFIG }}
             NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
             NEXT_PUBLIC_BUILD_SHA=${{ needs.meta.outputs.sha }}
             NEXT_PUBLIC_BUILD_TIME=${{ needs.meta.outputs.build_time }}

@@ -61,7 +61,7 @@ def repo(tmp_path: Path) -> Path:
             source_name = "REMOTIVE"
     ''')
     write(tmp_path, "apps/web/package.json", json.dumps({"dependencies": {"next": "16.3.8", "@sentry/nextjs": "10.73.0"}}))
-    write(tmp_path, "apps/web/wrangler.jsonc", '{ "main": ".open-next/worker.js" }')
+    write(tmp_path, "infra/docker/docker-compose.prod.yml", "services:\n  web:\n    image: web\n")
     write(tmp_path, "infra/deploy/render.yaml", "services:\n  - type: web\n")
     write(tmp_path, ".github/workflows/ci.yml", "name: CI\n")
     return tmp_path

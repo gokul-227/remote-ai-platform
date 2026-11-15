@@ -20,7 +20,7 @@ body:
     id: env
     attributes:
       label: Where?
-      options: [Production (remoteaiplatform.com), Dev (dev.remoteaiplatform.com)]
+      options: [Production (remoteaiplatform.com), Local development]
     validations:
       required: true
   - type: input
