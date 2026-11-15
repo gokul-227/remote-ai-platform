@@ -22,26 +22,41 @@ REGISTRY=${RAP_REGISTRY:-ghcr.io/gokul-227/remote-ai-platform}
 APP_SERVICES=(api worker scheduler web admin)
 mkdir -p "$STATE_DIR"
 
-compose() { docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml "$@"; }
+ROLLBACK_OVERRIDE=""
+compose() {
+  local extra=()
+  [ -z "$ROLLBACK_OVERRIDE" ] || extra=(-f "$ROLLBACK_OVERRIDE")
+  docker compose --env-file "$ENV_FILE" -f docker-compose.prod.yml "${extra[@]}" "$@"
+}
+prepare_rollback() {
+  ROLLBACK_OVERRIDE="$STATE_DIR/rollback-compose.yml"
+  # Old images cannot resolve newer Alembic revisions. The forward-migrated
+  # schema is additive; restart the old API without running its old migrator.
+  cat > "$ROLLBACK_OVERRIDE" <<'YAML'
+services:
+  api:
+    command: ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${WEB_CONCURRENCY:-2} --proxy-headers --forwarded-allow-ips='*' --no-access-log"]
+YAML
+}
 env_get() { grep -E "^$1=" "$ENV_FILE" | tail -1 | cut -d= -f2- || true; }
 env_set() {
   if grep -qE "^$1=" "$ENV_FILE"; then sed -i "s|^$1=.*|$1=$2|" "$ENV_FILE"; else echo "$1=$2" >> "$ENV_FILE"; fi
 }
 set_tag() {
-  env_set RAP_IMAGE "$REGISTRY-api:$1"
-  env_set WEB_IMAGE "$REGISTRY-web:$1"
-  env_set ADMIN_IMAGE "$REGISTRY-admin:$1"
+  env_set RAP_IMAGE "$REGISTRY-api:$1" || return $?
+  env_set WEB_IMAGE "$REGISTRY-web:$1" || return $?
+  env_set ADMIN_IMAGE "$REGISTRY-admin:$1" || return $?
 }
 current_tag() { local img; img=$(env_get WEB_IMAGE); [[ "$img" == *:* ]] && echo "${img##*:}" || true; }
 
 health_gate() {
-  local sha=$1 live api_sha
+  local sha=$1 live api_sha allow_legacy=${2:-false}
   for _ in $(seq 1 30); do
     live=$(curl -fsS --max-time 5 http://127.0.0.1:3000/api/version 2>/dev/null \
       | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || true)
     api_sha=$(compose exec -T api curl -fsS --max-time 5 http://localhost:8000/health/version 2>/dev/null \
       | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || true)
-    if [ "$live" = "$sha" ] && [ "$api_sha" = "$sha" ] \
+    if [ "$live" = "$sha" ] && { [ "$api_sha" = "$sha" ] || { [ "$allow_legacy" = true ] && [ "$api_sha" = unknown ]; }; } \
       && curl -fsS --max-time 5 http://127.0.0.1:3000/ -o /dev/null \
       && curl -fsS --max-time 5 http://127.0.0.1:3000/robots.txt -o /dev/null \
       && curl -fsS --max-time 5 http://127.0.0.1:3002/ | grep -q "Operations console" \
@@ -57,15 +72,15 @@ health_gate() {
 
 roll_out() {
   local sha=$1
-  set_tag "$sha"
-  compose pull "${APP_SERVICES[@]}" job-cache
+  set_tag "$sha" || return $?
+  compose pull "${APP_SERVICES[@]}" job-cache || return $?
   # Public query caches have an independent eviction policy from the broker.
-  compose up -d --no-deps job-cache
-  compose run --rm --no-deps api alembic upgrade head
-  compose up -d --no-deps --remove-orphans "${APP_SERVICES[@]}"
+  compose up -d --no-deps job-cache || return $?
+  compose run --rm --no-deps api alembic upgrade head || return $?
+  compose up -d --no-deps --remove-orphans "${APP_SERVICES[@]}" || return $?
   if [ "$(env_get EDGE_ENABLED)" = "true" ]; then
-    compose pull caddy
-    compose up -d --no-deps caddy
+    compose pull caddy || return $?
+    compose up -d --no-deps caddy || return $?
   fi
 }
 
@@ -73,9 +88,10 @@ if [ "${1:-}" = "--rollback" ]; then
   prev=$(cat "$STATE_DIR/previous" 2>/dev/null || true)
   [ -n "$prev" ] || { echo "no previous release recorded" >&2; exit 1; }
   echo "rolling back to $prev"
+  prepare_rollback
   set_tag "$prev"
   compose up -d --no-deps "${APP_SERVICES[@]}"
-  health_gate "$prev"
+  health_gate "$prev" true
   echo "$prev" > "$STATE_DIR/current"
   exit 0
 fi
@@ -97,9 +113,10 @@ fi
 echo "deploy of $sha failed" >&2
 if [ -n "$prev" ] && [ "$prev" != "$sha" ]; then
   echo "rolling back to $prev" >&2
+  prepare_rollback
   set_tag "$prev"
   compose up -d --no-deps "${APP_SERVICES[@]}"
-  health_gate "$prev" || echo "rollback to $prev is unhealthy too -- manual action needed" >&2
+  health_gate "$prev" true || echo "rollback to $prev is unhealthy too -- manual action needed" >&2
 fi
 compose logs --tail 80 web api >&2 || true
 exit 1
