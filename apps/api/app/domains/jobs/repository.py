@@ -22,6 +22,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    tuple_,
     update,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.domains.applications.models import JobApplication
 from app.domains.jobs.derive import DERIVE_VERSION, STATED_FIELDS
-from app.domains.jobs.models import JobPost
+from app.domains.jobs.models import JobCatalogueStat, JobEmployerStat, JobPost
 from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate
 from app.domains.jobs.source_policy import SEARCH_SYNDICATION_BLOCKED_SOURCES
 
@@ -313,9 +314,12 @@ class JobRepository:
         rows (hidden from listings) so applications and saved lists never break."""
         from app.domains.saved_jobs.models import SavedJob
 
+        # EXISTS, not IN (subquery): with millions of saved/applied rows the IN
+        # list no longer fits work_mem as a hash and PostgreSQL rescans it per job
+        # (retention batches went past 30 s at 10M jobs). EXISTS is an index probe.
         return or_(
-            JobPost.id.in_(select(JobApplication.job_id)),
-            JobPost.id.in_(select(SavedJob.job_id)),
+            select(JobApplication.job_id).where(JobApplication.job_id == JobPost.id).exists(),
+            select(SavedJob.job_id).where(SavedJob.job_id == JobPost.id).exists(),
         )
 
     async def purge_old_imported_jobs(
@@ -384,39 +388,54 @@ class JobRepository:
         growing at the budget. Returns how many jobs were deleted."""
         if self.db.bind is None or self.db.bind.dialect.name != "postgresql":
             return 0
+        # reltuples (kept current by autovacuum/analyze) instead of count(*): an
+        # exact count is a full scan of millions of rows on every import run.
         row = (
             await self.db.execute(
                 text(
                     "select pg_database_size(current_database()), "
-                    "pg_total_relation_size('job_posts'), (select count(*) from job_posts)"
+                    "pg_total_relation_size('job_posts'), "
+                    "greatest((select reltuples from pg_class where oid = 'job_posts'::regclass), 0)"
                 )
             )
         ).one()
         db_bytes, job_bytes, jobs = int(row[0]), int(row[1]), int(row[2])
-        if not jobs or budget_mb <= 0:  # 0 = no budget (a self-hosted database)
+        if jobs <= 0:  # never analyzed (fresh database): count it once
+            jobs = int(await self.db.scalar(select(func.count()).select_from(JobPost)) or 0)
+        if not jobs or budget_mb <= 0:  # 0 = no budget
             return 0
         per_job = job_bytes / jobs
         room = budget_mb * 1024 * 1024 - (db_bytes - job_bytes)
         fits = max(0, int(room / per_job))
         excess = jobs - fits
-        if excess <= 0:
-            return 0
-        oldest = (
-            select(JobPost.id)
-            .where(
-                JobPost.company_id.is_(None),
-                JobPost.source != "DIRECT",
-                ~self._referenced(),
+        removed = 0
+        batch = settings.JOB_RETENTION_BATCH_SIZE
+        # Oldest first, in committed batches: one DELETE of millions of rows would
+        # hold locks and bloat WAL for the whole run.
+        for _ in range(settings.JOB_RETENTION_MAX_BATCHES):
+            if excess - removed <= 0:
+                break
+            oldest = (
+                select(JobPost.id)
+                .where(
+                    JobPost.company_id.is_(None),
+                    JobPost.source != "DIRECT",
+                    ~self._referenced(),
+                )
+                .order_by(JobPost.posted_at.asc())
+                .limit(min(batch, excess - removed))
             )
-            .order_by(JobPost.posted_at.asc())
-            .limit(excess)
-        )
-        result = await self.db.execute(
-            delete(JobPost)
-            .where(JobPost.id.in_(oldest))
-            .execution_options(synchronize_session=False)
-        )
-        return int(getattr(result, "rowcount", 0) or 0)
+            result = await self.db.execute(
+                delete(JobPost)
+                .where(JobPost.id.in_(oldest))
+                .execution_options(synchronize_session=False)
+            )
+            n = int(getattr(result, "rowcount", 0) or 0)
+            removed += n
+            await self.db.commit()
+            if n == 0:
+                break
+        return removed
 
     async def sitemap_entries(
         self, skip: int, limit: int
@@ -626,21 +645,151 @@ class JobRepository:
         return stmt.order_by(JobPost.posted_at.desc(), JobPost.id.desc())
 
     async def search(
-        self, skip: int = 0, limit: int = 20, sort: str | None = None, **filters: Any
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        sort: str | None = None,
+        after: str | None = None,
+        **filters: Any,
     ) -> Sequence[JobPost]:
         stmt = self._filtered(select(JobPost), **filters)
+        if sort == "relevant" and filters.get("query") and self._pg():
+            # Rank only the first JOB_KEYWORD_COUNT_CAP matches the full-text index
+            # yields (the set the capped total counts): ranking every match of a
+            # common word computes ts_rank_cd for millions of rows (> 30 s at 10M).
+            newest = self._filtered(select(JobPost.id), **filters).order_by(JobPost.posted_at.desc(), JobPost.id.desc()).limit(
+                settings.JOB_KEYWORD_COUNT_CAP
+            )
+            stmt = select(JobPost).where(JobPost.id.in_(newest))
+        cursor = parse_cursor(after) if after and sort in (None, "recent") else None
+        if cursor is not None:
+            # Keyset page: an index range scan from the cursor, however deep.
+            stmt = stmt.where(tuple_(JobPost.posted_at, JobPost.id) < tuple_(*cursor))
+            skip = 0
         stmt = self._ordered(stmt, sort, filters.get("query")).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
     async def count(self, **filters: Any) -> int:
+        """Matching live jobs. Keyword searches on PostgreSQL count at most
+        JOB_KEYWORD_COUNT_CAP: counting every match of a common word rechecks the
+        full-text expression on millions of rows (minutes at 10M jobs); the list
+        reports the cap in X-Total-Count-Capped."""
+        if filters.get("query") and self._pg():
+            cap = settings.JOB_KEYWORD_COUNT_CAP
+            sub = self._filtered(select(JobPost.id), **filters).order_by(JobPost.posted_at.desc(), JobPost.id.desc()).limit(cap).subquery()
+            return int(await self.db.scalar(select(func.count()).select_from(sub)) or 0)
         stmt = self._filtered(select(func.count()).select_from(JobPost), **filters)
         return int(await self.db.scalar(stmt) or 0)
 
     async def facets(self, **filters: Any) -> dict[str, list[dict[str, Any]]]:
         """Counts per value for each filter, each computed with every *other*
         filter applied (picking "remote" still shows how many hybrid jobs there
-        are). Top FACET_LIMIT values for open-ended facets."""
+        are). Top FACET_LIMIT values for open-ended facets.
+
+        On PostgreSQL every facet whose own filter is not in use shares one scan
+        (GROUPING SETS plus FILTERed counts for the flags); only facets the search
+        filters on need a scan of their own. At millions of live jobs that is 2-4
+        scans per request instead of 21 (docs/operations/capacity.md)."""
+        if not self._pg():
+            return await self._facets_each(**filters)
+        active = _active_facets(filters)
+        out: dict[str, list[dict[str, Any]]] = {}
+        shared = [f for f in FACET_COLUMNS if f not in active]
+        shared_flags = [f for f in FLAG_FACETS if f not in active]
+        if shared or shared_flags:
+            out.update(await self._facets_one_scan(filters, shared, shared_flags, skip=None))
+        for facet in active:
+            if facet in FACET_COLUMNS:
+                out.update(await self._facets_one_scan(filters, [facet], [], skip=facet))
+            elif facet in FLAG_FACETS:
+                out.update(await self._facets_one_scan(filters, [], [facet], skip=facet))
+        out["skills"] = await self._skill_facet(filters)
+        ordered = {k: out[k] for k in (*FACET_COLUMNS, *FLAG_FACETS, "skills") if k in out}
+        return ordered
+
+    async def _facets_one_scan(
+        self, filters: dict[str, Any], columns: list[str], flags: list[str], skip: str | None
+    ) -> dict[str, list[dict[str, Any]]]:
+        """One pass over the matching rows: GROUPING SETS over `columns` (top
+        FACET_LIMIT per column) and, in the grand-total row, the flag counts."""
+        now = datetime.now(UTC)
+        cond: dict[str, list[tuple[Any, Any]]] = {
+            "posted_within": [
+                (key, JobPost.posted_at >= now - timedelta(days=days))
+                for key, days in POSTED_WITHIN.items()
+            ],
+            "has_salary": [
+                (True, or_(JobPost.salary_min.is_not(None), JobPost.salary_max.is_not(None)))
+            ],
+            "apply": [
+                ("platform", JobPost.source == "DIRECT"),
+                ("external", JobPost.source != "DIRECT"),
+            ],
+            "visa_sponsorship": [
+                (True, JobPost.visa_sponsorship.is_(True)),
+                (False, JobPost.visa_sponsorship.is_(False)),
+            ],
+        }
+        flag_cols = [
+            (facet, value, func.count().filter(c).label(f"f{i}_{j}"))
+            for i, facet in enumerate(flags)
+            for j, (value, c) in enumerate(cond[facet])
+        ]
+        cols = [FACET_COLUMNS[f] for f in columns]
+        labels = [c.label(f"c{i}") for i, c in enumerate(cols)]
+        group = func.grouping(*cols).label("g") if cols else literal(0).label("g")
+        inner = self._filtered(
+            select(*labels, group, func.count().label("n"), *[fc for _, _, fc in flag_cols]).select_from(JobPost),
+            skip_facet=skip,
+            **filters,
+        )
+        inner = self._keyword_window(inner, filters, skip)
+        if cols:
+            inner = inner.group_by(func.grouping_sets(*cols, text("()")))
+        sub = inner.subquery()
+        rank = (
+            func.row_number()
+            .over(partition_by=sub.c.g, order_by=(sub.c.n.desc(), *[sub.c[f"c{i}"] for i in range(len(cols))]))
+            .label("r")
+        )
+        ranked = select(sub, rank).subquery()
+        rows = (await self.db.execute(
+            select(ranked).where(ranked.c.r <= FACET_LIMIT + 1)
+        )).mappings().all()
+        out: dict[str, list[dict[str, Any]]] = {f: [] for f in columns}
+        full = (1 << len(cols)) - 1
+        for row in sorted(rows, key=lambda r: r["r"]):
+            g = int(row["g"] or 0)
+            if cols and g == full:  # the grand-total row
+                for facet, value, fc in flag_cols:
+                    out.setdefault(facet, []).append({"value": value, "count": int(row[fc.name] or 0)})
+                continue
+            if not cols:
+                for facet, value, fc in flag_cols:
+                    out.setdefault(facet, []).append({"value": value, "count": int(row[fc.name] or 0)})
+                continue
+            # grouping() bit i (from the left) is 0 for the column this set groups by.
+            i = next(k for k in range(len(cols)) if not g & (1 << (len(cols) - 1 - k)))
+            value = row[f"c{i}"]
+            facet = columns[i]
+            if value is None or len(out[facet]) >= FACET_LIMIT:
+                continue
+            out[facet].append({"value": value, "count": int(row["n"] or 0)})
+        return out
+
+    def _keyword_window(self, stmt: Select, filters: dict[str, Any], skip: str | None) -> Select:
+        """Keyword searches count facets among the first JOB_KEYWORD_COUNT_CAP
+        matches, like the capped total (see count())."""
+        if not filters.get("query"):
+            return stmt
+        newest = self._filtered(select(JobPost.id), skip_facet=skip, **filters).order_by(JobPost.posted_at.desc(), JobPost.id.desc()).limit(
+            settings.JOB_KEYWORD_COUNT_CAP
+        )
+        return stmt.where(JobPost.id.in_(newest))
+
+    async def _facets_each(self, **filters: Any) -> dict[str, list[dict[str, Any]]]:
+        """Portable version (SQLite tests): one query per facet value."""
         out: dict[str, list[dict[str, Any]]] = {}
         for facet, col in FACET_COLUMNS.items():
             stmt = (
@@ -687,7 +836,9 @@ class JobRepository:
 
     async def _skill_facet(self, filters: dict[str, Any]) -> list[dict[str, Any]]:
         if self._pg():
-            sub = self._filtered(select(JobPost.skills), skip_facet="skills", **filters).subquery()
+            sub = self._keyword_window(
+                self._filtered(select(JobPost.skills), skip_facet="skills", **filters), filters, "skills"
+            ).subquery()
             elem = func.jsonb_array_elements_text(sub.c.skills).table_valued("value").alias("s")
             stmt = (
                 select(elem.c.value, func.count())
@@ -716,13 +867,16 @@ class JobRepository:
         many live jobs match, how many arrived in the last 7 days, the employers
         with most openings, and the published pay range in the most common
         currency and period (only jobs that state one)."""
-        base = self._filtered(select(func.count()).select_from(JobPost), **filters)
-        total = int(await self.db.scalar(base) or 0)
+        total = await self.count(**filters)
         week = datetime.now(UTC) - timedelta(days=7)
-        recent = int(await self.db.scalar(base.where(JobPost.posted_at >= week)) or 0)
+        recent = await self.count(**filters, posted_since=week)
         companies: Sequence[Any] = (
             await self.db.execute(
-                self._filtered(select(JobPost.company_name, func.count().label("n")), **filters)
+                self._keyword_window(
+                    self._filtered(select(JobPost.company_name, func.count().label("n")), **filters),
+                    filters,
+                    None,
+                )
                 .group_by(JobPost.company_name)
                 .order_by(func.count().desc(), JobPost.company_name.asc())
                 .limit(5)
@@ -744,6 +898,9 @@ class JobRepository:
                     JobPost.currency.is_not(None),
                     JobPost.salary_period.is_not(None),
                     or_(JobPost.salary_min.is_not(None), JobPost.salary_max.is_not(None)),
+                    *([] if not filters.get("query") else [JobPost.id.in_(
+                        self._filtered(select(JobPost.id), **filters).order_by(JobPost.posted_at.desc(), JobPost.id.desc()).limit(settings.JOB_KEYWORD_COUNT_CAP)
+                    )]),
                 )
                 .order_by(JobPost.posted_at.desc())
                 .limit(2000)
@@ -770,7 +927,24 @@ class JobRepository:
     async def employers(
         self, min_jobs: int = 1, limit: int = 2000, is_remote: bool | None = True
     ) -> list[dict[str, Any]]:
-        """Employers with live jobs, most openings first, with a URL slug."""
+        """Employers with live jobs, most openings first, with a URL slug. Remote
+        employers come from job_employer_stats (rebuilt by Celery) once it has been
+        filled; the live GROUP BY is the fallback."""
+        if is_remote is True and await self._employer_stats_ready():
+            stat_rows = (
+                await self.db.execute(
+                    select(JobEmployerStat)
+                    .where(JobEmployerStat.job_count >= min_jobs)
+                    .order_by(JobEmployerStat.job_count.desc(), JobEmployerStat.name.asc())
+                    .limit(limit)
+                )
+            ).scalars().all()
+            return [_employer_out(e) for e in stat_rows]
+        return await self.employers_live(min_jobs=min_jobs, limit=limit, is_remote=is_remote)
+
+    async def employers_live(
+        self, min_jobs: int = 1, limit: int = 2000, is_remote: bool | None = True
+    ) -> list[dict[str, Any]]:
         rows: Sequence[Any] = (
             await self.db.execute(
                 self._filtered(
@@ -798,10 +972,63 @@ class JobRepository:
         return out
 
     async def employer_by_slug(self, slug: str) -> dict[str, Any] | None:
-        for e in await self.employers(min_jobs=1, limit=20000):
+        if await self._employer_stats_ready():
+            row = await self.db.get(JobEmployerStat, slug)
+            return _employer_out(row) if row else None
+        for e in await self.employers_live(min_jobs=1, limit=20000):
             if e["slug"] == slug:
                 return e
         return None
+
+    async def _employer_stats_ready(self) -> bool:
+        return await self.stored_stat(
+            "employers:ready", timedelta(minutes=settings.JOB_STATS_REFRESH_MINUTES * 3)
+        ) is not None
+
+    async def refresh_employer_stats(self) -> int:
+        """Rebuild job_employer_stats from the live remote catalogue in one
+        transaction (readers see the old rows until it commits)."""
+        if self._pg():
+            await self.db.execute(text("SELECT pg_advisory_xact_lock(7241093552)"))
+        rows = await self.employers_live(min_jobs=1, limit=settings.JOB_EMPLOYER_STATS_MAX, is_remote=True)
+        await self.db.execute(delete(JobEmployerStat))
+        for i in range(0, len(rows), 5000):
+            self.db.add_all(
+                JobEmployerStat(
+                    slug=r["slug"], name=r["name"][:255], job_count=r["count"],
+                    latest_posted_at=r["latest_posted_at"],
+                )
+                for r in rows[i : i + 5000]
+            )
+            await self.db.flush()
+        await self.store_stat("employers:ready", {"count": len(rows)})
+        return len(rows)
+
+    async def stored_stat(self, key: str, max_age: timedelta) -> dict[str, Any] | None:
+        row = await self.db.get(JobCatalogueStat, key)
+        if row is None:
+            return None
+        at = row.computed_at if row.computed_at.tzinfo else row.computed_at.replace(tzinfo=UTC)
+        return row.payload if datetime.now(UTC) - at <= max_age else None
+
+    async def store_stat(self, key: str, payload: dict[str, Any]) -> None:
+        if self._pg():
+            from sqlalchemy.dialects.postgresql import insert
+
+            stmt = insert(JobCatalogueStat).values(key=key, payload=payload, computed_at=datetime.now(UTC))
+            await self.db.execute(stmt.on_conflict_do_update(
+                index_elements=[JobCatalogueStat.key],
+                set_={"payload": stmt.excluded.payload, "computed_at": stmt.excluded.computed_at},
+            ))
+            await self.db.commit()
+            return
+        row = await self.db.get(JobCatalogueStat, key)
+        if row is None:
+            self.db.add(JobCatalogueStat(key=key, payload=payload, computed_at=datetime.now(UTC)))
+        else:
+            row.payload = payload
+            row.computed_at = datetime.now(UTC)
+        await self.db.commit()
 
     async def availability(self, job_id: uuid.UUID) -> str | None:
         """'live', 'expired' (recently; the page still helps visitors) or 'gone'
@@ -870,6 +1097,10 @@ class JobRepository:
         )
         keep = {r[0] for r in (await self.db.execute(stmt)).all()}
         return [i for i in job_ids if i in keep]
+
+
+def _employer_out(e: JobEmployerStat) -> dict[str, Any]:
+    return {"slug": e.slug, "name": e.name, "count": e.job_count, "latest_posted_at": e.latest_posted_at}
 
 
 def employer_slug(name: str) -> str:
@@ -957,6 +1188,21 @@ def weekly_counts(dates: Sequence[Any], weeks: int = 4) -> list[int]:
             out[weeks - 1 - age] += 1
     return out
 
+def job_cursor(job: Any) -> str:
+    """Opaque-enough keyset cursor for the job after which the next page starts."""
+    posted = job["posted_at"] if isinstance(job, dict) else job.posted_at.isoformat()
+    ident = job["id"] if isinstance(job, dict) else job.id
+    return f"{posted},{ident}"
+
+
+def parse_cursor(value: str) -> tuple[datetime, uuid.UUID] | None:
+    try:
+        posted, ident = value.rsplit(",", 1)
+        ts = datetime.fromisoformat(posted)
+        return (ts if ts.tzinfo else ts.replace(tzinfo=UTC)), uuid.UUID(ident)
+    except ValueError:
+        return None
+
 
 def _as_list(value: Any) -> list[Any]:
     if value is None or value == "":
@@ -987,6 +1233,19 @@ FACET_COLUMNS = {
     "source": JobPost.source,
     "company": JobPost.company_name,
 }
+# Facets counted as on/off flags, not GROUP BY values.
+FLAG_FACETS = ("posted_within", "has_salary", "apply", "visa_sponsorship")
+
+
+def _active_facets(filters: dict[str, Any]) -> list[str]:
+    """Facets whose own filter is set (their counts need that filter left out).
+    workplace also covers is_remote, which skip_facet="workplace" drops too."""
+    out = [f for f in (*FACET_COLUMNS, *FLAG_FACETS) if filters.get(f) not in (None, "", [])]
+    if "workplace" not in out and filters.get("is_remote") is not None:
+        out.insert(0, "workplace")
+    return out
+
+
 FILTER_KEYS = frozenset(
     {
         "query", "skills", "is_remote", "job_type", "experience_level", "min_salary",

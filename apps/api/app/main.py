@@ -291,7 +291,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
         # Let the browser read pagination totals and correlation ids.
-        expose_headers=["X-Total-Count", "X-Request-ID"],
+        expose_headers=["X-Total-Count", "X-Total-Count-Capped", "X-Next-Cursor", "X-Request-ID"],
     )
     app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(RateLimitMiddleware)

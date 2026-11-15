@@ -361,6 +361,20 @@ class Settings(BaseSettings):
     JOB_LAST_SEEN_REFRESH_HOURS: int = 20
     # Retention works in batches of this many rows (each its own transaction).
     JOB_RETENTION_BATCH_SIZE: int = 5000
+    # Scale (docs/operations/capacity.md). Shared Redis tier for public job lists
+    # and facets (off in tests/dev without Redis; on in docker-compose.prod.yml).
+    JOB_CACHE_REDIS_ENABLED: bool = False
+    JOB_CACHE_REDIS_URL: str = ""
+    JOB_LIST_CACHE_SECONDS: int = Field(default=120, ge=1)
+    JOB_FACETS_CACHE_SECONDS: int = Field(default=600, ge=1)
+    # Celery precomputes facets for common searches and the employer read model.
+    JOB_STATS_REFRESH_MINUTES: int = Field(default=60, ge=1)
+    JOB_STATS_TOP_VALUES: int = Field(default=5, ge=0, le=50)
+    JOB_EMPLOYER_STATS_MAX: int = Field(default=100000, ge=1)
+    # Deepest OFFSET the public list accepts; deeper pages use the `after` cursor.
+    JOB_LIST_MAX_SKIP: int = Field(default=10000, ge=0)
+    # Keyword-search totals stop counting here (X-Total-Count-Capped: true).
+    JOB_KEYWORD_COUNT_CAP: int = Field(default=1000, ge=1)
     JOB_RETENTION_MAX_BATCHES: int = 2000
     LEVER_BOARDS: str = (
         "spotify,outreach,gopuff,aircall,wealthfront,contentsquare,neon,arcadia,blablacar,houzz,metabase,"

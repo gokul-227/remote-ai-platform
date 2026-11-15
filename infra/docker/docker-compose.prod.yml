@@ -45,6 +45,14 @@ x-api-image: &api-image
     # Self-hosted PostgreSQL on the VM (~160 GB free): the 420 MB free-tier budget would
     # trim the catalogue to ~100k jobs. 60 GB keeps room for millions of 90-day postings.
     DATABASE_SIZE_BUDGET_MB: ${DATABASE_SIZE_BUDGET_MB:-60000}
+
+    # Scale settings (docs/operations/capacity.md): shared Redis tier for public
+    # job lists/facets; per-process pool sized for 3 uvicorn workers + Celery
+    # against max_connections=100 (no PgBouncer needed at this size).
+    JOB_CACHE_REDIS_ENABLED: "true"
+    JOB_CACHE_REDIS_URL: redis://job-cache:6379/0
+    DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-6}
+    DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-4}
   depends_on:
     redis:
       condition: service_healthy
@@ -90,7 +98,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server --appendonly yes --maxmemory 192mb --maxmemory-policy allkeys-lru --save ""
+    command: redis-server --appendonly yes --maxmemory 192mb --maxmemory-policy noeviction --save ""
     volumes:
       - redis_data:/data
     networks:
@@ -104,9 +112,29 @@ services:
       resources:
         limits: { memory: 256M }
 
+  job-cache:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --maxmemory 192mb --maxmemory-policy allkeys-lru --save ""
+    networks: [internal]
+    deploy:
+      resources:
+        limits: { memory: 256M }
+
   api:
     <<: *api-image
     # Migrations run once at API start (start-production.sh); worker/scheduler wait for it.
+    # Configurable worker count; validate on the target VM before increasing load.
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      DATABASE_URL: ${RAP_DATABASE_URL:-postgresql+asyncpg://rap:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/remote_ai_platform}
+      JOB_CACHE_REDIS_ENABLED: "true"
+      JOB_CACHE_REDIS_URL: redis://job-cache:6379/0
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-6}
+      DATABASE_MAX_OVERFLOW: ${DATABASE_MAX_OVERFLOW:-4}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
     networks:
       - internal
       - edge
@@ -118,7 +146,7 @@ services:
       start_period: 60s
     deploy:
       resources:
-        limits: { memory: 1G, cpus: "1.0" }
+        limits: { memory: 2G, cpus: "2.0" }
 
   worker:
     <<: *api-image

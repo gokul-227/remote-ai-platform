@@ -2,6 +2,7 @@
 Service layer for Job Post domain & Aggregator coordination.
 """
 
+import hashlib
 import json
 import time
 import uuid
@@ -47,12 +48,27 @@ from app.domains.jobs.aggregators.usajobs import USAJobsAggregator
 from app.domains.jobs.derive import derive_for_create
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.repository import JobRepository
-from app.domains.jobs.schemas import JobPostCreate, JobPostResponse, JobPostUpdate, JobSearchQuery
+from app.domains.jobs.schemas import (
+    PAGING,
+    JobPostCreate,
+    JobPostResponse,
+    JobPostUpdate,
+    JobSearchQuery,
+)
 from app.domains.jobs.source_policy import SEARCH_SYNDICATION_BLOCKED_SOURCES
 from app.domains.marketplace.models import AIReport
 from app.services.search.indexing import notify_new_jobs, notify_removed_jobs
 
 logger = get_logger("jobs.service")
+
+# Single-filter searches whose facets Celery precomputes (top values of each).
+POPULAR_FACETS = ("seniority", "country", "region", "industry", "job_function", "job_type")
+
+
+def facets_key(query: JobSearchQuery) -> str:
+    """Canonical key of a search's filters (paging and sort do not change counts)."""
+    canonical = json.dumps(query.model_dump(mode="json", exclude=PAGING), sort_keys=True)
+    return "facets:" + hashlib.sha256(canonical.encode()).hexdigest()
 
 # The configured job sources. Ingestion health reports every one of these, so a
 # source that never succeeds or stops logging cannot disappear from view (OBS-01).
@@ -183,33 +199,66 @@ class JobService:
 
     async def search_jobs(self, query: JobSearchQuery) -> Sequence[JobPost]:
         return await self.repo.search(
-            **query.filters(), skip=query.skip, limit=query.limit, sort=query.sort
+            **query.filters(), skip=query.skip, limit=query.limit, sort=query.sort, after=query.after
         )
 
     async def search_jobs_cached(self, query: JobSearchQuery) -> tuple[list[dict], int]:
         """One page of matching jobs plus the total number of matches."""
         key = json.dumps(query.model_dump(mode="json"), sort_keys=True)
-        cached = list_cache.get(key)
+        cached = await list_cache.aget(key)
         if cached is not None:
-            return cached
+            jobs_json, total = cached
+            return jobs_json, int(total)
         jobs = await self.search_jobs(query)
-        total = await self.repo.count(**query.filters())
+        stored = await self._stored_facets(query)
+        total = int(stored["total"]) if stored else await self.repo.count(**query.filters())
         serialized = [JobPostResponse.model_validate(job).model_dump(mode="json") for job in jobs]
-        list_cache.put(key, (serialized, total))
+        await list_cache.aput(key, [serialized, total], shared_ttl=settings.JOB_LIST_CACHE_SECONDS)
         return serialized, total
 
     async def facets_cached(self, query: JobSearchQuery) -> dict:
-        """Facet counts for the filters (cached like list pages)."""
-        key = "facets:" + json.dumps(query.model_dump(mode="json", exclude={"skip", "limit", "sort"}), sort_keys=True)
-        cached = list_cache.get(key)
+        """Facet counts for the filters: the in-process/Redis cache, then the
+        Celery-precomputed table for common searches, then a live count."""
+        key = facets_key(query)
+        cached = await list_cache.aget(key)
         if cached is not None:
             return dict(cached)
-        result = {
+        result = await self._stored_facets(query) or await self.compute_facets(query)
+        await list_cache.aput(key, result, shared_ttl=settings.JOB_FACETS_CACHE_SECONDS)
+        return result
+
+    async def compute_facets(self, query: JobSearchQuery) -> dict:
+        return {
             "total": await self.repo.count(**query.filters()),
             "facets": await self.repo.facets(**query.filters()),
         }
-        list_cache.put(key, result)
-        return result
+
+    async def _stored_facets(self, query: JobSearchQuery) -> dict | None:
+        if not self.repo._pg():
+            return None
+        max_age = timedelta(minutes=settings.JOB_STATS_REFRESH_MINUTES * 3)
+        return await self.repo.stored_stat(facets_key(query), max_age)
+
+    async def refresh_catalogue_stats(self) -> dict[str, int]:
+        """Precompute facets/totals for the default search and the most common
+        single-filter searches, and rebuild the employer read model. Run by Celery
+        every JOB_STATS_REFRESH_MINUTES; each search is one or two scans."""
+        default = JobSearchQuery(is_remote=True)
+        computed = 0
+        base = await self.compute_facets(default)
+        await self.repo.store_stat(facets_key(default), base)
+        computed += 1
+        queries: list[JobSearchQuery] = [
+            JobSearchQuery(workplace=[w["value"]], is_remote=None) for w in base["facets"].get("workplace", [])
+        ]
+        for facet in POPULAR_FACETS:
+            for entry in base["facets"].get(facet, [])[: settings.JOB_STATS_TOP_VALUES]:
+                queries.append(JobSearchQuery.model_validate({"is_remote": True, facet: [entry["value"]]}))
+        for q in queries:
+            await self.repo.store_stat(facets_key(q), await self.compute_facets(q))
+            computed += 1
+        employers = await self.repo.refresh_employer_stats()
+        return {"searches": computed, "employers": employers}
 
     async def maintain_catalogue(self) -> dict[str, int]:
         """Retention after imports: drop imported jobs older than JOB_RETENTION_DAYS (hide

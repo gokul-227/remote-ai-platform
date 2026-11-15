@@ -174,3 +174,34 @@ class SavedJobSearch(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class JobEmployerStat(Base):
+    """Employers with live remote jobs, rebuilt by Celery (jobs.refresh_catalogue_stats).
+
+    At millions of jobs, grouping the live catalogue by employer on every
+    /remote-jobs/at page view is a multi-second scan; this table is the read model
+    for /jobs/employers and /jobs/employers/{slug} (migration 075)."""
+
+    __tablename__ = "job_employer_stats"
+
+    slug: Mapped[str] = mapped_column(String(80), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    job_count: Mapped[int] = mapped_column(nullable=False)
+    latest_posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class JobCatalogueStat(Base):
+    """Precomputed public aggregates (facet counts and totals for the default and
+    the most common single-filter searches), keyed by the canonical filter JSON.
+    Rebuilt by Celery every JOB_STATS_REFRESH_MINUTES; read while fresh enough."""
+
+    __tablename__ = "job_catalogue_stats"
+
+    key: Mapped[str] = mapped_column(String(255), primary_key=True)
+    payload: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=False
+    )
+    computed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

@@ -441,6 +441,20 @@ def backfill_job_filters(batch_size: int = 1000, max_batches: int = 20) -> dict[
     return result
 
 
+@shared_task(name="jobs.refresh_catalogue_stats")
+def refresh_catalogue_stats() -> dict[str, Any]:
+    """Precomputed facets for common searches + the employer read model (075)."""
+
+    async def go() -> dict[str, Any]:
+        from app.domains.jobs.repository import JobRepository
+        from app.domains.jobs.service import JobService
+
+        async with runtime.session_factory()() as db:
+            return await JobService(JobRepository(db)).refresh_catalogue_stats()
+
+    return runtime.run(go())
+
+
 @shared_task(name="jobs.send_alerts")
 def send_job_alerts() -> dict[str, Any]:
     async def go() -> dict[str, Any]:

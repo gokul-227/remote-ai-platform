@@ -56,6 +56,10 @@ celery_app.conf.update(
         },
         "check-backups": {"task": "ops.check_backups", "schedule": crontab(hour=8, minute=0)},
         "job-alerts": {"task": "jobs.send_alerts", "schedule": crontab(minute=40)},
+        "refresh-catalogue-stats": {
+            "task": "jobs.refresh_catalogue_stats",
+            "schedule": settings.JOB_STATS_REFRESH_MINUTES * 60.0,
+        },
         "backfill-job-filters": {
             "task": "jobs.backfill_filters",
             "schedule": crontab(hour=2, minute=50),
