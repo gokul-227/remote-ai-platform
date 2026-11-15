@@ -331,7 +331,11 @@ export default function Console() {
         <div className="top-left">
           <button className="logo" aria-label="Operations console home" onClick={() => open("overview")}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand-lockup.svg" width={157} height={30} alt="" />
+            <picture>
+              {/* Full lockup on wide screens; the symbol alone where the top bar is tight. */}
+              <source media="(min-width: 1200px)" srcSet="/brand-lockup.svg" />
+              <img src="/brand-mark.svg" width={30} height={30} alt="" />
+            </picture>
           </button>
           <div className="top-search">
             <Ic n="search" s={18} />
