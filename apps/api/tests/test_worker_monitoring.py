@@ -92,7 +92,7 @@ def test_signals_start_owner_monitors_not_broker_tasks(monkeypatch):
     celery_app._acquire_beat_lock()
     lock.assert_called_once()
     start.assert_called_once_with("scheduler")
-    sender = SimpleNamespace(task_consumer=SimpleNamespace(queues={"imports": object()}))
+    sender = SimpleNamespace(task_consumer=SimpleNamespace(queues=[SimpleNamespace(name="imports")]))
     celery_app._worker_ready(sender)
     start.assert_called_with("worker", ["imports"])
     assert not any(
@@ -170,3 +170,17 @@ async def test_postgres_lock_contention_release_and_invalidation(monkeypatch):
                 await beat_lock.verify_lock(contender)
     finally:
         await engine.dispose()
+
+
+def test_worker_ready_starts_monitor_with_queue_names(monkeypatch):
+    from kombu import Queue
+
+    from app.worker.celery_app import _worker_ready
+
+    start = Mock()
+    monkeypatch.setattr(monitoring, "start_monitor", start)
+    sender = SimpleNamespace(
+        task_consumer=SimpleNamespace(queues=[Queue("imports"), Queue("default")])
+    )
+    _worker_ready(sender=sender)
+    start.assert_called_once_with("worker", ["default", "imports"])
