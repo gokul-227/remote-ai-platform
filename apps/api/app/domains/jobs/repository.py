@@ -427,10 +427,15 @@ class JobRepository:
         source: str | None = None,
         company_id: uuid.UUID | None = None,
         location: str | None = None,
+        employer: str | None = None,
     ) -> Select:
         stmt = stmt.where(
             JobPost.is_active.is_(True), JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None)
         )
+
+        if employer:
+            # Exact (case-insensitive) employer name, for /remote-jobs/at/<employer>.
+            stmt = stmt.where(func.lower(JobPost.company_name) == employer.strip().lower())
 
         if company_id is not None:
             stmt = stmt.where(JobPost.company_id == company_id)
@@ -519,6 +524,7 @@ class JobRepository:
         source: str | None = None,
         company_id: uuid.UUID | None = None,
         location: str | None = None,
+        employer: str | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> Sequence[JobPost]:
@@ -536,6 +542,7 @@ class JobRepository:
             source=source,
             company_id=company_id,
             location=location,
+            employer=employer,
         )
         # id breaks ties so consecutive pages never overlap or skip rows.
         stmt = stmt.order_by(JobPost.posted_at.desc(), JobPost.id.desc()).offset(skip).limit(limit)
@@ -545,3 +552,188 @@ class JobRepository:
     async def count(self, **filters: Any) -> int:
         stmt = self._filtered(select(func.count()).select_from(JobPost), **filters)
         return int(await self.db.scalar(stmt) or 0)
+
+    # --- SEO landing pages and search-engine notifications -------------------
+
+    async def landing_stats(self, **filters: Any) -> dict[str, Any]:
+        """Real aggregates for a landing page's intro (no invented numbers): how
+        many live jobs match, how many arrived in the last 7 days, the employers
+        with most openings, and the published pay range in the most common
+        currency and period (only jobs that state one)."""
+        base = self._filtered(select(func.count()).select_from(JobPost), **filters)
+        total = int(await self.db.scalar(base) or 0)
+        week = datetime.now(UTC) - timedelta(days=7)
+        recent = int(await self.db.scalar(base.where(JobPost.posted_at >= week)) or 0)
+        companies: Sequence[Any] = (
+            await self.db.execute(
+                self._filtered(select(JobPost.company_name, func.count().label("n")), **filters)
+                .group_by(JobPost.company_name)
+                .order_by(func.count().desc(), JobPost.company_name.asc())
+                .limit(5)
+            )
+        ).all()
+        salary_rows = (
+            await self.db.execute(
+                self._filtered(
+                    select(
+                        JobPost.salary_min,
+                        JobPost.salary_max,
+                        JobPost.currency,
+                        JobPost.salary_period,
+                    ),
+                    **filters,
+                )
+                .where(
+                    JobPost.currency.is_not(None),
+                    JobPost.salary_period.is_not(None),
+                    or_(JobPost.salary_min.is_not(None), JobPost.salary_max.is_not(None)),
+                )
+                .order_by(JobPost.posted_at.desc())
+                .limit(2000)
+            )
+        ).all()
+        return {
+            "total": total,
+            "new_last_7_days": recent,
+            "top_companies": [{"name": n, "count": int(c)} for n, c in companies if n],
+            "salary": salary_summary(salary_rows),
+        }
+
+    async def employers(
+        self, min_jobs: int = 1, limit: int = 2000, is_remote: bool | None = True
+    ) -> list[dict[str, Any]]:
+        """Employers with live jobs, most openings first, with a URL slug."""
+        rows: Sequence[Any] = (
+            await self.db.execute(
+                self._filtered(
+                    select(
+                        JobPost.company_name,
+                        func.count().label("n"),
+                        func.max(JobPost.posted_at).label("latest"),
+                    ),
+                    is_remote=is_remote,
+                )
+                .group_by(JobPost.company_name)
+                .having(func.count() >= min_jobs)
+                .order_by(func.count().desc(), JobPost.company_name.asc())
+                .limit(limit)
+            )
+        ).all()
+        out: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for name, n, latest in rows:
+            slug = employer_slug(name or "")
+            if not slug or slug in seen:  # two spellings of one name: keep the bigger
+                continue
+            seen.add(slug)
+            out.append({"slug": slug, "name": name, "count": int(n), "latest_posted_at": latest})
+        return out
+
+    async def employer_by_slug(self, slug: str) -> dict[str, Any] | None:
+        for e in await self.employers(min_jobs=1, limit=20000):
+            if e["slug"] == slug:
+                return e
+        return None
+
+    async def availability(self, job_id: uuid.UUID) -> str | None:
+        """'live', 'expired' (recently; the page still helps visitors) or 'gone'
+        (removed, hidden, or expired/posted long ago: the page answers 410).
+        None when no such job exists."""
+        row = (
+            await self.db.execute(
+                select(
+                    JobPost.is_active, JobPost.is_deleted, JobPost.expired_at, JobPost.posted_at
+                ).where(JobPost.id == job_id)
+            )
+        ).first()
+        if row is None:
+            return None
+        active, deleted, expired_at, posted_at = row
+        now = datetime.now(UTC)
+
+        def older(ts: datetime | None, days: int) -> bool:
+            if ts is None:
+                return False
+            ts = ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+            return ts < now - timedelta(days=days)
+
+        if deleted or not active:
+            return "gone"
+        if expired_at is not None:
+            return "gone" if older(expired_at, settings.JOB_GONE_AFTER_DAYS) else "expired"
+        if older(posted_at, settings.SITEMAP_JOB_MAX_AGE_DAYS + settings.JOB_GONE_AFTER_DAYS):
+            return "gone"
+        return "live"
+
+    async def indexable_newest_first(self, job_ids: list[uuid.UUID]) -> list[uuid.UUID]:
+        """The subset of `job_ids` whose pages may appear in Google (syndication-
+        eligible source, live, inside the sitemap window), newest posting first:
+        the shared Indexing API budget goes to the freshest indexable pages and
+        none is spent on pages that answer noindex."""
+        if not job_ids:
+            return []
+        out: list[uuid.UUID] = []
+        for i in range(0, len(job_ids), 500):
+            chunk = job_ids[i : i + 500]
+            stmt = self._filtered(select(JobPost.id, JobPost.posted_at)).where(
+                JobPost.id.in_(chunk), *self._sitemap_scope()
+            )
+            out.extend(r[0] for r in (await self.db.execute(stmt)).all())
+        posted = (
+            {
+                r[0]: r[1]
+                for r in (
+                    await self.db.execute(
+                        select(JobPost.id, JobPost.posted_at).where(JobPost.id.in_(out))
+                    )
+                ).all()
+            }
+            if out
+            else {}
+        )
+        return sorted(out, key=lambda i: (posted.get(i) or datetime.min, str(i)), reverse=True)
+
+    async def syndicated(self, job_ids: list[uuid.UUID]) -> list[uuid.UUID]:
+        """The subset of `job_ids` from sources whose pages Google may have indexed."""
+        if not job_ids:
+            return []
+        stmt = select(JobPost.id).where(
+            JobPost.id.in_(job_ids), JobPost.source.not_in(SEARCH_SYNDICATION_BLOCKED_SOURCES)
+        )
+        keep = {r[0] for r in (await self.db.execute(stmt)).all()}
+        return [i for i in job_ids if i in keep]
+
+
+def employer_slug(name: str) -> str:
+    """URL slug for an employer name ("Acme, Inc." -> "acme-inc")."""
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+    return slug[:80].strip("-")
+
+
+def salary_summary(rows: Sequence[Any]) -> dict[str, Any] | None:
+    """Pay range in the most common (currency, period) among rows of
+    (salary_min, salary_max, currency, period). Each job contributes its
+    midpoint; nothing is converted between currencies or periods."""
+    groups: dict[tuple[str, str], list[float]] = {}
+    for lo, hi, currency, period in rows:
+        values = [float(v) for v in (lo, hi) if v is not None and float(v) > 0]
+        if not values:
+            continue
+        key = (str(currency).upper(), str(period).lower())
+        groups.setdefault(key, []).append(sum(values) / len(values))
+    if not groups:
+        return None
+    (currency, period), mids = max(groups.items(), key=lambda kv: len(kv[1]))
+    mids.sort()
+
+    def pct(p: float) -> float:
+        return round(mids[min(len(mids) - 1, int(p * (len(mids) - 1) + 0.5))])
+
+    return {
+        "currency": currency,
+        "period": period,
+        "count": len(mids),
+        "low": pct(0.1),
+        "median": pct(0.5),
+        "high": pct(0.9),
+    }

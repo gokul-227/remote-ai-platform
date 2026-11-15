@@ -7,7 +7,7 @@ vi.mock("@/lib/site", async (orig) => ({
 }));
 import { BRAND, breadcrumbJsonLd, organizationJsonLd, websiteJsonLd } from "./brand";
 import { PLACES, fetchPlaceJobs } from "./seo";
-import { staticSitemap } from "./sitemaps";
+import { landingSitemap, staticSitemap } from "./sitemaps";
 import manifest from "@/app/manifest";
 import { Breadcrumbs, JsonLd, PublicFooter } from "@/app/PublicChrome";
 
@@ -53,10 +53,27 @@ describe("public chrome", () => {
 });
 
 describe("location landing pages", () => {
-  it("are listed in the static sitemap", () => {
-    const xml = staticSitemap();
-    for (const p of PLACES) expect(xml).toContain(`/remote-jobs/in/${p.slug}`);
-    expect(xml).toContain("/trust");
+  it("are listed in the landing sitemap only when they have enough jobs", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/employers")) return new Response("[]");
+        const thin = url.includes("location=usa") ? 1 : 0;
+        return new Response(
+          JSON.stringify({
+            total:
+              url.includes("location=") && !url.includes("query=") && !url.includes("job_type=") ? (thin ? 2 : 9) : 0,
+            new_last_7_days: 0,
+            top_companies: [],
+          }),
+        );
+      }),
+    );
+    const xml = await landingSitemap();
+    vi.unstubAllGlobals();
+    for (const p of PLACES.filter((p) => p.slug !== "usa")) expect(xml).toContain(`/remote-jobs/in/${p.slug}<`);
+    expect(xml).not.toContain("/remote-jobs/in/usa<");
+    expect(staticSitemap()).toContain("/trust");
   });
   it("query the API's location filter and read the total", async () => {
     const fetch = vi.fn(async (_url: string) => new Response("[]", { headers: { "x-total-count": "7" } }));

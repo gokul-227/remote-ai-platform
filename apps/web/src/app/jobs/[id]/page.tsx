@@ -6,7 +6,16 @@ import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
 import { SITE_URL, fetchPublicJob, jobPostingJsonLd, summary } from "@/lib/site";
 import { permitsGoogleJobs, jobSourceName, originalJobUrl } from "@/lib/jobSources";
-import { topicsForJob } from "@/lib/seo";
+import { PLACES, topicsForJob } from "@/lib/seo";
+import { fetchLandingJobs, topicFilter } from "@/lib/landing";
+import { JobList } from "../../remote-jobs/JobList";
+
+const employerSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
 import { breadcrumbJsonLd } from "@/lib/brand";
 import { Breadcrumbs, JsonLd, PublicFrame } from "../../PublicChrome";
 
@@ -42,6 +51,14 @@ export default async function JobPage({ params }: Props) {
     [job.title, `/jobs/${job.id}`],
   ];
   const topics = topicsForJob(job);
+  const places = PLACES.filter((p) => (job.location || "").toLowerCase().includes(p.match)).slice(0, 3);
+  const [sameEmployer, sameTopic] = await Promise.all([
+    fetchLandingJobs({ employer: job.company_name }),
+    topics[0] ? fetchLandingJobs(topicFilter(topics[0])) : Promise.resolve({ jobs: [], total: 0 }),
+  ]);
+  const others = (list: typeof sameEmployer.jobs) => list.filter((j) => j.id !== job.id).slice(0, 5);
+  const employerJobs = others(sameEmployer.jobs);
+  const related = others(sameTopic.jobs.filter((j) => !employerJobs.some((e) => e.id === j.id)));
   return (
     <PublicFrame>
       {!job.expired_at && permitsGoogleJobs(job.source) && <JsonLd data={jobPostingJsonLd(job, site)} />}
@@ -104,7 +121,30 @@ export default async function JobPage({ params }: Props) {
           <RichText text={job.description || "No description provided."} />
         </section>
       </article>
-      {topics.length > 0 && (
+      {employerJobs.length > 0 && (
+        <section className="mt-8" aria-labelledby="employer-jobs">
+          <h2 id="employer-jobs" className="mb-3 text-lg font-bold">
+            More remote jobs at {job.company_name}
+          </h2>
+          <JobList jobs={employerJobs} />
+          {sameEmployer.total > 2 && (
+            <p className="mt-2 text-sm">
+              <Link href={`/remote-jobs/at/${employerSlug(job.company_name)}`} className="text-[#175CD3] underline">
+                All {sameEmployer.total} remote jobs at {job.company_name}
+              </Link>
+            </p>
+          )}
+        </section>
+      )}
+      {related.length > 0 && (
+        <section className="mt-8" aria-labelledby="related-jobs">
+          <h2 id="related-jobs" className="mb-3 text-lg font-bold">
+            Related jobs
+          </h2>
+          <JobList jobs={related} />
+        </section>
+      )}
+      {(topics.length > 0 || places.length > 0) && (
         <section className="mt-8" aria-labelledby="similar-jobs">
           <h2 id="similar-jobs" className="mb-3 text-lg font-bold">
             More jobs like this
@@ -117,6 +157,15 @@ export default async function JobPage({ params }: Props) {
                 className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#175CD3] hover:text-[#175CD3]"
               >
                 {t.jobType ? `${t.name} remote jobs` : `Remote ${t.name} jobs`}
+              </Link>
+            ))}
+            {places.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/remote-jobs/in/${p.slug}`}
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#175CD3] hover:text-[#175CD3]"
+              >
+                Remote jobs in {p.name}
               </Link>
             ))}
           </div>

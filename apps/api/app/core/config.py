@@ -391,6 +391,8 @@ class Settings(BaseSettings):
     GOOGLE_INDEXING_DAILY_QUOTA: int = 180
     # Sitemaps list only jobs posted within this many days (stale listings aren't promoted).
     SITEMAP_JOB_MAX_AGE_DAYS: int = 90
+    # A job expired longer ago than this (or removed) answers 410 Gone on its public page.
+    JOB_GONE_AFTER_DAYS: int = 30
     # IndexNow key: public by design, served by the web app at /indexnow.txt.
     INDEXNOW_KEY: str = "bd088b5c4cf346dbf16c906aff9aeb97"
     # Keep as many imported jobs as the free database allows: above this size the oldest

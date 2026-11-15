@@ -3,7 +3,7 @@
  * excluded pending a reviewed redistribution agreement.
  */
 export const permitsGoogleJobs = (source?: string | null) =>
-  !["REMOTIVE", "HIMALAYAS", "WORKINGNOMADS", "ADZUNA"].includes((source ?? "").toUpperCase());
+  !["REMOTIVE", "HIMALAYAS", "WORKINGNOMADS", "ADZUNA", "WEWORKREMOTELY"].includes((source ?? "").toUpperCase());
 
 const names: Record<string, string> = {
   REMOTIVE: "Remotive",

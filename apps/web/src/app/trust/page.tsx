@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PublicFrame } from "../PublicChrome";
+import { Breadcrumbs, JsonLd, PublicFrame } from "../PublicChrome";
+import { breadcrumbJsonLd } from "@/lib/brand";
+import { SITE_URL } from "@/lib/site";
 import { OPERATOR } from "@/figma/legal_content";
 
 export const metadata: Metadata = {
@@ -12,6 +14,18 @@ export const metadata: Metadata = {
 export default function SecurityPage() {
   return (
     <PublicFrame>
+      <Breadcrumbs
+        trail={[
+          ["Remote AI Platform", "/"],
+          ["Trust and security", "/trust"],
+        ]}
+      />
+      <JsonLd
+        data={breadcrumbJsonLd(SITE_URL || "https://remoteaiplatform.com", [
+          ["Remote AI Platform", "/"],
+          ["Trust and security", "/trust"],
+        ])}
+      />
       <article className="rounded-xl border border-slate-200 bg-white p-6 sm:p-10">
         <h1 className="text-3xl font-bold text-[#102A43]">Trust and security</h1>
         <section className="mt-8 space-y-3 leading-relaxed">
