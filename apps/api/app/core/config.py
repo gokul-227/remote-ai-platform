@@ -501,9 +501,7 @@ class Settings(BaseSettings):
     COST_DISK_PATH: str = "/"
     COST_EMAIL_DAILY_LIMIT: int = 100  # Resend free: 100/day, 3000/month
     COST_EMAIL_MONTHLY_LIMIT: int = 3000
-    OCI_S3_ENDPOINT: str = (
-        "https://frizbfn1ukyy.compat.objectstorage.eu-frankfurt-1.oraclecloud.com"
-    )
+    OCI_S3_ENDPOINT: str = ""  # set in Infisical prod /vm
     OCI_S3_REGION: str = "eu-frankfurt-1"
     OCI_S3_ACCESS_KEY_ID: str = ""
     OCI_S3_SECRET_ACCESS_KEY: str = ""

@@ -9,9 +9,9 @@
 | slack-relay | Slack incoming-webhook format -> `chat.postMessage` (bot token) | private `ops` network only |
 
 ```bash
-ssh -i ~/.ssh/oci_rap -L 8001:127.0.0.1:8001 -L 3001:127.0.0.1:3001 opc@79.76.118.213
+ssh -i ~/.ssh/oci_rap -L 8001:127.0.0.1:8001 -L 3001:127.0.0.1:3001 opc@$VM_HOST
 # GlitchTip  http://localhost:8001   Uptime Kuma  http://localhost:3001
-# both: user gokulraj22797@gmail.com, passwords GLITCHTIP_ADMIN_PASSWORD /
+# both: user = the owner email in Infisical (OWNER_EMAIL), passwords GLITCHTIP_ADMIN_PASSWORD /
 # UPTIME_KUMA_ADMIN_PASSWORD in Infisical prod /automation
 ```
 
@@ -35,5 +35,5 @@ Wiring:
 * Uptime Kuma notification "Slack #alerts-critical (relay)": `http://slack-relay:8080/critical`.
 * `infra/ops/slack-notify.sh` posts one line from scripts/CI (used by `.github/workflows/deploy-notify.yml`).
 
-Runbook (every alert, channel, threshold, silencing): companion repo
+Runbook (every alert, channel, threshold, silencing): docs/operations/monitoring-and-alerts.md
 `transformation/06-monitoring-and-alerts.md`.
