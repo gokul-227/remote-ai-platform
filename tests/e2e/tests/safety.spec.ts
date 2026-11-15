@@ -25,13 +25,13 @@ test("a professional blocks someone: no messages or requests until they unblock"
   await alice.getByRole("button", { name: "Block", exact: true }).click();
   const dialog = alice.getByRole("dialog", { name: /block bob blocked/i });
   await dialog.getByRole("button", { name: "Block", exact: true }).click();
-  await expect(alice.getByRole("status")).toContainText("is blocked");
+  await expect(alice.getByRole("status").filter({ hasText: "is blocked" })).toBeVisible();
   await expect(alice.getByRole("button", { name: "Unblock" })).toBeVisible();
 
   expect((await apiAs(request, bob, "post", "/conversations", { participant_id: aliceMe.id })).status()).toBe(403);
   expect((await apiAs(request, bob, "post", "/connections", { receiver_id: aliceMe.id })).status()).toBe(403);
 
   await alice.getByRole("button", { name: "Unblock" }).click();
-  await expect(alice.getByRole("status")).toContainText("is unblocked");
+  await expect(alice.getByRole("status").filter({ hasText: "is unblocked" })).toBeVisible();
   expect((await apiAs(request, bob, "post", "/connections", { receiver_id: aliceMe.id })).status()).toBe(201);
 });
