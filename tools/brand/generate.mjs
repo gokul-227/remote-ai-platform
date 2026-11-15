@@ -1,14 +1,17 @@
 // Regenerates every raster brand asset from the vector symbol.
 //   node tools/brand/generate.mjs
-// Symbol: traced from the owner's approved compact app icon (Remote-AI-Platform.png).
+// Symbol and lockups follow the owner's brand sheets (Remote-AI-Platform.png, Remote-AI-Platform1.png):
+// symbol traced into symbol.json; inverted navy app icon; "Remote AI Platform" lockup with "AI" in brand
+// blue and the tagline beneath, outlined from bundled Manrope (OFL) so SVGs need no installed fonts.
 // Palette and type: the Enterprise Brand Identity Figma file (06 / Brand Guidelines):
 // Blue #175CD3, Navy #102A43, Charcoal #1F2937, Mist #F5F8FC, Sky #8DBBFF on Dark #101820;
-// Inter Semi Bold (600) wordmark. Tokens: tools/brand/tokens.json. The Figma "Open Relay" R is
+// UI type stays Inter. Tokens: tools/brand/tokens.json. The Figma "Open Relay" R is
 // marked "not an approved trademark" there, so the approved traced symbol stays.
 import { mkdirSync, writeFileSync, readFileSync, copyFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import opentype from "opentype.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const web = join(root, "apps/web");
@@ -46,52 +49,120 @@ if (process.argv.includes("--tokens-only")) {
   process.exit(0);
 }
 
-// The symbol's shapes on a 64-unit grid (no background).
-const shapes = (blue = BRAND.blue, navy = BRAND.navy, screen = "white") =>
-  `<path d="M8 27V20C8 13 13 8 20 8H49C48 15 44 19 37 19H22C15 19 11 22 8 27Z" fill="${blue}"/>` +
-  `<path d="M51 10C57 12 60 17 60 24V43C60 50 56 55 50 57L44 47V24C44 20 42 18 39 18C45 17 49 14 51 10Z" fill="${navy}"/>` +
-  `<path d="M8 30C8 25 12 22 18 21C16 24 15 27 15 31V43C15 47 18 49 22 49H38L44 57H20C13 57 8 52 8 45Z" fill="${blue}"/>` +
-  `<circle cx="30" cy="29" r="6" fill="${navy}"/>` +
-  `<path d="M20 40C21 35 25 34 30 34C35 34 39 35 40 40" fill="${navy}"/>` +
-  `<rect x="19" y="41" width="23" height="13" rx="2" fill="${blue}"/>` +
-  `<circle cx="30.5" cy="47.5" r="2" fill="${screen}"/>`;
+// The symbol, traced from the owner's brand sheet (tools/brand/symbol.json, 64-unit grid):
+// blue left/top arc and laptop, navy right/bottom arc and person, white screen dot.
+const SYM = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "symbol.json"), "utf8"));
+const dot = (fill) => `<circle cx="${SYM.dot.cx}" cy="${SYM.dot.cy}" r="${SYM.dot.r}" fill="${fill}"/>`;
+const shapes = () =>
+  `<path d="${SYM.navy}" fill="${BRAND.navy}"/><path d="${SYM.blue}" fill="${BRAND.blue}"/>` + dot("white");
+// One-colour symbol (dark app icon, notification badge); `hole` paints the laptop dot.
+const mono = (fill, hole) => `<path d="${SYM.ink}" fill="${fill}"/>` + (hole ? dot(hole) : "");
 
-const symbol = (bg = "white") =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">` +
-  (bg ? `<rect width="64" height="64" rx="14" fill="${bg}"/>` : "") +
-  shapes() +
-  `</svg>`;
+const symbol = () => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">${shapes()}</svg>`;
+// Inverted app icon from the sheet: white symbol on a navy rounded square.
+const symbolDark = () =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${BRAND.navy}"/>` +
+  `<g transform="translate(9 9) scale(${46 / 64})">${mono("white", BRAND.navy)}</g></svg>`;
 
-// A square icon with the symbol inset (maskable safe zone = inner 80%).
-const tile = (size, inset, bg = "white", radius = 0) =>
+// Square icons. dark=true: the sheet's inverted icon (navy tile, white symbol).
+const tile = (size, inset, bg = "white", radius = 0, dark = false) =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
-  `<rect width="${size}" height="${size}" rx="${radius}" fill="${bg}"/>` +
-  `<g transform="translate(${inset} ${inset}) scale(${(size - 2 * inset) / 64})">${shapes()}</g></svg>`;
+  `<rect width="${size}" height="${size}" rx="${radius}" fill="${dark ? BRAND.navy : bg}"/>` +
+  `<g transform="translate(${inset} ${inset}) scale(${(size - 2 * inset) / 64})">` +
+  `${dark ? mono("white", BRAND.navy) : shapes()}</g></svg>`;
 
 // Monochrome silhouette for Android notification badges (white on transparent).
 const badge = (size) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">${shapes("white", "white", "black")}</svg>`;
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">${mono("white")}</svg>`;
 
-const FONT = "Inter, 'Helvetica Neue', Arial, sans-serif";
-const wordmark = (x, y, size, dark = false) =>
-  `<text x="${x}" y="${y}" font-family="${FONT}" font-weight="600" font-size="${size}" letter-spacing="-0.01em" fill="${dark ? "white" : BRAND.navy}">` +
-  `Remote AI Platform</text>`;
+// Text is outlined from the bundled Manrope (SIL OFL 1.1, tools/brand/fonts) so no SVG depends on
+// installed fonts. Bold wordmark with "AI" in brand blue; regular-weight tagline.
+const FONTS = join(dirname(fileURLToPath(import.meta.url)), "fonts");
+const BOLD = opentype.loadSync(join(FONTS, "Manrope-ExtraBold.ttf"));
+const REGULAR = opentype.loadSync(join(FONTS, "Manrope-Regular.ttf"));
+const TAGLINE = "Connect. Find work. Get work done.";
+/** Outline `str` at (x, baseline y); returns path data and advance width. */
+function outline(font, str, x, y, size, tracking = 0) {
+  const scale = size / font.unitsPerEm;
+  const glyphs = font.stringToGlyphs(str);
+  let pen = x;
+  const parts = [];
+  glyphs.forEach((g, i) => {
+    parts.push(g.getPath(pen, y, size).toPathData(2));
+    pen += g.advanceWidth * scale + tracking * size;
+    if (glyphs[i + 1]) pen += font.getKerningValue(g, glyphs[i + 1]) * scale;
+  });
+  return { d: parts.join(""), w: pen - x - tracking * size };
+}
+/** "Remote AI Platform" with "AI" in brand blue. light=true for dark backgrounds. */
+function wordmark(x, y, size, light = false) {
+  const t = -0.03;
+  const space = BOLD.charToGlyph(" ").advanceWidth * (size / BOLD.unitsPerEm) * 0.7;
+  const a = outline(BOLD, "Remote", x, y, size, t);
+  const b = outline(BOLD, "AI", x + a.w + space, y, size, t);
+  const c = outline(BOLD, "Platform", x + a.w + b.w + 2 * space, y, size, t);
+  const ink = light ? "white" : BRAND.navy;
+  return {
+    svg: `<path d="${a.d}${c.d}" fill="${ink}"/><path d="${b.d}" fill="${BRAND.blue}"/>`,
+    w: a.w + b.w + c.w + 2 * space,
+  };
+}
+const tagline = (x, y, size, light = false) => {
+  const t = outline(REGULAR, TAGLINE, x, y, size, 0);
+  return { svg: `<path d="${t.d}" fill="${light ? "white" : BRAND.navy}"/>`, w: t.w };
+};
 
-const og = (w, h) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-  `<rect width="${w}" height="${h}" fill="${BRAND.mist}"/>` +
-  `<rect y="${h - 16}" width="${w}" height="16" fill="${BRAND.blue}"/>` +
-  `<g transform="translate(80 150) scale(3.5)"><rect width="64" height="64" rx="14" fill="white"/>${shapes()}</g>` +
-  wordmark(340, 265, 72) +
-  `<text x="340" y="335" font-family="${FONT}" font-weight="400" font-size="36" fill="${BRAND.charcoal}">Connect. Find work. Get work done.</text>` +
-  `<text x="80" y="${h - 70}" font-family="${FONT}" font-weight="600" font-size="30" fill="${BRAND.blue}">Remote jobs · Freelance work · Hiring · Projects</text>` +
-  `</svg>`;
+/** Lockups from the sheet, symbol height 120 units.
+ *  primary: symbol + wordmark + tagline; compact: symbol + wordmark; dark: on navy, white symbol. */
+function lockup(kind, { dark = false, pad = 0 } = {}) {
+  const H = 120;
+  const tag = kind === "primary";
+  const gap = tag ? 24 : 20;
+  const size = tag ? 50 : 54;
+  const x = pad + H + gap;
+  const wm = wordmark(x, pad + (tag ? 72 : 79), size, dark);
+  const tl = tag ? tagline(x + 2, pad + 104, 21.5, dark) : { svg: "", w: 0 };
+  const W = Math.ceil(x + Math.max(wm.w, tl.w) + pad + 2);
+  const h = H + 2 * pad;
+  const sym = dark ? mono("white", BRAND.navy) : shapes();
+  return {
+    w: W,
+    h,
+    body:
+      (dark ? `<rect width="${W}" height="${h}" rx="${pad ? 16 : 0}" fill="${BRAND.navy}"/>` : "") +
+      `<g transform="translate(${pad} ${pad}) scale(${H / 64})">${sym}</g>${wm.svg}${tl.svg}`,
+  };
+}
+const svgDoc = ({ w, h, body }, title) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" ` +
+  `aria-label="${title}"><title>${title}</title>${body}</svg>`;
+const wordmarkOnly = () => {
+  const wm = wordmark(0, 54, 54);
+  return { w: Math.ceil(wm.w + 2), h: 68, body: wm.svg };
+};
 
-const emailLogo = (scale) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${300 * scale}" height="${48 * scale}" viewBox="0 0 300 48">` +
-  `<g transform="translate(0 4) scale(0.625)">${shapes()}</g>` +
-  wordmark(50, 32, 22) +
-  `</svg>`;
+const og = (w, h) => {
+  const L = lockup("primary");
+  const s = 960 / L.w;
+  const footer = outline(BOLD, "Remote jobs · Freelance work · Hiring · Projects", 0, 0, 30, -0.01);
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<rect width="${w}" height="${h}" fill="${BRAND.mist}"/>` +
+    `<rect y="${h - 16}" width="${w}" height="16" fill="${BRAND.blue}"/>` +
+    `<g transform="translate(${(w - 960) / 2} ${(h - L.h * s) / 2 - 40}) scale(${s})">${L.body}</g>` +
+    `<path transform="translate(${(w - footer.w) / 2} ${h - 74})" d="${footer.d}" fill="${BRAND.blue}"/>` +
+    `</svg>`
+  );
+};
+
+// Email header (the 300x48 slot in apps/api's email template): compact lockup.
+const emailLogo = (scale) => {
+  const L = lockup("compact");
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${300 * scale}" height="${48 * scale}" viewBox="0 0 300 48">` +
+    `<g transform="scale(${48 / L.h})">${L.body}</g></svg>`
+  );
+};
 
 const out = (p) => (mkdirSync(dirname(p), { recursive: true }), p);
 const png = (svg, file, size) =>
@@ -103,7 +174,11 @@ const png = (svg, file, size) =>
 /** ICO with embedded PNG images (supported by every current browser). */
 async function ico(file, sizes) {
   const images = await Promise.all(
-    sizes.map((s) => sharp(Buffer.from(tile(s, Math.round(s * 0.04), "white", Math.round(s * 0.2)))).png().toBuffer()),
+    sizes.map((s) =>
+      sharp(Buffer.from(tile(s, Math.round(s * 0.08), "white", Math.round(s * 0.2), true)))
+        .png()
+        .toBuffer(),
+    ),
   );
   const header = Buffer.alloc(6 + 16 * sizes.length);
   header.writeUInt16LE(0, 0);
@@ -127,36 +202,47 @@ const svgSymbol = symbol();
 for (const f of [
   join(web, "public/brand-mark.svg"),
   join(web, "public/brand/rap-symbol.svg"),
-  join(web, "src/app/icon.svg"),
   join(admin, "public/brand-mark.svg"),
-  join(admin, "src/app/icon.svg"),
 ])
   writeFileSync(out(f), svgSymbol + "\n");
-writeFileSync(out(join(web, "public/brand/rap-logo.svg")), emailLogo(1) + "\n");
+// Browser-tab icons use the sheet's inverted app icon (reads at 16px on light and dark tabs).
+for (const f of [
+  join(web, "src/app/icon.svg"),
+  join(admin, "src/app/icon.svg"),
+  join(web, "public/brand/rap-symbol-dark.svg"),
+])
+  writeFileSync(out(f), symbolDark() + "\n");
 
+const NAME = "Remote AI Platform";
+const primary = lockup("primary");
+const compact = lockup("compact");
+const lockups = {
+  "rap-logo-primary.svg": svgDoc(primary, `${NAME}. ${TAGLINE}`),
+  "rap-logo-compact.svg": svgDoc(compact, NAME),
+  "rap-logo-dark.svg": svgDoc(lockup("primary", { dark: true, pad: 32 }), `${NAME}. ${TAGLINE}`),
+  "rap-wordmark.svg": svgDoc(wordmarkOnly(), NAME),
+  "rap-logo.svg": emailLogo(1),
+};
+for (const [f, svg] of Object.entries(lockups)) writeFileSync(out(join(web, "public/brand", f)), svg + "\n");
+writeFileSync(out(join(admin, "public/brand-lockup.svg")), lockups["rap-logo-compact.svg"] + "\n");
+// Intrinsic sizes for <img width/height> (no layout shift); read by apps/web/src/components/Brand.tsx.
+writeFileSync(
+  out(join(web, "src/lib/brand-assets.json")),
+  `{ "primary": [${primary.w}, ${primary.h}], "compact": [${compact.w}, ${compact.h}] }\n`,
+);
+
+const ICON = (s, inset, r) => tile(s, inset, "white", r, true);
 await ico(join(web, "src/app/favicon.ico"), [16, 32, 48]);
 copyFileSync(join(web, "src/app/favicon.ico"), out(join(admin, "src/app/favicon.ico")));
-await png(tile(180, 18), join(web, "src/app/apple-icon.png"), [180, 180]);
-await png(tile(192, 12, "white", 40), join(web, "public/icons/icon-192.png"), [192, 192]);
-await png(tile(512, 32, "white", 108), join(web, "public/icons/icon-512.png"), [512, 512]);
-await png(tile(512, 72), join(web, "public/icons/maskable-512.png"), [512, 512]);
+await png(ICON(180, 26, 0), join(web, "src/app/apple-icon.png"), [180, 180]);
+await png(ICON(192, 26, 40), join(web, "public/icons/icon-192.png"), [192, 192]);
+await png(ICON(512, 68, 108), join(web, "public/icons/icon-512.png"), [512, 512]);
+await png(ICON(512, 104, 0), join(web, "public/icons/maskable-512.png"), [512, 512]);
 await png(badge(96), join(web, "public/icons/badge-96.png"), [96, 96]);
 await png(og(1200, 630), join(web, "src/app/opengraph-image.png"), [1200, 630]);
 await png(og(1200, 630), join(web, "src/app/twitter-image.png"), [1200, 630]);
 await png(emailLogo(2), join(web, "public/brand/email-logo.png"), [600, 96]);
-
-// Figma "05 / Integration handoff" destinations, built from the approved symbol:
-// primary light (64px symbol, 30px text), primary dark, compact (32px symbol, 18px text, 14px gap).
-const lockup = (sym, text, gap, width, dark = false) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${sym}" viewBox="0 0 ${width} ${sym}">` +
-  (dark ? `<rect width="${width}" height="${sym}" fill="${BRAND.dark}"/>` : "") +
-  `<g transform="scale(${sym / 64})"><rect width="64" height="64" rx="14" fill="white"/>${shapes()}</g>` +
-  wordmark(sym + gap, Math.round(sym / 2 + text * 0.36), text, dark) +
-  `</svg>\n`;
-writeFileSync(out(join(web, "public/brand/rap-logo-primary.svg")), lockup(64, 30, 20, 358));
-writeFileSync(out(join(web, "public/brand/rap-logo-dark.svg")), lockup(64, 30, 20, 358, true));
-writeFileSync(out(join(web, "public/brand/rap-logo-compact.svg")), lockup(32, 18, 14, 214));
-await png(tile(16, 0, "white", 3), join(web, "public/favicon-16.png"), [16, 16]);
-await png(tile(32, 1, "white", 6), join(web, "public/favicon-32.png"), [32, 32]);
+await png(ICON(16, 1, 3), join(web, "public/favicon-16.png"), [16, 16]);
+await png(ICON(32, 3, 6), join(web, "public/favicon-32.png"), [32, 32]);
 writeTokenCss();
 console.log("brand assets written", readFileSync(join(web, "src/app/favicon.ico")).length, "byte favicon");
