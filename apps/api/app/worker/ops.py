@@ -66,7 +66,11 @@ async def daily_import_summary(db: AsyncSession) -> dict[str, Any]:
             )
         )
     ).scalars()
-    saved = sum(int((r or {}).get("saved", 0) or 0) for r in results)
+    per_source: dict[str, int] = {}
+    for r in results:
+        name = str((r or {}).get("source") or "?")
+        per_source[name] = per_source.get(name, 0) + int((r or {}).get("saved", 0) or 0)
+    saved = sum(per_source.values())
     failing = [
         f"{cp.source} ({cp.consecutive_failures}x: {(cp.last_error or '')[:80]})"
         for cp in (await db.execute(select(JobImportCheckpoint))).scalars()
@@ -77,9 +81,16 @@ async def daily_import_summary(db: AsyncSession) -> dict[str, Any]:
         "job_imports",
         f":bar_chart: Job imports, last 24 h: {summary}; {saved} jobs saved",
         dedup_key=f"import-summary:{_now():%Y%m%d}",
-        fields={"failing sources": "; ".join(failing) if failing else "none"},
+        fields={
+            "failing sources": "; ".join(failing) if failing else "none",
+            # Every source that ran, new ones included, busiest first.
+            "by source": ", ".join(
+                f"{k} {v}" for k, v in sorted(per_source.items(), key=lambda kv: (-kv[1], kv[0]))
+            )
+            or "none",
+        },
     )
-    return {"counts": counts, "saved": saved, "failing": len(failing)}
+    return {"counts": counts, "saved": saved, "failing": len(failing), "by_source": per_source}
 
 
 async def check_backups(db: AsyncSession) -> dict[str, Any]:

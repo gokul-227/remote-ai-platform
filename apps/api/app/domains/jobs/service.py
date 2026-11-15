@@ -22,6 +22,9 @@ from app.domains.jobs.aggregators.base import (
     canonical_url,
     dedup_key,
 )
+from app.domains.jobs.aggregators.board_lists import BOARD_SOURCES
+from app.domains.jobs.aggregators.government import GOVERNMENT_AGGREGATORS
+from app.domains.jobs.aggregators.more_ats import ATS_AGGREGATORS
 from app.domains.jobs.aggregators.public_boards import (
     AdzunaAggregator,
     AshbyAggregator,
@@ -36,6 +39,7 @@ from app.domains.jobs.aggregators.public_boards import (
     WorkableAggregator,
     WorkingNomadsAggregator,
 )
+from app.domains.jobs.aggregators.remote_feeds import REMOTE_FEED_AGGREGATORS
 from app.domains.jobs.aggregators.remoteok import RemoteOKAggregator
 from app.domains.jobs.aggregators.remotive import RemotiveAggregator
 from app.domains.jobs.aggregators.themuse import TheMuseAggregator
@@ -69,6 +73,9 @@ AGGREGATORS = (
     WeWorkRemotelyAggregator,
     AdzunaAggregator,
     JoobleAggregator,
+    *ATS_AGGREGATORS,
+    *GOVERNMENT_AGGREGATORS,
+    *REMOTE_FEED_AGGREGATORS,
 )
 
 
@@ -112,6 +119,7 @@ class JobService:
     def __init__(self, repo: JobRepository):
         self.repo = repo
         self.aggregators = [cls() for cls in AGGREGATORS]
+        self.next_cursors: dict[str, dict] = {}
 
     async def get_by_id(self, job_id: uuid.UUID) -> JobPost:
         job = await self.repo.get_by_id(job_id)
@@ -202,6 +210,7 @@ class JobService:
         source_name: str | None = None,
         run_maintenance: bool = True,
         raise_on_failure: bool = False,
+        cursors: dict[str, dict] | None = None,
     ) -> dict[str, int]:
         """
         Runs job aggregation across every configured source, saving/upserting jobs to DB.
@@ -212,6 +221,9 @@ class JobService:
         """
         logger.info(f"Starting job aggregation sync across {len(self.aggregators)} sources...")
         stats: dict[str, int] = {}
+        # Checkpoint cursors produced by incremental sources in this sync (saved by
+        # the caller only after the run succeeds).
+        self.next_cursors = {}
         new_job_ids: list[uuid.UUID] = []
         failed_sources: list[str] = []
 
@@ -224,7 +236,15 @@ class JobService:
         for aggregator in aggregators:
             started = time.monotonic()
             try:
+                aggregator.cursor = dict((cursors or {}).get(aggregator.source_name) or {})
+                aggregator.next_cursor = None
+                if aggregator.source_name in BOARD_SOURCES:
+                    from app.domains.jobs.board_validation import active_boards
+
+                    aggregator.boards = await active_boards(self.repo.db, aggregator.source_name)
                 fetched_jobs = await aggregator.fetch_jobs(limit=limit_per_source)
+                if aggregator.next_cursor is not None:
+                    self.next_cursors[aggregator.source_name] = aggregator.next_cursor
                 to_save = prepare_for_storage(fetched_jobs)
                 duplicates = 0
                 if settings.JOB_DEDUP_ACROSS_SOURCES and to_save:

@@ -1,0 +1,10 @@
+{"_comment": "Shape from the France Travail Offres d'emploi v2 documentation (no partner key available to record a live response).",
+ "resultats": [
+  {"id": "196XKQP", "intitule": "Développeur Python (H/F)", "description": "Télétravail possible. Python, Django, PostgreSQL.",
+   "dateCreation": "2026-11-14T09:12:00.000Z", "lieuTravail": {"libelle": "75 - Paris 10e"},
+   "entreprise": {"nom": "ACME SAS"}, "typeContratLibelle": "Contrat à durée indéterminée",
+   "origineOffre": {"origine": "1", "urlOrigine": "https://candidat.francetravail.fr/offres/recherche/detail/196XKQP"}},
+  {"id": "196XKQQ", "intitule": "Data analyst", "description": "SQL",
+   "dateCreation": "2026-11-14T08:00:00.000Z", "lieuTravail": {"libelle": "69 - Lyon"},
+   "entreprise": {}, "typeContratLibelle": "CDD"}
+ ]}

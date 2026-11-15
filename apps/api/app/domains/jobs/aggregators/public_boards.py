@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 import httpx
 
 from app.core.config import settings
+from app.domains.jobs.aggregators import robots
 from app.domains.jobs.aggregators.base import (
     BaseAggregator,
     SourceDisabledError,
@@ -24,6 +25,7 @@ from app.domains.jobs.aggregators.base import (
     parse_posted_at,
     require_list,
 )
+from app.domains.jobs.aggregators.board_lists import configured_boards
 from app.domains.jobs.schemas import JobPostCreate
 
 TIMEOUT = httpx.Timeout(20.0)
@@ -50,6 +52,32 @@ def _shard(boards: list[str], now: datetime | None = None) -> list[str]:
 
 class _Board(BaseAggregator):
     """Shared helpers: build a job, fetch many company boards concurrently."""
+
+    # URL of one board's feed ("{board}" is replaced); used for robots.txt checks.
+    board_url: str = ""
+
+    def board_tokens(self) -> list[str]:
+        """This source's company boards: staff-managed rows when loaded, else the
+        bundled data file + setting."""
+        if self.boards is not None:
+            return list(self.boards)
+        return configured_boards(self.source_name)
+
+    def pick_boards(self, boards: list[str]) -> list[str]:
+        """This run's boards. Short lists keep the 3-hourly shard rotation; long
+        lists (thousands of companies) are walked ATS_BOARDS_PER_RUN at a time from
+        the checkpoint offset, so every board is refreshed once per full cycle
+        within the VM's request budget."""
+        per_run = max(1, settings.ATS_BOARDS_PER_RUN)
+        ordered = sorted(boards, key=str.lower)
+        if len(ordered) <= per_run:
+            return _shard(ordered)
+        offset = int(self.cursor.get("offset", 0) or 0) % len(ordered)
+        batch = ordered[offset : offset + per_run]
+        if len(batch) < per_run:
+            batch += ordered[: per_run - len(batch)]
+        self.next_cursor = {"offset": (offset + per_run) % len(ordered), "boards": len(ordered)}
+        return batch
 
     def _job(
         self,
@@ -97,13 +125,22 @@ class _Board(BaseAggregator):
         """Fetch boards concurrently; one bad board never fails the whole source."""
         # Few boards in memory at once (small instances), and a polite pause per request.
         sem = asyncio.Semaphore(max(1, settings.ATS_BOARD_CONCURRENCY))
-        answered = 0
-        async with httpx.AsyncClient(timeout=TIMEOUT, follow_redirects=True) as client:
+        answered = blocked = 0
+        async with httpx.AsyncClient(
+            timeout=TIMEOUT,
+            follow_redirects=True,
+            headers={"User-Agent": robots.user_agent()},
+        ) as client:
 
             async def one(board: str) -> list[JobPostCreate]:
                 async with sem:
                     try:
-                        nonlocal answered
+                        nonlocal answered, blocked
+                        if self.board_url and not await robots.allowed(
+                            client, self.board_url.format(board=board)
+                        ):
+                            blocked += 1
+                            return []
                         if settings.JOB_SOURCE_REQUEST_DELAY_SECONDS > 0:
                             await asyncio.sleep(settings.JOB_SOURCE_REQUEST_DELAY_SECONDS)
                         result = await fetch(client, board)
@@ -113,6 +150,8 @@ class _Board(BaseAggregator):
                         return []
 
             results = await asyncio.gather(*(one(b) for b in boards))
+        if boards and blocked == len(boards):
+            raise SourceDisabledError("robots.txt disallows this source's feed")
         if boards and not answered:
             raise SourceFetchError("no board answered")
         # Interleave boards so the per-run limit is shared fairly between companies.
@@ -126,6 +165,8 @@ class _Board(BaseAggregator):
 
 class GreenhouseAggregator(_Board):
     source_name = "GREENHOUSE"
+    # Public Job Board API (docs.greenhouse.io/job-board): unauthenticated GET for career sites.
+    board_url = "https://boards-api.greenhouse.io/v1/boards/{board}/jobs"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         async def fetch(client: httpx.AsyncClient, board: str) -> list[JobPostCreate]:
@@ -150,11 +191,13 @@ class GreenhouseAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_shard(_boards(settings.GREENHOUSE_BOARDS)), fetch, limit)
+        return await self._many(self.pick_boards(self.board_tokens()), fetch, limit)
 
 
 class LeverAggregator(_Board):
     source_name = "LEVER"
+    # Lever postings API (public, no key) for employer job sites.
+    board_url = "https://api.lever.co/v0/postings/{board}"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         async def fetch(client: httpx.AsyncClient, board: str) -> list[JobPostCreate]:
@@ -173,7 +216,9 @@ class LeverAggregator(_Board):
                     description=it.get("descriptionPlain") or it.get("description") or "",
                     location=cat.get("location"),
                     job_type=cat.get("commitment"),
-                    remote=(it.get("workplaceType") == "remote") if it.get("workplaceType") else None,
+                    remote=(it.get("workplaceType") == "remote")
+                    if it.get("workplaceType")
+                    else None,
                     tags=[cat.get("team") or ""],
                     posted_at=it.get("createdAt"),
                 )
@@ -181,11 +226,13 @@ class LeverAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_shard(_boards(settings.LEVER_BOARDS)), fetch, limit)
+        return await self._many(self.pick_boards(self.board_tokens()), fetch, limit)
 
 
 class AshbyAggregator(_Board):
     source_name = "ASHBY"
+    # Ashby public job-posting API (no key).
+    board_url = "https://api.ashbyhq.com/posting-api/job-board/{board}"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         async def fetch(client: httpx.AsyncClient, board: str) -> list[JobPostCreate]:
@@ -214,11 +261,14 @@ class AshbyAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_shard(_boards(settings.ASHBY_BOARDS)), fetch, limit)
+        return await self._many(self.pick_boards(self.board_tokens()), fetch, limit)
 
 
 class SmartRecruitersAggregator(_Board):
     source_name = "SMARTRECRUITERS"
+    # Posting API. api.smartrecruiters.com/robots.txt (Nov 2026) disallows all
+    # agents but LinkedInBot, so the robots check keeps this source off.
+    board_url = "https://api.smartrecruiters.com/v1/companies/{board}/postings"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         async def fetch(client: httpx.AsyncClient, company: str) -> list[JobPostCreate]:
@@ -248,13 +298,14 @@ class SmartRecruitersAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_shard(_boards(settings.SMARTRECRUITERS_COMPANIES)), fetch, limit)
+        return await self._many(self.pick_boards(self.board_tokens()), fetch, limit)
 
 
 class WorkableAggregator(_Board):
     """Workable public job-board widget API (no key), one call per account."""
 
     source_name = "WORKABLE"
+    board_url = "https://apply.workable.com/api/v1/widget/accounts/{board}"
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         async def fetch(client: httpx.AsyncClient, account: str) -> list[JobPostCreate]:
@@ -287,7 +338,26 @@ class WorkableAggregator(_Board):
                     out.append(job)
             return out
 
-        return await self._many(_shard(_boards(settings.WORKABLE_ACCOUNTS)), fetch, limit)
+        return await self._many(self.pick_boards(self.board_tokens()), fetch, limit)
+
+
+_NAMED_ENTITY = re.compile(rb"&([A-Za-z][A-Za-z0-9]{1,31});")
+_XML_ENTITIES = {b"amp", b"lt", b"gt", b"quot", b"apos"}
+
+
+def _html_entities_to_numeric(body: bytes) -> bytes:
+    """Some feeds (e.g. NoDesk) use HTML named entities such as &rsquo; that are
+    not defined in XML; rewrite them as numeric references (no DTD is loaded)."""
+    from html.entities import name2codepoint
+
+    def sub(m: re.Match[bytes]) -> bytes:
+        name = m.group(1)
+        if name in _XML_ENTITIES:
+            return m.group(0)
+        cp = name2codepoint.get(name.decode("ascii"))
+        return f"&#{cp};".encode() if cp else b"&amp;" + name + b";"
+
+    return _NAMED_ENTITY.sub(sub, body)
 
 
 def _rss_items(body: bytes) -> list[dict[str, str]]:
@@ -297,7 +367,7 @@ def _rss_items(body: bytes) -> list[dict[str, str]]:
 
     parser = etree.XMLParser(resolve_entities=False, no_network=True, huge_tree=False)
     try:
-        root = etree.fromstring(body, parser=parser)
+        root = etree.fromstring(_html_entities_to_numeric(body), parser=parser)
     except etree.XMLSyntaxError as exc:
         raise SourceFetchError("malformed RSS") from exc
     if root is None or root.find("channel") is None:
@@ -442,7 +512,9 @@ class WorkingNomadsAggregator(_Board):
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         if not settings.WORKINGNOMADS_PERMISSION_CONFIRMED:
-            raise SourceDisabledError("Written Working Nomads redistribution permission not confirmed")
+            raise SourceDisabledError(
+                "Written Working Nomads redistribution permission not confirmed"
+            )
         try:
             async with httpx.AsyncClient(timeout=TIMEOUT) as client:
                 r = await client.get("https://www.workingnomads.com/api/exposed_jobs/")
@@ -484,35 +556,50 @@ class AdzunaAggregator(_Board):
         countries = _boards(settings.ADZUNA_COUNTRIES)
         per = max(10, min(50, limit // max(1, len(countries))))
 
+        # Incremental: only postings newer than the last successful run (max_days_old).
+        started = datetime.now(UTC)
+        since = self.cursor.get("since")
+        try:
+            age = (started - datetime.fromisoformat(since)).days + 1 if since else 7
+        except (TypeError, ValueError):
+            age = 7
+        max_days = max(1, min(settings.JOB_RETENTION_DAYS, age))
+
         async def fetch(client: httpx.AsyncClient, country: str) -> list[JobPostCreate]:
-            r = await client.get(
-                f"https://api.adzuna.com/v1/api/jobs/{country}/search/1",
-                params={
-                    "app_id": settings.ADZUNA_APP_ID,
-                    "app_key": settings.ADZUNA_APP_KEY,
-                    "results_per_page": per,
-                    "sort_by": "date",
-                    "content-type": "application/json",
-                },
-            )
-            r.raise_for_status()
             out = []
-            for it in require_list(r.json(), "results"):
-                job = self._job(
-                    ext_id=f"{country}_{it.get('id')}",
-                    title=it.get("title", ""),
-                    company=(it.get("company") or {}).get("display_name", ""),
-                    url=it.get("redirect_url"),
-                    description=it.get("description") or "",
-                    location=(it.get("location") or {}).get("display_name"),
-                    job_type=it.get("contract_type") or it.get("contract_time"),
-                    salary=(it.get("salary_min"), it.get("salary_max"), None),
-                    posted_at=it.get("created"),
+            for page in range(1, max(1, settings.ADZUNA_MAX_PAGES) + 1):
+                r = await client.get(
+                    f"https://api.adzuna.com/v1/api/jobs/{country}/search/{page}",
+                    params={
+                        "app_id": settings.ADZUNA_APP_ID,
+                        "app_key": settings.ADZUNA_APP_KEY,
+                        "results_per_page": per,
+                        "sort_by": "date",
+                        "max_days_old": max_days,
+                        "content-type": "application/json",
+                    },
                 )
-                if job:
-                    out.append(job)
+                r.raise_for_status()
+                results = require_list(r.json(), "results")
+                for it in results:
+                    job = self._job(
+                        ext_id=f"{country}_{it.get('id')}",
+                        title=it.get("title", ""),
+                        company=(it.get("company") or {}).get("display_name", ""),
+                        url=it.get("redirect_url"),
+                        description=it.get("description") or "",
+                        location=(it.get("location") or {}).get("display_name"),
+                        job_type=it.get("contract_type") or it.get("contract_time"),
+                        salary=(it.get("salary_min"), it.get("salary_max"), None),
+                        posted_at=it.get("created"),
+                    )
+                    if job:
+                        out.append(job)
+                if len(results) < per:
+                    break
             return out
 
+        self.next_cursor = {"since": started.isoformat()}
         return await self._many(countries, fetch, limit)
 
 

@@ -43,6 +43,7 @@ BACKOFF_SECONDS = (60, 300, 900, 3600)
 # Celery task names.
 TASK_IMPORT_SOURCE = "jobs.import_source"
 TASK_MAINTAIN_CATALOGUE = "jobs.maintain_catalogue"
+TASK_VALIDATE_BOARDS = "jobs.validate_boards"
 TASK_FLUSH_EMAIL_OUTBOX = "notifications.flush_email_outbox"
 TASK_OUTBOX_EVENT = "outbox.handle_event"
 
@@ -56,6 +57,28 @@ OUTBOX_ROUTES: dict[str, str] = {
 # Sources whose provider asks for fewer fetches than the default schedule.
 SOURCE_DEFAULT_CRON: dict[str, str] = {
     "REMOTIVE": "0 */6 * * *",
+    # Incremental public APIs: frequent small reads.
+    "JOBTECH": "25 * * * *",
+    "NAV": "10 * * * *",
+    "BUNDESAGENTUR": "40 */2 * * *",
+    "FRANCETRAVAIL": "50 */3 * * *",
+    "ADZUNA": "5 */6 * * *",
+    "CAREERJET": "35 */6 * * *",
+    "USAJOBS": "15 */6 * * *",
+    # Jooble keys carry a small lifetime request budget: once a day.
+    "JOOBLE": "0 6 * * *",
+    "GETONBOARD": "45 */6 * * *",
+    "REMOTE_RSS": "55 */4 * * *",
+    # Large company lists rotate ATS_BOARDS_PER_RUN boards per run.
+    "GREENHOUSE": "7 * * * *",
+    "LEVER": "27 * * * *",
+    "ASHBY": "47 * * * *",
+    "WORKDAY": "30 4 * * *",
+}
+# New sources whose terms need a staff check start paused (permission_confirmed=false).
+SOURCE_PERMISSION_DEFAULT: dict[str, bool] = {
+    "WORKDAY": False,
+    "REMOTE_RSS": False,
 }
 
 Dispatcher = Callable[[str, uuid.UUID, dict[str, Any], datetime | None], None]
@@ -340,6 +363,7 @@ class TaskService:
                     name=name,
                     cron=SOURCE_DEFAULT_CRON.get(name, settings.JOB_SYNC_SCHEDULE),
                     max_per_run=settings.JOB_SYNC_MAX_PER_SOURCE,
+                    permission_confirmed=SOURCE_PERMISSION_DEFAULT.get(name, True),
                 )
             )
             added = True

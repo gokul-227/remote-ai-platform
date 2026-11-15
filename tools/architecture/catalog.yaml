@@ -245,6 +245,20 @@ job_boards:
   ADZUNA: {name: Adzuna}
   JOOBLE: {name: Jooble}
   HACKERNEWS: {name: Hacker News (Who is hiring)}
+  RECRUITEE: {name: Recruitee boards}
+  PERSONIO: {name: Personio boards}
+  TEAMTAILOR: {name: Teamtailor boards}
+  BAMBOOHR: {name: BambooHR boards}
+  BREEZY: {name: Breezy HR boards}
+  RIPPLING: {name: Rippling boards}
+  WORKDAY: {name: Workday career sites}
+  BUNDESAGENTUR: {name: Bundesagentur für Arbeit}
+  JOBTECH: {name: JobTech (Arbetsförmedlingen)}
+  NAV: {name: NAV arbeidsplassen}
+  FRANCETRAVAIL: {name: France Travail}
+  CAREERJET: {name: Careerjet}
+  GETONBOARD: {name: Get on Board}
+  REMOTE_RSS: {name: Remote boards (RSS)}
 
 connections:
   - {from: users, to: web, label: HTTPS}
@@ -346,6 +360,10 @@ ignore:
     - USAJOBS_AUTH_KEY
     - THEMUSE_API_KEY          # The Muse registered-app credential; board from aggregator
     - THEMUSE_API_URL
+    - BUNDESAGENTUR_API_KEY     # job board credentials (job_boards, from aggregators)
+    - CAREERJET_API_KEY
+    - FRANCE_TRAVAIL_CLIENT_SECRET
+    - NAV_FEED_TOKEN
     - STRIPE_SECRET_KEY         # stripe
     - STRIPE_WEBHOOK_SECRET
     - SENTRY_DSN                # sentry

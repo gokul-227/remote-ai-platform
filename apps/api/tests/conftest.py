@@ -182,3 +182,12 @@ def no_github_calls(monkeypatch):
         return "UNVERIFIED"
 
     monkeypatch.setattr("app.domains.deliverables.router.check_commit", _unverified)
+
+
+@pytest.fixture(autouse=True)
+def _no_bundled_boards_or_robots(monkeypatch):
+    """Tests name their own boards and never read robots.txt unless they opt in."""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "ATS_BUNDLED_LISTS", False)
+    monkeypatch.setattr(settings, "JOB_SOURCE_RESPECT_ROBOTS", False)

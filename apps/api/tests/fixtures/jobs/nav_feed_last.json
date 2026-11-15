@@ -1,0 +1,27 @@
+{
+ "version": "1.0",
+ "title": "Stillingsfeeden fra arbeidsplassen.no",
+ "home_page_url": "https://arbeidsplassen.nav.no",
+ "feed_url": "/api/v1/feed/5214f8c4-032e-4dee-9655-7a8e437cfab7",
+ "description": "Feed med stillinger fra arbeidsplassen.no - En av Norges største oversikter over utlyste stillinger",
+ "next_url": null,
+ "id": "5214f8c4-032e-4dee-9655-7a8e437cfab7",
+ "next_id": null,
+ "items": [
+  {
+   "id": "2e894a26-eb3d-4616-8d2d-c9014fc302d1",
+   "url": "/api/v1/feedentry/2e894a26-eb3d-4616-8d2d-c9014fc302d1",
+   "title": "Steinsfjellet Barnehage søker en engasjert og samlende daglig leder",
+   "content_text": "Stillingsannonse",
+   "date_modified": "2026-11-15T19:50:50.204242+01:00",
+   "_feed_entry": {
+    "uuid": "2e894a26-eb3d-4616-8d2d-c9014fc302d1",
+    "status": "ACTIVE",
+    "title": "Steinsfjellet Barnehage søker en engasjert og samlende daglig leder",
+    "businessName": "Steinsfjellet Barnehage SA",
+    "municipal": "HAUGESUND",
+    "sistEndret": "2026-11-15T19:50:50.204242+01:00"
+   }
+  }
+ ]
+}

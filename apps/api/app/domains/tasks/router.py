@@ -19,8 +19,14 @@ from app.core.audit import record_audit_event
 from app.core.database import get_db
 from app.domains.auth.dependencies import require_role
 from app.domains.auth.models import User, UserRole
-from app.domains.tasks.models import DeadLetter, JobImportCheckpoint, JobSource, TaskRun
-from app.domains.tasks.service import TASK_IMPORT_SOURCE, TaskService
+from app.domains.tasks.models import (
+    DeadLetter,
+    JobImportCheckpoint,
+    JobSource,
+    JobSourceBoard,
+    TaskRun,
+)
+from app.domains.tasks.service import TASK_IMPORT_SOURCE, TASK_VALIDATE_BOARDS, TaskService
 
 router = APIRouter(prefix="/admin/background", tags=["Admin Background"])
 staff = require_role(UserRole.ADMIN)
@@ -50,6 +56,8 @@ class SourceOut(BaseModel):
     last_success_at: datetime | None = None
     last_error: str | None = None
     consecutive_failures: int = 0
+    # ATS sources: company boards by validation status (unchecked/ok/empty/...).
+    boards: dict[str, int] | None = None
 
 
 class RunOut(BaseModel):
@@ -192,6 +200,10 @@ async def list_sources(
     service = TaskService(db)
     await service.ensure_sources([a.source_name for a in AGGREGATORS])
     await service.ensure_news_sources()
+    from app.domains.jobs.board_validation import board_summary, sync_board_rows
+
+    await sync_board_rows(db)
+    boards = await board_summary(db)
     sources = (await db.execute(select(JobSource).order_by(JobSource.name))).scalars().all()
     checkpoints = {
         cp.source: cp for cp in (await db.execute(select(JobImportCheckpoint))).scalars().all()
@@ -204,6 +216,7 @@ async def list_sources(
             item.last_success_at = cp.last_success_at
             item.last_error = cp.last_error
             item.consecutive_failures = cp.consecutive_failures
+        item.boards = boards.get(s.name)
         out.append(item)
     return out
 
@@ -247,7 +260,10 @@ async def patch_source(
         request=request,
     )
     await db.commit()
-    if source.name.startswith("NEWS_") and changes.get("permission_confirmed", {}).get("to") is False:
+    if (
+        source.name.startswith("NEWS_")
+        and changes.get("permission_confirmed", {}).get("to") is False
+    ):
         # Permission withdrawn: everything this source contributed is removed.
         from app.domains.social.news import purge_source
 
@@ -285,6 +301,107 @@ async def run_source_now(
         actor_id=admin.id,
         actor_role=admin.role.value,
         payload={"reason": body.reason, "run_id": str(run.id), "created": created},
+        request=request,
+    )
+    await db.commit()
+    return run
+
+
+class BoardOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    token: str
+    enabled: bool
+    status: str
+    job_count: int | None
+    checked_at: datetime | None
+
+
+class BoardPatch(Reason):
+    enabled: bool
+
+
+class ValidateBoards(Reason):
+    limit: int = Field(default=100, ge=1, le=500)
+
+
+@router.get("/sources/{name}/boards", response_model=list[BoardOut])
+async def list_boards(
+    name: str,
+    status_filter: str | None = None,
+    limit: int = 200,
+    offset: int = 0,
+    _admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+) -> list[JobSourceBoard]:
+    stmt = select(JobSourceBoard).where(JobSourceBoard.source == name.upper())
+    if status_filter:
+        stmt = stmt.where(JobSourceBoard.status == status_filter)
+    stmt = (
+        stmt.order_by(JobSourceBoard.token).offset(max(0, offset)).limit(max(1, min(limit, 1000)))
+    )
+    return list((await db.execute(stmt)).scalars().all())
+
+
+@router.patch("/sources/{name}/boards/{token}", response_model=BoardOut)
+async def patch_board(
+    name: str,
+    token: str,
+    body: BoardPatch,
+    request: Request,
+    admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+) -> JobSourceBoard:
+    board = await db.get(JobSourceBoard, (name.upper(), token))
+    if board is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown board")
+    board.enabled = body.enabled
+    await record_audit_event(
+        db,
+        action="background.source.board_update",
+        resource_type="job_source",
+        resource_id=f"{board.source}:{token}"[:100],
+        actor_id=admin.id,
+        actor_role=admin.role.value,
+        payload={"reason": body.reason, "enabled": body.enabled},
+        request=request,
+    )
+    await db.commit()
+    await db.refresh(board)
+    return board
+
+
+@router.post(
+    "/sources/{name}/boards/validate",
+    response_model=RunOut,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def validate_source_boards(
+    name: str,
+    body: ValidateBoards,
+    request: Request,
+    admin: User = Depends(staff),
+    db: AsyncSession = Depends(get_db),
+) -> TaskRun:
+    """Queue a rate-limited validation of this source's company boards (staff only)."""
+    from app.domains.jobs.aggregators.board_lists import BOARD_SOURCES
+
+    source = name.upper()
+    if source not in BOARD_SOURCES:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Source has no company boards")
+    run, created = await TaskService(db).enqueue(
+        TASK_VALIDATE_BOARDS,
+        {"source": source, "limit": body.limit},
+        idempotency_key=f"validate:{source}:{uuid.uuid4().hex[:12]}",
+        max_attempts=1,
+    )
+    await record_audit_event(
+        db,
+        action="background.source.validate_boards",
+        resource_type="job_source",
+        resource_id=source,
+        actor_id=admin.id,
+        actor_role=admin.role.value,
+        payload={"reason": body.reason, "run_id": str(run.id), "limit": body.limit},
         request=request,
     )
     await db.commit()

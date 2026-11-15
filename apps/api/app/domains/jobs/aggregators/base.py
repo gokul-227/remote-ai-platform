@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
+from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from app.domains.jobs.schemas import JobPostCreate
@@ -124,6 +125,19 @@ def require_list(payload: object, key: str | None = None) -> list:
 
 class BaseAggregator(ABC):
     source_name: str = "UNKNOWN"
+    # Incremental fetch: the service sets `cursor` from the source's import
+    # checkpoint before fetch_jobs; an adapter that pages by date or rotates
+    # through company boards sets `next_cursor`, which is saved after a
+    # successful import (a failed run keeps the old checkpoint).
+    cursor: dict[str, Any]
+    next_cursor: dict[str, Any] | None
+
+    def __init__(self) -> None:
+        self.cursor = {}
+        self.next_cursor = None
+        # Company boards for ATS adapters, loaded from job_source_boards by the
+        # service; None means "use the bundled list + settings".
+        self.boards: list[str] | None = None
 
     @abstractmethod
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:

@@ -377,10 +377,53 @@ class Settings(BaseSettings):
     SMARTRECRUITERS_COMPANIES: str = (
         "ServiceNow,Canva,justworks,palantir,splice,together,wise,workato"
     )
+    # ── Global sources (docs/product/job-sources.md) ─────────────────────────
+    # Bundled company board lists (app/domains/jobs/aggregators/boards/*.txt).
+    ATS_BUNDLED_LISTS: bool = True
+    # Long board lists are walked this many boards per run (checkpointed offset).
+    ATS_BOARDS_PER_RUN: int = 300
+    JOB_SOURCE_USER_AGENT: str = "RemoteAIPlatformBot/1.0 (+https://remoteaiplatform.com/bot)"
+    # Check robots.txt (cached per host for 24 h) before every board/feed fetch.
+    JOB_SOURCE_RESPECT_ROBOTS: bool = True
+    # Extra boards on top of the bundled lists (comma-separated tokens).
+    RECRUITEE_COMPANIES: str = ""
+    PERSONIO_COMPANIES: str = ""
+    TEAMTAILOR_COMPANIES: str = ""
+    BAMBOOHR_COMPANIES: str = ""
+    BREEZY_COMPANIES: str = ""
+    RIPPLING_BOARDS: str = ""
+    # Workday career sites as "tenant/wdN/site" (e.g. "nvidia/wd5/NVIDIAExternalCareerSite").
+    WORKDAY_SITES: str = ""
+    # Bundesagentur für Arbeit Jobsuche: the public client id documented for the
+    # open Jobsuche API (not a secret). Pages of 100 per run.
+    BUNDESAGENTUR_API_KEY: str = "jobboerse-jobsuche"
+    BUNDESAGENTUR_MAX_PAGES: int = 50
+    # JobTech (Arbetsförmedlingen open data, CC0): pages of 100, offset <= 2000.
+    JOBTECH_MAX_PAGES: int = 20
+    # NAV stillingsfeed: optional token; without it the public token endpoint is used.
+    NAV_FEED_TOKEN: str | None = None
+    NAV_MAX_PAGES: int = 20
+    # France Travail Offres d'emploi v2 (free partner account, OAuth client credentials).
+    FRANCE_TRAVAIL_CLIENT_ID: str | None = None
+    FRANCE_TRAVAIL_CLIENT_SECRET: str | None = None
+    FRANCE_TRAVAIL_MAX_PAGES: int = 20
+    # Careerjet partner API v4 (affiliate API key via HTTP basic auth).
+    CAREERJET_API_KEY: str | None = None
+    CAREERJET_LOCALES: str = "en_GB,en_US,de_DE,fr_FR,en_IN,en_CA,en_AU,es_ES,it_IT,nl_NL"
+    CAREERJET_MAX_PAGES: int = 5
+    ADZUNA_MAX_PAGES: int = 5
+    USAJOBS_MAX_PAGES: int = 10
+    # Remote boards' public RSS feeds (terms reviewed per feed; source starts paused).
+    REMOTE_RSS_FEEDS: str = (
+        "https://nodesk.co/remote-jobs/index.xml,"
+        "https://www.realworkfromanywhere.com/rss.xml,"
+        "https://remotefirstjobs.com/rss/jobs.rss"
+    )
+    GETONBOARD_MAX_PAGES: int = 10
     # Optional aggregators with free developer keys (Infisical); skipped when unset.
     ADZUNA_APP_ID: str | None = None
     ADZUNA_APP_KEY: str | None = None
-    ADZUNA_COUNTRIES: str = "gb,us,de,in,ca,au,nl,fr"
+    ADZUNA_COUNTRIES: str = "gb,us,de,in,ca,au,nl,fr,at,be,br,ch,es,it,mx,nz,pl,sg,za"
     JOOBLE_API_KEY: str | None = None
     JOOBLE_KEYWORDS: str = "remote"
     # Search-engine notifications for new job pages (production only).

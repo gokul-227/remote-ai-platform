@@ -1,0 +1,309 @@
+{
+ "total": {
+  "value": 284
+ },
+ "positions": 760,
+ "query_time_in_millis": 1,
+ "result_time_in_millis": 11,
+ "stats": [],
+ "freetext_concepts": {},
+ "hits": [
+  {
+   "relevance": 1.0,
+   "id": "31732263",
+   "external_id": null,
+   "original_id": null,
+   "label": [
+    "nystartsjobb",
+    "etableringsjobb"
+   ],
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31732263",
+   "logo_url": null,
+   "headline": "All arbetare inom bygg",
+   "application_deadline": "2027-01-01T23:59:59",
+   "number_of_vacancies": 3,
+   "description": {
+    "text": "Byggarbetare / Allroundhantverkare sökes till RenoMåleri & Bygg AB\nOm tjänsten\nRenoMåleri & Bygg AB söker en arbetsvillig, flexibel och ansvarstagande medarbetare som vill utvecklas inom bygg- och renoveringsbranschen.\nVi utför varierande typer av renoveringsarbeten och söker därför en person som trivs med omväxlande arbetsuppgifter och är beredd att hjälpa till där behovet finns. Vi värdesätter framför allt rätt inställning, arbetsvilja och viljan att lära sig nya saker. Du behöver inte vara sp",
+    "company_information": null,
+    "needs": null,
+    "requirements": null,
+    "conditions": null
+   },
+   "employment_type": {
+    "concept_id": "kpPX_CNN_gDU",
+    "label": "Tillsvidareanställning (inkl. eventuell provanställning)",
+    "legacy_ams_taxonomy_id": null
+   },
+   "salary_type": {
+    "concept_id": "oG8G_9cW_nRf",
+    "label": "Fast månads- vecko- eller timlön",
+    "legacy_ams_taxonomy_id": "1"
+   },
+   "salary_description": null,
+   "duration": {
+    "concept_id": "a7uU_j21_mkL",
+    "label": "Tills vidare",
+    "legacy_ams_taxonomy_id": "1"
+   },
+   "working_hours_type": {
+    "concept_id": "6YE1_gAC_R2G",
+    "label": "Heltid",
+    "legacy_ams_taxonomy_id": "1"
+   },
+   "scope_of_work": {
+    "min": 100,
+    "max": 100
+   },
+   "access": null,
+   "employer": {
+    "phone_number": null,
+    "email": null,
+    "url": "https://renomaleribygg.se/",
+    "organization_number": "5595157099",
+    "name": "Renomåleri & Bygg AB",
+    "workplace": "Renomåleri & Bygg AB"
+   },
+   "application_details": {
+    "information": null,
+    "reference": null,
+    "email": "info@renomaleribygg.se",
+    "via_af": false,
+    "url": null,
+    "other": null
+   },
+   "experience_required": true,
+   "access_to_own_car": false,
+   "driving_license_required": true,
+   "driving_license": null,
+   "occupation": {
+    "concept_id": "qot1_qJ1_kec",
+    "label": "Måleri, servicearbetare",
+    "legacy_ams_taxonomy_id": "7113"
+   },
+   "occupation_group": {
+    "concept_id": "iHrC_aRv_fVm",
+    "label": "Grovarbetare inom bygg och anläggning",
+    "legacy_ams_taxonomy_id": "9310"
+   },
+   "occupation_field": {
+    "concept_id": "j7Cq_ZJe_GkT",
+    "label": "Bygg och anläggning",
+    "legacy_ams_taxonomy_id": "2"
+   },
+   "workplace_model": {
+    "concept_id": "Vbpe_rGe_vCW",
+    "label": "Hybridarbete"
+   },
+   "workplace_address": {
+    "municipality": "Stockholm",
+    "municipality_code": "0180",
+    "municipality_concept_id": "AvNB_uwa_6n6",
+    "region": "Stockholms län",
+    "region_code": "01",
+    "region_concept_id": "CifL_Rzy_Mku",
+    "country": "Sverige",
+    "country_code": "199",
+    "country_concept_id": "i46j_HmG_v64",
+    "street_address": "Sibeliusgången 20 B",
+    "postcode": "16477",
+    "city": "Kista",
+    "coordinates": [
+     17.9165591817476,
+     59.4143107349239
+    ]
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Stockholm",
+     "municipality_code": "0180",
+     "municipality_concept_id": "AvNB_uwa_6n6",
+     "region": "Stockholms län",
+     "region_code": "01",
+     "region_concept_id": "CifL_Rzy_Mku",
+     "country": "Sverige",
+     "country_code": "199",
+     "country_concept_id": "i46j_HmG_v64",
+     "street_address": "Sibeliusgången 20 B",
+     "postcode": "16477",
+     "city": "Kista",
+     "coordinates": [
+      17.9165591817476,
+      59.4143107349239
+     ]
+    }
+   ],
+   "must_have": {
+    "skills": [],
+    "languages": [],
+    "work_experiences": [],
+    "education": [],
+    "education_level": []
+   },
+   "nice_to_have": {
+    "skills": [],
+    "languages": [],
+    "work_experiences": [],
+    "education": [],
+    "education_level": []
+   },
+   "application_contacts": [],
+   "publication_date": "2026-11-15T19:08:40",
+   "last_publication_date": "2027-01-01T23:59:59",
+   "removed": false,
+   "removed_date": null,
+   "source_type": "VIA_ANNONSERA",
+   "timestamp": 1794766120742
+  },
+  {
+   "relevance": 1.0,
+   "id": "31732265",
+   "external_id": null,
+   "original_id": null,
+   "label": [],
+   "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31732265",
+   "logo_url": "https://arbetsformedlingen.se/rest/employer-logo-api/api/v1/organisation/2021002163/logotyper/logo.png",
+   "headline": "Leda förvaltningen av Migrationsverkets diarie- och ärendehanteringssystem",
+   "application_deadline": "2026-12-13T23:59:59",
+   "number_of_vacancies": 1,
+   "description": {
+    "text": "Bakom varje beslut på Migrationsverket finns information som måste vara rätt, spårbar och tillgänglig. \nNu bygger vi en ny grund för just det, och du kan bli den som leder arbetet.\nSom förvaltningsledare för Public 360, vårt diarieförings- och ärendehanteringssystem, får du chansen att bygga en förvaltningsorganisation från början. Du sätter arbetssätt, struktur och riktning, och du gör det i en roll där digitalisering gör verklig skillnad.\nPublic 360 införs först för diarieföring och hantering ",
+    "company_information": null,
+    "needs": null,
+    "requirements": null,
+    "conditions": null
+   },
+   "employment_type": {
+    "concept_id": "PFZr_Syz_cUq",
+    "label": "Vanlig anställning",
+    "legacy_ams_taxonomy_id": "1"
+   },
+   "salary_type": {
+    "concept_id": "oG8G_9cW_nRf",
+    "label": "Fast månads- vecko- eller timlön",
+    "legacy_ams_taxonomy_id": "1"
+   },
+   "salary_description": null,
+   "duration": {
+    "concept_id": "a7uU_j21_mkL",
+    "label": "Tills vidare",
+    "legacy_ams_taxonomy_id": "1"
+   },
+   "working_hours_type": {
+    "concept_id": "6YE1_gAC_R2G",
+    "label": "Heltid",
+    "legacy_ams_taxonomy_id": "1"
+   },
+   "scope_of_work": {
+    "min": 100,
+    "max": 100
+   },
+   "access": null,
+   "employer": {
+    "phone_number": null,
+    "email": null,
+    "url": "https://www.migrationsverket.se",
+    "organization_number": "2021002163",
+    "name": "Migrationsverket",
+    "workplace": "Migrationsverket, Huvudkontor, Digitaliserings- och utvecklingsavdelningen"
+   },
+   "application_details": {
+    "information": null,
+    "reference": null,
+    "email": null,
+    "via_af": false,
+    "url": "https://migrationsverket.varbi.com/se/what:job/jobID:989970/type:job/where:125/apply:1",
+    "other": null
+   },
+   "experience_required": true,
+   "access_to_own_car": false,
+   "driving_license_required": false,
+   "driving_license": null,
+   "occupation": {
+    "concept_id": "mBMU_HvW_LMY",
+    "label": "IT-strateg",
+    "legacy_ams_taxonomy_id": "5432"
+   },
+   "occupation_group": {
+    "concept_id": "UxT1_tPF_Kbg",
+    "label": "Övriga IT-specialister",
+    "legacy_ams_taxonomy_id": "2519"
+   },
+   "occupation_field": {
+    "concept_id": "apaJ_2ja_LuF",
+    "label": "Data/IT",
+    "legacy_ams_taxonomy_id": "3"
+   },
+   "workplace_model": {
+    "concept_id": null,
+    "label": null
+   },
+   "workplace_address": {
+    "municipality": "Norrköping",
+    "municipality_code": "0581",
+    "municipality_concept_id": "SYty_Yho_JAF",
+    "region": "Östergötlands län",
+    "region_code": "05",
+    "region_concept_id": "oLT3_Q9p_3nn",
+    "country": "Sverige",
+    "country_code": "199",
+    "country_concept_id": "i46j_HmG_v64",
+    "street_address": "Slottsgatan 82",
+    "postcode": "60222",
+    "city": "Norrköping",
+    "coordinates": [
+     16.1882786934935,
+     58.5954538795261
+    ]
+   },
+   "workplace_addresses": [
+    {
+     "municipality": "Norrköping",
+     "municipality_code": "0581",
+     "municipality_concept_id": "SYty_Yho_JAF",
+     "region": "Östergötlands län",
+     "region_code": "05",
+     "region_concept_id": "oLT3_Q9p_3nn",
+     "country": "Sverige",
+     "country_code": "199",
+     "country_concept_id": "i46j_HmG_v64",
+     "street_address": "Slottsgatan 82",
+     "postcode": "60222",
+     "city": "Norrköping",
+     "coordinates": [
+      16.1882786934935,
+      58.5954538795261
+     ]
+    }
+   ],
+   "must_have": {
+    "skills": [],
+    "languages": [],
+    "work_experiences": [],
+    "education": [],
+    "education_level": []
+   },
+   "nice_to_have": {
+    "skills": [],
+    "languages": [],
+    "work_experiences": [],
+    "education": [],
+    "education_level": []
+   },
+   "application_contacts": [
+    {
+     "name": "Teodor Axén",
+     "description": null,
+     "email": "teodor.axen@migrationsverket.se",
+     "telephone": "0733617384",
+     "contact_type": null
+    }
+   ],
+   "publication_date": "2026-11-15T19:08:35",
+   "last_publication_date": "2026-12-13T23:59:59",
+   "removed": false,
+   "removed_date": null,
+   "source_type": "VIA_JOBPOSTING",
+   "timestamp": 1794766115590
+  }
+ ]
+}

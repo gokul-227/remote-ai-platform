@@ -431,6 +431,16 @@ class JobRepository:
         stmt = stmt.where(
             JobPost.is_active.is_(True), JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None)
         )
+        # Imported jobs past the retention window leave listings at once, even
+        # before the nightly retention task deletes them.
+        posted_cutoff = datetime.now(UTC) - timedelta(days=settings.JOB_RETENTION_DAYS)
+        stmt = stmt.where(
+            or_(
+                JobPost.company_id.is_not(None),
+                JobPost.posted_at.is_(None),
+                JobPost.posted_at >= posted_cutoff,
+            )
+        )
 
         if company_id is not None:
             stmt = stmt.where(JobPost.company_id == company_id)

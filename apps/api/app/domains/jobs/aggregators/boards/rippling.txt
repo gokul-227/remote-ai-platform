@@ -1,0 +1,24 @@
+# rippling company boards for the RIPPLING source (one token per line).
+# Source: employer career links in public Hacker News 'Who is hiring?' threads
+# (Algolia HN API, 2016-2026) and the previously configured settings list.
+# Checked 2026-11-15: board answered (robots.txt respected); 20 of 26 candidates kept.
+boom-supersonic
+cdata-software
+etc
+fabric
+fold-inc
+galileo
+glasshouse
+govly
+joinroot
+kai-cyber-inc
+mondrio
+north-43-west-79-studio-inc
+obie
+polar-sky
+rentspree
+rippling
+sewerai-careers
+thriveglobal
+vividly
+vouch-inc

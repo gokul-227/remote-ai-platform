@@ -8,6 +8,7 @@ answer "did it run, what happened, what is stuck" lives in PostgreSQL:
 - `task_runs`              one row per task execution with its full lifecycle
 - `outbox_events`          events created inside API transactions, dispatched to tasks later
 - `job_import_checkpoints` where each import source got to
+- `job_source_boards`      company boards per ATS source (bundled lists + staff validation)
 - `dead_letters`           tasks that exhausted their retries, retryable from the console
 - `worker_heartbeats`      liveness of every worker/scheduler process
 
@@ -108,6 +109,24 @@ class JobImportCheckpoint(Base):
     consecutive_failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class JobSourceBoard(Base):
+    """One company board (career-site token) of an ATS source. Loaded from the
+    bundled data files; `status` is set only by the staff-run validation tool."""
+
+    __tablename__ = "job_source_boards"
+
+    source: Mapped[str] = mapped_column(String(50), primary_key=True)
+    token: Mapped[str] = mapped_column(String(200), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # unchecked | ok | empty | not_found | robots_blocked | error
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="unchecked")
+    job_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
 

@@ -21,6 +21,7 @@ from app.domains.tasks.service import (
     TASK_IMPORT_SOURCE,
     TASK_MAINTAIN_CATALOGUE,
     TASK_OUTBOX_EVENT,
+    TASK_VALIDATE_BOARDS,
     TaskService,
 )
 from app.worker import runtime
@@ -72,17 +73,29 @@ async def import_source_async(
     factory = runtime.session_factory()
 
     async def work() -> dict[str, Any]:
+        from app.domains.tasks.models import JobImportCheckpoint
+
         async with factory() as db:
-            stats = await JobService(JobRepository(db)).sync_all_job_sources(
+            cp = await db.get(JobImportCheckpoint, source)
+            previous = dict((cp.cursor or {}).get("incremental") or {}) if cp else {}
+            service = JobService(JobRepository(db))
+            stats = await service.sync_all_job_sources(
                 limit_per_source=limit or settings.JOB_SYNC_MAX_PER_SOURCE,
                 admin_repo=AdminRepository(db),
                 source_name=source,
                 run_maintenance=False,
                 raise_on_failure=True,
+                cursors={source: previous},
             )
+        # The incremental checkpoint moves only after a successful run.
+        incremental = service.next_cursors.get(source, previous)
         async with factory() as db:
             await TaskService(db).record_import(
-                source, run_id, ok=True, error=None, cursor={"last_stats": stats}
+                source,
+                run_id,
+                ok=True,
+                error=None,
+                cursor={"last_stats": stats, "incremental": incremental},
             )
         return {"source": source, "saved": stats.get(source, 0)}
 
@@ -137,6 +150,25 @@ async def maintain_catalogue_async(run_id: uuid.UUID) -> dict[str, Any]:
             return {**stats, "identity_erasures_pending": erasures["pending"]}
 
     return await _with_run(run_id, work)
+
+
+async def validate_boards_async(run_id: uuid.UUID, source: str, limit: int = 100) -> dict[str, Any]:
+    """Staff-started, rate-limited check of an ATS source's company boards."""
+    from app.domains.jobs.board_validation import validate_boards
+
+    factory = runtime.session_factory()
+
+    async def work() -> dict[str, Any]:
+        async with factory() as db:
+            counts = await validate_boards(db, source, limit)
+        return {"source": source, "checked": sum(counts.values()), **counts}
+
+    return await _with_run(run_id, work)
+
+
+@shared_task(name=TASK_VALIDATE_BOARDS)
+def validate_boards_task(run_id: str, source: str, limit: int = 100, **_: Any) -> dict[str, Any]:
+    return runtime.run(validate_boards_async(_uuid(run_id), source, limit))
 
 
 @shared_task(name=TASK_MAINTAIN_CATALOGUE)

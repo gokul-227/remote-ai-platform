@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:tt="https://teamtailor.com/locations">
+  <channel>
+    <title>Teamtailor</title>
+    <description>Current job openings</description>
+    <link>https://career.teamtailor.com/jobs</link>
+    <item>
+      <title>Customer Success Manager - French Speaking</title>
+      <description>&lt;p&gt;Join us&lt;/p&gt;</description>
+      <pubDate>Fri, 13 Nov 2026 15:00:10 +0100</pubDate>
+      <link>https://career.teamtailor.com/jobs/8742767-customer-success-manager-french-speaking</link>
+      <remoteStatus>hybrid</remoteStatus>
+      <guid>f6c31512-671a-4e1c-be54-c8a1e2552144</guid>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Stockholm</tt:name>
+          <tt:address>Östgötagatan 16</tt:address>
+          <tt:zip>116 21</tt:zip>
+          <tt:city>Stockholm</tt:city>
+          <tt:country>Sweden</tt:country>
+        </tt:location>
+        <tt:location>
+          <tt:name>Barcelona</tt:name>
+          <tt:address>WeWork - Espacio de oficinas y coworking</tt:address>
+          <tt:zip>08005</tt:zip>
+          <tt:city>Barcelona</tt:city>
+          <tt:country>Spain</tt:country>
+        </tt:location>
+      </tt:locations>
+      <tt:department>Customer Success</tt:department>
+      <tt:role>Customer Success Manager</tt:role>
+      <tt:division/>
+    </item><item>
+      <title>Data Analyst</title>
+      <description>&lt;p&gt;Join us&lt;/p&gt;</description>
+      <pubDate>Fri, 13 Nov 2026 07:10:18 +0100</pubDate>
+      <link>https://career.teamtailor.com/jobs/8724398-data-analyst</link>
+      <remoteStatus>hybrid</remoteStatus>
+      <guid>849113ed-1526-4df8-b34c-7e7c5d1e117f</guid>
+      <tt:locations>
+        <tt:location>
+          <tt:name>Stockholm</tt:name>
+          <tt:address>Östgötagatan 16</tt:address>
+          <tt:zip>116 21</tt:zip>
+          <tt:city>Stockholm</tt:city>
+          <tt:country>Sweden</tt:country>
+        </tt:location>
+      </tt:locations>
+      <tt:department>Data</tt:department>
+      <tt:role>Data Analyst</tt:role>
+      <tt:division/>
+    </item></channel></rss>

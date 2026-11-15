@@ -1,0 +1,9 @@
+{"_comment": "Shape from the Careerjet partner API v4 documentation (no affiliate key available to record a live response).",
+ "type": "JOBS", "hits": 2, "pages": 1,
+ "jobs": [
+  {"title": "Remote Backend Engineer", "company": "Acme Ltd", "locations": "London", "date": "Fri, 13 Nov 2026 10:00:00 GMT",
+   "description": "Go and Kubernetes, fully remote", "url": "https://jobviewtrack.com/en-gb/job-abc", "salary_min": 60000, "salary_max": 80000,
+   "salary_currency_code": "GBP", "salary_type": "Y"},
+  {"title": "Support Agent", "company": "", "locations": "Leeds", "date": "Thu, 12 Nov 2026 10:00:00 GMT",
+   "description": "Hourly", "url": "https://jobviewtrack.com/en-gb/job-def", "salary_min": 12, "salary_max": 14, "salary_type": "H"}
+ ]}

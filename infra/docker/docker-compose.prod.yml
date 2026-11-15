@@ -42,6 +42,9 @@ x-api-image: &api-image
     CELERY_BROKER_URL: redis://redis:6379/1
     CELERY_RESULT_BACKEND: redis://redis:6379/2
     DATABASE_URL: ${RAP_DATABASE_URL:-postgresql+asyncpg://rap:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/remote_ai_platform}
+    # Self-hosted PostgreSQL on the VM (~160 GB free): the 420 MB free-tier budget would
+    # trim the catalogue to ~100k jobs. 60 GB keeps room for millions of 90-day postings.
+    DATABASE_SIZE_BUDGET_MB: ${DATABASE_SIZE_BUDGET_MB:-60000}
   depends_on:
     redis:
       condition: service_healthy
@@ -121,7 +124,7 @@ services:
     <<: *api-image
     # edge: imports, Slack alerts and AI providers need outbound internet.
     networks: [internal, edge]
-    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "default,imports", "--concurrency", "2", "--max-tasks-per-child", "100", "--loglevel", "INFO"]
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "default,imports", "--concurrency", "4", "--max-tasks-per-child", "100", "--loglevel", "INFO"]
     depends_on:
       redis:
         condition: service_healthy
@@ -137,7 +140,8 @@ services:
       start_period: 40s
     deploy:
       resources:
-        limits: { memory: 1G, cpus: "1.0" }
+        # 4 import processes (I/O bound, ~250 MB each at peak) on the 4 OCPU / 22 GB VM.
+        limits: { memory: 2G, cpus: "2.0" }
 
   scheduler:
     <<: *api-image
