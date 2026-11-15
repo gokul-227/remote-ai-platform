@@ -3,7 +3,7 @@ import { Brand } from "@/components/Brand";
 import { OPERATOR } from "@/figma/legal_content";
 import type { ReactNode } from "react";
 
-const focus = "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#8DBBFF]";
+const focus = "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-sky";
 
 /** Brand lockup linking home (symbol + wordmark, "AI" in brand blue). */
 export function BrandLockup({ size = 32 }: { size?: number }) {
@@ -11,11 +11,11 @@ export function BrandLockup({ size = 32 }: { size?: number }) {
     <Link
       href="/"
       aria-label="Remote AI Platform home"
-      className={`flex items-center gap-2 text-lg font-semibold tracking-tight text-[#102A43] ${focus}`}
+      className={`flex items-center gap-2 text-lg font-semibold tracking-tight text-navy ${focus}`}
     >
       <Brand s={size} decorative />
       <span aria-hidden="true">
-        Remote <span className="text-[#175CD3]">AI</span> Platform
+        Remote <span className="text-brand">AI</span> Platform
       </span>
     </Link>
   );
@@ -31,16 +31,13 @@ export function PublicHeader() {
       >
         <BrandLockup />
         <div className="flex items-center gap-4 text-sm font-semibold">
-          <Link href="/remote-jobs" className={`text-[#102A43] hover:text-[#175CD3] hover:underline ${focus}`}>
+          <Link href="/remote-jobs" className={`text-navy hover:text-brand hover:underline ${focus}`}>
             Find jobs
           </Link>
-          <Link href="/#login" className={`text-[#102A43] hover:underline ${focus}`}>
+          <Link href="/#login" className={`text-navy hover:underline ${focus}`}>
             Sign in
           </Link>
-          <Link
-            href="/#register"
-            className={`rounded-lg bg-[#175CD3] px-4 py-2 text-white hover:bg-[#124BAD] ${focus}`}
-          >
+          <Link href="/#register" className={`rounded-lg bg-brand px-4 py-2 text-white hover:bg-brand-hover ${focus}`}>
             Join free
           </Link>
         </div>
@@ -52,7 +49,7 @@ export function PublicHeader() {
 /** Trust footer: legal, security, status and contact on every public page. */
 export function PublicFooter() {
   const year = new Date().getUTCFullYear();
-  const linkClass = `hover:text-[#175CD3] hover:underline ${focus}`;
+  const linkClass = `hover:text-brand hover:underline ${focus}`;
   return (
     <footer className="mt-16 border-t border-slate-200 bg-white">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
@@ -61,7 +58,7 @@ export function PublicFooter() {
           <p className="mt-3">Connect. Find work. Get work done.</p>
         </div>
         <nav aria-label="Find work">
-          <h2 className="mb-3 text-sm font-semibold text-[#102A43]">Find work</h2>
+          <h2 className="mb-3 text-sm font-semibold text-navy">Find work</h2>
           <ul className="space-y-2">
             <li>
               <Link className={linkClass} href="/remote-jobs">
@@ -81,7 +78,7 @@ export function PublicFooter() {
           </ul>
         </nav>
         <nav aria-label="Trust and legal">
-          <h2 className="mb-3 text-sm font-semibold text-[#102A43]">Trust</h2>
+          <h2 className="mb-3 text-sm font-semibold text-navy">Trust</h2>
           <ul className="space-y-2">
             <li>
               <Link className={linkClass} href="/privacy">
@@ -106,7 +103,7 @@ export function PublicFooter() {
           </ul>
         </nav>
         <nav aria-label="Support">
-          <h2 className="mb-3 text-sm font-semibold text-[#102A43]">Support</h2>
+          <h2 className="mb-3 text-sm font-semibold text-navy">Support</h2>
           <ul className="space-y-2">
             <li>
               <Link className={linkClass} href="/#help">
@@ -138,10 +135,10 @@ export function PublicFooter() {
 /** Shared frame for public pages: skip link, header, main landmark, trust footer. */
 export function PublicFrame({ children, wide }: { children: ReactNode; wide?: boolean }) {
   return (
-    <div className="min-h-screen bg-[#F5F8FC] text-[#1F2937]">
+    <div className="min-h-screen bg-mist text-charcoal">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-[#175CD3]"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-brand"
       >
         Skip to content
       </a>
@@ -161,8 +158,8 @@ export function ActionLink({ href, children, primary }: { href: string; children
       href={href}
       className={
         primary
-          ? `inline-flex rounded-full bg-[#175CD3] px-5 py-2 font-semibold text-white hover:bg-[#124BAD] ${focus}`
-          : `inline-flex rounded-full border border-[#175CD3] px-5 py-2 font-semibold text-[#175CD3] ${focus}`
+          ? `inline-flex rounded-full bg-brand px-5 py-2 font-semibold text-white hover:bg-brand-hover ${focus}`
+          : `inline-flex rounded-full border border-brand px-5 py-2 font-semibold text-brand ${focus}`
       }
     >
       {children}

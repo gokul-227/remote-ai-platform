@@ -62,7 +62,7 @@ export default async function TopicPage({ params }: Props) {
               <Link
                 key={t.slug}
                 href={`/remote-jobs/${t.slug}`}
-                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-[#175CD3] hover:text-[#175CD3]"
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm hover:border-brand hover:text-brand"
               >
                 {heading(t.name, t.jobType)}
               </Link>

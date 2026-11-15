@@ -115,7 +115,7 @@ export function Office({ initial }: { initial?: Kind }) {
             onClick={() => setTab(k)}
             className={cx(
               "rounded-full px-3 py-1 text-sm font-semibold",
-              tab === k ? "bg-[#E8F0FC] text-[#175CD3]" : "text-slate-600 hover:bg-slate-100",
+              tab === k ? "bg-brand-soft text-brand" : "text-slate-600 hover:bg-slate-100",
             )}
           >
             {k === "ALL" ? "All files" : `${KIND_LABEL[k]}s`}
@@ -340,7 +340,7 @@ function VersionsPanel({
             </span>
             {canRestore && i > 0 && (
               <button
-                className="text-xs text-[#175CD3] underline"
+                className="text-xs text-brand underline"
                 onClick={async () => {
                   const r = await api.post<DocFull>(`/documents/${id}/versions/${v.version}/restore`);
                   onRestored(r.data);
@@ -434,14 +434,14 @@ function CommentsPanel({ id, canComment }: { id: string; canComment: boolean }) 
     <Side title="Comments">
       <ul className="grid max-h-[45vh] gap-2 overflow-y-auto text-sm">
         {(q.data ?? []).map((c) => (
-          <li key={c.id} className={cx("rounded-lg p-2", c.resolved ? "bg-slate-50 text-slate-400" : "bg-[#E8F0FC]")}>
+          <li key={c.id} className={cx("rounded-lg p-2", c.resolved ? "bg-slate-50 text-slate-400" : "bg-brand-soft")}>
             <p className="text-xs text-slate-500">
               {c.author || "Someone"} · {timeAgo(c.created_at)} {c.anchor && <>· on “{c.anchor}”</>}
             </p>
             <p className="whitespace-pre-line">{c.body}</p>
             {!c.resolved && canComment && (
               <button
-                className="text-xs text-[#175CD3] underline"
+                className="text-xs text-brand underline"
                 onClick={async () => {
                   await api.post(`/documents/${id}/comments/${c.id}/resolve`);
                   q.reload();
@@ -517,7 +517,7 @@ function ToolButton({
       onClick={on}
       className={cx(
         "rounded px-2 py-1 text-sm font-semibold hover:bg-slate-100 disabled:opacity-40",
-        active && "bg-[#E8F0FC] text-[#175CD3]",
+        active && "bg-brand-soft text-brand",
       )}
     >
       {icon ? <Ic n={icon} s={14} /> : label}
@@ -812,7 +812,7 @@ function SheetEditor({ doc, editable, onChange }: { doc: DocFull; editable: bool
                       }}
                       className={cx(
                         "h-7 max-w-[220px] truncate border border-slate-200 px-1",
-                        sel === ref && "outline outline-2 outline-[#175CD3]",
+                        sel === ref && "outline outline-2 outline-brand",
                         !Number.isNaN(Number(v)) && v !== "" ? "text-right" : "",
                         isErr && "text-red-600",
                       )}
@@ -831,7 +831,7 @@ function SheetEditor({ doc, editable, onChange }: { doc: DocFull; editable: bool
           Functions: SUM, AVERAGE, MIN, MAX, COUNT, COUNTA, ROUND, ABS, IF, AND, OR, NOT, CONCAT, LEN, UPPER, LOWER
         </span>
         {editable && (
-          <button className="text-[#175CD3] underline" onClick={() => setRows((n) => Math.min(n + 50, 5000))}>
+          <button className="text-brand underline" onClick={() => setRows((n) => Math.min(n + 50, 5000))}>
             Add 50 rows
           </button>
         )}
@@ -888,7 +888,7 @@ function SlidesEditor({ doc, editable, onChange }: { doc: DocFull; editable: boo
                 onClick={() => setI(k)}
                 className={cx(
                   "w-full rounded-lg border p-2 text-left text-xs",
-                  k === i ? "border-[#175CD3] bg-[#E8F0FC]" : "border-slate-200",
+                  k === i ? "border-brand bg-brand-soft" : "border-slate-200",
                 )}
               >
                 <span className="text-slate-400">{k + 1}</span>{" "}
@@ -953,7 +953,7 @@ function SlidesEditor({ doc, editable, onChange }: { doc: DocFull; editable: boo
           )}
         </div>
         <Card c="aspect-video overflow-hidden" p={false}>
-          <div className="h-2 bg-[#175CD3]" />
+          <div className="h-2 bg-brand" />
           <div className="p-8">
             <label className="sr-only" htmlFor="slide-title">
               Slide title
@@ -1008,7 +1008,7 @@ function Presenter({ slides, start, onExit }: { slides: Slide[]; start: number; 
       }}
       onClick={() => setI((k) => Math.min(k + 1, slides.length - 1))}
     >
-      <div className="h-3 bg-[#175CD3]" />
+      <div className="h-3 bg-brand" />
       <div className="flex-1 p-16">
         <h1 className="text-5xl font-bold">{s.title}</h1>
         {s.layout === "title" ? (

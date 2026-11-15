@@ -31,7 +31,7 @@ export default function ContactsCallback() {
       .catch((e) => setError(extractErrorMessage(e, "We couldn't read your Google contacts. Please try again.")));
   }, []);
   return (
-    <main className="mx-auto min-h-screen max-w-2xl bg-[#F5F8FC] px-4 py-10 text-[#1F2937]">
+    <main className="mx-auto min-h-screen max-w-2xl bg-mist px-4 py-10 text-charcoal">
       <h1 className="text-2xl font-bold">People you know from Google</h1>
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6">
         {error ? (
@@ -42,7 +42,7 @@ export default function ContactsCallback() {
           <p>Reading your contacts…</p>
         )}
       </div>
-      <Link href="/#network" className="mt-6 inline-block font-semibold text-[#175CD3] underline">
+      <Link href="/#network" className="mt-6 inline-block font-semibold text-brand underline">
         Back to My network
       </Link>
     </main>
