@@ -98,6 +98,13 @@ export default async function SiteMapPage() {
           ["/privacy", "Privacy"],
           ["/terms", "Terms"],
           ["/impressum", "Legal notice"],
+          ["/legal", "All legal policies"],
+          ["/cookies", "Cookies"],
+          ["/community-guidelines", "Community guidelines"],
+          ["/employer-terms", "Job posting and employer terms"],
+          ["/copyright", "Copyright and takedown"],
+          ["/security", "Security policy"],
+          ["/accessibility", "Accessibility"],
         ]}
       />
       <JsonLd data={breadcrumbJsonLd(site, trail)} />

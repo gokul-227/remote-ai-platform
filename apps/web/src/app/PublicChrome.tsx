@@ -3,6 +3,14 @@ import { Logo } from "@/components/Brand";
 import { OPERATOR } from "@/figma/legal_content";
 import type { ReactNode } from "react";
 
+const LEGAL_EXTRA: [string, string][] = [
+  ["/employer-terms", "Employer terms"],
+  ["/copyright", "Copyright"],
+  ["/security", "Report a vulnerability"],
+  ["/accessibility", "Accessibility"],
+  ["/legal", "All legal"],
+];
+
 const focus = "focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-sky";
 
 /** Brand lockup linking home (symbol + wordmark, "AI" in brand blue). */
@@ -118,6 +126,13 @@ export function PublicFooter() {
                 Legal notice
               </Link>
             </li>
+            {LEGAL_EXTRA.map(([href, label]) => (
+              <li key={href}>
+                <Link className={linkClass} href={href}>
+                  {label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
         <nav aria-label="Support">

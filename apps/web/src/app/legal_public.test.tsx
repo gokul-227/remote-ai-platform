@@ -12,7 +12,14 @@ import Impressum from "./impressum/page";
 import Privacy from "./privacy/page";
 import Terms from "./terms/page";
 import Trust from "./trust/page";
-import { CONTACT_EMAIL } from "@/figma/legal_content";
+import Accessibility from "./accessibility/page";
+import Copyright from "./copyright/page";
+import EmployerTerms from "./employer-terms/page";
+import Legal from "./legal/page";
+import Security from "./security/page";
+import { staticSitemap } from "@/lib/sitemaps";
+import { CONTACT_EMAIL, LEGAL_PAGES } from "@/figma/legal_content";
+import { PublicFooter } from "./PublicChrome";
 
 // Public pages must read like an established job portal's: no owner personal
 // data, no hosting/infrastructure vendors or internal tooling, one contact address.
@@ -57,6 +64,11 @@ const PAGES: [string, ComponentType][] = [
   ["contact", Contact],
   ["help", Help],
   ["impressum", Impressum],
+  ["accessibility", Accessibility],
+  ["copyright", Copyright],
+  ["employer-terms", EmployerTerms],
+  ["legal", Legal],
+  ["security", Security],
 ];
 
 describe("public pages", () => {
@@ -90,5 +102,48 @@ describe("public pages", () => {
       expect(html).toContain(h);
     expect(html).toMatch(/GDPR/);
     expect(html).toMatch(/CCPA/);
+  });
+
+  it("every legal page is in the /legal index, the footer and the sitemap", () => {
+    const index = renderToStaticMarkup(<Legal />);
+    const footer = renderToStaticMarkup(<PublicFooter />);
+    const sitemap = staticSitemap();
+    for (const { href } of LEGAL_PAGES) {
+      expect(index).toContain(`href="${href}"`);
+      expect(footer, href).toContain(`href="${href}"`);
+      expect(sitemap, href).toMatch(new RegExp(`${href}</loc>`));
+    }
+    expect(footer).toContain('href="/legal"');
+  });
+
+  it("terms cover the sections a job portal needs", () => {
+    const html = renderToStaticMarkup(<Terms />);
+    for (const h of [
+      "Your content and licence to us",
+      "Acceptable use",
+      "Job listings from other sites",
+      "Third-party links and services",
+      "AI-assisted features",
+      "Suspension and termination",
+      "Disclaimers",
+      "Limitation of liability",
+      "Governing law and disputes",
+      "Changes to these Terms",
+    ])
+      expect(html).toContain(h);
+  });
+
+  it("privacy policy states job retention and in-app export and deletion", () => {
+    const html = renderToStaticMarkup(<Privacy />);
+    expect(html).toMatch(/90 days/);
+    expect(html).toMatch(/Settings &gt; Privacy/);
+  });
+
+  it("security.txt points to the contact address and the policy", () => {
+    const txt = readFileSync(join(__dirname, "../../public/.well-known/security.txt"), "utf8");
+    expect(txt).toMatch(`Contact: mailto:${CONTACT_EMAIL}`);
+    expect(txt).toMatch(/Policy: .*\/security/);
+    const expires = new Date(/Expires: (\S+)/.exec(txt)![1]);
+    expect(expires.getTime()).toBeGreaterThan(Date.now());
   });
 });

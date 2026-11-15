@@ -35,3 +35,13 @@
 - User links must be http(s); demo URLs reject private/loopback addresses; demos render in a sandboxed frame.
 - Blocks are private; reporters are never revealed.
 - Contacts import sends invites only with signed, rate-limited tokens.
+
+## Public legal pages
+
+All copy lives in `apps/web/src/figma/legal_content.ts` (one `LAST_UPDATED` date, one contact address) and is
+server-rendered by `PublicLegalPage`. Pages: `/legal` (index, driven by `LEGAL_PAGES`), `/terms`, `/privacy`,
+`/cookies`, `/community-guidelines`, `/employer-terms`, `/copyright`, `/security`, `/accessibility`, `/trust`,
+`/impressum`, plus `apps/web/public/.well-known/security.txt` (renew `Expires` yearly). Each is in the footer
+and the static sitemap; `legal_public.test.tsx` checks that, and bans owner details, vendor names and other
+addresses. Service providers are described by category only. The texts await review by a lawyer; the
+governing-law clause is stated generically until the operator's place of establishment is confirmed.
