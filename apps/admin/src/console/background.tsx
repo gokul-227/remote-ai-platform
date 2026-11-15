@@ -27,6 +27,7 @@ interface Source {
   last_success_at: string | null;
   last_error: string | null;
   consecutive_failures: number;
+  boards?: Record<string, number> | null;
 }
 
 interface Run {
@@ -150,6 +151,7 @@ export function Background({ writable }: { writable: boolean }) {
                 <th>Permission</th>
                 <th>Schedule (cron, UTC)</th>
                 <th>Cap / run</th>
+                <th>Company boards</th>
                 <th>Last success</th>
                 <th>Failures</th>
                 <th>Actions</th>
@@ -171,6 +173,13 @@ export function Background({ writable }: { writable: boolean }) {
                     <code>{s.cron}</code>
                   </td>
                   <td>{s.max_per_run}</td>
+                  <td className="muted">
+                    {s.boards
+                      ? Object.entries(s.boards)
+                          .map(([k, v]) => `${k} ${v}`)
+                          .join(", ")
+                      : "—"}
+                  </td>
                   <td className="muted">
                     {when(s.last_success_at)}
                     {s.last_error && <div className="muted">{s.last_error}</div>}
@@ -221,6 +230,22 @@ export function Background({ writable }: { writable: boolean }) {
                     >
                       {s.permission_confirmed ? "Withdraw permission" : "Confirm permission"}
                     </button>
+                    {s.boards && (
+                      <button
+                        className="btn"
+                        disabled={!writable}
+                        onClick={() =>
+                          act(`Validate up to 100 ${s.name} boards (rate-limited)`, async (reason) => {
+                            await api(`/admin/background/sources/${s.name}/boards/validate`, {
+                              method: "POST",
+                              json: { reason, limit: 100 },
+                            });
+                          })
+                        }
+                      >
+                        Validate boards
+                      </button>
+                    )}
                     <button
                       className="btn primary"
                       disabled={!writable || !s.permission_confirmed}

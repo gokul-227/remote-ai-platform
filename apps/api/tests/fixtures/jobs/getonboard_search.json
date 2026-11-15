@@ -1,0 +1,222 @@
+{
+ "data": [
+  {
+   "id": "semi-senior-full-stack-java-developer-qa-ai-bilingue-23people-santiago",
+   "type": "job",
+   "attributes": {
+    "title": "Semi Senior Full-Stack Java Developer (QA & AI) Bilingüe",
+    "description_headline": "Skills excluyentes",
+    "description": "<ul><li>Experiencia comprobable con Java y Spring Boot en proyectos reales.</li><li>Experiencia práctica trabajando con Angular.</li><li>Capacidad para realizar pruebas unitarias, de integración y de API en aplicaciones Java.</li><li>Uso diario de asistentes de programación basados en IA, como GitHub Copilot o similar.</li><li>Inglés fluido (Nivel B2+): Nivel suficiente para trabajar y comunicarse",
+    "projects": "<div>Equifax es mucho más que una empresa de informes; es una compañía global líder en datos, analítica y tecnología con presencia en 24 países. En Chile, operan desde 1979 entregando soluciones críticas de ciberseguridad, identidad y riesgo a más de 14.000 empresas.</div><div>El Hub Tecnológico (SDC) Lo que hace única a esta oportunidad es que Chile alberga el Santiago Development Center (SDC). E",
+    "functions_headline": "Funciones del cargo",
+    "functions": "<p>El Semi Senior Full Stack Developer se integrará al equipo \"Credit Health\", participando en todo el ciclo de vida del desarrollo, desde el diseño hasta la puesta en producción. Construirá soluciones end-to-end utilizando Java, Spring Boot y Angular, apoyándose en IA y siendo guiado por su líder. Automatizará pruebas para asegurar la calidad de cada entrega y colaborará diariamente con el equipo",
+    "benefits_headline": "Beneficios",
+    "benefits": "<ul><li><strong>Seguro complementario</strong>: Seguro de salud, vida y dental, para que estés protegido.</li><li><strong>Curso de inglés</strong>: En nuestro programa de formación en el idioma, ofrecemos dos modalidades para adaptarnos a tus necesidades y objetivos, con profesores nativos.</li><li><strong>Reembolso de certificaciones internacionales</strong>: Apoyamos el crecimiento profesional, ",
+    "desirable_headline": "Skills deseables",
+    "desirable": "<ul><li>Automatización de pruebas de interfaz de usuario (UI) con Playwright, Selenium o Cypress.</li><li>Experiencia ejecutando pruebas de regresión y pruebas de humo (\"smoke testing\").</li><li>Experiencia aportando valor de principio a fin (end-to-end) mediante el uso de IA en áreas Dev, QE y SRE.</li><li>Experiencia en metodologías SRE y creación de frameworks de pruebas desde cero.</li></ul><p",
+    "remote": false,
+    "remote_modality": "hybrid",
+    "remote_zone": null,
+    "countries": [
+     "Chile"
+    ],
+    "lang": "lang_not_specified",
+    "category_name": "Programming",
+    "perks": [],
+    "min_salary": 2800,
+    "max_salary": 3000,
+    "published_at": 1794573989,
+    "response_time_in_days": {
+     "min": null,
+     "max": null
+    },
+    "applications_count": 79,
+    "location_regions": {
+     "data": []
+    },
+    "location_tenants": {
+     "data": []
+    },
+    "location_cities": {
+     "data": [
+      {
+       "id": 1,
+       "type": "location_city"
+      }
+     ]
+    },
+    "modality": {
+     "data": {
+      "id": 1,
+      "type": "modality"
+     }
+    },
+    "seniority": {
+     "data": {
+      "id": 3,
+      "type": "seniority"
+     }
+    },
+    "tags": {
+     "data": [
+      {
+       "id": 2,
+       "type": "tag"
+      },
+      {
+       "id": 104,
+       "type": "tag"
+      },
+      {
+       "id": 587,
+       "type": "tag"
+      },
+      {
+       "id": 863,
+       "type": "tag"
+      },
+      {
+       "id": 888,
+       "type": "tag"
+      },
+      {
+       "id": 1589,
+       "type": "tag"
+      },
+      {
+       "id": 2754,
+       "type": "tag"
+      },
+      {
+       "id": 8508,
+       "type": "tag"
+      }
+     ]
+    },
+    "company": {
+     "data": {
+      "id": "23people-cl",
+      "type": "company",
+      "attributes": {
+       "name": "23people",
+       "web": "https://www.23people.io"
+      }
+     }
+    }
+   },
+   "links": {
+    "public_url": "https://www.getonbrd.com/jobs/semi-senior-full-stack-java-developer-qa-ai-bilingue-23people-santiago"
+   }
+  },
+  {
+   "id": "full-stack-developer-zipisa-remote",
+   "type": "job",
+   "attributes": {
+    "title": "Full-Stack Developer",
+    "description_headline": "What you bring",
+    "description": "<ul><li>4+ years building and running production web applications, across both back end and front end.</li><li>Strong Python: FastAPI or a similar framework, Pydantic, async code, and pytest.</li><li>Hands-on MongoDB: schema design, indexes, aggregation, and idempotent writes under retries and concurrency.</li><li>Strong React and TypeScript: routing, data fetching and caching, forms, and Tailwind",
+    "projects": "<p>About the role<br>We're hiring a full stack developer to build and run two products that share one stack: Zipisa, an AI assistant that finds sellers and books appointments for real estate agents, and WebHawk, which identifies website visitors and turns them into leads. You'll ship across Python/FastAPI services, MongoDB, and React/TypeScript dashboards, and own features end to end, from the API",
+    "functions_headline": "What you'll do",
+    "functions": "<ul><li>Build features end to end. Take a Linear issue from plan to production: FastAPI routes, Mongo models and indexes, React screens, tests, and a clear PR.</li><li>Keep the email pipelines safe and deliverable. Work on Zipisa's mail queue and WebHawk's KumoMTA sending: idempotent jobs, send guardrails, warm-up ramps, unsubscribe handling, bounce and reply processing.</li><li>Ship and maintain ",
+    "benefits_headline": "",
+    "benefits": "",
+    "desirable_headline": "Nice to have",
+    "desirable": "<ul><li>Email deliverability: SPF, DKIM, DMARC, mailbox warm-up, MTAs such as KumoMTA or Postfix, and reading bounce and complaint signals.</li><li>LLM product work: prompt design, tool-using agents, evals, and controlling cost per conversation.</li><li>Real estate tech: Follow Up Boss, kvCORE/BoldTrail, MLS data, or how agents and brokerages work leads.</li><li>Ad-tech or identity resolution: pix",
+    "remote": true,
+    "remote_modality": "fully_remote",
+    "remote_zone": null,
+    "countries": [
+     "Remote"
+    ],
+    "lang": "en",
+    "category_name": "Programming",
+    "perks": [
+     "remote_full"
+    ],
+    "min_salary": 2200,
+    "max_salary": 3500,
+    "published_at": 1794490311,
+    "response_time_in_days": {
+     "min": null,
+     "max": null
+    },
+    "applications_count": 228,
+    "location_regions": {
+     "data": []
+    },
+    "location_tenants": {
+     "data": []
+    },
+    "location_cities": {
+     "data": []
+    },
+    "modality": {
+     "data": {
+      "id": 1,
+      "type": "modality"
+     }
+    },
+    "seniority": {
+     "data": {
+      "id": 4,
+      "type": "seniority"
+     }
+    },
+    "tags": {
+     "data": [
+      {
+       "id": 18,
+       "type": "tag"
+      },
+      {
+       "id": 123,
+       "type": "tag"
+      },
+      {
+       "id": 133,
+       "type": "tag"
+      },
+      {
+       "id": 141,
+       "type": "tag"
+      },
+      {
+       "id": 259,
+       "type": "tag"
+      },
+      {
+       "id": 829,
+       "type": "tag"
+      },
+      {
+       "id": 1023,
+       "type": "tag"
+      },
+      {
+       "id": 38629,
+       "type": "tag"
+      }
+     ]
+    },
+    "company": {
+     "data": {
+      "id": "zipisa",
+      "type": "company",
+      "attributes": {
+       "name": "ZipISA",
+       "web": "https://zipisa.com"
+      }
+     }
+    }
+   },
+   "links": {
+    "public_url": "https://www.getonbrd.com/jobs/full-stack-developer-zipisa-remote"
+   }
+  }
+ ],
+ "meta": {
+  "page": 1,
+  "per_page": 2,
+  "total_pages": 37
+ }
+}

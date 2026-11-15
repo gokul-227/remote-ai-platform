@@ -1,0 +1,18 @@
+# teamtailor company boards for the TEAMTAILOR source (one token per line).
+# Source: employer career links in public Hacker News 'Who is hiring?' threads
+# (Algolia HN API, 2016-2026) and the previously configured settings list.
+# Checked 2026-11-15: board answered (robots.txt respected); 14 of 27 candidates kept.
+axmed
+bunnynet
+career
+cemit-amby
+clovrlabs
+doconomy
+evrocab-1692891239
+hivedhq
+intenthq
+luminorbank
+occtoo
+pihr
+spacelift
+virtasant

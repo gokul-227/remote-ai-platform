@@ -1,0 +1,97 @@
+{
+ "ergebnisliste": [
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Lokalreporter (m/w/d) – Redaktion und Anzeigenvertrieb | Wittenberge",
+   "quereinstiegGeeignet": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-15"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "GEHALTSSPANNE",
+   "gehaltsspanneVon": 36000,
+   "gehaltsspanneBis": 42000,
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "19322",
+      "ort": "Wittenberge, Prignitz",
+      "region": "BRANDENBURG",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 53.001222872,
+     "laenge": 11.730066104
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "ANGABE_IN_PROZENT",
+   "homeofficeprozent": 80,
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-15"
+   },
+   "datumErsteVeroeffentlichung": "2026-11-15",
+   "aenderungsdatum": "2026-11-15T19:08:51.645",
+   "hauptberuf": "Journalist/in",
+   "alternativBeruf1": "Redakteur/in",
+   "alternativBeruf2": "Medienkaufmann/-frau Digital und Print",
+   "firma": "Lipz Media GmbH",
+   "arbeitgeberKundennummerHash": "JtLAY8-jayLPBGlUXekKQv-yAYljYlzwloL5JMEYqjQ=",
+   "referenznummer": "10001-1004016176-S",
+   "alleBerufe": [
+    "Journalist/in",
+    "Redakteur/in",
+    "Medienkaufmann/-frau Digital und Print"
+   ]
+  },
+  {
+   "stellenangebotsart": "ARBEIT",
+   "stellenangebotsTitel": "Lokalreporter (m/w/d) – Redaktion und Anzeigenvertrieb | Hennigsdorf",
+   "quereinstiegGeeignet": true,
+   "arbeitszeitVollzeit": true,
+   "eintrittszeitraum": {
+    "von": "2026-11-15"
+   },
+   "verguetungsangabe": "JAHRESGEHALT",
+   "artDerVerguetung": "GEHALTSSPANNE",
+   "gehaltsspanneVon": 36000,
+   "gehaltsspanneBis": 42000,
+   "vertragsdauer": "UNBEFRISTET",
+   "stellenlokationen": [
+    {
+     "adresse": {
+      "plz": "16761",
+      "ort": "Hennigsdorf",
+      "region": "BRANDENBURG",
+      "land": "DEUTSCHLAND"
+     },
+     "breite": 52.628237591,
+     "laenge": 13.198161294
+    }
+   ],
+   "homeofficemoeglich": true,
+   "homeofficetyp": "ANGABE_IN_PROZENT",
+   "homeofficeprozent": 80,
+   "veroeffentlichungszeitraum": {
+    "von": "2026-11-15"
+   },
+   "datumErsteVeroeffentlichung": "2026-11-15",
+   "aenderungsdatum": "2026-11-15T19:07:57.647",
+   "hauptberuf": "Journalist/in",
+   "alternativBeruf1": "Redakteur/in",
+   "alternativBeruf2": "Medienkaufmann/-frau Digital und Print",
+   "firma": "Lipz Media GmbH",
+   "arbeitgeberKundennummerHash": "JtLAY8-jayLPBGlUXekKQv-yAYljYlzwloL5JMEYqjQ=",
+   "referenznummer": "10001-1004016174-S",
+   "alleBerufe": [
+    "Journalist/in",
+    "Redakteur/in",
+    "Medienkaufmann/-frau Digital und Print"
+   ]
+  }
+ ],
+ "maxErgebnisse": 7543,
+ "page": 1,
+ "size": 2
+}

@@ -561,9 +561,11 @@ platform:
   status: active
 - id: job-boards
   name: Job boards
-  technology: Adzuna · Arbeitnow · Ashby boards · Greenhouse boards · Hacker News (Who is hiring) · Himalayas ·
-    Jobicy · Jooble · Lever boards · RemoteOK · Remotive · SmartRecruiters boards · The Muse · USAJOBS · We Work
-    Remotely (RSS) · Workable boards · Working Nomads
+  technology: Adzuna · Arbeitnow · Ashby boards · BambooHR boards · Breezy HR boards · Bundesagentur für Arbeit
+    · Careerjet · France Travail · Get on Board · Greenhouse boards · Hacker News (Who is hiring) · Himalayas ·
+    Jobicy · JobTech (Arbetsförmedlingen) · Jooble · Lever boards · NAV arbeidsplassen · Personio boards · Recruitee
+    boards · RemoteOK · Remote boards (RSS) · Remotive · Rippling boards · SmartRecruiters boards · Teamtailor boards
+    · The Muse · USAJOBS · We Work Remotely (RSS) · Workable boards · Workday career sites · Working Nomads
   icon: null
   status: active
 - id: redis
@@ -763,6 +765,36 @@ infrastructure:
     technology: Jobs API
     group: job-boards
     status: active
+  - id: board-bamboohr
+    name: BambooHR boards
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-breezy
+    name: Breezy HR boards
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-bundesagentur
+    name: Bundesagentur für Arbeit
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-careerjet
+    name: Careerjet
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-francetravail
+    name: France Travail
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-getonboard
+    name: Get on Board
+    technology: Jobs API
+    group: job-boards
+    status: active
   - id: board-greenhouse
     name: Greenhouse boards
     technology: Jobs API
@@ -783,6 +815,11 @@ infrastructure:
     technology: Jobs API
     group: job-boards
     status: active
+  - id: board-jobtech
+    name: JobTech (Arbetsförmedlingen)
+    technology: Jobs API
+    group: job-boards
+    status: active
   - id: board-jooble
     name: Jooble
     technology: Jobs API
@@ -793,8 +830,28 @@ infrastructure:
     technology: Jobs API
     group: job-boards
     status: active
+  - id: board-nav
+    name: NAV arbeidsplassen
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-personio
+    name: Personio boards
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-recruitee
+    name: Recruitee boards
+    technology: Jobs API
+    group: job-boards
+    status: active
   - id: board-remoteok
     name: RemoteOK
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-remote_rss
+    name: Remote boards (RSS)
     technology: Jobs API
     group: job-boards
     status: active
@@ -803,8 +860,18 @@ infrastructure:
     technology: Jobs API
     group: job-boards
     status: active
+  - id: board-rippling
+    name: Rippling boards
+    technology: Jobs API
+    group: job-boards
+    status: active
   - id: board-smartrecruiters
     name: SmartRecruiters boards
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-teamtailor
+    name: Teamtailor boards
     technology: Jobs API
     group: job-boards
     status: active
@@ -825,6 +892,11 @@ infrastructure:
     status: active
   - id: board-workable
     name: Workable boards
+    technology: Jobs API
+    group: job-boards
+    status: active
+  - id: board-workday
+    name: Workday career sites
     technology: Jobs API
     group: job-boards
     status: active

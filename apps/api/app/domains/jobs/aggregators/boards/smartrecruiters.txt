@@ -1,0 +1,50 @@
+# smartrecruiters company boards for the SMARTRECRUITERS source (one token per line).
+# Source: employer career links in public Hacker News 'Who is hiring?' threads
+# (Algolia HN API, 2016-2026) and the previously configured settings list.
+# Not fetched: api.smartrecruiters.com/robots.txt disallows generic agents; kept for when that changes.
+4Catalyzer
+Adevinta
+Alfresco
+BlaBlaCar
+blablacar
+BoschGroup
+CERN
+CredativLLC
+Dailymotion
+DHIS2
+DNAnexus
+Drata
+Element84Inc
+EyeCarePro
+Findaway1
+FiveToNine
+Functionly
+GoodReturn
+IngramContentGroup1
+LabfolderGmbH
+LocusRobotics
+M1Finance
+MaeHealthInc
+Mandiant
+McDonaldsCorporation
+MeeticGroup
+ni
+Pendo
+Pluralsight
+PublicisGroupe
+Renaissance
+RewindSoftware
+Sectigo
+Shopify
+Square
+THECLIMATECHOICEUGhaftun
+THECLIMATECHOICEUGhaftungsb
+THECLIMATECHOICEUGhaftungsbeschrnkt
+Thinknum
+Tradeshift
+Trippingcom
+Twitter2
+Ubisoft2
+Visa
+VolocopterGmbH
+Wepow

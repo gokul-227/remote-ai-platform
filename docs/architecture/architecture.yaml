@@ -353,6 +353,54 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=ASHBY'
+- id: board-bamboohr
+  name: BambooHR boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=BAMBOOHR'
+- id: board-breezy
+  name: Breezy HR boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=BREEZY'
+- id: board-bundesagentur
+  name: Bundesagentur für Arbeit
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=BUNDESAGENTUR'
+- id: board-careerjet
+  name: Careerjet
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=CAREERJET'
+- id: board-francetravail
+  name: France Travail
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=FRANCETRAVAIL'
+- id: board-getonboard
+  name: Get on Board
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=GETONBOARD'
 - id: board-greenhouse
   name: Greenhouse boards
   type: external
@@ -385,6 +433,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=JOBICY'
+- id: board-jobtech
+  name: JobTech (Arbetsförmedlingen)
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=JOBTECH'
 - id: board-jooble
   name: Jooble
   type: external
@@ -401,6 +457,30 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=LEVER'
+- id: board-nav
+  name: NAV arbeidsplassen
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=NAV'
+- id: board-personio
+  name: Personio boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=PERSONIO'
+- id: board-recruitee
+  name: Recruitee boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=RECRUITEE'
 - id: board-remoteok
   name: RemoteOK
   type: external
@@ -409,6 +489,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=REMOTEOK'
+- id: board-remote_rss
+  name: Remote boards (RSS)
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=REMOTE_RSS'
 - id: board-remotive
   name: Remotive
   type: external
@@ -417,6 +505,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=REMOTIVE'
+- id: board-rippling
+  name: Rippling boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=RIPPLING'
 - id: board-smartrecruiters
   name: SmartRecruiters boards
   type: external
@@ -425,6 +521,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=SMARTRECRUITERS'
+- id: board-teamtailor
+  name: Teamtailor boards
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=TEAMTAILOR'
 - id: board-themuse
   name: The Muse
   type: external
@@ -457,6 +561,14 @@ components:
   status: active
   evidence:
   - 'apps/api/app/domains/jobs/aggregators: source_name=WORKABLE'
+- id: board-workday
+  name: Workday career sites
+  type: external
+  technology: Jobs API
+  group: job-boards
+  status: active
+  evidence:
+  - 'apps/api/app/domains/jobs/aggregators: source_name=WORKDAY'
 - id: board-workingnomads
   name: Working Nomads
   type: external

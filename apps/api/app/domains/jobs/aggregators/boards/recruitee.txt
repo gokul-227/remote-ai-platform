@@ -1,0 +1,18 @@
+# recruitee company boards for the RECRUITEE source (one token per line).
+# Source: employer career links in public Hacker News 'Who is hiring?' threads
+# (Algolia HN API, 2016-2026) and the previously configured settings list.
+# Checked 2026-11-15: board answered (robots.txt respected); 14 of 100 candidates kept.
+attendi
+avantarte
+bigcartel
+brenger
+causalens
+crazygames
+cta
+ddx
+elanza
+ember
+linkurious
+miaplaza
+on2it
+prenosis
