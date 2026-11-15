@@ -1,6 +1,18 @@
 import { JobSource } from "@/components/JobSource";
 import { useState, useEffect } from "react";
-import { IMPRESSUM, LAST_UPDATED, PRIVACY, TERMS, type Block, type Section } from "./legal_content";
+import {
+  ABOUT,
+  CONTACT,
+  COOKIES,
+  GUIDELINES,
+  IMPRESSUM,
+  LAST_UPDATED,
+  PRIVACY,
+  SECURITY,
+  TERMS,
+  type Block,
+  type Section,
+} from "./legal_content";
 import api, { extractErrorMessage } from "@/lib/api";
 import { ShareButtons } from "./ShareButtons";
 import { useAuth } from "@/lib/auth";
@@ -1759,6 +1771,11 @@ const LEGAL: Record<string, [string, Section[]]> = {
   terms: ["Terms of Service", TERMS],
   privacy: ["Privacy Policy", PRIVACY],
   impressum: ["Impressum", IMPRESSUM],
+  cookies: ["Cookie Policy", COOKIES],
+  guidelines: ["Community Guidelines", GUIDELINES],
+  trust: ["Trust and Security", SECURITY],
+  about: ["About Remote AI Platform", ABOUT],
+  contact: ["Contact us", CONTACT],
 };
 function LegalBlock({ b }: { b: Block }) {
   if (typeof b === "string") return <p className="mt-2 text-slate-600">{b}</p>;

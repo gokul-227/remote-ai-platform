@@ -75,7 +75,9 @@ def render_email(title: str, body: str, link_path: str | None = None) -> str:
             button,
             "</td></tr>",
             f'<tr><td style="padding:16px 4px;font-size:12px;color:{_MUTED}">You receive this because of '
-            "activity on your Remote AI Platform account.</td></tr>",
+            "activity on your Remote AI Platform account. Questions? Write to "
+            f'<a href="mailto:{html_lib.escape(settings.SUPPORT_EMAIL)}" style="color:{_MUTED}">'
+            f"{html_lib.escape(settings.SUPPORT_EMAIL)}</a>.</td></tr>",
             "</table></td></tr></table>",
         ]
     )

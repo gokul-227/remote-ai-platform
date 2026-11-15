@@ -44,7 +44,7 @@ def _get_jwks_client() -> PyJWKClient:
         if not settings.SUPABASE_JWKS_URL:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Supabase auth is not configured",
+                detail="Sign-in is temporarily unavailable",
             )
         _jwks_client = PyJWKClient(
             settings.SUPABASE_JWKS_URL,
