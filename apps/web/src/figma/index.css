@@ -73,7 +73,7 @@
 .rap-launcher-btn{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#e4e6eb;flex-shrink:0}
 .rap-launcher-btn:hover,.rap-launcher-btn[aria-expanded=true]{background:#e7f0ff;color:var(--rap-blue)}
 .rap-menu.wide{left:18px;right:auto}
-.rap-brand-search{width:340px}
+@media(min-width:1201px){.rap-brand-search{width:340px}}
 @media(max-width:560px){.rap-menu.wide{left:12px}}
 .rap-announcement{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;border:1px solid #bfd4ff;background:#eef4ff;color:#173b7a;border-radius:10px;padding:12px 14px;margin-bottom:16px}
 .rap-announcement p{font-size:14px;margin-top:2px}
@@ -144,3 +144,7 @@
 .rap-match-toggle button.active{background:#fff;color:var(--rap-blue);box-shadow:0 1px 2px #0002}
 [data-theme=dark] .rap-match-toggle{background:#3a3b3c}
 [data-theme=dark] .rap-match-toggle button.active{background:#242526;color:#4599ff}
+.rap-mobile button{flex:1;min-width:44px;min-height:44px;background:none;border:0}.rap-mobile button[aria-current=page]{color:#175CD3}.rap-drawer-scrim{display:none}.rap-drawer-sections{display:none}
+@media(max-width:900px){.rap-sidebar.open{display:block;position:fixed;top:0;bottom:62px;left:0;width:min(320px,86vw);overflow-y:auto;z-index:80;box-shadow:0 8px 32px rgba(0,0,0,.2)}.rap-drawer-scrim{display:block;position:fixed;inset:0 0 62px 0;background:rgba(0,0,0,.35);z-index:75}.rap-drawer-sections{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #e4e6eb}.rap-drawer-sections button{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 10px;border-radius:8px;border:0;background:#f0f2f5;font-size:14px;font-weight:600;color:#1c1e21}.rap-drawer-sections button.active{background:#e7f0ff;color:#175CD3}.rap-nav{min-height:44px}}
+[data-theme=dark] .rap-drawer-sections button{background:#3a3b3c;color:#e4e6eb}[data-theme=dark] .rap-drawer-sections button.active{background:#263951;color:#8cb8ff}
+@media(max-width:900px){.rap-brand-search{flex-shrink:1;min-width:0}.rap-tools{flex-shrink:0}}

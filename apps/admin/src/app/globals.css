@@ -278,6 +278,21 @@ h3 {
   background: var(--hover);
 }
 
+.side-toggle {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--chip);
+  color: var(--text);
+  font-weight: 600;
+}
+
 /* ── Sidebar and page ────────────────────────────────────── */
 .shell {
   display: grid;
@@ -616,6 +631,17 @@ code {
   .side {
     position: static;
     height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .side-toggle {
+    display: flex;
+  }
+  .side:not(.open) nav {
+    display: none;
+  }
+  .side nav button {
+    min-height: 44px;
   }
   .tabs {
     overflow-x: auto;
