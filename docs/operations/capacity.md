@@ -101,3 +101,12 @@ commit f09a56a changes separate frontend/deploy files and is not included here.
   repository/service/cache, both Compose configs and shell syntax: passed.
 - Full-size load test, target-host memory/throughput and browser journeys remain
   unverified. This commit is neither pushed nor deployed.
+
+## 15 November 2026 tooling verification
+
+The workload now follows HTTP keyset cursors and requires all semantic checks to pass.
+The seed/benchmark tools handle small datasets and exit nonzero on benchmark failure.
+Three tooling regression tests and shell syntax checks passed. An isolated PostgreSQL17
+31-job/1-member seed and query benchmark passed; injected benchmark failure exited1.
+The HTTP smoke rerun after correcting seeded seniority values has not been collected.
+This is tooling validation only, not a target-host throughput or10M-job capacity result.
