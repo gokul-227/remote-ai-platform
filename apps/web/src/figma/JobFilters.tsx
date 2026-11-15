@@ -177,7 +177,7 @@ function Checks({
               type="checkbox"
               checked={checked}
               onChange={() => onChange(toggle(value, name, o.value))}
-              className="h-4 w-4 accent-brand"
+              className="h-6 w-6 shrink-0 accent-brand"
             />
             <span className={cx("flex-1", n === 0 && !checked && "text-slate-400")}>{o.label}</span>
             {n != null && <span className="text-xs text-slate-500">{n.toLocaleString()}</span>}
@@ -214,7 +214,7 @@ function Radios({
               name={`jf-${name}`}
               checked={current === o.value}
               onChange={() => onChange(withValue(value, name, o.value || undefined))}
-              className="h-4 w-4 accent-brand"
+              className="h-6 w-6 shrink-0 accent-brand"
             />
             <span className="flex-1">{o.label}</span>
             {n != null && <span className="text-xs text-slate-500">{n.toLocaleString()}</span>}
@@ -259,7 +259,7 @@ function FacetPicker({
               type="checkbox"
               checked={selected.includes(v)}
               onChange={() => onChange(toggle(value, name, v))}
-              className="h-4 w-4 accent-brand"
+              className="h-6 w-6 shrink-0 accent-brand"
             />
             <span className="flex-1 truncate">{v}</span>
             {n != null && <span className="text-xs text-slate-500">{n.toLocaleString()}</span>}
@@ -390,7 +390,7 @@ export function JobFilterPanel({
                 type="checkbox"
                 checked={value.has_salary === "true"}
                 onChange={() => onChange(withValue(value, "has_salary", value.has_salary ? undefined : "true"))}
-                className="h-4 w-4 accent-brand"
+                className="h-6 w-6 shrink-0 accent-brand"
               />
               <span className="flex-1">Has salary</span>
               {facetCount(facets, "has_salary", true) != null && (
@@ -445,7 +445,7 @@ export function JobFilterPanel({
                 type="checkbox"
                 checked={value.verified === "true"}
                 onChange={() => onChange(withValue(value, "verified", value.verified ? undefined : "true"))}
-                className="h-4 w-4 accent-brand"
+                className="h-6 w-6 shrink-0 accent-brand"
               />
               Verified companies only
             </label>
@@ -471,7 +471,7 @@ export function JobFilterPanel({
                   type="checkbox"
                   checked={value.apply === v}
                   onChange={() => onChange(withValue(value, "apply", value.apply === v ? undefined : v))}
-                  className="h-4 w-4 accent-brand"
+                  className="h-6 w-6 shrink-0 accent-brand"
                 />
                 <span className="flex-1">{label}</span>
                 {facetCount(facets, "apply", v) != null && (
@@ -494,7 +494,7 @@ export function JobFilterPanel({
                   onChange={() =>
                     onChange(withValue(value, "visa_sponsorship", value.visa_sponsorship === v ? undefined : v))
                   }
-                  className="h-4 w-4 accent-brand"
+                  className="h-6 w-6 shrink-0 accent-brand"
                 />
                 <span className="flex-1">{label}</span>
                 {facetCount(facets, "visa_sponsorship", v === "true") != null && (
@@ -511,7 +511,7 @@ export function JobFilterPanel({
                 type="checkbox"
                 checked={value.tz != null}
                 onChange={() => onChange(withValue(value, "tz", value.tz != null ? undefined : String(tz)))}
-                className="h-4 w-4 accent-brand"
+                className="h-6 w-6 shrink-0 accent-brand"
               />
               Overlaps my hours (UTC{tz >= 0 ? "+" : ""}
               {tz}, ±3h)

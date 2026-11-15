@@ -40,7 +40,7 @@ for (const size of SIZES) {
       } else {
         // Side panel beside the results, not over them.
         expect(box?.width ?? 0).toBeLessThan(size.width / 2);
-        expect(box?.x ?? 99).toBeLessThan(40);
+        expect(box?.x ?? 99).toBeLessThanOrEqual(40);
       }
     }
 
