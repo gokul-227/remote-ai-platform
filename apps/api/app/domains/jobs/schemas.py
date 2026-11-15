@@ -32,7 +32,7 @@ class JobPostBase(BaseModel):
     salary_min: float | None = None
     salary_max: float | None = None
     # year | month | hour | project; None when the source doesn't say.
-    salary_period: str | None = Field(default=None, pattern="^(year|month|hour|project)$")
+    salary_period: str | None = Field(default=None, pattern="^(year|month|week|day|hour|project)$")
     currency: str = "USD"
     skills: list[str] = []
     external_url: str | None = None
@@ -41,7 +41,25 @@ class JobPostBase(BaseModel):
     _unique_skills = field_validator("skills")(classmethod(lambda cls, v: unique_skills(v)))
 
 
-class JobPostCreate(JobPostBase):
+class JobFilterFields(BaseModel):
+    """Structured search-filter fields (derive.py). On create, values a source
+    states go here and win over text heuristics; None means unknown."""
+
+    workplace_type: str | None = Field(default=None, pattern="^(remote|hybrid|onsite)$")
+    seniority: str | None = Field(
+        default=None, pattern="^(internship|entry|associate|mid_senior|director|executive)$"
+    )
+    country_code: str | None = Field(default=None, min_length=2, max_length=2)
+    region: str | None = None
+    tz_min: int | None = None
+    tz_max: int | None = None
+    industry: str | None = None
+    job_function: str | None = None
+    visa_sponsorship: bool | None = None
+    language: str | None = None
+
+
+class JobPostCreate(JobPostBase, JobFilterFields):
     company_id: uuid.UUID | None = None
     external_id: str | None = None
     source: str = "DIRECT"
@@ -75,7 +93,7 @@ class JobPostUpdate(BaseModel):
     _unique_skills = field_validator("skills")(classmethod(lambda cls, v: unique_skills(v)))
 
 
-class JobPostResponse(JobPostBase):
+class JobPostResponse(JobPostBase, JobFilterFields):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -97,24 +115,52 @@ class JobPostResponse(JobPostBase):
 
 
 class JobSearchQuery(BaseModel):
+    """Every job-search filter. Lists match any of their values (OR within a
+    filter, AND across filters). Unknown (NULL) values never match a filter."""
+
     query: str | None = None
     skills: list[str] | None = None
-    is_remote: bool = True
-    job_type: str | None = None
+    is_remote: bool | None = True
+    job_type: list[str] | None = None
     experience_level: str | None = None
     min_salary: float | None = None
     max_salary: float | None = None
     salary_currency: str | None = None
     salary_period: str | None = None
-    source: str | None = None
+    source: list[str] | None = None
     company_id: uuid.UUID | None = None
     location: str | None = None
+    workplace: list[str] | None = None
+    seniority: list[str] | None = None
+    country: list[str] | None = None
+    region: list[str] | None = None
+    industry: list[str] | None = None
+    job_function: list[str] | None = None
+    language: list[str] | None = None
+    company: list[str] | None = None
+    posted_within: str | None = None
+    has_salary: bool | None = None
+    apply: str | None = None
+    visa_sponsorship: bool | None = None
+    tz: int | None = None
+    verified: bool | None = None
+    sort: str = "recent"
     skip: int = 0
     limit: int = 20
 
     def filters(self) -> dict[str, Any]:
-        """The filter fields, as the repository's search/count take them."""
-        return self.model_dump(exclude={"skip", "limit"})
+        """The filter fields, as the repository's search/count/facets take them."""
+        return self.model_dump(exclude={"skip", "limit", "sort"})
+
+
+class FacetValue(BaseModel):
+    value: str | bool
+    count: int
+
+
+class JobFacets(BaseModel):
+    total: int
+    facets: dict[str, list[FacetValue]]
 
 
 class JobSitemapEntry(BaseModel):

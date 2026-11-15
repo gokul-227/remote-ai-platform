@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, SmallInteger, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -78,6 +78,21 @@ class JobPost(Base):
     # md5 of normalized title|company|location: one listing per posting across sources.
     dedup_key: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
 
+    # Search filters (migration 074, app/domains/jobs/derive.py). None = unknown;
+    # never guessed. Small codes keep rows small; see the migration for indexes.
+    workplace_type: Mapped[str | None] = mapped_column(String(8), nullable=True)  # remote|hybrid|onsite
+    seniority: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    country_code: Mapped[str | None] = mapped_column(String(2), nullable=True)
+    region: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    tz_min: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)  # UTC offset hours
+    tz_max: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    industry: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    job_function: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    visa_sponsorship: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    language: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    # Version of derive.py rules applied; the backfill task re-derives older rows.
+    derived_version: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     # Imported jobs: when a sync last saw it, and when it expired for not being
@@ -133,4 +148,29 @@ class JobPreference(Base):
     notify_new_matches: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class SavedJobSearch(Base):
+    """A member's saved job search ("Save this search"). `params` is the search's
+    filters (the same names as GET /jobs); alerts go through the member's
+    notification preferences for the "job" category (in-app/email/push)."""
+
+    __tablename__ = "saved_job_searches"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    params: Mapped[dict[str, Any]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=False, default=dict
+    )
+    alerts: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    frequency: Mapped[str] = mapped_column(String(10), nullable=False, default="daily")
+    last_notified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

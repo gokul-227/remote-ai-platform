@@ -121,6 +121,7 @@ components:
     - groups
     - jobs.preferences
     - jobs
+    - jobs.saved_searches
     - matching
     - meetings
     - network.contacts

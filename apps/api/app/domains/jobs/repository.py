@@ -8,11 +8,27 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Select, Text, cast, delete, func, literal_column, or_, select, text, update
+from sqlalchemy import (
+    ARRAY,
+    Select,
+    String,
+    Text,
+    case,
+    cast,
+    delete,
+    func,
+    literal,
+    literal_column,
+    or_,
+    select,
+    text,
+    update,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.domains.applications.models import JobApplication
+from app.domains.jobs.derive import DERIVE_VERSION, STATED_FIELDS
 from app.domains.jobs.models import JobPost
 from app.domains.jobs.schemas import JobPostCreate, JobPostUpdate
 from app.domains.jobs.source_policy import SEARCH_SYNDICATION_BLOCKED_SOURCES
@@ -22,6 +38,10 @@ JOB_FTS_EXPR = (
     "to_tsvector('simple'::regconfig, job_posts.title || ' ' || job_posts.company_name"
     " || ' ' || left(job_posts.description, 1000))"
 )
+
+
+# Search-filter columns derived on import (derive.py); stored as derived.
+FILTER_COLUMNS = (*STATED_FIELDS, "region", "tz_min", "tz_max")
 
 
 def slugify(text: str) -> str:
@@ -81,6 +101,8 @@ class JobRepository:
             source=data.source,
             dedup_key=data.dedup_key,
             is_active=True,
+            **{k: getattr(data, k) for k in FILTER_COLUMNS},
+            derived_version=DERIVE_VERSION,
         )
         if data.posted_at is not None:
             job.posted_at = data.posted_at
@@ -122,6 +144,11 @@ class JobRepository:
             existing.skills = data.skills
             existing.external_url = data.external_url or existing.external_url
             existing.dedup_key = data.dedup_key or existing.dedup_key
+            for k in FILTER_COLUMNS:
+                setattr(existing, k, getattr(data, k))
+            if data.job_type != "unspecified":
+                existing.job_type = data.job_type
+            existing.derived_version = DERIVE_VERSION
             if data.salary_min:
                 existing.salary_min = data.salary_min
             if data.salary_max:
@@ -176,6 +203,8 @@ class JobRepository:
                 "external_url": d.external_url,
                 "source": d.source,
                 "last_seen_at": now,
+                **{k: getattr(d, k) for k in FILTER_COLUMNS},
+                "derived_version": DERIVE_VERSION,
             }
         if not rows:
             return [], 0
@@ -214,6 +243,8 @@ class JobRepository:
                 "salary_min": func.coalesce(ex.salary_min, JobPost.salary_min),
                 "salary_max": func.coalesce(ex.salary_max, JobPost.salary_max),
                 "salary_period": func.coalesce(ex.salary_period, JobPost.salary_period),
+                **{k: getattr(ex, k) for k in FILTER_COLUMNS},
+                "derived_version": ex.derived_version,
                 "last_seen_at": ex.last_seen_at,
                 "expired_at": None,
                 "updated_at": func.now(),
@@ -412,136 +443,287 @@ class JobRepository:
             JobPost.posted_at >= fresh,
         )
 
-    def _filtered(
-        self,
-        stmt: Select,
-        query: str | None = None,
-        skills: list[str] | None = None,
-        is_remote: bool | None = None,
-        job_type: str | None = None,
-        experience_level: str | None = None,
-        min_salary: float | None = None,
-        max_salary: float | None = None,
-        salary_currency: str | None = None,
-        salary_period: str | None = None,
-        source: str | None = None,
-        company_id: uuid.UUID | None = None,
-        location: str | None = None,
-    ) -> Select:
+
+    def _pg(self) -> bool:
+        return bool(self.db.get_bind().dialect.name == "postgresql")
+
+    def _filtered(self, stmt: Select, skip_facet: str | None = None, **f: Any) -> Select:
+        """Apply every search filter (see JobSearchQuery). `skip_facet` leaves
+        one facet's own filter out, so its facet counts show the alternatives."""
+        unknown = set(f) - FILTER_KEYS
+        if unknown:
+            raise TypeError(f"unknown job filters: {sorted(unknown)}")
         stmt = stmt.where(
             JobPost.is_active.is_(True), JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None)
         )
 
-        if company_id is not None:
-            stmt = stmt.where(JobPost.company_id == company_id)
+        def want(name: str) -> Any:
+            return None if name == skip_facet else f.get(name)
 
-        if location:
-            # Substring of the posting's free-text location ("Germany", "Europe", "USA").
+        if f.get("company_id") is not None:
+            stmt = stmt.where(JobPost.company_id == f["company_id"])
+
+        if location := f.get("location"):
+            # Substring of the posting's free-text location (a city, "Europe").
             needle = location.strip().lower().replace("%", "").replace("_", "")
             stmt = stmt.where(func.lower(JobPost.location).contains(needle))
 
-        if is_remote is not None:
-            stmt = stmt.where(JobPost.is_remote == is_remote)
+        workplace = _as_list(want("workplace"))
+        if workplace:
+            stmt = stmt.where(JobPost.workplace_type.in_(workplace))
+        elif f.get("is_remote") is not None and skip_facet != "workplace":
+            stmt = stmt.where(JobPost.is_remote == f["is_remote"])
 
-        if job_type:
-            stmt = stmt.where(func.lower(JobPost.job_type) == job_type.lower())
+        if types := _as_list(want("job_type")):
+            stmt = stmt.where(func.lower(JobPost.job_type).in_([t.lower() for t in types]))
 
-        if experience_level:
-            stmt = stmt.where(func.lower(JobPost.experience_level) == experience_level.lower())
+        if level := f.get("experience_level"):
+            stmt = stmt.where(func.lower(JobPost.experience_level) == level.lower())
+
+        for key, col in (
+            ("seniority", JobPost.seniority),
+            ("country", JobPost.country_code),
+            ("region", JobPost.region),
+            ("industry", JobPost.industry),
+            ("job_function", JobPost.job_function),
+            ("language", JobPost.language),
+        ):
+            values = _as_list(want(key))
+            if values:
+                if key == "country":
+                    values = [v.upper() for v in values]
+                stmt = stmt.where(col.in_(values))
+
+        if companies := _as_list(want("company")):
+            stmt = stmt.where(func.lower(JobPost.company_name).in_([c.lower() for c in companies]))
+
+        if sources := _as_list(want("source")):
+            stmt = stmt.where(func.upper(JobPost.source).in_([s.upper() for s in sources]))
+
+        if days := POSTED_WITHIN.get(want("posted_within") or ""):
+            stmt = stmt.where(JobPost.posted_at >= datetime.now(UTC) - timedelta(days=days))
+
+        if since := f.get("posted_since"):
+            stmt = stmt.where(JobPost.posted_at > since)
+
+        if want("has_salary"):
+            stmt = stmt.where(or_(JobPost.salary_min.is_not(None), JobPost.salary_max.is_not(None)))
 
         # Salary bounds compare like with like (SEARCH-01): only jobs whose salary
-        # is stated in the requested currency and period. A job with no stated
-        # period or another currency is never treated as matching, and nothing
-        # is converted or assumed to be USD per year.
+        # is stated in the requested currency and period. Nothing is converted.
+        min_salary, max_salary = f.get("min_salary"), f.get("max_salary")
         if min_salary is not None or max_salary is not None:
             stmt = stmt.where(
-                func.upper(JobPost.currency) == (salary_currency or "").upper(),
-                func.lower(JobPost.salary_period) == (salary_period or "").lower(),
+                func.upper(JobPost.currency) == (f.get("salary_currency") or "").upper(),
+                func.lower(JobPost.salary_period) == (f.get("salary_period") or "").lower(),
             )
-
         if min_salary is not None:
             stmt = stmt.where(
                 or_(JobPost.salary_min >= min_salary, JobPost.salary_max >= min_salary)
             )
-
         if max_salary is not None:
             stmt = stmt.where(
                 or_(JobPost.salary_min <= max_salary, JobPost.salary_max <= max_salary)
             )
 
-        if source:
-            stmt = stmt.where(func.upper(JobPost.source) == source.upper())
+        apply = want("apply")
+        if apply == "platform":
+            stmt = stmt.where(JobPost.source == "DIRECT")
+        elif apply == "external":
+            stmt = stmt.where(JobPost.source != "DIRECT")
 
-        if query:
-            dialect_name = self.db.get_bind().dialect.name
-            if dialect_name == "postgresql":
-                # Exactly the expression of the partial GIN index ix_job_posts_live_fts
-                # (migration 070), so search uses the index instead of parsing every
-                # description. Skills are extracted from these same fields.
+        visa = want("visa_sponsorship")
+        if visa is not None:
+            stmt = stmt.where(JobPost.visa_sponsorship.is_(bool(visa)))
+
+        tz = f.get("tz")
+        if tz is not None:
+            # Working-hours overlap: the job's UTC band within TZ_OVERLAP_HOURS of yours.
+            stmt = stmt.where(
+                JobPost.tz_min <= tz + TZ_OVERLAP_HOURS, JobPost.tz_max >= tz - TZ_OVERLAP_HOURS
+            )
+
+        if want("verified"):
+            from app.domains.companies.models import CompanyProfile
+
+            stmt = stmt.where(
+                JobPost.company_id.in_(
+                    select(CompanyProfile.id).where(CompanyProfile.is_verified.is_(True))
+                )
+            )
+
+        if query := f.get("query"):
+            if self._pg():
+                # Same expression as the partial GIN index ix_job_posts_live_fts
+                # (migration 070). websearch syntax: "exact phrase", -exclude, OR.
                 stmt = stmt.where(
                     literal_column(JOB_FTS_EXPR).op("@@")(
-                        func.plainto_tsquery(literal_column("'simple'::regconfig"), query)
+                        func.websearch_to_tsquery(literal_column("'simple'::regconfig"), query)
                     )
                 )
             else:
-                keyword = f"%{query.strip()}%"
-                stmt = stmt.where(
-                    or_(
-                        JobPost.title.ilike(keyword),
-                        JobPost.description.ilike(keyword),
-                        JobPost.company_name.ilike(keyword),
-                        cast(JobPost.skills, Text).ilike(keyword),
+                for term in keyword_terms(query):
+                    keyword = f"%{term}%"
+                    stmt = stmt.where(
+                        or_(
+                            JobPost.title.ilike(keyword),
+                            JobPost.description.ilike(keyword),
+                            JobPost.company_name.ilike(keyword),
+                            cast(JobPost.skills, Text).ilike(keyword),
+                        )
                     )
-                )
 
+        skills = [s.strip() for s in _as_list(want("skills")) if s.strip()]
         if skills:
-            skill_filters = [
-                cast(JobPost.skills, Text).ilike(f'%"{skill.strip()}"%')
-                for skill in skills
-                if skill.strip()
-            ]
-            if skill_filters:
-                stmt = stmt.where(or_(*skill_filters))
+            if self._pg():
+                # jsonb ?| uses the GIN index ix_job_posts_live_skills.
+                variants = sorted({v for s in skills for v in (s, s.lower(), s.title(), s.upper())})
+                stmt = stmt.where(JobPost.skills.op("?|")(cast(literal(variants), ARRAY(String))))
+            else:
+                stmt = stmt.where(
+                    or_(*[cast(JobPost.skills, Text).ilike(f'%"{s}"%') for s in skills])
+                )
 
         return stmt
 
-    async def search(
-        self,
-        query: str | None = None,
-        skills: list[str] | None = None,
-        is_remote: bool | None = None,
-        job_type: str | None = None,
-        experience_level: str | None = None,
-        min_salary: float | None = None,
-        max_salary: float | None = None,
-        salary_currency: str | None = None,
-        salary_period: str | None = None,
-        source: str | None = None,
-        company_id: uuid.UUID | None = None,
-        location: str | None = None,
-        skip: int = 0,
-        limit: int = 20,
-    ) -> Sequence[JobPost]:
-        stmt = self._filtered(
-            select(JobPost),
-            query=query,
-            skills=skills,
-            is_remote=is_remote,
-            job_type=job_type,
-            experience_level=experience_level,
-            min_salary=min_salary,
-            max_salary=max_salary,
-            salary_currency=salary_currency,
-            salary_period=salary_period,
-            source=source,
-            company_id=company_id,
-            location=location,
-        )
+    def _ordered(self, stmt: Select, sort: str | None, query: str | None) -> Select:
+        if sort == "salary":
+            return stmt.order_by(
+                func.coalesce(JobPost.salary_max, JobPost.salary_min).desc().nulls_last(),
+                JobPost.posted_at.desc(),
+                JobPost.id.desc(),
+            )
+        if sort == "relevant" and query and self._pg():
+            rank = func.ts_rank_cd(
+                literal_column(JOB_FTS_EXPR),
+                func.websearch_to_tsquery(literal_column("'simple'::regconfig"), query),
+            )
+            return stmt.order_by(rank.desc(), JobPost.posted_at.desc(), JobPost.id.desc())
+        if sort == "relevant" and query:
+            first = (keyword_terms(query) or [query])[0]
+            title_hit = case((JobPost.title.ilike(f"%{first}%"), 0), else_=1)
+            return stmt.order_by(title_hit, JobPost.posted_at.desc(), JobPost.id.desc())
         # id breaks ties so consecutive pages never overlap or skip rows.
-        stmt = stmt.order_by(JobPost.posted_at.desc(), JobPost.id.desc()).offset(skip).limit(limit)
+        return stmt.order_by(JobPost.posted_at.desc(), JobPost.id.desc())
+
+    async def search(
+        self, skip: int = 0, limit: int = 20, sort: str | None = None, **filters: Any
+    ) -> Sequence[JobPost]:
+        stmt = self._filtered(select(JobPost), **filters)
+        stmt = self._ordered(stmt, sort, filters.get("query")).offset(skip).limit(limit)
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
     async def count(self, **filters: Any) -> int:
         stmt = self._filtered(select(func.count()).select_from(JobPost), **filters)
         return int(await self.db.scalar(stmt) or 0)
+
+    async def facets(self, **filters: Any) -> dict[str, list[dict[str, Any]]]:
+        """Counts per value for each filter, each computed with every *other*
+        filter applied (picking "remote" still shows how many hybrid jobs there
+        are). Top FACET_LIMIT values for open-ended facets."""
+        out: dict[str, list[dict[str, Any]]] = {}
+        for facet, col in FACET_COLUMNS.items():
+            stmt = (
+                self._filtered(
+                    select(col.label("v"), func.count().label("n")).select_from(JobPost),
+                    skip_facet=facet,
+                    **filters,
+                )
+                .where(col.is_not(None))
+                .group_by(col)
+                .order_by(func.count().desc(), col)
+                .limit(FACET_LIMIT)
+            )
+            rows: Any = (await self.db.execute(stmt)).all()
+            out[facet] = [{"value": v, "count": int(n or 0)} for v, n in rows]
+        now = datetime.now(UTC)
+        base = self._filtered(
+            select(func.count()).select_from(JobPost), skip_facet="posted_within", **filters
+        )
+        posted = []
+        for key, days in POSTED_WITHIN.items():
+            n = await self.db.scalar(base.where(JobPost.posted_at >= now - timedelta(days=days)))
+            posted.append({"value": key, "count": int(n or 0)})
+        out["posted_within"] = posted
+        flags: list[tuple[str, Any, Any]] = [
+            (
+                "has_salary",
+                True,
+                or_(JobPost.salary_min.is_not(None), JobPost.salary_max.is_not(None)),
+            ),
+            ("apply", "platform", JobPost.source == "DIRECT"),
+            ("apply", "external", JobPost.source != "DIRECT"),
+            ("visa_sponsorship", True, JobPost.visa_sponsorship.is_(True)),
+            ("visa_sponsorship", False, JobPost.visa_sponsorship.is_(False)),
+        ]
+        for facet, value, cond in flags:
+            q = self._filtered(
+                select(func.count()).select_from(JobPost), skip_facet=facet, **filters
+            )
+            n = await self.db.scalar(q.where(cond))
+            out.setdefault(facet, []).append({"value": value, "count": int(n or 0)})
+        out["skills"] = await self._skill_facet(filters)
+        return out
+
+    async def _skill_facet(self, filters: dict[str, Any]) -> list[dict[str, Any]]:
+        if self._pg():
+            sub = self._filtered(select(JobPost.skills), skip_facet="skills", **filters).subquery()
+            elem = func.jsonb_array_elements_text(sub.c.skills).table_valued("value").alias("s")
+            stmt = (
+                select(elem.c.value, func.count())
+                .select_from(sub)
+                .join(elem, literal(True))
+                .group_by(elem.c.value)
+                .order_by(func.count().desc(), elem.c.value)
+                .limit(FACET_LIMIT)
+            )
+            skill_rows: Any = (await self.db.execute(stmt)).all()
+            return [{"value": v, "count": int(n or 0)} for v, n in skill_rows]
+        stmt = self._filtered(select(JobPost.skills), skip_facet="skills", **filters).limit(5000)
+        counts: dict[str, int] = {}
+        all_skills: Any = (await self.db.execute(stmt)).all()
+        for (skills,) in all_skills:
+            for s in skills or []:
+                counts[s] = counts.get(s, 0) + 1
+        ranked = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:FACET_LIMIT]
+        return [{"value": v, "count": n} for v, n in ranked]
+
+
+def _as_list(value: Any) -> list[Any]:
+    if value is None or value == "":
+        return []
+    return list(value) if isinstance(value, list | tuple | set) else [value]
+
+
+def keyword_terms(query: str) -> list[str]:
+    """SQLite fallback for websearch syntax: quoted phrases stay whole, other
+    words must each appear."""
+    phrases = re.findall(r'"([^"]+)"', query)
+    rest = re.sub(r'"[^"]*"', " ", query).split()
+    return [p.strip() for p in phrases if p.strip()] + [w for w in rest if w.upper() != "OR"]
+
+
+POSTED_WITHIN = {"24h": 1, "3d": 3, "7d": 7, "30d": 30, "90d": 90}
+TZ_OVERLAP_HOURS = 3
+FACET_LIMIT = 30
+FACET_COLUMNS = {
+    "workplace": JobPost.workplace_type,
+    "job_type": JobPost.job_type,
+    "seniority": JobPost.seniority,
+    "country": JobPost.country_code,
+    "region": JobPost.region,
+    "industry": JobPost.industry,
+    "job_function": JobPost.job_function,
+    "language": JobPost.language,
+    "source": JobPost.source,
+    "company": JobPost.company_name,
+}
+FILTER_KEYS = frozenset(
+    {
+        "query", "skills", "is_remote", "job_type", "experience_level", "min_salary",
+        "max_salary", "salary_currency", "salary_period", "source", "company_id", "location",
+        "workplace", "seniority", "country", "region", "industry", "job_function", "language",
+        "company", "posted_within", "has_salary", "apply", "visa_sponsorship", "tz", "verified", "posted_since",
+    }
+)  # fmt: skip

@@ -2139,6 +2139,7 @@ export function CoJobs() {
 
 const NOTIFY_CATEGORIES: [string, string][] = [
   ["application", "Applications and invitations"],
+  ["job", "Job alerts and saved searches"],
   ["project", "Projects and tasks"],
   ["contract", "Contracts and milestones"],
   ["message", "Messages and mentions"],

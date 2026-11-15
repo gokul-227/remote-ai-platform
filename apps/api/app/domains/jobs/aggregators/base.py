@@ -24,6 +24,11 @@ _JOB_TYPES = {
     "freelance": "freelance",
     "internship": "internship",
     "temporary": "temporary",
+    "temp": "temporary",
+    "seasonal": "temporary",
+    "intern": "internship",
+    "volunteer": "volunteer",
+    "volunteering": "volunteer",
 }
 
 

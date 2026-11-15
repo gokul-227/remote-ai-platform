@@ -4,18 +4,30 @@ import { SITE_URL, fetchRecentJobs } from "@/lib/site";
 import { PLACES, TOPICS } from "@/lib/seo";
 import { PublicFrame } from "../PublicChrome";
 import { JobList, JoinCta } from "./JobList";
+import { PublicFilterForm, fetchFilteredJobs } from "./PublicFilters";
+import { activeCount, parseFilters } from "@/lib/jobFilters";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Remote jobs and freelance work | Remote AI Platform",
-  description:
-    "Explore remote jobs and freelance work from employers and job boards. Browse by role, skill and way of working.",
-  alternates: { canonical: "/remote-jobs" },
-};
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export default async function RemoteJobsIndex() {
-  const latest = (await fetchRecentJobs(30)).filter((j) => !j.expired_at);
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const filtered = activeCount(parseFilters(await searchParams)) > 0;
+  return {
+    title: "Remote jobs and freelance work | Remote AI Platform",
+    description:
+      "Explore remote jobs and freelance work from employers and job boards. Browse by role, skill and way of working.",
+    alternates: { canonical: "/remote-jobs" },
+    // Filtered result pages are for people, not search engines (endless URL combinations).
+    ...(filtered ? { robots: { index: false, follow: true } } : {}),
+  };
+}
+
+export default async function RemoteJobsIndex({ searchParams }: { searchParams: SearchParams }) {
+  const filters = parseFilters(await searchParams);
+  const filtered = activeCount(filters) > 0 || !!filters.sort;
+  const result = filtered ? await fetchFilteredJobs(filters) : null;
+  const latest = result ? result.jobs : (await fetchRecentJobs(30)).filter((j) => !j.expired_at);
   const groups = [...new Set(TOPICS.map((t) => t.group))];
   return (
     <PublicFrame wide>
@@ -30,6 +42,15 @@ export default async function RemoteJobsIndex() {
         Open roles from leading employers and job boards, refreshed every few hours. Pick a category, or create a free
         profile to get jobs matched to your skills.
       </p>
+      <PublicFilterForm value={filters} />
+      {result && (
+        <section className="mt-6" aria-live="polite">
+          <h2 className="mb-3 text-xl font-bold">
+            {result.total.toLocaleString("en-US")} matching job{result.total === 1 ? "" : "s"}
+          </h2>
+          <JobList jobs={result.jobs} />
+        </section>
+      )}
       {groups.map((g) => (
         <section key={g} className="mt-8">
           <h2 className="mb-3 text-lg font-bold">{g}</h2>
@@ -61,8 +82,12 @@ export default async function RemoteJobsIndex() {
         </div>
       </section>
       <JoinCta />
-      <h2 className="mb-3 text-xl font-bold">Latest remote jobs</h2>
-      <JobList jobs={latest} />
+      {!result && (
+        <>
+          <h2 className="mb-3 text-xl font-bold">Latest remote jobs</h2>
+          <JobList jobs={latest} />
+        </>
+      )}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

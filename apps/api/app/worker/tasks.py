@@ -368,3 +368,35 @@ def cost_guard() -> dict[str, Any]:
             return await ops.cost_guard(db)
 
     return runtime.run(go())
+
+
+# ── job search filters ──────────────────────────────────────────────────────
+
+
+async def backfill_job_filters_async(batch_size: int = 1000, max_batches: int = 20) -> dict[str, Any]:
+    from app.domains.jobs.backfill import backfill_filters
+
+    async with runtime.session_factory()() as db:
+        return await backfill_filters(db, batch_size=batch_size, max_batches=max_batches)
+
+
+@shared_task(name="jobs.backfill_filters")
+def backfill_job_filters(batch_size: int = 1000, max_batches: int = 20) -> dict[str, Any]:
+    """Derive filter columns for stored jobs in batches (migration 074). Requeues
+    itself until every row is on the current rule version; Beat starts it
+    nightly so a rule change (DERIVE_VERSION bump) heals on its own."""
+    result = runtime.run(backfill_job_filters_async(batch_size, max_batches))
+    if not result.get("complete"):
+        backfill_job_filters.apply_async(kwargs={"batch_size": batch_size}, countdown=5)
+    return result
+
+
+@shared_task(name="jobs.send_alerts")
+def send_job_alerts() -> dict[str, Any]:
+    async def go() -> dict[str, Any]:
+        from app.domains.jobs.saved_searches import send_job_alerts as _send
+
+        async with runtime.session_factory()() as db:
+            return await _send(db)
+
+    return runtime.run(go())

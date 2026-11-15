@@ -55,7 +55,12 @@ celery_app.conf.update(
             "schedule": crontab(hour=7, minute=0),
         },
         "check-backups": {"task": "ops.check_backups", "schedule": crontab(hour=8, minute=0)},
-        "cost-guard": {"task": "ops.cost_guard", "schedule": crontab(hour="*/6", minute=15)},
+        "job-alerts": {"task": "jobs.send_alerts", "schedule": crontab(minute=40)},
+        "backfill-job-filters": {
+            "task": "jobs.backfill_filters",
+            "schedule": crontab(hour=2, minute=50),
+        },
+        "cost-guard":{"task": "ops.cost_guard", "schedule": crontab(hour="*/6", minute=15)},
     },
 )
 

@@ -72,6 +72,7 @@ class EmailOutbox(Base):
 # Notification kinds are grouped into categories by prefix (see notifications.preferences).
 NOTIFICATION_CATEGORIES = (
     "application",
+    "job",
     "project",
     "contract",
     "message",

@@ -1,9 +1,19 @@
 import { InviteBanner, InviteLink, PeopleYouMayKnow } from "./NetworkColdStart";
 import { FindGoogleContacts } from "./GoogleContacts";
 import { JobSource } from "@/components/JobSource";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import api, { extractErrorMessage } from "@/lib/api";
 import { ShareButtons } from "./ShareButtons";
+import { JobFilterChips, JobFilterPanel } from "./JobFilters";
+import {
+  describe as describeFilters,
+  parseFilters,
+  toApiParams,
+  toQueryString,
+  withValue,
+  type Facets,
+  type Filters,
+} from "@/lib/jobFilters";
 import { useAuth } from "@/lib/auth";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
@@ -13,10 +23,24 @@ export function Jobs() {
   // Live: real jobs, saved jobs, applications and AI match (markup is the Figma design).
   const { user } = useAuth();
   const engineer = isMember(user);
-  const [q, setQ] = useState("");
-  const [skill, setSkill] = useState("");
-  const [search, setSearch] = useState({ q: "", skill: "" });
-  const [easy, setEasy] = useState(false);
+  // Filters live in the URL (#jobs?workplace=remote&...): shareable, and the
+  // same names as GET /jobs, so "Save this search" stores exactly this.
+  const [filters, setFiltersState] = useState<Filters>(() =>
+    typeof window === "undefined" ? {} : parseFilters(window.location.hash),
+  );
+  const [q, setQ] = useState(filters.query ?? "");
+  const [panelOpen, setPanelOpen] = useState(false);
+  useEffect(() => {
+    const onHash = () => {
+      if (!window.location.hash.toLowerCase().startsWith("#jobs")) return;
+      const next = parseFilters(window.location.hash);
+      setFiltersState(next);
+      setQ(next.query ?? "");
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const easy = filters.apply === "platform";
   const [selId, setSelId] = useState<string | null>(() => {
     try {
       return localStorage.getItem("rap-selected-job");
@@ -31,13 +55,9 @@ export function Jobs() {
   const PAGE = 25;
   const [page, setPage] = useState(0);
   // Easy Apply = jobs posted directly on the platform; filtered server-side so it covers every page.
-  const jobsQ = useApi<ApiJob[]>("/jobs", {
-    query: search.q || undefined,
-    skills: search.skill ? [search.skill] : undefined,
-    source: easy ? "DIRECT" : undefined,
-    skip: page * PAGE,
-    limit: PAGE,
-  });
+  const apiParams = toApiParams(filters);
+  const jobsQ = useApi<ApiJob[]>("/jobs", { ...apiParams, skip: page * PAGE, limit: PAGE });
+  const facetsQ = useApi<{ total: number; facets: Facets }>("/jobs/facets", apiParams);
   const total = jobsQ.total ?? jobsQ.data?.length ?? 0;
   const savedQ = useApi<ApiJob[]>(engineer ? "/saved-jobs" : null, { limit: 100 });
   const appsQ = useApi<{ application: { status: string }; job: { id: string } }[]>(
@@ -94,6 +114,33 @@ export function Jobs() {
     }
     setApply(false);
   };
+  const setFilters = useCallback((next: Filters) => {
+    setFiltersState(next);
+    setPage(0);
+    setSelId(null);
+    const qs = toQueryString(next);
+    try {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#jobs${qs ? `?${qs}` : ""}`,
+      );
+    } catch {
+      // History unavailable (sandboxed frame): state still applies.
+    }
+  }, []);
+  const saveSearch = async () => {
+    if (!user) {
+      goRoute("login");
+      return;
+    }
+    try {
+      await api.post("/jobs/saved-searches", { name: describeFilters(filters), params: apiParams });
+      setNotice("Search saved. We’ll alert you about new matches (change how in Settings › Notifications).");
+    } catch (e) {
+      setNotice(extractErrorMessage(e, "We couldn't save this search."));
+    }
+  };
   const m = matchQ.data;
   return (
     <div className="bg-[#F0F2F5]">
@@ -102,30 +149,19 @@ export function Jobs() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            setSearch({ q: q.trim(), skill: skill.trim() });
-            setPage(0);
-            setSelId(null);
+            setFilters(withValue(filters, "query", q.trim() || undefined));
           }}
           className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 py-2.5"
+          role="search"
         >
-          <div className="flex h-10 min-w-[260px] flex-1 items-center gap-2 rounded-md bg-[#E8F0FC] px-3">
+          <div className="flex h-10 min-w-0 flex-1 basis-60 items-center gap-2 rounded-md bg-[#E8F0FC] px-3">
             <Ic n="search" s={18} c="text-slate-500" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Title, skill or company"
+              placeholder='Title, skill or company — "exact phrase"'
               aria-label="Search jobs"
-              className="flex-1 bg-transparent text-sm outline-none"
-            />
-          </div>
-          <div className="flex h-10 w-64 items-center gap-2 rounded-md bg-[#E8F0FC] px-3">
-            <Ic n="code" s={18} c="text-slate-500" />
-            <input
-              value={skill}
-              onChange={(e) => setSkill(e.target.value)}
-              placeholder="Skill, e.g. Python"
-              aria-label="Filter by skill"
-              className="flex-1 bg-transparent text-sm outline-none"
+              className="min-w-0 flex-1 bg-transparent text-sm outline-none"
             />
           </div>
           <button
@@ -135,275 +171,291 @@ export function Jobs() {
           >
             Search
           </button>
+          {engineer && (
+            <button
+              type="button"
+              onClick={saveSearch}
+              className="h-10 rounded-full border px-4 text-sm font-bold"
+              style={{ borderColor: BL, color: BL }}
+            >
+              Save this search
+            </button>
+          )}
         </form>
-        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-2 px-4 pb-2.5">
-          <button
-            onClick={() => {
-              setEasy(!easy);
-              setPage(0);
-            }}
-            className={cx(
-              "rounded-full border px-3 py-1 text-sm font-semibold",
-              easy
-                ? "border-emerald-700 bg-emerald-700 text-white"
-                : "border-slate-400 text-slate-600 hover:bg-slate-50",
-            )}
-          >
-            Easy Apply
-          </button>
+        <div className="mx-auto max-w-[1400px] px-4 pb-2.5">
+          <JobFilterChips
+            value={filters}
+            onChange={setFilters}
+            facets={facetsQ.data?.facets}
+            open={panelOpen}
+            onOpen={setPanelOpen}
+          />
         </div>
       </div>
-      <div className="mx-auto grid max-w-[1400px] gap-4 px-4 py-4 grid-cols-1 lg:grid-cols-[440px_minmax(0,1fr)]">
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <div className="border-b border-slate-200 p-4">
-            <p className="text-lg font-bold">{search.q ? `Jobs matching “${search.q}”` : "Latest remote jobs"}</p>
-            <p className="text-sm text-slate-500">
-              Live remote roles - {jobsQ.loading ? "loading…" : `${total.toLocaleString()} results`}
-            </p>
-          </div>
-          {!!jobsQ.error && (
-            <div className="p-10 text-center text-slate-500">
-              <Ic n="flag" s={32} c="mx-auto mb-2" />
-              We couldn’t load jobs.{" "}
-              <button className="font-bold" style={{ color: BL }} onClick={jobsQ.reload}>
-                Try again
-              </button>
+      <div className="mx-auto flex max-w-[1400px] items-start gap-4 px-4 py-4">
+        <div className={cx("md:w-72 md:shrink-0 xl:sticky xl:top-4 xl:block", !panelOpen && "md:hidden")}>
+          <JobFilterPanel
+            value={filters}
+            onChange={setFilters}
+            facets={facetsQ.data?.facets}
+            total={total}
+            open={panelOpen}
+            onClose={() => setPanelOpen(false)}
+            onSave={engineer ? saveSearch : undefined}
+          />
+        </div>
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[400px_minmax(0,1fr)]">
+          <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <div className="border-b border-slate-200 p-4">
+              <p className="text-lg font-bold">{filters.query ? `Jobs matching “${filters.query}”` : "Latest jobs"}</p>
+              <p className="text-sm text-slate-500">
+                Live remote roles - {jobsQ.loading ? "loading…" : `${total.toLocaleString()} results`}
+              </p>
             </div>
-          )}
-          {!jobsQ.loading && !jobsQ.error && list.length === 0 && (
-            <div className="p-10 text-center text-slate-500">
-              <Ic n="search" s={32} c="mx-auto mb-2" />
-              No jobs match your filters.
-            </div>
-          )}
-          {list.map((j) => (
-            <div
-              key={j.id}
-              onClick={() => setSelId(j.id)}
-              className={cx(
-                "flex cursor-pointer gap-3 border-b border-slate-100 p-4 hover:bg-slate-50",
-                sel?.id === j.id && "border-l-4 bg-[#F0F6FF]",
-              )}
-              style={sel?.id === j.id ? { borderLeftColor: BL } : {}}
-            >
-              {/* The row's keyboard/screen-reader control (UX-04). The save
-                  button stays a sibling, never nested inside it. */}
-              <button
-                type="button"
+            {!!jobsQ.error && (
+              <div className="p-10 text-center text-slate-500">
+                <Ic n="flag" s={32} c="mx-auto mb-2" />
+                We couldn’t load jobs.{" "}
+                <button className="font-bold" style={{ color: BL }} onClick={jobsQ.reload}>
+                  Try again
+                </button>
+              </div>
+            )}
+            {!jobsQ.loading && !jobsQ.error && list.length === 0 && (
+              <div className="p-10 text-center text-slate-500">
+                <Ic n="search" s={32} c="mx-auto mb-2" />
+                No jobs match your filters.
+              </div>
+            )}
+            {list.map((j) => (
+              <div
+                key={j.id}
                 onClick={() => setSelId(j.id)}
-                aria-current={sel?.id === j.id ? "true" : undefined}
-                className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175CD3]"
-              >
-                <Lg name={j.co} s={56} r={4} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold" style={{ color: BL }}>
-                    {j.t}
-                  </p>
-                  <p className="text-sm">{j.co}</p>
-                  <p className="text-sm text-slate-500">
-                    {j.loc}
-                    {j.type && ` (${j.type})`}
-                  </p>
-                  <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span className="font-semibold text-emerald-700">{j.post}</span>
-                    {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
-                    {j.easy && (
-                      <span className="flex items-center gap-1 font-semibold">
-                        <Ic n="bolt" s={12} c="text-[#175CD3]" />
-                        Easy Apply
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </button>
-              {engineer && (
-                <button
-                  aria-label={saved.has(j.id) ? `Unsave ${j.t}` : `Save ${j.t}`}
-                  aria-pressed={saved.has(j.id)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSave(j.id);
-                  }}
-                  className="self-start p-1 text-slate-500"
-                >
-                  <Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-[#175CD3]" : ""} />
-                </button>
-              )}
-            </div>
-          ))}
-          {total > PAGE && (
-            <div className="flex items-center justify-between border-t border-slate-200 p-3 text-sm text-slate-600">
-              <span>
-                {page * PAGE + 1}–{Math.min((page + 1) * PAGE, total)} of {total.toLocaleString()}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  className="rounded-full px-3 py-1 font-semibold hover:bg-slate-100 disabled:opacity-40"
-                  disabled={page === 0 || jobsQ.loading}
-                  onClick={() => {
-                    setPage(page - 1);
-                    window.scrollTo(0, 0);
-                  }}
-                >
-                  Previous
-                </button>
-                <button
-                  className="rounded-full px-3 py-1 font-semibold hover:bg-slate-100 disabled:opacity-40"
-                  disabled={(page + 1) * PAGE >= total || jobsQ.loading}
-                  onClick={() => {
-                    setPage(page + 1);
-                    window.scrollTo(0, 0);
-                  }}
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
-        <p className="sr-only" aria-live="polite">
-          {sel ? `Showing ${sel.t} at ${sel.co}` : ""}
-        </p>
-        {sel && (
-          <section
-            aria-label="Job details"
-            className="mt-4 max-h-[calc(100vh-190px)] self-start overflow-y-auto rounded-lg border border-slate-200 bg-white lg:mt-0 lg:sticky lg:top-40 lg:block"
-          >
-            <div className="p-6">
-              <div className="flex items-start gap-4">
-                <Lg name={sel.co} s={64} r={4} />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-slate-600">{sel.co}</p>
-                  <h2 className="text-2xl font-black leading-tight">{sel.t}</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {sel.loc} - {sel.post}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  ["briefcase", sel.type],
-                  ["globe", sel.raw.is_remote === false ? "On-site" : "Remote"],
-                  ["award", sel.lvl],
-                  ["dollar", sel.pay],
-                ]
-                  .filter(([, l]) => l)
-                  .map(([i, l]) => (
-                    <span
-                      key={i}
-                      className="flex items-center gap-1.5 rounded bg-slate-100 px-2.5 py-1 text-sm font-semibold text-slate-700"
-                    >
-                      <Ic n={i} s={14} />
-                      {l}
-                    </span>
-                  ))}
-              </div>
-              <div className="mt-4 flex gap-2">
-                {applied.has(sel.id) ? (
-                  <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-6 py-2 text-sm font-bold text-emerald-700">
-                    <Ic n="check" s={16} />
-                    Applied
-                  </span>
-                ) : (
-                  (!user || engineer || !sel.easy) && (
-                    <button
-                      onClick={startApply}
-                      className="flex items-center gap-1.5 rounded-full px-6 py-2 text-sm font-bold text-white"
-                      style={{ background: BL }}
-                    >
-                      {sel.easy && <Ic n="bolt" s={16} />}
-                      {!sel.easy ? "Apply on original site" : !user ? "Sign in to apply" : "Easy Apply"}
-                    </button>
-                  )
+                className={cx(
+                  "flex cursor-pointer gap-3 border-b border-slate-100 p-4 hover:bg-slate-50",
+                  sel?.id === j.id && "border-l-4 bg-[#F0F6FF]",
                 )}
+                style={sel?.id === j.id ? { borderLeftColor: BL } : {}}
+              >
+                {/* The row's keyboard/screen-reader control (UX-04). The save
+                  button stays a sibling, never nested inside it. */}
+                <button
+                  type="button"
+                  onClick={() => setSelId(j.id)}
+                  aria-current={sel?.id === j.id ? "true" : undefined}
+                  className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#175CD3]"
+                >
+                  <Lg name={j.co} s={56} r={4} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-bold" style={{ color: BL }}>
+                      {j.t}
+                    </p>
+                    <p className="text-sm">{j.co}</p>
+                    <p className="text-sm text-slate-500">
+                      {j.loc}
+                      {j.type && ` (${j.type})`}
+                    </p>
+                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <span className="font-semibold text-emerald-700">{j.post}</span>
+                      {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
+                      {j.easy && (
+                        <span className="flex items-center gap-1 font-semibold">
+                          <Ic n="bolt" s={12} c="text-[#175CD3]" />
+                          Easy Apply
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </button>
                 {engineer && (
                   <button
-                    onClick={() => toggleSave(sel.id)}
-                    className="rounded-full border px-6 py-2 text-sm font-bold"
-                    style={{ borderColor: BL, color: BL }}
+                    aria-label={saved.has(j.id) ? `Unsave ${j.t}` : `Save ${j.t}`}
+                    aria-pressed={saved.has(j.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSave(j.id);
+                    }}
+                    className="self-start p-1 text-slate-500"
                   >
-                    {saved.has(sel.id) ? "Saved" : "Save"}
+                    <Ic n="bookmark" s={20} c={saved.has(j.id) ? "fill-current text-[#175CD3]" : ""} />
                   </button>
                 )}
               </div>
-              {engineer && (
-                <div className="mt-5 rounded-xl border border-[#5B4BDB]/25 bg-[#F6F4FF] p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="flex items-center gap-2 font-black text-[#5B4BDB]">
-                      <Ic n="spark" s={18} />
-                      How you match
+            ))}
+            {total > PAGE && (
+              <div className="flex items-center justify-between border-t border-slate-200 p-3 text-sm text-slate-600">
+                <span>
+                  {page * PAGE + 1}–{Math.min((page + 1) * PAGE, total)} of {total.toLocaleString()}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    className="rounded-full px-3 py-1 font-semibold hover:bg-slate-100 disabled:opacity-40"
+                    disabled={page === 0 || jobsQ.loading}
+                    onClick={() => {
+                      setPage(page - 1);
+                      window.scrollTo(0, 0);
+                    }}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className="rounded-full px-3 py-1 font-semibold hover:bg-slate-100 disabled:opacity-40"
+                    disabled={(page + 1) * PAGE >= total || jobsQ.loading}
+                    onClick={() => {
+                      setPage(page + 1);
+                      window.scrollTo(0, 0);
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+          <p className="sr-only" aria-live="polite">
+            {sel ? `Showing ${sel.t} at ${sel.co}` : ""}
+          </p>
+          {sel && (
+            <section
+              aria-label="Job details"
+              className="mt-4 max-h-[calc(100vh-190px)] self-start overflow-y-auto rounded-lg border border-slate-200 bg-white lg:mt-0 lg:sticky lg:top-40 lg:block"
+            >
+              <div className="p-6">
+                <div className="flex items-start gap-4">
+                  <Lg name={sel.co} s={64} r={4} />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-slate-600">{sel.co}</p>
+                    <h2 className="text-2xl font-black leading-tight">{sel.t}</h2>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {sel.loc} - {sel.post}
                     </p>
-                    {m && <span className="text-2xl font-black text-[#5B4BDB]">{Math.round(m.overall_score)}%</span>}
                   </div>
-                  {m ? (
-                    <>
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                        {[
-                          ["Skills", m.skill_score],
-                          ["Experience", m.experience_score],
-                          ["Time zone", m.timezone_score],
-                          ["Compensation", m.compensation_score],
-                        ].map(([l, v]) => (
-                          <div key={String(l)}>
-                            <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600">
-                              <span>{l}</span>
-                              <span>{Math.round(Number(v))}%</span>
-                            </div>
-                            <Bar v={Number(v)} c="bg-[#5B4BDB]" />
-                          </div>
-                        ))}
-                      </div>
-                      {m.matching_skills.length > 0 && (
-                        <p className="mt-3 text-sm text-emerald-700">
-                          Strong: {m.matching_skills.slice(0, 4).join(", ")}.
-                        </p>
-                      )}
-                      {m.missing_skills.length > 0 && (
-                        <p className="text-sm text-amber-700">
-                          Gap: {m.missing_skills.slice(0, 3).join(", ")} appear in the requirements but not on your
-                          profile.
-                        </p>
-                      )}
-                    </>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {[
+                    ["briefcase", sel.type],
+                    ["globe", sel.raw.is_remote === false ? "On-site" : "Remote"],
+                    ["award", sel.lvl],
+                    ["dollar", sel.pay],
+                  ]
+                    .filter(([, l]) => l)
+                    .map(([i, l]) => (
+                      <span
+                        key={i}
+                        className="flex items-center gap-1.5 rounded bg-slate-100 px-2.5 py-1 text-sm font-semibold text-slate-700"
+                      >
+                        <Ic n={i} s={14} />
+                        {l}
+                      </span>
+                    ))}
+                </div>
+                <div className="mt-4 flex gap-2">
+                  {applied.has(sel.id) ? (
+                    <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-6 py-2 text-sm font-bold text-emerald-700">
+                      <Ic n="check" s={16} />
+                      Applied
+                    </span>
                   ) : (
-                    <p className="mt-3 text-sm text-slate-600">
-                      {matchQ.loading
-                        ? "Calculating your match…"
-                        : statusOf(matchQ.error) === 404
-                          ? "Complete your professional profile to see how you match this role."
-                          : "Your match isn’t available right now."}
-                    </p>
+                    (!user || engineer || !sel.easy) && (
+                      <button
+                        onClick={startApply}
+                        className="flex items-center gap-1.5 rounded-full px-6 py-2 text-sm font-bold text-white"
+                        style={{ background: BL }}
+                      >
+                        {sel.easy && <Ic n="bolt" s={16} />}
+                        {!sel.easy ? "Apply on original site" : !user ? "Sign in to apply" : "Easy Apply"}
+                      </button>
+                    )
+                  )}
+                  {engineer && (
+                    <button
+                      onClick={() => toggleSave(sel.id)}
+                      className="rounded-full border px-6 py-2 text-sm font-bold"
+                      style={{ borderColor: BL, color: BL }}
+                    >
+                      {saved.has(sel.id) ? "Saved" : "Save"}
+                    </button>
                   )}
                 </div>
-              )}
-              <h3 className="mt-6 text-lg font-bold">About the job</h3>
-              <RichText c="mt-2" text={sel.raw.description || "No description provided."} />
-              {sel.tags.length > 0 && (
-                <>
-                  <p className="mt-4 font-bold">Skills</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {sel.tags.map((t) => (
-                      <Tag key={t} t="blue">
-                        {t}
-                      </Tag>
-                    ))}
+                {engineer && (
+                  <div className="mt-5 rounded-xl border border-[#5B4BDB]/25 bg-[#F6F4FF] p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="flex items-center gap-2 font-black text-[#5B4BDB]">
+                        <Ic n="spark" s={18} />
+                        How you match
+                      </p>
+                      {m && <span className="text-2xl font-black text-[#5B4BDB]">{Math.round(m.overall_score)}%</span>}
+                    </div>
+                    {m ? (
+                      <>
+                        <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                          {[
+                            ["Skills", m.skill_score],
+                            ["Experience", m.experience_score],
+                            ["Time zone", m.timezone_score],
+                            ["Compensation", m.compensation_score],
+                          ].map(([l, v]) => (
+                            <div key={String(l)}>
+                              <div className="mb-1 flex justify-between text-xs font-semibold text-slate-600">
+                                <span>{l}</span>
+                                <span>{Math.round(Number(v))}%</span>
+                              </div>
+                              <Bar v={Number(v)} c="bg-[#5B4BDB]" />
+                            </div>
+                          ))}
+                        </div>
+                        {m.matching_skills.length > 0 && (
+                          <p className="mt-3 text-sm text-emerald-700">
+                            Strong: {m.matching_skills.slice(0, 4).join(", ")}.
+                          </p>
+                        )}
+                        {m.missing_skills.length > 0 && (
+                          <p className="text-sm text-amber-700">
+                            Gap: {m.missing_skills.slice(0, 3).join(", ")} appear in the requirements but not on your
+                            profile.
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-600">
+                        {matchQ.loading
+                          ? "Calculating your match…"
+                          : statusOf(matchQ.error) === 404
+                            ? "Complete your professional profile to see how you match this role."
+                            : "Your match isn’t available right now."}
+                      </p>
+                    )}
                   </div>
-                </>
-              )}
-              <div className="mt-4 rounded-xl border border-slate-200 p-4">
-                <div className="flex items-center gap-3">
-                  <Lg name={sel.co} s={48} r={4} />
-                  <div className="flex-1">
-                    <p className="font-bold">About {sel.co}</p>
-                    <p className="text-sm text-slate-500">
-                      <JobSource source={sel.raw.source} url={sel.raw.external_url} />
-                    </p>
+                )}
+                <h3 className="mt-6 text-lg font-bold">About the job</h3>
+                <RichText c="mt-2" text={sel.raw.description || "No description provided."} />
+                {sel.tags.length > 0 && (
+                  <>
+                    <p className="mt-4 font-bold">Skills</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {sel.tags.map((t) => (
+                        <Tag key={t} t="blue">
+                          {t}
+                        </Tag>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <div className="mt-4 rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-center gap-3">
+                    <Lg name={sel.co} s={48} r={4} />
+                    <div className="flex-1">
+                      <p className="font-bold">About {sel.co}</p>
+                      <p className="text-sm text-slate-500">
+                        <JobSource source={sel.raw.source} url={sel.raw.external_url} />
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-        )}
+            </section>
+          )}
+        </div>
       </div>
       <Modal open={apply && !!sel} onClose={() => setApply(false)} title={"Apply to " + (sel?.co ?? "")}>
         <div className="mb-4">
