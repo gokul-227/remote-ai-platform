@@ -122,7 +122,8 @@ async def test_config_and_subscription_endpoints(
         rows = (await db.execute(select(PushSubscription))).scalars().all()
         assert len(rows) == 1
         assert rows[0].revoked_at is None
-        assert rows[0].p256dh == UA_PUB and rows[0].auth_secret == AUTH
+        assert rows[0].p256dh == UA_PUB
+        assert rows[0].auth_secret == AUTH
     assert (
         await client.request(
             "DELETE", "/api/v1/notifications/push/subscriptions", json={"token": TOKEN}, headers=h
@@ -271,5 +272,5 @@ def test_pem_private_key_and_payload_limit(monkeypatch):
     monkeypatch.setattr(settings, "WEB_PUSH_VAPID_PRIVATE_KEY", pem)
     monkeypatch.setattr(settings, "WEB_PUSH_VAPID_PUBLIC_KEY", "pub")
     assert push_mod.vapid_header("https://push.example.com/x").startswith("vapid t=")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="too large"):
         push_mod.encrypt(b"x" * 5000, UA_PUB, AUTH)
