@@ -1559,11 +1559,11 @@ paths:
         schema:
           anyOf:
           - type: string
-            maxLength: 60
+            maxLength: 120
           - type: 'null'
-          description: Text in the posting's location (a city, e.g. Berlin)
+          description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
           title: Location
-        description: Text in the posting's location (a city, e.g. Berlin)
+        description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
       - name: employer
         in: query
         required: false
@@ -1931,11 +1931,11 @@ paths:
         schema:
           anyOf:
           - type: string
-            maxLength: 60
+            maxLength: 120
           - type: 'null'
-          description: Text in the posting's location (a city, e.g. Berlin)
+          description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
           title: Location
-        description: Text in the posting's location (a city, e.g. Berlin)
+        description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
       - name: employer
         in: query
         required: false
@@ -2164,7 +2164,7 @@ paths:
         schema:
           anyOf:
           - type: string
-            maxLength: 60
+            maxLength: 120
           - type: 'null'
           title: Location
       - name: employer
