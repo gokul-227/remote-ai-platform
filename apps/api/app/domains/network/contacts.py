@@ -448,7 +448,8 @@ def _invite_html(inviter: str, join_url: str, stop_url: str) -> str:
         "Accept the invitation</a></p>"
         '<p style="font-size:12px;color:#65676b">You received this one-time invitation because '
         f"{who} chose to invite you. We did not store your address book entry. "
-        f'<a href="{html_lib.escape(stop_url)}">Stop all invitations to this address</a>.</p></div>'
+        f'<a href="{html_lib.escape(stop_url)}">Stop all invitations to this address</a>. '
+        f"Questions? Write to {html_lib.escape(settings.SUPPORT_EMAIL)}.</p></div>"
     )
 
 

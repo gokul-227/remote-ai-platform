@@ -28,7 +28,7 @@ export function PublicLegalPage({ title, sections }: { title: string; sections: 
                 ) : isFact(block) ? (
                   <p key={index}>
                     <strong>{block.label}: </strong>
-                    {block.fact ?? "Details pending"}
+                    {block.fact}
                   </p>
                 ) : (
                   <p key={index}>{block}</p>

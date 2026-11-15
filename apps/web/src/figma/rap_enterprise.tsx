@@ -1,3 +1,4 @@
+import { HELP_FAQ } from "./legal_content";
 import { useState, useEffect, type ReactNode } from "react";
 import { Ic, Btn, Modal, TableScroll } from "./rap_kit";
 import api, { extractErrorMessage } from "@/lib/api";
@@ -205,45 +206,7 @@ export function WorkLedger() {
 
 export function HelpCenter() {
   const [q, setQ] = useState("");
-  const articles = [
-    [
-      "How do I sign in?",
-      "Enter your email and use the complete sign-in code. You can also continue with Google, Microsoft or GitHub.",
-    ],
-    [
-      "What determines my match score?",
-      "Skills contribute 40%, experience 25%, role 15%, timezone 8%, availability 7%, rate 3% and remote preference 2%. Review the explanation alongside your own judgment.",
-    ],
-    [
-      "How do contracts work?",
-      "Review the scope and milestones, then sign. Once either party signs, the terms can no longer be edited. The professional delivers each milestone and the company approves it. Payments are not processed through Remote AI Platform yet, so approving work does not move money.",
-    ],
-    [
-      "Can I withdraw an application?",
-      "You can withdraw an active application before it is accepted or rejected. Review the current status in Applications.",
-    ],
-    [
-      "How do I import a resume?",
-      "Choose AI Resume Import during onboarding. Supported resumes are PDF or DOCX up to 10 MB. Review extracted information and correct it before completing your profile.",
-    ],
-    [
-      "How do I manage a company?",
-      "Choose the hiring role at registration, complete the organization profile, then use Hiring to post jobs and review candidates.",
-    ],
-    [
-      "Where do I report a problem?",
-      "Use the report action on the relevant job, profile or community content. Administrators review reports in the moderation queue.",
-    ],
-    [
-      "How do I contact support?",
-      "Email contact@remoteaiplatform.com. Use the same address for privacy requests, such as a copy of your data or deleting your account.",
-    ],
-    [
-      "How do I report abuse or a security issue?",
-      "Use Report on the post, profile or job, or email contact@remoteaiplatform.com with details. Please don’t include passwords or codes.",
-    ],
-    ["Are there paid plans?", "Remote AI Platform is free to use today and has no paid subscription plans."],
-  ];
+  const articles = HELP_FAQ;
   const results = articles.filter((a) => a.join(" ").toLowerCase().includes(q.toLowerCase()));
   return (
     <Page title="Help center" sub="Answers for your account, your opportunities and your work.">

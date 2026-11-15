@@ -83,7 +83,7 @@ class TokensOut(BaseModel):
 def _require_workos() -> None:
     if not workos_client.is_configured():
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="WorkOS sign-in is not enabled"
+            status_code=status.HTTP_404_NOT_FOUND, detail="This sign-in method is not enabled"
         )
 
 

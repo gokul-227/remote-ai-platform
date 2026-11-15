@@ -1,206 +1,410 @@
-// Legal page content. Everything here describes what the product actually
-// does today (checked against the code). Facts only the operator can supply
-// live in OPERATOR; a null value is rendered as a visible "pending" notice,
-// never guessed. Filling these in (and legal review) is a launch blocker.
+// Public policy and company pages. Everything here describes what the product
+// actually does today (checked against apps/api: auth/export.py,
+// auth/retention.py, notifications, services/ai/metering.py). Copy names the
+// operator "Remote AI Platform" and one contact address only. It never names
+// individuals, hosting or infrastructure vendors, or internal tooling;
+// service providers appear by category, as established job portals do
+// (legal_public.test.tsx enforces this).
 
-export const OPERATOR: {
-  legalName: string | null;
-  address: string[] | null;
-  contactEmail: string | null;
-  vatOrRegister: string | null;
-  contentResponsible: string | null;
-  aiProviders: string | null;
-  cacheProvider: string | null;
-  dataLocations: string | null;
-  logRetention: string | null;
-  governingLaw: string | null;
-  supervisoryAuthority: string | null;
-} = {
-  legalName: "Remote-AI-Platform",
-  address: ["Schoneweide", "Berlin - 12439"],
-  contactEmail: "contact@remoteaiplatform.com",
-  vatOrRegister: null,
-  contentResponsible: null,
-  aiProviders:
-    "Groq (Groq, Inc., USA) runs the AI models used today. Other free-tier providers (Google Gemini, Cerebras, OpenRouter, Mistral) may be used as fallbacks if Groq is unavailable; this notice will list them before they are switched on.",
-  cacheProvider:
-    "A managed Redis service stores short-lived technical data such as rate-limit counters. It holds no profile content.",
-  dataLocations:
-    "Your account, profile and uploaded files are stored with Supabase in the EU (Ireland). The application servers that process requests run on Render in the United States, and the website is delivered through Cloudflare's global network. These providers offer data processing terms that include the EU standard contractual clauses for transfers outside the EU/EEA.",
-  logRetention: null,
-  governingLaw: null,
-  supervisoryAuthority: null,
-};
+export const CONTACT_EMAIL = "contact@remoteaiplatform.com";
 
-export const LAST_UPDATED = "5 November 2026";
+export const OPERATOR = {
+  legalName: "Remote AI Platform",
+  website: "remoteaiplatform.com",
+  contactEmail: CONTACT_EMAIL,
+} as const;
+
+export const LAST_UPDATED = "15 November 2026";
 
 export type Fact = { fact: string | null; label: string };
 export type Block = string | string[] | Fact;
 export type Section = { h: string; body: Block[] };
 
-const fact = (value: string | null, label: string): Fact => ({ fact: value, label });
+const write = `write to ${CONTACT_EMAIL}`;
 
 export const PRIVACY: Section[] = [
   {
-    h: "Who is responsible",
+    h: "Who we are",
     body: [
-      "Remote AI Platform (remoteaiplatform.com) connects professionals with companies and organisations for remote work. This notice explains what personal data the service processes, why, who can see it and what rights you have.",
-      fact(OPERATOR.legalName, "Name of the operator responsible for your data (controller)"),
-      fact(OPERATOR.address?.join(", ") ?? null, "Postal address of the operator"),
-      fact(OPERATOR.contactEmail, "Contact email for privacy requests"),
+      `Remote AI Platform (${OPERATOR.website}) is an online service that helps professionals find remote jobs and freelance work, and helps organisations hire and work with them. This Privacy Policy explains what personal data we collect, how we use and share it, how long we keep it and the choices and rights you have. Remote AI Platform is the controller of the personal data described here.`,
+      `If you have questions about this policy or your data, ${write}.`,
     ],
   },
   {
-    h: "What we collect",
+    h: "Data we collect",
     body: [
+      "Data you give us:",
       [
-        "Account data: your name, email address and account type (professional or organisation). You sign in with a one-time code sent by email, or with Google, Microsoft, GitHub or LinkedIn; from those providers we receive your name, email address and, where available, your profile photo. We do not store a password for these sign-in methods.",
-        "Profile data you enter: headline, bio, skills, experience, education, location, time zone, availability, rates, salary expectations and links. Companies provide organisation details and job posts.",
-        "Resumes: the file you upload, the text extracted from it and the profile fields generated from that text.",
-        "Communications and content: messages, connection requests, the members you block, posts, comments, group activity, reports you file and reviews you write.",
+        "Account data: your name, email address and how you use the service (as a professional, an organisation, or both). You sign in with a one-time code sent by email, or with a supported account such as Google, Microsoft, GitHub or LinkedIn; from those services we receive your name, email address and, where available, your profile photo. We do not store a password.",
+        "Profile data: headline, bio, skills, experience, education, location, time zone, availability, rates, salary expectations and links. Organisations provide company details and job posts.",
+        "Resumes: the file you upload, the text extracted from it and the profile fields created from that text.",
+        "Content and communications: messages, connection requests, posts, comments, group and community activity, reviews, reports you file and the members you block.",
         "Work records: applications, invitations, contract offers and signatures, milestones, project tasks, submissions and time entries.",
-        "Google contacts (only if you choose \u201cFind people you know from Google\u201d): with your permission we read the names and email addresses in your Google contacts once, in memory, to show which of them already have a public profile here. We do not store your contact list or Google\u2019s access token, which is revoked right after the read. If you choose to invite contacts, we email only the people you select (one invitation each, with a link to stop all future invitations) and keep only a one-way hash of their address after sending. Our use of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.",
-        "Usage data: product events such as an account being created, a search or an application, linked to your account when you are signed in; and how much of your AI allowance you have used.",
-        "Technical data: request logs (including IP address and browser type) and error reports, used for security and troubleshooting.",
+        "Contacts you choose to import: if you use “Find people you know from Google”, we read the names and email addresses in your Google contacts once, with your permission, to show which of them already have a public profile. We do not store your contact list. If you invite contacts, we email only the people you select and afterwards keep only a one-way hash of their address. Our use of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.",
+      ],
+      "Data we collect automatically:",
+      [
+        "Usage data: actions such as creating an account, searching or applying, linked to your account while you are signed in, and how much of your AI feature allowance you have used.",
+        "Device and log data: IP address, browser type, pages requested and error reports, used to keep the service secure and working.",
       ],
     ],
   },
   {
-    h: "Who can see your data",
+    h: "How we use your data",
     body: [
       [
-        "If your professional profile is public, anyone can see your name, headline, bio, skills, experience, location, time zone, availability, hourly rate and links. If you hide it, only you, administrators and the companies you apply to can see it.",
-        "Your resume file, your extracted resume data, your minimum salary expectation and your AI profile review are never shown to other users.",
-        "A company you apply to sees your application, your profile and the match explanation for its job.",
-        "Verification badges that administrators have confirmed, and reviews you receive, are shown wherever your profile can be seen. Rejected or pending verification requests and administrators' notes are visible only to you and administrators.",
-        "Nobody is told that you blocked them, and you cannot see who has blocked you.",
-        "Messages are visible only to the people in the conversation. Posts and group content are visible to the audience they were shared with.",
-        "Administrators can access account data where needed for support, security and moderation.",
+        "To provide the service: your account, profile, job search, matching, applications, messaging, contracts and work tools.",
+        "To send you service messages, such as sign-in codes and notifications about activity on your account. You choose which notifications you receive by email or push in Settings.",
+        "To keep the service safe: preventing fraud, spam and abuse, enforcing our Terms and Community Guidelines, and investigating reports.",
+        "To understand and improve how the service is used.",
+        "To meet legal obligations.",
       ],
+      "Legal bases (where the GDPR or similar laws apply): performance of our contract with you; our legitimate interests in operating a secure and useful service; your consent, where we ask for it (for example importing contacts), which you can withdraw at any time; and compliance with legal obligations.",
     ],
   },
   {
-    h: "Why we process it",
+    h: "How we use AI",
     body: [
-      "To provide the service you signed up for (your account, profile, matching, applications, messaging and work tools); for our legitimate interest in keeping the service secure, preventing abuse and understanding how it is used; and on the basis of your consent where we ask for it.",
+      "We use AI models to extract profile details from your resume, to review your profile and suggest improvements, to write match explanations and to power the in-app assistant. Match scores are calculated by the platform from profile and job data. To produce this output, the relevant text (for example your resume, profile or a job description) is sent to an AI model provider acting on our behalf.",
+      "AI output can be wrong. You can review and edit everything extracted from your resume. The platform does not decide who is hired; organisations and professionals do.",
     ],
   },
   {
-    h: "How AI is used",
+    h: "How your information is shared",
     body: [
-      "AI models are used to extract profile fields from your resume, to review your profile and suggest improvements, and to write match explanations. Match scores themselves are calculated by the platform from profile and job data. AI output can be wrong: you can review and edit everything extracted from your resume, and hiring decisions are made by people, not by the platform.",
-      "To produce this output, the relevant text (for example your resume text, profile or a job description) is sent to the AI provider in use at the time.",
-      fact(OPERATOR.aiProviders, "AI providers that receive this data, and whether they may retain or train on it"),
-    ],
-  },
-  {
-    h: "Service providers",
-    body: [
-      "We use these providers to run the service. They process data on our behalf. We do not sell personal data and do not share it with advertisers.",
+      "With other members, as you choose:",
       [
-        "Supabase: database, sign-in and file storage",
-        "Render: application servers for the API",
-        "Cloudflare: website hosting and delivery",
-        "Resend: email delivery (sign-in codes, and notices when an organisation invites you or changes the status of your application)",
-        "Sentry: error monitoring",
-        "Job boards we list jobs from receive nothing about you. If you apply to an external job, you do so on that board's own site.",
+        "If your profile is public, anyone can see your name, headline, bio, skills, experience, location, time zone, availability, hourly rate and links. If you hide it, it is visible only to you, our staff and organisations you apply to.",
+        "An organisation you apply to sees your application, your profile and the match explanation for its job.",
+        "Messages are visible to the people in the conversation; posts and group content to the audience you shared them with.",
+        "Verification badges we have confirmed and reviews you receive are shown wherever your profile is visible.",
+        "Your resume file, extracted resume data, minimum salary expectation and AI profile review are never shown to other members. Nobody is told that you blocked them.",
       ],
-      fact(OPERATOR.cacheProvider, "Provider of the temporary data cache (used for rate limiting)"),
-      "Payments are not processed through Remote AI Platform at the moment. If that changes, this notice will name the payment provider first.",
+      "With service providers who process data on our behalf, under contracts that limit their use of it:",
+      [
+        "Cloud hosting, database and file storage providers",
+        "Authentication (sign-in) providers",
+        "Email delivery providers",
+        "AI model providers",
+        "Error monitoring and security providers",
+      ],
+      "For legal reasons: when required by law or legal process, or to protect the rights, safety and property of our members, the public or Remote AI Platform.",
+      "In a business transfer: if Remote AI Platform is involved in a merger, acquisition or sale of assets, your data may transfer as part of it, and this policy will continue to apply.",
+      "We do not sell your personal data, and we do not share it with advertisers or for cross-context behavioural advertising. Job boards whose listings we show receive nothing about you; if you apply to an external job, you do so on that site under its own terms.",
+      "Payments are not processed through Remote AI Platform at this time. If that changes, we will update this policy first.",
     ],
   },
   {
-    h: "Where data is stored",
+    h: "Data retention",
     body: [
-      fact(
-        OPERATOR.dataLocations,
-        "Countries or regions where data is stored and processed, and the safeguards used for transfers outside the EU/EEA",
-      ),
+      "We keep account, profile and content data while your account is open. When you delete your account in Settings > Privacy, your profile, resume, applications, messages you sent and other content are deleted promptly, and your sign-in account is removed.",
+      `If you have signed contracts or payment records with another member, we cannot delete those records on request because the other party relies on them. In that case ${write} and we will close your account, keep only those records and delete the rest.`,
+      "To stop an old session from recreating a deleted account, we keep a one-way code derived from your sign-in identifier. It contains no name or email address.",
+      "Logs, error reports and backups are kept only as long as needed for security, troubleshooting and recovery, and then deleted or overwritten on a rolling basis.",
     ],
   },
   {
-    h: "How long we keep it",
+    h: "Your rights and choices",
     body: [
-      "Account, profile and content data are kept while your account exists. When you delete your account in Settings > Privacy, your profile, resume file, applications, messages you sent and other content are deleted straight away, and your sign-in account is removed from our sign-in provider, unless we must keep specific records to meet a legal obligation.",
-      "If you have signed contracts or payment records with another member, write to us to close your account instead: the other party relies on those records, so we keep them and remove everything else.",
-      "To stop an old, still-open session from recreating a deleted account, we keep a one-way code derived from your sign-in account's identifier and the time of deletion. It contains no name or email address and cannot be turned back into them. You can sign up again at any time.",
-      fact(OPERATOR.logRetention, "Retention period for request logs, error reports and backups"),
+      [
+        "Access and portability: download a copy of your data at any time in Settings > Privacy.",
+        "Correction: edit your profile and account details yourself.",
+        "Deletion: delete your account in Settings > Privacy.",
+        "Visibility: make your profile public or hidden, and block members.",
+        "Notifications: choose which notifications you receive and how.",
+        "Objection, restriction and withdrawal of consent: contact us and we will act on your request.",
+      ],
+      "EEA, UK and Swiss residents: under the GDPR you have the rights to access, rectify, erase, restrict, object and port your data, and to lodge a complaint with your local data protection authority.",
+      "California residents: under the CCPA you have the rights to know, access, correct and delete your personal information, and not to be discriminated against for exercising these rights. We do not sell or share personal information as those terms are defined in the CCPA.",
+      `To make a request that you cannot complete in Settings, ${write} from the email address on your account. We may need to verify your identity, and we respond within the time required by applicable law.`,
     ],
   },
   {
-    h: "Your rights",
+    h: "International data transfers",
     body: [
-      "Depending on where you live (for example under the GDPR), you have the right to access your data, correct it, have it deleted, receive it in a portable format, object to or restrict processing, and withdraw consent at any time. You can correct most profile data yourself in your profile. You can download your data and delete your account yourself in Settings > Privacy. For anything else, contact us at the address above.",
-      "You also have the right to lodge a complaint with a data protection supervisory authority.",
-      fact(OPERATOR.supervisoryAuthority, "Supervisory authority responsible for the operator"),
+      "Remote AI Platform serves members worldwide, and our service providers may process data in countries other than your own, including outside the European Economic Area. Where we transfer personal data internationally, we rely on appropriate safeguards such as the European Commission's Standard Contractual Clauses.",
     ],
   },
   {
-    h: "Storage on your device",
+    h: "Security",
     body: [
-      "We store your sign-in session and a few interface choices (such as the job or conversation you last opened) in your browser's local storage so the site works. They are removed when you sign out. We do not use advertising or cross-site tracking cookies.",
+      "We protect your data with encryption in transit, server-side access checks on every request, and restricted staff access. No service can guarantee perfect security; see our Trust and Security page for how to report a vulnerability.",
     ],
   },
   {
-    h: "Changes",
-    body: ["If this notice changes materially, we will update the date above and tell registered users."],
+    h: "Children",
+    body: [
+      `Remote AI Platform is a professional service and is not directed at children. You must be at least 16 years old to use it. If you believe a child has given us personal data, ${write} and we will delete it.`,
+    ],
+  },
+  {
+    h: "Cookies and similar technologies",
+    body: [
+      "We use only the storage needed to run the service, such as keeping you signed in and remembering interface choices. We do not use advertising or cross-site tracking cookies. See our Cookie Policy for details.",
+    ],
+  },
+  {
+    h: "Changes to this policy",
+    body: [
+      "We may update this policy from time to time. If we make material changes, we will update the date at the top and notify registered members before the changes take effect.",
+    ],
+  },
+  {
+    h: "Contact us",
+    body: [`For any privacy question or request, ${write}.`],
   },
 ];
 
 export const TERMS: Section[] = [
   {
-    h: "About these terms",
+    h: "Introduction",
     body: [
-      "These terms apply when you use Remote AI Platform (remoteaiplatform.com).",
-      fact(OPERATOR.legalName, "Name of the operator you are contracting with"),
+      `These Terms of Service ("Terms") are an agreement between you and Remote AI Platform and apply when you use ${OPERATOR.website} and related services (the "Service"). By creating an account or using the Service, you agree to these Terms, our Privacy Policy and our Community Guidelines.`,
     ],
   },
   {
-    h: "Accounts",
+    h: "Eligibility and accounts",
     body: [
-      "You need an account to apply, message or hire. Give accurate information, keep your sign-in method secure, and use one account per person or organisation. Company accounts must be operated by someone authorised to act for that organisation.",
+      [
+        "You must be at least 16 years old and able to form a binding contract.",
+        "Give accurate information and keep it up to date. Use one account per person.",
+        "Keep access to your email and sign-in methods secure; you are responsible for activity on your account.",
+        "If you act for an organisation, you confirm you are authorised to do so.",
+      ],
     ],
   },
   {
-    h: "Jobs from other sites",
+    h: "The Service",
     body: [
-      "Many listings are collected from public job boards and link to the original posting. We do not verify them, and the original site's terms apply when you apply there. Applying through an external link is not recorded as an application on Remote AI Platform.",
+      "Remote AI Platform lets professionals build profiles, find and apply for remote work and collaborate, and lets organisations post jobs, review candidates and manage work. The Service is free to use today and has no paid plans.",
+      "Many job listings are collected from public job boards and link to the original posting. We do not verify every listing, and the original site's terms apply when you apply there.",
+    ],
+  },
+  {
+    h: "Your content",
+    body: [
+      "You own the content you post. You give Remote AI Platform a worldwide, non-exclusive, royalty-free licence to host, store, display and process it as needed to operate and improve the Service, for example showing your public profile to other members. This licence ends when you delete the content or your account, except for content others have already shared or that we must keep by law.",
+      "You are responsible for your content and confirm that you have the rights to post it.",
     ],
   },
   {
     h: "AI features",
     body: [
-      "Resume extraction, profile reviews and match explanations are generated automatically and can be incomplete or wrong. Check anything that matters before relying on it. The platform does not decide who is hired.",
+      "Resume extraction, profile reviews, match explanations and the assistant are generated automatically and can be incomplete or wrong. Check anything important before relying on it. Use of AI features is subject to fair-use allowances. The platform does not make hiring decisions.",
     ],
   },
   {
-    h: "Contracts and payments",
+    h: "Contracts between members",
     body: [
-      "Contracts created on the platform are agreements between the organisation and the professional. Once either party has signed, the terms can no longer be edited. Payments are not processed through Remote AI Platform yet: approving a milestone does not move any money, and the parties arrange payment between themselves.",
+      "Contracts created on the Service are agreements between the organisation and the professional; Remote AI Platform is not a party to them. Once either party has signed, the terms can no longer be edited. Payments are not processed through Remote AI Platform at this time: approving a milestone does not move money, and the parties arrange payment between themselves.",
     ],
   },
   {
     h: "Acceptable use",
     body: [
+      "You agree to follow our Community Guidelines. In particular, you must not:",
       [
-        "No false, misleading or discriminatory job posts or profiles.",
-        "No spam, harassment, or content that is illegal or infringes others' rights.",
-        "No scraping, automated account creation or attempts to access data that is not yours.",
-        "No attempts to disrupt or probe the service without permission.",
+        "post false, misleading, fraudulent or discriminatory jobs or profiles;",
+        "harass, spam or impersonate others, or post illegal or infringing content;",
+        "scrape the Service, create accounts by automated means or access data that is not yours;",
+        "probe, disrupt or overload the Service, except through responsible disclosure as described on our Trust and Security page.",
       ],
-      "You can report content or accounts from the page where you see them. We may remove content or suspend accounts that break these rules.",
     ],
   },
   {
-    h: "Ending your account",
+    h: "Suspension and termination",
     body: [
-      "You can stop using the service at any time and ask us to delete your account. We may suspend or close accounts that break these terms.",
+      `You can stop using the Service and delete your account at any time in Settings > Privacy. We may remove content, restrict features, or suspend or close accounts that break these Terms or put members at risk. If you believe we made a mistake, ${write} to appeal.`,
     ],
   },
   {
-    h: "Liability and governing law",
+    h: "Disclaimers",
     body: [
-      fact(OPERATOR.governingLaw, "Liability terms, governing law and place of jurisdiction (requires legal review)"),
+      'The Service is provided "as is" and "as available". To the extent permitted by law, we make no warranties about the accuracy of listings, member content or AI output, or that the Service will be uninterrupted or error-free. We do not guarantee that you will find work or hire anyone.',
+    ],
+  },
+  {
+    h: "Limitation of liability",
+    body: [
+      "To the extent permitted by law, Remote AI Platform is not liable for indirect, incidental or consequential damages, or for the conduct of members or third-party sites. Nothing in these Terms limits liability that cannot be limited by law, including for intent, gross negligence or injury to life, body or health, or your statutory rights as a consumer.",
+    ],
+  },
+  {
+    h: "Changes to these Terms",
+    body: [
+      "We may update these Terms. If changes are material, we will notify registered members before they take effect. Continuing to use the Service after that means you accept the updated Terms.",
+    ],
+  },
+  {
+    h: "Contact",
+    body: [`Questions about these Terms? ${write[0].toUpperCase()}${write.slice(1)}.`],
+  },
+];
+
+export const COOKIES: Section[] = [
+  {
+    h: "Our approach",
+    body: [
+      "Remote AI Platform does not use advertising cookies, analytics cookies or cross-site tracking. We only store what is strictly necessary to make the Service work, so no cookie consent banner is needed.",
+    ],
+  },
+  {
+    h: "What we store on your device",
+    body: [
+      [
+        "Sign-in session: keeps you signed in between visits. Removed when you sign out.",
+        "Interface preferences: small settings such as the job or conversation you last opened, so the site picks up where you left off.",
+        "Notifications: if you turn on push notifications, your browser stores the subscription needed to deliver them.",
+      ],
+      "This information is kept in your browser's local storage and is not used to track you across other websites.",
+    ],
+  },
+  {
+    h: "Your choices",
+    body: [
+      "You can clear this storage at any time in your browser settings; you will then need to sign in again. If we ever introduce optional cookies, we will update this policy and ask for your consent first.",
+    ],
+  },
+  { h: "Contact", body: [`Questions? ${write[0].toUpperCase()}${write.slice(1)}.`] },
+];
+
+export const GUIDELINES: Section[] = [
+  {
+    h: "Our community",
+    body: [
+      "Remote AI Platform is a professional community. These guidelines keep it trustworthy, safe and useful for everyone. They apply to profiles, job posts, messages, posts, comments, groups and every other part of the Service.",
+    ],
+  },
+  {
+    h: "Be real",
+    body: [
+      [
+        "Use your real name and accurate information about your skills, experience and organisation.",
+        "Do not impersonate people or organisations, or create fake or duplicate accounts.",
+        "Post only genuine jobs that you are authorised to fill, with honest descriptions of the role and pay.",
+      ],
+    ],
+  },
+  {
+    h: "Be safe",
+    body: [
+      [
+        "No harassment, threats, hate speech or bullying.",
+        "No scams: never ask candidates to pay a fee, buy equipment or share bank details or identity documents to be considered for a job.",
+        "No sexual, violent or otherwise graphic content.",
+        "Do not share other people's private information without permission.",
+      ],
+    ],
+  },
+  {
+    h: "Be professional",
+    body: [
+      [
+        "No spam, unsolicited bulk messages, chain messages or misleading links.",
+        "No discrimination in job posts or hiring based on protected characteristics.",
+        "Respect intellectual property: post only content you have the right to share.",
+        "Do not use the Service for anything illegal.",
+      ],
+    ],
+  },
+  {
+    h: "Reporting and enforcement",
+    body: [
+      "Use Report on any profile, job, post or message that breaks these guidelines. Our team reviews reports and may remove content, limit features, or suspend or close accounts. Serious or repeated violations can lead to a permanent ban.",
+      `If you think we made a mistake, ${write} to appeal. If you are in immediate danger, contact your local emergency services.`,
+    ],
+  },
+];
+
+export const SECURITY: Section[] = [
+  {
+    h: "How we protect your account",
+    body: [
+      [
+        "All traffic to Remote AI Platform is encrypted in transit with HTTPS.",
+        "You sign in with one-time codes or a trusted account provider; we never store passwords.",
+        "Access to your data is checked on our servers on every request, and staff access is restricted.",
+        "You can review where you are signed in, sign out everywhere, and download or delete your data in Settings.",
+      ],
+    ],
+  },
+  {
+    h: "Staying safe on Remote AI Platform",
+    body: [
+      [
+        "We will never ask for your sign-in code. Do not share it with anyone.",
+        "Legitimate employers will not ask you to pay to apply, buy equipment or share bank details before an offer.",
+        "Report suspicious jobs, profiles or messages with Report so our team can review them.",
+      ],
+    ],
+  },
+  {
+    h: "Responsible disclosure",
+    body: [
+      `If you believe you have found a security vulnerability, please ${write} with a description and steps to reproduce. We will acknowledge your report, keep you updated and credit you if you wish.`,
+      [
+        "Only test against your own account and data.",
+        "Do not access, change or delete other people's data.",
+        "Do not degrade the Service (no denial-of-service, spam or social engineering).",
+        "Give us reasonable time to fix the issue before disclosing it publicly.",
+      ],
+      "We will not pursue legal action against good-faith research that follows these rules.",
+    ],
+  },
+];
+
+export const ABOUT: Section[] = [
+  {
+    h: "Who we are",
+    body: [
+      "Remote AI Platform connects professionals with remote jobs and freelance work, and gives organisations the tools to find, hire and work with them, all in one place.",
+    ],
+  },
+  {
+    h: "What you can do",
+    body: [
+      [
+        "Search remote jobs gathered from many job boards, with filters for location, time zone and work type.",
+        "Build a professional profile, optionally with help from AI to import your resume.",
+        "See explainable match scores that show why a job fits.",
+        "Apply, message, sign contracts and manage projects, documents and meetings.",
+        "Join communities and groups to learn and grow your network.",
+      ],
+    ],
+  },
+  {
+    h: "Our principles",
+    body: [
+      [
+        "Transparency: matches are explained, and AI output is always yours to review and edit.",
+        "Privacy: you control your profile visibility and your data, and we never sell it.",
+        "Fairness: people make hiring decisions, not algorithms.",
+      ],
+      "Remote AI Platform is free to use.",
+    ],
+  },
+  { h: "Contact", body: [`Questions, press or partnerships: ${CONTACT_EMAIL}.`] },
+];
+
+export const CONTACT: Section[] = [
+  {
+    h: "How can we help?",
+    body: [
+      `Write to ${CONTACT_EMAIL} for anything about Remote AI Platform. Including the email address on your account and, if relevant, a link to the page or item helps us respond faster.`,
+      [
+        "Account and sign-in help",
+        "Privacy requests, such as a copy of your data or closing your account",
+        "Reporting abuse, scams or a security issue",
+        "Appeals about removed content or account restrictions",
+        "Press and partnerships",
+      ],
+      "Please never include sign-in codes in an email.",
+    ],
+  },
+  {
+    h: "Before you write",
+    body: [
+      "Many questions are answered in our Help Centre. To report a specific profile, job or message, use Report on that item; it reaches our moderation team directly.",
     ],
   },
 ];
@@ -208,31 +412,64 @@ export const TERMS: Section[] = [
 export const IMPRESSUM: Section[] = [
   {
     h: "Provider",
-    body: [
-      fact(OPERATOR.legalName, "Full legal name of the provider"),
-      fact(OPERATOR.address?.join(", ") ?? null, "Postal address"),
-    ],
+    body: [`${OPERATOR.legalName} (${OPERATOR.website})`],
   },
-  { h: "Contact", body: [fact(OPERATOR.contactEmail, "Contact email address")] },
-  {
-    h: "VAT ID / commercial register",
-    body: [fact(OPERATOR.vatOrRegister, "VAT ID or register entry, or a statement that none applies")],
-  },
-  {
-    h: "Responsible for content",
-    body: [fact(OPERATOR.contentResponsible, "Person responsible for editorial content")],
-  },
+  { h: "Contact", body: [`Email: ${CONTACT_EMAIL}`] },
   {
     h: "Links and user content",
     body: [
-      "Job listings from other sites and content posted by users are not our own content. We act on reports of unlawful content and remove it once we become aware of it. We have no control over external sites we link to.",
+      "Job listings from other sites and content posted by members are not our own content. We act on reports of unlawful content and remove it once we become aware of it. We have no control over external sites we link to.",
     ],
   },
 ];
 
+export const HELP_FAQ: [string, string][] = [
+  [
+    "How do I sign in?",
+    "Enter your email and use the one-time sign-in code we send you. You can also continue with Google, Microsoft or GitHub.",
+  ],
+  [
+    "What determines my match score?",
+    "Skills contribute 40%, experience 25%, role 15%, timezone 8%, availability 7%, rate 3% and remote preference 2%. Review the explanation alongside your own judgment.",
+  ],
+  [
+    "How do contracts work?",
+    "Review the scope and milestones, then sign. Once either party signs, the terms can no longer be edited. The professional delivers each milestone and the company approves it. Payments are not processed through Remote AI Platform yet, so approving work does not move money.",
+  ],
+  [
+    "Can I withdraw an application?",
+    "You can withdraw an active application before it is accepted or rejected. Review the current status in Applications.",
+  ],
+  [
+    "How do I import a resume?",
+    "Choose AI Resume Import during onboarding. Supported resumes are PDF or DOCX up to 10 MB. Review extracted information and correct it before completing your profile.",
+  ],
+  [
+    "How do I manage a company?",
+    "Choose the hiring role at registration, complete the organization profile, then use Hiring to post jobs and review candidates.",
+  ],
+  [
+    "How do I download or delete my data?",
+    "Go to Settings > Privacy to download a copy of your data or delete your account.",
+  ],
+  [
+    "Where do I report a problem?",
+    "Use the report action on the relevant job, profile or community content. Our moderation team reviews every report.",
+  ],
+  [
+    "How do I contact support?",
+    `Email ${CONTACT_EMAIL}. Use the same address for privacy requests, such as a copy of your data or closing your account.`,
+  ],
+  [
+    "How do I report abuse or a security issue?",
+    `Use Report on the post, profile or job, or email ${CONTACT_EMAIL} with details. Please don’t include sign-in codes.`,
+  ],
+  ["Are there paid plans?", "Remote AI Platform is free to use today and has no paid subscription plans."],
+];
+
 export const isFact = (b: Block): b is Fact => typeof b === "object" && !Array.isArray(b);
 
-/** Operator facts still missing on a page; non-empty means the page is not launch-ready. */
+/** Facts still missing on a page; non-empty means the page is not launch-ready. */
 export const pendingFacts = (sections: Section[]) =>
   sections
     .flatMap((s) => s.body)

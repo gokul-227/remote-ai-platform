@@ -89,6 +89,16 @@ export function PublicFooter() {
               </Link>
             </li>
             <li>
+              <Link className={linkClass} href="/cookies">
+                Cookies
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/community-guidelines">
+                Community guidelines
+              </Link>
+            </li>
+            <li>
               <Link className={linkClass} href="/impressum">
                 Legal notice
               </Link>
@@ -99,8 +109,18 @@ export function PublicFooter() {
           <h2 className="mb-3 text-sm font-semibold text-navy">Support</h2>
           <ul className="space-y-2">
             <li>
-              <Link className={linkClass} href="/#help">
+              <Link className={linkClass} href="/about">
+                About
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/help">
                 Help centre
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/contact">
+                Contact
               </Link>
             </li>
             <li>
@@ -108,13 +128,11 @@ export function PublicFooter() {
                 Service status
               </Link>
             </li>
-            {OPERATOR.contactEmail && (
-              <li>
-                <a className={linkClass} href={`mailto:${OPERATOR.contactEmail}`}>
-                  Contact us
-                </a>
-              </li>
-            )}
+            <li>
+              <a className={linkClass} href={`mailto:${OPERATOR.contactEmail}`}>
+                {OPERATOR.contactEmail}
+              </a>
+            </li>
           </ul>
         </nav>
       </div>
