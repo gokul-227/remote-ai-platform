@@ -51,6 +51,19 @@
 	reverse_proxy admin:8080
 }
 
+# Browser error reports only (Sentry protocol) -> self-hosted GlitchTip.
+# The GlitchTip dashboard itself is never exposed; it stays on 127.0.0.1 (SSH tunnel).
+{$ERRORS_HOST:errors.remoteaiplatform.com} {
+	import common
+	@ingest path_regexp ingest ^/api/[0-9]+/(envelope|store)/?$
+	handle @ingest {
+		reverse_proxy glitchtip-web:8080
+	}
+	handle {
+		respond 404
+	}
+}
+
 {$API_HOST:api.remoteaiplatform.com} {
 	import common
 	header {
