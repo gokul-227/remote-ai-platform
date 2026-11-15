@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 import { deployEnvProblems, isIndexable } from "./src/lib/deployEnv";
@@ -68,6 +69,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Self-contained Node server (.next/standalone/apps/web/server.js) for the
+  // VM's Docker image. OpenNext (the dev Worker) builds from standalone output
+  // too, so both deploy targets share this setting.
+  output: "standalone",
+  // Trace from the monorepo root so hoisted workspace dependencies are copied.
+  outputFileTracingRoot: path.join(__dirname, "../.."),
+  poweredByHeader: false,
+  // The edge proxy (Caddy) compresses with zstd/gzip; compressing again in
+  // Node would only spend server CPU.
+  compress: false,
   // Allow clearbit image domains
   images: {
     remotePatterns: [

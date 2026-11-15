@@ -236,7 +236,7 @@ services:
     container_name: remote-ai-platform-web
     restart: unless-stopped
     # Production image — no bind mount so the built .next output is used.
-    # The Dockerfile CMD starts `next start` on port 3000.
+    # The Dockerfile CMD runs the standalone server (apps/web/server.js) on port 3000.
     ports:
       - "3000:3000"
     environment:

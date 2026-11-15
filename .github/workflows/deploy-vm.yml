@@ -1,0 +1,217 @@
+name: Deploy production (VM)
+
+# Production runs on one Oracle VM (infra/docker/docker-compose.prod.yml):
+# web (Next.js standalone), admin (static console), api/worker/scheduler and
+# the edge Caddy. Cloudflare is DNS + proxy only -- no Workers.
+#
+# After CI passes on a push to prod: build multi-arch images (linux/arm64 on a
+# native arm runner, linux/amd64 on x86), push them to GHCR tagged with the
+# commit SHA and `prod`, then deploy over SSH with infra/docker/deploy.sh
+# (pull, alembic upgrade head, up -d, health gate, automatic rollback to the
+# previous SHA). A manual dispatch builds images for any branch and deploys
+# only when `deploy` is ticked and the branch is prod.
+#
+# See deploy-frontend.yml's history for why workflow_run deploys require
+# event == 'push' from this repository (a fork PR's branch could be named prod).
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [prod]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Deploy to the VM after building (prod branch only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-vm-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY_PREFIX: ghcr.io/${{ github.repository }}
+
+jobs:
+  meta:
+    if: >
+      github.event_name == 'workflow_dispatch' || (
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.m.outputs.sha }}
+      branch: ${{ steps.m.outputs.branch }}
+      deploy: ${{ steps.m.outputs.deploy }}
+      build_time: ${{ steps.m.outputs.build_time }}
+    steps:
+      - id: m
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          DISPATCH_DEPLOY: ${{ inputs.deploy }}
+        run: |
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "branch=$(echo "$BRANCH" | tr -c 'a-zA-Z0-9._-\n' '-')" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          deploy=false
+          if [ "$BRANCH" = "prod" ]; then
+            # Deploy only the commit that is still the tip of prod.
+            tip=$(gh api "repos/${{ github.repository }}/git/ref/heads/prod" --jq .object.sha)
+            if [ "${{ github.event_name }}" = "workflow_run" ] || [ "$DISPATCH_DEPLOY" = "true" ]; then
+              [ "$tip" = "$SHA" ] && deploy=true || echo "Not deploying: $SHA is no longer the tip of prod ($tip)."
+            fi
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: meta
+    timeout-minutes: 40
+    strategy:
+      fail-fast: true
+      matrix:
+        image: [web, admin, api, caddy]
+        platform: [linux/amd64, linux/arm64]
+    runs-on: ${{ matrix.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: ctx
+        run: |
+          case "${{ matrix.image }}" in
+            web)   echo "context=." >> "$GITHUB_OUTPUT"; echo "file=apps/web/Dockerfile" >> "$GITHUB_OUTPUT"; echo "target=runner" >> "$GITHUB_OUTPUT" ;;
+            admin) echo "context=." >> "$GITHUB_OUTPUT"; echo "file=apps/admin/Dockerfile" >> "$GITHUB_OUTPUT"; echo "target=" >> "$GITHUB_OUTPUT" ;;
+            api)   echo "context=apps/api" >> "$GITHUB_OUTPUT"; echo "file=apps/api/Dockerfile" >> "$GITHUB_OUTPUT"; echo "target=production" >> "$GITHUB_OUTPUT" ;;
+            caddy) echo "context=infra/docker/caddy" >> "$GITHUB_OUTPUT"; echo "file=infra/docker/caddy/Dockerfile" >> "$GITHUB_OUTPUT"; echo "target=" >> "$GITHUB_OUTPUT" ;;
+          esac
+          echo "arch=${{ matrix.platform }}" | sed 's|linux/||' >> "$GITHUB_OUTPUT"
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.ctx.outputs.context }}
+          file: ${{ steps.ctx.outputs.file }}
+          target: ${{ steps.ctx.outputs.target }}
+          platforms: ${{ matrix.platform }}
+          # NEXT_PUBLIC_* are public by definition (they ship in the browser
+          # bundle); the publishable Supabase key is not a secret either.
+          build-args: |
+            GIT_SHA=${{ needs.meta.outputs.sha }}
+            NEXT_PUBLIC_DEPLOY_ENV=production
+            NEXT_PUBLIC_SITE_URL=${{ vars.PROD_FRONTEND_URL }}
+            NEXT_PUBLIC_API_URL=${{ vars.PROD_API_BASE_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_FIREBASE_CONFIG=${{ vars.FIREBASE_WEB_CONFIG }}
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+            NEXT_PUBLIC_BUILD_SHA=${{ needs.meta.outputs.sha }}
+            NEXT_PUBLIC_BUILD_TIME=${{ needs.meta.outputs.build_time }}
+            NEXT_PUBLIC_DEPLOYMENT_ID=${{ github.run_id }}-${{ github.run_attempt }}
+          outputs: type=image,name=${{ env.REGISTRY_PREFIX }}-${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ steps.ctx.outputs.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-${{ steps.ctx.outputs.arch }}
+      - name: Record digest
+        run: |
+          mkdir -p digests
+          echo "${{ steps.push.outputs.digest }}" > "digests/${{ matrix.image }}-${{ steps.ctx.outputs.arch }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.image }}-${{ steps.ctx.outputs.arch }}
+          path: digests/*
+          retention-days: 1
+
+  manifest:
+    needs: [meta, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        image: [web, admin, api, caddy]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digest-${{ matrix.image }}-*
+          merge-multiple: true
+          path: digests
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create the multi-arch tags
+        env:
+          IMAGE: ${{ env.REGISTRY_PREFIX }}-${{ matrix.image }}
+          SHA: ${{ needs.meta.outputs.sha }}
+          BRANCH: ${{ needs.meta.outputs.branch }}
+        run: |
+          refs=""
+          for f in digests/*; do refs="$refs $IMAGE@$(cat "$f")"; done
+          extra=""
+          # caddy has no per-commit behaviour; keep a stable tag for compose.
+          [ "${{ matrix.image }}" = "caddy" ] && extra="-t $IMAGE:latest"
+          docker buildx imagetools create -t "$IMAGE:$SHA" -t "$IMAGE:$BRANCH" $extra $refs
+          docker buildx imagetools inspect "$IMAGE:$SHA"
+
+  deploy:
+    needs: [meta, manifest]
+    if: needs.meta.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://remoteaiplatform.com
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.meta.outputs.sha }}
+      - name: Configure SSH
+        env:
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_HOST: ${{ vars.VM_HOST }}
+          KNOWN_HOSTS: ${{ vars.VM_SSH_KNOWN_HOSTS }}
+        run: |
+          [ -n "$VM_SSH_KEY" ] && [ -n "$VM_HOST" ] || { echo "::error::VM_SSH_KEY secret and VM_HOST variable are required"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/vm && chmod 600 ~/.ssh/vm
+          if [ -n "$KNOWN_HOSTS" ]; then printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else ssh-keyscan -T 15 "$VM_HOST" > ~/.ssh/known_hosts; fi
+          printf 'Host vm\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/vm\n  ServerAliveInterval 30\n' \
+            "$VM_HOST" "${{ vars.VM_SSH_USER || 'opc' }}" > ~/.ssh/config
+      - name: Ship the compose files
+        run: |
+          ssh vm 'mkdir -p /opt/rap/repo/infra/docker/postgres'
+          scp infra/docker/docker-compose.prod.yml infra/docker/Caddyfile infra/docker/deploy.sh vm:/opt/rap/repo/infra/docker/
+          scp infra/docker/postgres/postgresql.conf infra/docker/postgres/01-extensions.sql vm:/opt/rap/repo/infra/docker/postgres/
+      - name: Log the VM in to GHCR (read-only, this job's token)
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | ssh vm 'docker login ghcr.io -u "${{ github.actor }}" --password-stdin >/dev/null && echo logged in'
+      - name: Deploy, health-gate, roll back on failure
+        run: ssh vm "bash /opt/rap/repo/infra/docker/deploy.sh ${{ needs.meta.outputs.sha }}"
+      - name: Log out of GHCR
+        if: always()
+        run: ssh vm 'docker logout ghcr.io >/dev/null 2>&1 || true'
+      - name: Smoke test through Cloudflare (after DNS cut-over)
+        if: vars.VM_EDGE_LIVE == 'true'
+        run: |
+          expected="${{ needs.meta.outputs.sha }}"
+          live=$(curl -sf --max-time 15 "${{ vars.PROD_FRONTEND_URL }}/api/version" | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))")
+          [ "$live" = "$expected" ] || { echo "::error::site reports $live, expected $expected"; exit 1; }
+          curl -sf --max-time 15 "${{ vars.PROD_FRONTEND_URL }}/robots.txt" | grep -qx "Allow: /"
+          curl -sf --max-time 15 "https://admin.remoteaiplatform.com/" | grep -q "Operations console"
+          curl -sf --max-time 30 -o /dev/null "${{ vars.PROD_API_BASE_URL }}/health/ready"

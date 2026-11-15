@@ -1,15 +1,71 @@
+# Edge for the single production VM: remoteaiplatform.com (web), www (redirect),
+# admin.remoteaiplatform.com (staff console) and api.remoteaiplatform.com (API).
+#
+# Cloudflare proxies every hostname (orange cloud, SSL mode "Full (strict)").
+# Certificates: ACME DNS-01 through the Cloudflare API (CLOUDFLARE_API_TOKEN,
+# Zone:DNS:Edit on remoteaiplatform.com), which works behind the proxy where
+# HTTP-01/TLS-ALPN cannot. Alternative: a Cloudflare Origin CA certificate --
+# mount it at /etc/caddy/certs, drop the acme_dns line and add to (common)
+#   tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+# (see the infrastructure runbook). Needs the custom image in infra/docker/caddy.
 {
-	# Cloudflare proxies the hostname; Caddy still terminates TLS with its own
-	# certificate so traffic between Cloudflare and the VM is encrypted.
 	email contact@remoteaiplatform.com
+	acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	order rate_limit before reverse_proxy
+	servers {
+		# Requests arrive from Cloudflare; the visitor's address is in
+		# CF-Connecting-IP. Ranges: https://www.cloudflare.com/ips/
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+	}
 }
 
-{$API_HOST} {
+(common) {
 	encode zstd gzip
+	header -Server
+	log {
+		output stdout
+		format json
+	}
+}
+
+{$WEB_HOST:remoteaiplatform.com} {
+	import common
+	# Security headers (CSP, HSTS, frame/referrer policy) come from
+	# next.config.ts and pass through unchanged.
+	@public_assets path /brand/* /icons/* /brand-mark.svg /favicon.ico /icon.svg /apple-icon.png /opengraph-image.png /twitter-image.png
+	header @public_assets Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+	# /_next/static/* is content-hashed; Next already sends immutable caching.
+	reverse_proxy web:3000 {
+		health_uri /api/version
+		health_interval 30s
+	}
+}
+
+{$WWW_HOST:www.remoteaiplatform.com} {
+	redir https://{$WEB_HOST:remoteaiplatform.com}{uri} permanent
+}
+
+{$ADMIN_HOST:admin.remoteaiplatform.com} {
+	import common
+	reverse_proxy admin:8080
+}
+
+{$API_HOST:api.remoteaiplatform.com} {
+	import common
 	header {
-		-Server
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options nosniff
+	}
+	# Coarse per-client ceiling at the edge; the API keeps its own finer
+	# per-route limits (RATE_LIMIT_*). Health checks are exempt.
+	@limited not path /health/*
+	rate_limit @limited {
+		zone api_per_ip {
+			key {client_ip}
+			events 600
+			window 1m
+		}
 	}
 	reverse_proxy api:8000 {
 		health_uri /health/live
