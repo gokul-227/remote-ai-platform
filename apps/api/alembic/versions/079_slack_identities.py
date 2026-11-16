@@ -51,6 +51,11 @@ def upgrade() -> None:
         ),
     )
     op.create_index("ix_slack_link_codes_user_id", "slack_link_codes", ["user_id"])
+    # DATA-03: every public table has row level security (no policies; the API's
+    # owner role bypasses RLS).
+    if op.get_bind().dialect.name == "postgresql":
+        for table in ("slack_identities", "slack_link_codes"):
+            op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
 
 
 def downgrade() -> None:

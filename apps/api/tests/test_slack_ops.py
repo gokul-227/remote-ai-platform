@@ -667,7 +667,10 @@ async def test_dispatch_falls_back_in_process(monkeypatch, outbox):
 def test_docs_list_every_command():
     from pathlib import Path
 
-    doc = (Path(__file__).resolve().parents[3] / "docs" / "operations" / "slack.md").read_text()
+    parents = Path(__file__).resolve().parents
+    if len(parents) < 4 or not (parents[3] / "docs" / "operations" / "slack.md").exists():
+        pytest.skip("docs/ is not available (API-only test container)")
+    doc = (parents[3] / "docs" / "operations" / "slack.md").read_text()
     for name, cmd in commands.REGISTRY.items():
         if name == cmd.name:
             assert f"`/rap {name}" in doc, name
