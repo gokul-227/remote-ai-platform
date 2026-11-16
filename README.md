@@ -4,7 +4,6 @@
 
 [![CI](https://github.com/gokul-227/remote-ai-platform/actions/workflows/ci.yml/badge.svg?branch=prod)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/gokul-227/remote-ai-platform/actions/workflows/codeql.yml/badge.svg?branch=prod)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/codeql.yml)
-[![Production canary](https://github.com/gokul-227/remote-ai-platform/actions/workflows/production-canary.yml/badge.svg)](https://github.com/gokul-227/remote-ai-platform/actions/workflows/production-canary.yml)
 ![License: proprietary](https://img.shields.io/badge/license-proprietary-red)
 
 A remote-work platform with one account type: every member can find jobs and freelance work, hire, build a

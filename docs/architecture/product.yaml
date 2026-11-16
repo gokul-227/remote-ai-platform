@@ -1016,9 +1016,6 @@ stack:
   - name: Infisical secrets
     icon: concepts/key-round
     evidence: README.md ~ /Infisical/
-  - name: Canary & keep-warm
-    icon: concepts/radar
-    evidence: .github/workflows/production-canary.yml
   - name: Prometheus /metrics
     icon: prometheus
     evidence: 'apps/api/pyproject.toml: prometheus-fastapi-instrumentator'

@@ -285,8 +285,6 @@ components:
   evidence:
   - .github/workflows/ci.yml ~ /health/(ready|live)/
   - .github/workflows/deploy-vm.yml ~ /health/(ready|live)/
-  - .github/workflows/keep-render-warm.yml ~ /health/(ready|live)/
-  - .github/workflows/production-canary.yml ~ /health/(ready|live)/
 - id: infisical
   name: Infisical
   type: secrets
