@@ -68,7 +68,9 @@ export default async function JobPage({ params }: Props) {
   const related = others(sameTopic.jobs.filter((j) => !employerJobs.some((e) => e.id === j.id)));
   return (
     <PublicFrame>
-      {!job.expired_at && permitsGoogleJobs(job.source) && <JsonLd data={jobPostingJsonLd(job, site)} />}
+      {!job.expired_at && permitsGoogleJobs(job.source) && jobPostingJsonLd(job, site) && (
+        <JsonLd data={jobPostingJsonLd(job, site)!} />
+      )}
       <JsonLd data={breadcrumbJsonLd(site, trail)} />
       <Breadcrumbs trail={trail} />
       <article className="mt-4 rounded-xl border border-slate-200 bg-white p-6 sm:p-8">

@@ -110,16 +110,17 @@ const job = (over: Partial<PublicJob> = {}): PublicJob => ({
 describe("structured data validates", () => {
   it.each([
     ["remote with pay and country", job()],
-    ["remote, no country, no pay", job({ location: "Remote", salary_min: null, salary_max: null })],
+    ["remote in a named country, no pay", job({ location: "Remote (Germany)", salary_min: null, salary_max: null })],
     ["on-site", job({ is_remote: false, location: "Berlin, Germany", job_type: "contract" })],
     ["unknown employment type", job({ job_type: "unspecified" })],
     ["hourly", job({ salary_period: "hour", salary_min: 50, salary_max: null })],
   ])("JobPosting: %s", (_, j) => {
-    expect(validate(jobPostingJsonLd(j, SITE))).toEqual([]);
+    expect(validate(jobPostingJsonLd(j, SITE)!)).toEqual([]);
   });
 
   it("never claims worldwide eligibility the listing does not state", () => {
-    expect(jobPostingJsonLd(job({ location: "Remote" }), SITE).applicantLocationRequirements).toBeUndefined();
+    // Google rejects remote postings without eligible countries, so none is emitted.
+    expect(jobPostingJsonLd(job({ location: "Remote" }), SITE)).toBeNull();
   });
 
   it("breadcrumbs, organisation, website and guides", () => {
