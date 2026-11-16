@@ -1,0 +1,53 @@
+# Production-like API stack for the capacity test (docs/operations/capacity.md),
+# against the seeded scale database (tests/load/scale, container rap-scale-pg).
+# LOCAL ONLY. Same limits/settings as infra/docker/docker-compose.prod.yml for the
+# api (2 CPU, 3 uvicorn workers, Redis cache tier) and redis; no web/caddy (the
+# public pages are served from Cloudflare's cache in production).
+#
+#   docker build -t rap-api:scale apps/api
+#   PORT=9998 ISSUER=http://host.docker.internal:9998/auth/v1 python3 tests/e2e/mock-supabase/server.py &
+#   docker compose -p rap-capacity -f tests/load/docker-compose.capacity.yml up -d
+#   k6 run -e API=http://localhost:28039 -e AUTH=http://localhost:9998 tests/load/capacity.js
+name: rap-capacity
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 192mb --maxmemory-policy noeviction --save ""
+    deploy:
+      resources:
+        limits: { memory: 256M }
+
+  job-cache:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 192mb --maxmemory-policy allkeys-lru --save ""
+    deploy:
+      resources:
+        limits: { memory: 256M }
+
+  api:
+    image: ${RAP_IMAGE:-rap-api:scale}
+    command: ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${WEB_CONCURRENCY} --no-access-log"]
+    ports: ["28039:8000"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      APP_ENV: production
+      DEBUG: "false"
+      SECRET_KEY: capacity-test-only-not-a-secret-0123456789abcdef
+      DATABASE_URL: postgresql+asyncpg://rap:rap@host.docker.internal:55432/rap
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      JOB_CACHE_REDIS_ENABLED: "true"
+      JOB_CACHE_REDIS_URL: redis://job-cache:6379/0
+      DATABASE_POOL_SIZE: "6"
+      DATABASE_MAX_OVERFLOW: "4"
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
+      SUPABASE_URL: http://host.docker.internal:9998
+      AUTH_PRIMARY_PROVIDER: supabase
+      AUTH_ACCEPT_SUPABASE: "true"
+      RATE_LIMIT_MAX_REQUESTS: "1000000"
+      CORS_ORIGINS: http://localhost:3000
+    depends_on: [redis]
+    deploy:
+      resources:
+        limits: { memory: 2G, cpus: "${API_CPUS:-2.0}" }

@@ -1559,11 +1559,11 @@ paths:
         schema:
           anyOf:
           - type: string
-            maxLength: 60
+            maxLength: 120
           - type: 'null'
-          description: Text in the posting's location (a city, e.g. Berlin)
+          description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
           title: Location
-        description: Text in the posting's location (a city, e.g. Berlin)
+        description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
       - name: employer
         in: query
         required: false
@@ -1687,9 +1687,12 @@ paths:
         required: false
         schema:
           type: integer
+          maximum: 10000
           minimum: 0
+          description: Offset; deeper pages use `after`
           default: 0
           title: Skip
+        description: Offset; deeper pages use `after`
       - name: limit
         in: query
         required: false
@@ -1699,6 +1702,17 @@ paths:
           minimum: 1
           default: 20
           title: Limit
+      - name: after
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
+          title: After
+        description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
       responses:
         '200':
           description: Successful Response
@@ -1931,11 +1945,11 @@ paths:
         schema:
           anyOf:
           - type: string
-            maxLength: 60
+            maxLength: 120
           - type: 'null'
-          description: Text in the posting's location (a city, e.g. Berlin)
+          description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
           title: Location
-        description: Text in the posting's location (a city, e.g. Berlin)
+        description: Text in the posting's location (a city, e.g. Berlin); a|b matches either
       - name: employer
         in: query
         required: false
@@ -2059,9 +2073,12 @@ paths:
         required: false
         schema:
           type: integer
+          maximum: 10000
           minimum: 0
+          description: Offset; deeper pages use `after`
           default: 0
           title: Skip
+        description: Offset; deeper pages use `after`
       - name: limit
         in: query
         required: false
@@ -2071,6 +2088,17 @@ paths:
           minimum: 1
           default: 20
           title: Limit
+      - name: after
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
+          title: After
+        description: Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)
       responses:
         '200':
           description: Successful Response
@@ -2129,6 +2157,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/jobs/landing-count:
+    get:
+      tags:
+      - Job Posts
+      summary: Landing Count
+      description: 'Lightweight hub eligibility: no salary, skills or employer aggregation.'
+      operationId: landing_count_api_v1_jobs_landing_count_get
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Query
+      - name: job_type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 30
+          - type: 'null'
+          title: Job Type
+      - name: location
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 120
+          - type: 'null'
+          title: Location
+      - name: employer
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Employer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                title: Response Landing Count Api V1 Jobs Landing Count Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/jobs/landing-stats:
     get:
       tags:
@@ -2164,7 +2252,7 @@ paths:
         schema:
           anyOf:
           - type: string
-            maxLength: 60
+            maxLength: 120
           - type: 'null'
           title: Location
       - name: employer

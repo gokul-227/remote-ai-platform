@@ -22,30 +22,50 @@ export function BrandLockup({ size = 36, variant = "compact" }: { size?: number;
   );
 }
 
-/** Header for public, crawlable pages: brand, job search entry, sign-in. */
-export function PublicHeader() {
+/** The site's main sections: one consistent list in the header of every public page (sitelinks). */
+export const MAIN_SECTIONS: [string, string][] = [
+  ["Remote jobs", "/remote-jobs"],
+  ["Work from home", "/work-from-home-jobs"],
+  ["By country", "/remote-jobs/in"],
+  ["Companies", "/remote-jobs/at"],
+  ["Guides", "/guides"],
+];
+
+/** Header for public, crawlable pages: brand, the main sections, sign-in. */
+export function SiteNav({ home = false }: { home?: boolean }) {
   return (
     <header className="border-b border-slate-200 bg-white">
       <nav
         aria-label="Main navigation"
         className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3"
       >
-        <BrandLockup />
+        <BrandLockup size={home ? 40 : 36} />
+        <ul className="order-3 flex w-full flex-wrap gap-x-5 gap-y-1 text-sm font-semibold sm:order-none sm:w-auto">
+          {MAIN_SECTIONS.map(([label, href]) => (
+            <li key={href}>
+              <Link href={href} className={`text-navy hover:text-brand hover:underline ${focus}`}>
+                {label}
+              </Link>
+            </li>
+          ))}
+        </ul>
         <div className="flex items-center gap-4 text-sm font-semibold">
-          <Link href="/remote-jobs" className={`text-navy hover:text-brand hover:underline ${focus}`}>
-            Find jobs
-          </Link>
-          <Link href="/#login" className={`text-navy hover:underline ${focus}`}>
+          {/* Native hash navigation notifies AppEntry; Next Link pushState does not emit hashchange. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/#login" className={`text-navy hover:underline ${focus}`}>
             Sign in
-          </Link>
-          <Link href="/#register" className={`rounded-lg bg-brand px-4 py-2 text-white hover:bg-brand-hover ${focus}`}>
+          </a>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/#register" className={`rounded-lg bg-brand px-4 py-2 text-white hover:bg-brand-hover ${focus}`}>
             Join free
-          </Link>
+          </a>
         </div>
       </nav>
     </header>
   );
 }
+
+export const PublicHeader = () => <SiteNav />;
 
 /** Trust footer: legal, security, status and contact on every public page. */
 export function PublicFooter() {
@@ -64,6 +84,31 @@ export function PublicFooter() {
             <li>
               <Link className={linkClass} href="/remote-jobs">
                 All remote jobs
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/work-from-home-jobs">
+                Work from home jobs
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/remote-work">
+                Remote work
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/remote-jobs/in">
+                Remote jobs by country
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/remote-jobs/in/usa">
+                Remote jobs in the US
+              </Link>
+            </li>
+            <li>
+              <Link className={linkClass} href="/remote-jobs/in/uk">
+                Remote jobs in the UK
               </Link>
             </li>
             <li>

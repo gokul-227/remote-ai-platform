@@ -1,0 +1,45 @@
+
+
+  █ THRESHOLDS 
+
+    checks
+    ✓ 'rate==1' rate=100.00%
+
+    http_req_failed
+    ✓ 'rate==0' rate=0.00%
+
+    http_reqs{route:list_cursor}
+    ✓ 'count>0' count=1
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 13      1.040701/s
+    checks_succeeded...: 100.00% 13 out of 13
+    checks_failed......: 0.00%   0 out of 13
+
+    ✓ list 200
+    ✓ list array
+    ✓ cursor no duplicate jobs
+    ✓ detail 200
+    ✓ public auxiliary 200
+
+    HTTP
+    http_req_duration..............: avg=18.12ms min=4.24ms med=14.01ms max=39.97ms p(90)=37.63ms p(95)=38.8ms
+      { expected_response:true }...: avg=18.12ms min=4.24ms med=14.01ms max=39.97ms p(90)=37.63ms p(95)=38.8ms
+    http_req_failed................: 0.00%  0 out of 7
+    http_reqs......................: 7      0.560378/s
+      { route:list_cursor }........: 1      0.080054/s
+
+    EXECUTION
+    iteration_duration.............: avg=4.16s   min=3.38s  med=4.14s   max=4.96s   p(90)=4.79s   p(95)=4.87s 
+    iterations.....................: 3      0.240162/s
+    vus............................: 1      min=1      max=1
+    vus_max........................: 1      min=1      max=1
+
+    NETWORK
+    data_received..................: 287 kB 23 kB/s
+    data_sent......................: 815 B  65 B/s
+
+
+

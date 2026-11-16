@@ -97,3 +97,34 @@ async def test_indexable_newest_first_skips_noindex_sources():
         repo = JobRepository(db)
         assert await repo.indexable_newest_first([older, blocked, newer, stale]) == [newer, older]
         assert await repo.syndicated([blocked, older]) == [older]
+
+
+@pytest.mark.asyncio
+async def test_location_aliases_match_list_count_and_landing_stats(client: AsyncClient):
+    usa = await _job(location="Remote, USA")
+    spelled = await _job(location="Remote, United States")
+    await _job(location="Canada")
+    await _job(location="USA", expired_at=datetime.now(UTC))
+    await _job(location="United States", is_deleted=True)
+    params = {"location": " USA |united states|u.s."}
+    listed = await client.get("/api/v1/jobs", params=params)
+    assert listed.status_code == 200
+    assert {j["id"] for j in listed.json()} == {str(usa), str(spelled)}
+    assert int(listed.headers["x-total-count"]) == 2
+    stats = await client.get("/api/v1/jobs/landing-stats", params=params)
+    assert stats.status_code == 200
+    assert stats.json()["total"] == 2
+    single = await client.get("/api/v1/jobs", params={"location": "Canada"})
+    assert len(single.json()) == 1
+    assert single.json()[0]["location"] == "Canada"
+
+
+@pytest.mark.asyncio
+async def test_location_alias_validation_and_wildcards(client: AsyncClient):
+    await _job(location="USA")
+    await _job(location="Canada")
+    for endpoint in ("/api/v1/jobs", "/api/v1/jobs/landing-stats"):
+        assert (await client.get(endpoint, params={"location": "x" * 121})).status_code == 422
+    listed = await client.get("/api/v1/jobs", params={"location": "%USA_|"})
+    assert listed.status_code == 200
+    assert [j["location"] for j in listed.json()] == ["USA"]

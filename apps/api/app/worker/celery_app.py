@@ -56,6 +56,10 @@ celery_app.conf.update(
         },
         "check-backups": {"task": "ops.check_backups", "schedule": crontab(hour=8, minute=0)},
         "job-alerts": {"task": "jobs.send_alerts", "schedule": crontab(minute=40)},
+        "refresh-catalogue-stats": {
+            "task": "jobs.refresh_catalogue_stats",
+            "schedule": settings.JOB_STATS_REFRESH_MINUTES * 60.0,
+        },
         "backfill-job-filters": {
             "task": "jobs.backfill_filters",
             "schedule": crontab(hour=2, minute=50),
@@ -87,7 +91,9 @@ def _acquire_beat_lock(**_: object) -> None:
 def _worker_ready(sender=None, **_: object) -> None:  # noqa: ANN001
     from app.worker.monitoring import start_monitor
 
-    queues = sorted(sender.task_consumer.queues) if sender is not None else []
+    queues = (
+        sorted(queue.name for queue in sender.task_consumer.queues) if sender is not None else []
+    )
     start_monitor("worker", queues)
 
 

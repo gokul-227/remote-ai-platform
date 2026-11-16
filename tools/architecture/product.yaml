@@ -42,7 +42,7 @@ features:
     personas: [visitor, professional]
     screens: [jobs, jobdetail, saved, search, companies, company]
     api: [jobs, jobs.preferences, jobs.saved_searches, saved_jobs, search, seo]
-    uses: [job-boards, redis]
+    uses: [job-boards, job-cache]
   - id: matching
     icon: concepts/sparkles
     name: AI matching

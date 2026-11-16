@@ -9,7 +9,8 @@ import { JobList, JoinCta } from "./JobList";
 import { PublicFilterForm, fetchFilteredJobs } from "./PublicFilters";
 import { activeCount, parseFilters } from "@/lib/jobFilters";
 
-export const dynamic = "force-dynamic";
+// Dynamic because it reads searchParams. Not force-dynamic: that would turn off
+// the fetch cache (every request would hit the API for every aggregate).
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 const searchTerm = (raw: string | string[] | undefined) => (typeof raw === "string" ? raw.trim().slice(0, 100) : "");
 

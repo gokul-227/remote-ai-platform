@@ -8,6 +8,7 @@ notification preferences for the "job" category decide in-app, email
 `/jobs/saved-searches` is never shadowed by `/jobs/{job_id}`.
 """
 
+import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -23,7 +24,7 @@ from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
 from app.domains.jobs.models import SavedJobSearch
 from app.domains.jobs.repository import JobRepository
-from app.domains.jobs.schemas import JobSearchQuery
+from app.domains.jobs.schemas import PAGING, JobSearchQuery
 
 router = APIRouter(prefix="/jobs/saved-searches", tags=["Saved Job Searches"])
 
@@ -37,7 +38,7 @@ def clean_params(params: dict[str, Any]) -> dict[str, Any]:
         q = JobSearchQuery.model_validate(params)
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail="Invalid search filters") from exc
-    return q.model_dump(mode="json", exclude_none=True, exclude={"skip", "limit", "sort"})
+    return q.model_dump(mode="json", exclude_none=True, exclude=PAGING)
 
 
 class SavedSearchIn(BaseModel):
@@ -141,37 +142,70 @@ def search_link(params: dict[str, Any]) -> str:
     return "#jobs" + (f"?{urlencode(pairs)}" if pairs else "")
 
 
+ALERT_BATCH = 500
+ALERT_MAX_PER_RUN = 20000
+
+
 async def send_job_alerts(db: AsyncSession, now: datetime | None = None) -> dict[str, int]:
-    """One alert per due saved search with new matches since the last alert."""
+    """One alert per due saved search with new matches since the last alert.
+
+    Scales with the number of *due* searches, not all of them: due rows are
+    picked in SQL (oldest first, ALERT_BATCH at a time, at most ALERT_MAX_PER_RUN
+    per hourly run; the rest wait an hour), and searches with identical filters
+    and the same starting point share one count query."""
+    from sqlalchemy import func, or_
+
     from app.services.notifications.service import notify_user
 
     now = now or datetime.now(UTC)
     repo = JobRepository(db)
     sent = checked = 0
-    rows = (await db.scalars(select(SavedJobSearch).where(SavedJobSearch.alerts.is_(True)))).all()
-    for row in rows:
-        since = row.last_notified_at or row.created_at
-        if since.tzinfo is None:
-            since = since.replace(tzinfo=UTC)
-        if now - since < FREQUENCIES.get(row.frequency, FREQUENCIES["daily"]):
-            continue
-        checked += 1
-        try:
-            filters = JobSearchQuery.model_validate(row.params).filters()
-        except ValidationError:
-            continue
-        n = await repo.count(**filters, posted_since=since)
-        row.last_notified_at = now
-        if n:
-            await notify_user(
-                db,
-                row.user_id,
-                f"{n} new job{'s' if n != 1 else ''} for “{row.name}”",
-                "New jobs match your saved search.",
-                kind="job_alert",
-                email_event_key=f"job_alert:{row.id}:{now:%Y%m%d%H}",
-                email_link=search_link(row.params),
+    counts: dict[tuple[str, str], int] = {}
+    last_ts = func.coalesce(SavedJobSearch.last_notified_at, SavedJobSearch.created_at)
+    due = or_(
+        *[
+            (SavedJobSearch.frequency == name) & (last_ts <= now - every)
+            for name, every in FREQUENCIES.items()
+        ],
+        SavedJobSearch.frequency.not_in(list(FREQUENCIES)) & (last_ts <= now - FREQUENCIES["daily"]),
+    )
+    while checked < ALERT_MAX_PER_RUN:
+        rows = (
+            await db.scalars(
+                select(SavedJobSearch)
+                .where(SavedJobSearch.alerts.is_(True), due)
+                .order_by(last_ts, SavedJobSearch.id)
+                .limit(ALERT_BATCH)
             )
-            sent += 1
+        ).all()
+        if not rows:
+            break
+        for row in rows:
+            since = row.last_notified_at or row.created_at
+            if since.tzinfo is None:
+                since = since.replace(tzinfo=UTC)
+            checked += 1
+            row.last_notified_at = now  # also for rows with stale filters: never re-picked hourly
+            try:
+                filters = JobSearchQuery.model_validate(row.params).filters()
+            except ValidationError:
+                continue
+            memo = (json.dumps(filters, sort_keys=True, default=str), since.isoformat())
+            if memo not in counts:
+                counts[memo] = await repo.count(**filters, posted_since=since)
+            n = counts[memo]
+            if n:
+                await notify_user(
+                    db,
+                    row.user_id,
+                    f"{n} new job{'s' if n != 1 else ''} for “{row.name}”",
+                    "New jobs match your saved search.",
+                    kind="job_alert",
+                    email_event_key=f"job_alert:{row.id}:{now:%Y%m%d%H}",
+                    email_link=search_link(row.params),
+                )
+                sent += 1
         await db.commit()
+        if len(rows) < ALERT_BATCH:
+            break
     return {"checked": checked, "sent": sent}

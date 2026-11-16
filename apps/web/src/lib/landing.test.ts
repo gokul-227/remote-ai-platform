@@ -63,8 +63,8 @@ describe("landing specs", () => {
   it("resolves every page type and rejects unknown slugs", () => {
     expect(topicSpec("python")?.heading).toBe("Remote Python jobs");
     expect(topicSpec("nope")).toBeNull();
-    expect(placeSpec("germany")?.filter).toEqual({ location: "germany" });
-    expect(topicPlaceSpec("python", "germany")?.filter).toEqual({ query: "python", location: "germany" });
+    expect(placeSpec("germany")?.filter).toEqual({ location: "germany|deutschland" });
+    expect(topicPlaceSpec("python", "germany")?.filter).toEqual({ query: "python", location: "germany|deutschland" });
     expect(roleSkillSpec("backend", "python")?.filter).toEqual({ query: "backend python" });
     expect(roleSkillSpec("python", "backend")).toBeNull();
     expect(roleSkill("in", "python")).toBeNull();

@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import RedisCache
+from app.core.config import settings
 from app.core.database import get_db
 from app.domains.admin.repository import AdminRepository
 from app.domains.auth.dependencies import get_optional_user, require_role
@@ -25,7 +26,7 @@ from app.domains.jobs.derive import (
     WORKPLACE_TYPES,
 )
 from app.domains.jobs.models import JobPost
-from app.domains.jobs.repository import JobRepository
+from app.domains.jobs.repository import JobRepository, job_cursor
 from app.domains.jobs.schemas import (
     JobAvailability,
     JobEmployer,
@@ -90,7 +91,9 @@ def job_search_query(
     company_id: uuid.UUID | None = Query(None, description="Filter by company profile UUID"),
     company: list[str] | None = Query(None, description="Company names (any of)"),
     location: str | None = Query(
-        None, max_length=60, description="Text in the posting's location (a city, e.g. Berlin)"
+        None,
+        max_length=120,
+        description="Text in the posting's location (a city, e.g. Berlin); a|b matches either",
     ),
     employer: str | None = Query(
         None, max_length=200, description="Exact employer name (case-insensitive)"
@@ -109,8 +112,15 @@ def job_search_query(
     ),
     verified: bool | None = Query(None, description="Only verified companies"),
     sort: str = Query("recent", pattern="^(recent|relevant|salary)$"),
-    skip: int = Query(0, ge=0),
+    skip: int = Query(
+        0, ge=0, le=settings.JOB_LIST_MAX_SKIP, description="Offset; deeper pages use `after`"
+    ),
     limit: int = Query(20, ge=1, le=100),
+    after: str | None = Query(
+        None,
+        max_length=80,
+        description="Keyset cursor (X-Next-Cursor of the previous page; sort=recent only)",
+    ),
 ) -> JobSearchQuery:
     if (min_salary is not None or max_salary is not None) and not (
         salary_currency and salary_period
@@ -156,6 +166,7 @@ def job_search_query(
         sort=sort,
         skip=skip,
         limit=limit,
+        after=after,
     )
 
 
@@ -171,6 +182,10 @@ async def list_jobs(
     """
     raw_jobs, total = await service.search_jobs_cached(search_params)
     response.headers["X-Total-Count"] = str(total)
+    if search_params.query and total >= settings.JOB_KEYWORD_COUNT_CAP:
+        response.headers["X-Total-Count-Capped"] = "true"
+    if search_params.sort == "recent" and len(raw_jobs) == search_params.limit:
+        response.headers["X-Next-Cursor"] = job_cursor(raw_jobs[-1])
     return [JobPostResponse.model_validate(j) for j in raw_jobs]
 
 
@@ -212,12 +227,35 @@ async def list_sitemap_entries(
     return [JobSitemapEntry.model_validate(r) for r in cached]
 
 
+@router.get("/landing-count", response_model=dict[str, int])
+async def landing_count(
+    response: Response,
+    query: str | None = Query(None, max_length=100),
+    job_type: str | None = Query(None, max_length=30),
+    location: str | None = Query(None, max_length=120),
+    employer: str | None = Query(None, max_length=200),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """Lightweight hub eligibility: no salary, skills or employer aggregation."""
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    key = f"landing-count:v1:{query}|{job_type}|{location}|{employer}".lower()
+    cached = await _seo_cache.get_json(key)
+    if cached is not None:
+        return {"total": int(cached["total"])}
+    total = await JobRepository(db).count(
+        query=query, job_type=job_type, location=location, employer=employer, is_remote=True
+    )
+    result = {"total": total}
+    await _seo_cache.set_json(key, result, ttl_seconds=SEO_CACHE_TTL)
+    return result
+
+
 @router.get("/landing-stats", response_model=JobLandingStats)
 async def landing_stats(
     response: Response,
     query: str | None = Query(None, max_length=100),
     job_type: str | None = Query(None, max_length=30),
-    location: str | None = Query(None, max_length=60),
+    location: str | None = Query(None, max_length=120),
     employer: str | None = Query(None, max_length=200),
     db: AsyncSession = Depends(get_db),
 ) -> JobLandingStats:

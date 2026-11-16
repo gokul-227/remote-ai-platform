@@ -148,10 +148,16 @@ class JobSearchQuery(BaseModel):
     sort: str = "recent"
     skip: int = 0
     limit: int = 20
+    # Keyset cursor for sort=recent ("<posted_at ISO>,<id>" of the last job seen):
+    # deep pages without OFFSET (X-Next-Cursor on the response).
+    after: str | None = None
 
     def filters(self) -> dict[str, Any]:
         """The filter fields, as the repository's search/count/facets take them."""
-        return self.model_dump(exclude={"skip", "limit", "sort"})
+        return self.model_dump(exclude=PAGING)
+
+
+PAGING = {"skip", "limit", "sort", "after"}
 
 
 class FacetValue(BaseModel):

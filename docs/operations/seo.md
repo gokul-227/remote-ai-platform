@@ -14,7 +14,9 @@ promises a ranking.
 | Home | `/` | Organization + WebSite JSON-LD (with `SearchAction` → `/remote-jobs?q=`) |
 | Job index | `/remote-jobs` | Categories, places, companies link, search form, paginated latest jobs (`?page=N`); `?q=` results are `noindex,follow` |
 | Category | `/remote-jobs/<topic>` | 40 role/skill/way-of-working topics (`lib/seo.ts` `TOPICS`) |
-| Location | `/remote-jobs/in/<place>` | 27 places (`PLACES`): countries, regions, worldwide |
+| Location | `/remote-jobs/in/<place>` | Places in `PLACES`: countries, regions, worldwide |
+| Country hub | `/remote-jobs/in` | Live counts grouped into countries and regions |
+| Remote work hubs | `/remote-work`, `/work-from-home-jobs` | Latest jobs, live role/place links, guides and visible FAQs |
 | Role × location | `/remote-jobs/<topic>/in/<place>` | every topic × place |
 | Role × skill | `/remote-jobs/<role>/<skill>` | 11 roles × 8 skills (`lib/landing.ts` `ROLES`, `SKILLS`) |
 | Companies hiring | `/remote-jobs/at` | employers with ≥ 3 live remote jobs |
@@ -210,3 +212,18 @@ Expired jobs drop the JSON-LD at once, answer 410 after 30 days, and are sent to
   `structuredData.test.ts`, `seoRank.test.ts`,
   `apps/api/tests/test_seo_landing.py`, `test_search_indexing.py`, `test_sitemap_entries.py`, `test_seo_rank.py`,
   `tests/e2e/tests/seo-ssr.spec.ts`.
+
+### Public hub FAQs and location aliases
+
+Home and the broad hubs link to role/place pages with at least three known live jobs,
+ordered by count. If all aggregates fail, uncounted navigation links remain; they must
+not be described as a ranking. FAQs omit salary and employer claims without enough
+data, and FAQPage JSON-LD mirrors the visible answers. Aggregate counts may be cached;
+these are listing counts, not a promise of unique vacancies or hiring eligibility.
+
+The jobs list and landing-stats accept the same `location` filter (maximum 120
+characters). Up to five pipe-separated substrings match any spelling, ignoring case;
+empty alternatives and SQL wildcard characters are stripped. This is free-text
+matching, not country eligibility verification. Job-page place links use the same
+aliases. Preserve these semantics when integrating jobs repository/router performance
+changes, including list totals, expiration/deletion filtering and aggregate cache keys.

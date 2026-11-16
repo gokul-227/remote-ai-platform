@@ -189,12 +189,21 @@ components:
 - id: redis
   name: Redis
   type: cache
-  technology: Rate limits · read cache (in-memory fallback)
+  technology: Celery broker · rate limits · general cache (in-memory fallback)
   group: cache
   icon: redis
   status: active
   evidence:
   - 'apps/api/pyproject.toml: redis'
+- id: job-cache
+  name: Job query cache
+  type: cache
+  technology: Isolated Redis · disposable catalogue/query cache · allkeys-lru
+  group: cache
+  icon: redis
+  status: active
+  evidence:
+  - 'apps/api/app/core/config.py: JOB_CACHE_REDIS_URL'
 - id: webpush
   name: Browser push services (Web Push)
   type: external
@@ -599,6 +608,9 @@ connections:
 - from: api
   to: redis
   label: RESP
+- from: api
+  to: job-cache
+  label: RESP · job queries
 - from: api
   to: r2
   label: S3 API (signed URLs)

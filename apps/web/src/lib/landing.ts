@@ -57,6 +57,19 @@ export async function fetchLandingJobs(filter: LandingFilter, page = 1): Promise
   }
 }
 
+/** Hub navigation needs counts only, not dozens of full salary/skill aggregates. */
+export async function fetchLandingCount(filter: LandingFilter): Promise<{ total: number } | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/jobs/landing-count?${params(filter)}`, {
+      next: { revalidate: 21600 },
+      signal: AbortSignal.timeout(10000),
+    });
+    return res.ok ? ((await res.json()) as { total: number }) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchLandingStats(filter: LandingFilter): Promise<LandingStats | null> {
   try {
     const res = await fetch(`${API_URL}/api/v1/jobs/landing-stats?${params(filter)}`, {

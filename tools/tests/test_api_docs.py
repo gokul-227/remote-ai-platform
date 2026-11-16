@@ -110,6 +110,48 @@ def test_collection_is_deterministic_and_hash_tracks_the_spec(tmp_path: Path) ->
 
 
 @needs_node_tools
+def test_runtime_generators_disabled_but_examples_and_tokens_preserved(tmp_path: Path) -> None:
+    spec = json.loads(json.dumps(BASE_SPEC))
+    tokens = "{{$randomFirstName}} {{$guid}} {{baseUrl}}"
+    spec["paths"]["/api/v1/jobs"]["get"]["parameters"].append(
+        {"name": "name", "in": "query", "schema": {"type": "string"}, "example": tokens}
+    )
+    spec["paths"]["/api/v1/jobs"]["post"] = {
+        "tags": ["Jobs"],
+        "requestBody": {"content": {"application/json": {"schema": {
+            "type": "object", "properties": {
+                "name": {"type": "string", "example": tokens},
+                "created": {"type": "string", "format": "date-time"},
+            }, "required": ["name", "created"],
+        }}}},
+        "responses": {"201": {"description": "Created"}},
+    }
+    spec_path = write_spec(tmp_path, spec)
+    first = build(spec_path)
+    assert first == build(spec_path)
+    requests = first["collection"]["item"][0]["item"]
+    get = next(r["request"] for r in requests if r["request"]["method"] == "GET")
+    assert next(q["value"] for q in get["url"]["query"] if q["key"] == "name") == tokens
+    post = next(r["request"] for r in requests if r["request"]["method"] == "POST")
+    body = json.loads(post["body"]["raw"])
+    assert body["name"] == tokens
+    assert body["created"]  # schema example generation is still enabled
+
+    code = (
+        f"import {{ buildCollection }} from {json.dumps(SYNC_SCRIPT.as_uri())};"
+        "import { createRequire } from 'node:module';"
+        "import assert from 'node:assert/strict';"
+        f"const require = createRequire({json.dumps(SYNC_SCRIPT.as_uri())});"
+        f"await buildCollection({json.dumps(json.dumps(spec))});"
+        "const cr = createRequire(require.resolve('openapi-to-postmanv2'));"
+        "const sr = createRequire(cr.resolve('postman-collection'));"
+        "assert.deepEqual(sr('./lib/superstring/dynamic-variables'), {});"
+        "assert(!Object.keys(require.cache).some(p => p.includes('/@faker-js/faker/')));"
+    )
+    subprocess.run(["node", "--input-type=module", "-e", code], check=True, capture_output=True, timeout=120)
+
+
+@needs_node_tools
 def test_base_url_override_changes_the_collection(tmp_path: Path) -> None:
     spec_path = write_spec(tmp_path, BASE_SPEC)
     local, prod = build(spec_path), build(spec_path, "https://api.example.com")
