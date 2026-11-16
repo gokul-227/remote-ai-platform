@@ -31,12 +31,14 @@ export function nonThin<T>(items: T[], stats: (Pick<LandingStats, "total"> | nul
 async function hubCounts(filters: Parameters<typeof fetchLandingCount>[0][]) {
   const results: (Pick<LandingStats, "total"> | null)[] = Array(filters.length).fill(null);
   let next = 0;
-  await Promise.all(Array.from({ length: Math.min(4, filters.length) }, async () => {
-    while (next < filters.length) {
-      const index = next++;
-      results[index] = await fetchLandingCount(filters[index]);
-    }
-  }));
+  await Promise.all(
+    Array.from({ length: Math.min(4, filters.length) }, async () => {
+      while (next < filters.length) {
+        const index = next++;
+        results[index] = await fetchLandingCount(filters[index]);
+      }
+    }),
+  );
   return results;
 }
 

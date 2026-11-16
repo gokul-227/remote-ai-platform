@@ -83,13 +83,16 @@ describe("non-thin hubs", () => {
   it("bounds cold hub requests instead of flooding the API pool", async () => {
     let active = 0;
     let peak = 0;
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      active++;
-      peak = Math.max(peak, active);
-      await new Promise((resolve) => setTimeout(resolve, 1));
-      active--;
-      return new Response(JSON.stringify({ total: 4 }));
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        active++;
+        peak = Math.max(peak, active);
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        active--;
+        return new Response(JSON.stringify({ total: 4 }));
+      }),
+    );
     const live = await livePlaces();
     expect(live).toHaveLength(PLACES.length);
     expect(peak).toBe(4);
