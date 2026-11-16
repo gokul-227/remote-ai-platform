@@ -136,18 +136,15 @@ for the Indexing API; "Full" or "Restricted" is enough for reading). In Google C
 Measured with Lighthouse 12 (mobile, simulated throttling). The biggest problem was TTFB: keyword
 landing pages waited up to 45 s for `landing-stats`.
 
-- **Edge caching** (`infra/docker/Caddyfile`, `@public_html`): public SSR pages (`/`, `/remote-jobs*`,
-  `/jobs/*`, `/guides*`, `/sitemap`, company/person/post pages, legal) get
-  `Cache-Control: public, max-age=0, s-maxage=600, stale-while-revalidate=86400, stale-if-error=86400`
-  (and the same in `Cloudflare-CDN-Cache-Control`). RSC requests (`Rsc` header or `_rsc` query) keep
-  Next's `private, no-store`. The HTML is the same for every visitor (sign-in is client-side), so a shared
-  cache is safe. Sitemaps send `s-maxage=3600`.
-- **Cloudflare Cache Rule (owner, once)**: Cloudflare does not cache HTML by default. Caching → Cache
-  Rules → "Cache public HTML": hostname equals `remoteaiplatform.com` AND URI path matches the list above
-  (or starts with `/remote-jobs`, `/jobs/`, `/guides`) AND query string does not contain `_rsc` → *Eligible
-  for cache*, Edge TTL "Use cache-control header if present", Browser TTL "Respect origin". Check with
-  `curl -sI https://remoteaiplatform.com/remote-jobs/python | grep -i cf-cache-status` (expect `HIT` on the
-  second request).
+- **No edge HTML caching** (decision, Nov 2026): Cloudflare's HTML Cache Rule was removed because cached
+  pages kept pointing at `_next/static` chunks that the next deploy deleted. Caddy no longer adds
+  `s-maxage` to public pages and they keep Next's `private, no-store`. Re-enable edge HTML caching only
+  together with deploys that keep the previous build's chunks available (for example a shared,
+  append-only `_next/static` volume or object-storage asset prefix) and a cache purge on deploy.
+- **What keeps pages fast instead**: public pages are dynamic but not `force-dynamic` (that disables the
+  fetch cache), so every API read uses Next's fetch cache (`next.revalidate`, minutes to hours); the API
+  caches SEO aggregates in Redis; hub pages issue bounded, count-only requests. Sitemap shards are ISR.
+  Sitemaps still send `s-maxage=3600` (XML only, no chunk references).
 - **Client JS**: public pages render the auth provider from the root layout; it now loads the Supabase
   client and axios only on sign-out, cutting gzipped JS on every public page from ~257 KB to ~176 KB.
 
@@ -175,7 +172,8 @@ landing pages waited up to 45 s for `landing-stats`.
 9. **Landing pages are indexable**: `curl -s https://remoteaiplatform.com/remote-jobs/python | grep -o
    '<meta name="robots"[^>]*>'` prints nothing, and the title has a real count. Fetch
    `sitemaps/landing/0.xml` and confirm it answers within a minute with hundreds of `<loc>` entries.
-10. **Edge cache**: `cf-cache-status: HIT` on a repeated landing-page request.
+10. **Speed**: a repeated landing-page request answers in well under a second (`curl -s -o /dev/null -w
+    '%{time_total}'`); HTML stays `cf-cache-status: DYNAMIC` by design.
 
 ### Slack-ready weekly checklist (paste into #seo)
 
@@ -187,7 +185,7 @@ SEO weekly check – <date>
 [ ] Job postings enhancement: 0 errors
 [ ] Core Web Vitals: no Poor URL groups on mobile
 [ ] /remote-jobs/python not noindex, title count > 0
-[ ] cf-cache-status HIT on a landing page
+[ ] Landing page answers in < 1 s on a repeat request
 [ ] One new job page inspected: on Google / JobPosting detected
 ```
 
