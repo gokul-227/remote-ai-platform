@@ -273,7 +273,7 @@ export function OpenToOpportunitiesBanner({ open, onOptIn }: { open: boolean; on
       <p className="font-semibold">Want employers to find you?</p>
       <p className="mt-1 text-sm text-slate-700">
         Being open to opportunities is now something you choose. Turn it on to appear in employers&apos; candidate
-        search and job matches. You can turn it off at any time.
+        search, where they look for people to contact. You can turn it off at any time.
       </p>
       <div className="mt-3 flex gap-2">
         <Btn

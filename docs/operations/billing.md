@@ -102,7 +102,8 @@ monthly AI allowance (`AI_FREE_MONTHLY_TOKENS`) and 20 freelance proposals a mon
   balance (`GET /billing/messages/quote`). Replies, connections and non-employers are free.
 - **Open to opportunities** is opt-in (migration `079_billing_followups` set it off for everyone, since there
   was no record of deliberate opt-ins). Profiles show a one-time banner inviting members to turn it on. It
-  governs candidate search and employer-side matching; the member directory no longer filters on it.
+  governs only the paid candidate search: free job matching, ranked candidates, task offers and the member
+  directory neither filter on it nor score members lower without it.
 - **Account deletion** (`auth/retention.py`): live subscriptions are cancelled at period end in Stripe first
   (a Stripe failure refuses the deletion with 503); entitlements go with the account; purchases and invoices
   are kept with `user_id` cleared for accounting. The data export includes purchases, invoices,

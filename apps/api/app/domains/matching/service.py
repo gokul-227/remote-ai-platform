@@ -95,7 +95,9 @@ class MatchingService:
         else:
             timezone_score = 50.0
 
-        availability_score = 100.0 if engineer.is_open_to_work else 40.0
+        # Open to opportunities is an opt-in for the paid candidate search only;
+        # free job matching neither filters nor down-scores members who haven't opted in.
+        availability_score = 100.0
         compensation_score = 100.0
         if job.budget_max and engineer.hourly_rate and job.budget_max < engineer.hourly_rate:
             compensation_score = 60.0
@@ -263,9 +265,7 @@ class MatchingService:
         refresh: list[dict[str, Any]] = []
         seen = 0
         while seen < CANDIDATE_POOL_CEILING:
-            page = await self.engineer_repo.search(
-                is_open_to_work=True, skip=seen, limit=CANDIDATE_PAGE_SIZE
-            )
+            page = await self.engineer_repo.search(skip=seen, limit=CANDIDATE_PAGE_SIZE)
             for engineer in page:
                 match = self.score(engineer, job)
                 if engineer.id in already:

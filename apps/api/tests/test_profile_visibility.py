@@ -53,7 +53,6 @@ async def _engineer(client: AsyncClient, *, is_public: bool) -> tuple[dict, str,
             "hourly_rate": 90,
             "desired_salary_min": 150000,
             "is_public": is_public,
-            "is_open_to_work": True,
         },
     )
     assert resp.status_code == 201
