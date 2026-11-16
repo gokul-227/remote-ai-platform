@@ -50,9 +50,12 @@ export function SiteNav({ home = false }: { home?: boolean }) {
           ))}
         </ul>
         <div className="flex items-center gap-4 text-sm font-semibold">
+          {/* Native hash navigation notifies AppEntry; Next Link pushState does not emit hashchange. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/#login" className={`text-navy hover:underline ${focus}`}>
             Sign in
           </a>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/#register" className={`rounded-lg bg-brand px-4 py-2 text-white hover:bg-brand-hover ${focus}`}>
             Join free
           </a>

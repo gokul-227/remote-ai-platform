@@ -108,5 +108,62 @@ The workload now follows HTTP keyset cursors and requires all semantic checks to
 The seed/benchmark tools handle small datasets and exit nonzero on benchmark failure.
 Three tooling regression tests and shell syntax checks passed. An isolated PostgreSQL17
 31-job/1-member seed and query benchmark passed; injected benchmark failure exited1.
-The HTTP smoke rerun after correcting seeded seniority values has not been collected.
+The HTTP smoke rerun after correcting seeded seniority values was collected on
+16 November 2026; see the bounded local evidence below.
 This is tooling validation only, not a target-host throughput or10M-job capacity result.
+
+
+## 16 November 2026 bounded local HTTP cursor smoke
+
+Passed against source HEAD `67dee38bb3e2ac4ef02b0a9137df083b446c04a6`
+(with the local smoke scenario correction described below). The existing
+`rap-capacity-smoke-pg` container was inspected and reused without reseeding or
+migrating: PostgreSQL 17, loopback `127.0.0.1:55439`, database `rap`, 31 job rows,
+1 user, Alembic `076_merge_scale_and_boards`. Seeded seniority values were null,
+`associate`, `director`, `mid_senior`, and `entry`.
+
+No API was listening on port 28049 initially. A temporary single-worker API was
+started from this checkout's `apps/api` with the existing Python environment at
+`/Users/gokulr/Developer/GitHub/remote-ai-platform/apps/api/.venv/bin/python`:
+
+```sh
+DATABASE_URL=postgresql+asyncpg://rap:rap@127.0.0.1:55439/rap \
+APP_ENV=development DEBUG=false REDIS_URL=redis://127.0.0.1:6399/0 \
+JOB_CACHE_REDIS_ENABLED=false SENTRY_DSN= RATE_LIMIT_MAX_REQUESTS=1000 \
+DATABASE_POOL_SIZE=2 DATABASE_MAX_OVERFLOW=0 \
+/Users/gokulr/Developer/GitHub/remote-ai-platform/apps/api/.venv/bin/python \
+  -m uvicorn app.main:app --host 127.0.0.1 --port 28049 --workers 1 --no-access-log
+```
+
+Health at `2026-11-16T12:00:09Z` reported database healthy; Redis was deliberately
+unavailable on port 6399, workers/scheduler unknown. Shared Redis caching was
+disabled. This was a development API, not the production-like Compose harness.
+No mock auth or member workload was run.
+
+The previous smoke log showed k6 ignoring top-level `maxDuration` and selecting
+its default 10-minute limit. `cursor-smoke.js` now declares an explicit
+`shared-iterations` scenario: 1 VU, 3 iterations, `maxDuration: '30s'`,
+`gracefulStop: '0s'`. `k6 inspect` confirmed that configuration without warnings.
+
+```sh
+node --test tests/load/test_capacity.mjs
+k6 inspect tests/load/cursor-smoke.js
+k6 run --quiet --summary-export=/tmp/rap-capacity-http-20261116.json \
+  -e API=http://127.0.0.1:28049 tests/load/cursor-smoke.js
+```
+
+All commands exited 0. Three tooling regression tests passed. k6 v2.4.0 completed
+3 iterations, 0 interrupted, in approximately 12.49 seconds: 13/13 checks,
+7 HTTP requests, 0 failures, and exactly 1 `route:list_cursor` request. Observed
+request p95 was 38.80 ms across these seven requests only; this tiny sample is
+not a throughput or latency certification. Auxiliary browse requests are random.
+A separate bounded Python urllib check (5-second timeout per request) fetched
+`/api/v1/jobs?limit=20`, URL-encoded its `X-Next-Cursor` into `after`, then fetched
+the second page. Both responses were 200, with page lengths 20 and 11, zero ID
+overlap, 31 unique IDs, and no final cursor.
+
+Exact k6 output/metrics and cursor/page IDs are checked in under
+[`tests/load/evidence/2026-11-16-cursor-smoke`](../../tests/load/evidence/2026-11-16-cursor-smoke/).
+The temporary API was stopped after verification; the pre-existing PostgreSQL
+container was left running. No production target, full-size seed/load, deployment,
+or target-host capacity claim is involved.
