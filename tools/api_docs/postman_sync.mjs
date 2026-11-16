@@ -19,7 +19,7 @@
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import { createRequire, Module } from "node:module";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import YAML from "yaml";
@@ -34,6 +34,21 @@ const FIXED_TIME = Date.UTC(2026, 0, 1);
 // spec, and an unchanged API is never re-sent.
 function loadSeededConverter() {
   const require = createRequire(import.meta.url);
+  // The SDK pins legacy Faker and imports its removed locale/en entry point.
+  // Conversion serializes requests; it must NOT execute Postman's runtime
+  // {{$random*}} variables. Keep those tokens literal for Postman to resolve.
+  // Disable only that SDK generator registry before loading the converter,
+  // allowing the patched Faker override without changing schema example faking.
+  const converterRequire = createRequire(require.resolve("openapi-to-postmanv2"));
+  const sdkRequire = createRequire(converterRequire.resolve("postman-collection"));
+  const dynamicPath = sdkRequire.resolve("./lib/superstring/dynamic-variables");
+  if (!require.cache[dynamicPath]) {
+    const dynamicModule = new Module(dynamicPath);
+    dynamicModule.filename = dynamicPath;
+    dynamicModule.loaded = true;
+    dynamicModule.exports = Object.freeze({});
+    require.cache[dynamicPath] = dynamicModule;
+  }
   const fakerPath = require.resolve("openapi-to-postmanv2/assets/json-schema-faker.js");
   const faker = require(fakerPath);
   const RealDate = Date;
