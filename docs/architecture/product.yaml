@@ -121,8 +121,8 @@ features:
   - id: job-boards
     name: Job boards
     status: active
-  - id: redis
-    name: Redis
+  - id: job-cache
+    name: Job query cache
     status: active
 - id: matching
   name: AI matching
@@ -572,9 +572,9 @@ platform:
     · The Muse · USAJOBS · We Work Remotely (RSS) · Workable boards · Workday career sites · Working Nomads
   icon: null
   status: active
-- id: redis
-  name: Redis
-  technology: Rate limits · read cache (in-memory fallback)
+- id: job-cache
+  name: Job query cache
+  technology: Isolated Redis · disposable catalogue/query cache · allkeys-lru
   icon: redis
   status: active
 - id: stripe
@@ -666,7 +666,13 @@ infrastructure:
     status: active
   - id: redis
     name: Redis
-    technology: Rate limits · read cache (in-memory fallback)
+    technology: Celery broker · rate limits · general cache (in-memory fallback)
+    icon: redis
+    group: cache
+    status: active
+  - id: job-cache
+    name: Job query cache
+    technology: Isolated Redis · disposable catalogue/query cache · allkeys-lru
     icon: redis
     group: cache
     status: active
