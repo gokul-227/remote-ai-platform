@@ -100,7 +100,7 @@ monthly AI allowance (`AI_FREE_MONTHLY_TOKENS`) and 20 freelance proposals a mon
 - **Composer messaging credits**: an employer's first message to a candidate they are not connected with
   spends one credit in `POST /conversations/{id}/messages` (402 when none are left); the composer shows the
   balance (`GET /billing/messages/quote`). Replies, connections and non-employers are free.
-- **Open to opportunities** is opt-in (migration `079_billing_followups` set it off for everyone, since there
+- **Open to opportunities** is opt-in (migration `080_billing_followups` set it off for everyone, since there
   was no record of deliberate opt-ins). Profiles show a one-time banner inviting members to turn it on. It
   governs only the paid candidate search: free job matching, ranked candidates, task offers and the member
   directory neither filter on it nor score members lower without it.

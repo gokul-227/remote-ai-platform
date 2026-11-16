@@ -1,8 +1,8 @@
 """Billing follow-ups: open-to-opportunities becomes opt-in, employer branding,
 referral credit retries.
 
-Revision ID: 079_billing_followups
-Revises: 078_billing_catalog
+Revision ID: 080_billing_followups
+Revises: 079_slack_identities
 
 - engineer_profiles.is_open_to_work: server default false, and every existing
   row is set to false. There is no record of who switched it on deliberately
@@ -19,8 +19,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision = "079_billing_followups"
-down_revision = "078_billing_catalog"
+revision = "080_billing_followups"
+down_revision = "079_slack_identities"
 branch_labels = None
 depends_on = None
 
