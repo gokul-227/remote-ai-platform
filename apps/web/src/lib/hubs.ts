@@ -5,7 +5,7 @@
  */
 import {
   MIN_INDEXABLE_JOBS,
-  fetchLandingStats,
+  fetchLandingCount,
   money,
   perPeriod,
   placeFilter,
@@ -19,7 +19,7 @@ export type Counted<T> = { item: T; total: number };
 /** Items whose live count is known to be >= MIN_INDEXABLE_JOBS, biggest first.
  * When every lookup failed (API down) the first `fallback` items are returned
  * uncounted (total 0) so navigation never disappears. */
-export function nonThin<T>(items: T[], stats: (LandingStats | null)[], fallback = 12): Counted<T>[] {
+export function nonThin<T>(items: T[], stats: (Pick<LandingStats, "total"> | null)[], fallback = 12): Counted<T>[] {
   if (stats.every((s) => s === null)) return items.slice(0, fallback).map((item) => ({ item, total: 0 }));
   return items
     .map((item, i) => ({ item, total: stats[i]?.total ?? 0 }))
@@ -27,14 +27,27 @@ export function nonThin<T>(items: T[], stats: (LandingStats | null)[], fallback 
     .sort((a, b) => b.total - a.total);
 }
 
+// Bound server-render fan-out so a cold hub cannot monopolize the API pool.
+async function hubCounts(filters: Parameters<typeof fetchLandingCount>[0][]) {
+  const results: (Pick<LandingStats, "total"> | null)[] = Array(filters.length).fill(null);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(4, filters.length) }, async () => {
+    while (next < filters.length) {
+      const index = next++;
+      results[index] = await fetchLandingCount(filters[index]);
+    }
+  }));
+  return results;
+}
+
 /** Places (countries, regions, worldwide) with enough live remote jobs to be a hub. */
 export async function livePlaces(): Promise<Counted<Place>[]> {
-  return nonThin(PLACES, await Promise.all(PLACES.map((p) => fetchLandingStats(placeFilter(p)))));
+  return nonThin(PLACES, await hubCounts(PLACES.map(placeFilter)));
 }
 
 /** Categories with enough live remote jobs to be a hub. */
 export async function liveTopics(): Promise<Counted<Topic>[]> {
-  return nonThin(TOPICS, await Promise.all(TOPICS.map((t) => fetchLandingStats(topicFilter(t)))));
+  return nonThin(TOPICS, await hubCounts(TOPICS.map(topicFilter)));
 }
 
 export type Faq = { q: string; a: string };

@@ -191,6 +191,8 @@ services:
     # Next.js standalone server (apps/web/Dockerfile). Built per environment by
     # .github/workflows/deploy-vm.yml; WEB_IMAGE pins the commit SHA tag.
     image: ${WEB_IMAGE:-ghcr.io/gokul-227/remote-ai-platform-web:prod}
+    environment:
+      API_INTERNAL_URL: http://api:8000
     restart: unless-stopped
     networks:
       - edge

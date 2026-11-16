@@ -80,6 +80,21 @@ describe("non-thin hubs", () => {
     ]);
   });
 
+  it("bounds cold hub requests instead of flooding the API pool", async () => {
+    let active = 0;
+    let peak = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      active++;
+      peak = Math.max(peak, active);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      active--;
+      return new Response(JSON.stringify({ total: 4 }));
+    }));
+    const live = await livePlaces();
+    expect(live).toHaveLength(PLACES.length);
+    expect(peak).toBe(4);
+  });
+
   it("asks the API with every spelling of a place", async () => {
     const urls: string[] = [];
     vi.stubGlobal(
@@ -93,6 +108,7 @@ describe("non-thin hubs", () => {
     expect(live.map((p) => p.item.slug)).toEqual(["germany"]);
     expect(urls.some((u) => u.includes("location=usa|united states|u.s."))).toBe(true);
     expect(urls).toHaveLength(PLACES.length);
+    expect(urls.every((u) => u.includes("/landing-count?"))).toBe(true);
   });
 });
 

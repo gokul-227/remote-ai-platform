@@ -227,6 +227,29 @@ async def list_sitemap_entries(
     return [JobSitemapEntry.model_validate(r) for r in cached]
 
 
+@router.get("/landing-count", response_model=dict[str, int])
+async def landing_count(
+    response: Response,
+    query: str | None = Query(None, max_length=100),
+    job_type: str | None = Query(None, max_length=30),
+    location: str | None = Query(None, max_length=120),
+    employer: str | None = Query(None, max_length=200),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int]:
+    """Lightweight hub eligibility: no salary, skills or employer aggregation."""
+    response.headers["Cache-Control"] = "public, max-age=1800"
+    key = f"landing-count:v1:{query}|{job_type}|{location}|{employer}".lower()
+    cached = await _seo_cache.get_json(key)
+    if cached is not None:
+        return {"total": int(cached["total"])}
+    total = await JobRepository(db).count(
+        query=query, job_type=job_type, location=location, employer=employer, is_remote=True
+    )
+    result = {"total": total}
+    await _seo_cache.set_json(key, result, ttl_seconds=SEO_CACHE_TTL)
+    return result
+
+
 @router.get("/landing-stats", response_model=JobLandingStats)
 async def landing_stats(
     response: Response,
