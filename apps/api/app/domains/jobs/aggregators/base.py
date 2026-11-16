@@ -143,6 +143,30 @@ class BaseAggregator(ABC):
         # Company boards for ATS adapters, loaded from job_source_boards by the
         # service; None means "use the bundled list + settings".
         self.boards: list[str] | None = None
+        self.reset_run()
+
+    def reset_run(self, deadline: float | None = None) -> None:
+        """Per-run state, cleared by the service before every fetch."""
+        # time.monotonic() after which the adapter stops fetching and checkpoints.
+        self.deadline = deadline
+        # Company boards on other ATSes seen in this run's postings (discovery).
+        self.discovered: set[tuple[str, str]] = set()
+        # board token -> HTTP status of its fetch (404s retire dead boards).
+        self.board_outcomes: dict[str, int] = {}
+        # Full external ids the source reported as closed/removed in this run.
+        self.removed_ids: list[str] = []
+        # Set when this run finished a complete sweep of the source that started at
+        # this time: postings not seen since then are gone.
+        self.sweep_started: datetime | None = None
+
+    def out_of_time(self) -> bool:
+        import time
+
+        return self.deadline is not None and time.monotonic() >= self.deadline
+
+    def ext(self, ext_id: object) -> str:
+        """The stored external_id for a source-local id (as _Board._job builds it)."""
+        return f"{self.source_name.lower()}_{ext_id}"[:255]
 
     @abstractmethod
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:

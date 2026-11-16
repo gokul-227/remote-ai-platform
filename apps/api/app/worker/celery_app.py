@@ -29,7 +29,9 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     worker_max_tasks_per_child=100,
     broker_connection_retry_on_startup=True,
-    broker_transport_options={"visibility_timeout": 3600},
+    # Above the longest task time limit (imports: 3500 s), so a running task is
+    # never redelivered to a second worker.
+    broker_transport_options={"visibility_timeout": 7200},
     task_default_queue="default",
     task_routes={"jobs.*": {"queue": "imports"}},
     task_always_eager=settings.TASKS_ALWAYS_EAGER,
@@ -53,6 +55,10 @@ celery_app.conf.update(
         "daily-import-summary": {
             "task": "ops.daily_import_summary",
             "schedule": crontab(hour=7, minute=0),
+        },
+        "discover-job-boards": {
+            "task": "jobs.discover_boards_scheduled",
+            "schedule": crontab(hour="*/6", minute=50),
         },
         "check-backups": {"task": "ops.check_backups", "schedule": crontab(hour=8, minute=0)},
         "job-alerts": {"task": "jobs.send_alerts", "schedule": crontab(minute=40)},

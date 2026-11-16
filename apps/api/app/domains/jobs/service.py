@@ -8,6 +8,7 @@ import time
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from app.agents.job_enricher import JobEnricherAgent
 from app.agents.llm_client import AIProviderError
@@ -272,6 +273,32 @@ class JobService:
             )
         return {"retention_removed": removed, "retention_hidden": hidden}
 
+    async def _after_import(self, aggregator: Any, fetched_jobs: list[JobPostCreate]) -> None:
+        """Board discovery from this run's postings and dead-board bookkeeping.
+        Never fails the import."""
+        from app.domains.jobs import board_discovery
+        from app.domains.jobs.aggregators.ats_links import extract_boards
+
+        try:
+            found = set(getattr(aggregator, "discovered", ()))
+            for job in fetched_jobs:
+                found |= extract_boards(job.external_url)
+            if found:
+                added = await board_discovery.record_candidates(
+                    self.repo.db, found, f"link:{aggregator.source_name}"
+                )
+                if added:
+                    logger.info(f"{aggregator.source_name}: {added} new candidate boards")
+            if getattr(aggregator, "boards", None) is not None and getattr(aggregator, "board_outcomes", None):
+                retired = await board_discovery.record_import_outcomes(
+                    self.repo.db, aggregator.source_name, aggregator.board_outcomes
+                )
+                if retired:
+                    logger.info(f"{aggregator.source_name}: retired {retired} boards (404)")
+        except Exception as exc:
+            await self.repo.db.rollback()
+            logger.warning(f"Board discovery after import failed: {type(exc).__name__}")
+
     async def sync_all_job_sources(
         self,
         limit_per_source: int = 50,
@@ -307,6 +334,8 @@ class JobService:
             try:
                 aggregator.cursor = dict((cursors or {}).get(aggregator.source_name) or {})
                 aggregator.next_cursor = None
+                if hasattr(aggregator, "reset_run"):
+                    aggregator.reset_run(time.monotonic() + settings.JOB_IMPORT_FETCH_BUDGET_SECONDS)
                 if aggregator.source_name in BOARD_SOURCES:
                     from app.domains.jobs.board_validation import active_boards
 
@@ -368,7 +397,22 @@ class JobService:
                     if fetched_jobs and not skipped
                     else 0
                 )
+                sweep_started = getattr(aggregator, "sweep_started", None)
+                removed_ids = getattr(aggregator, "removed_ids", None)
+                if fetched_jobs and not skipped and sweep_started is not None:
+                    # A complete sweep: rows it saw have last_seen_at refreshed to
+                    # within JOB_LAST_SEEN_REFRESH_HOURS of its start; older are gone.
+                    expired += await self.repo.expire_unseen_jobs(
+                        aggregator.source_name,
+                        cutoff=sweep_started
+                        - timedelta(hours=settings.JOB_LAST_SEEN_REFRESH_HOURS + 1),
+                    )
+                if removed_ids:
+                    expired += await self.repo.expire_external_ids(
+                        aggregator.source_name, removed_ids
+                    )
                 await self.repo.db.commit()
+                await self._after_import(aggregator, fetched_jobs)
                 if aggregator.source_name not in SEARCH_SYNDICATION_BLOCKED_SOURCES:
                     new_job_ids.extend(source_new_ids)
                 stats[aggregator.source_name] = inserted + updated

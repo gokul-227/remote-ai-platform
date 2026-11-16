@@ -18,6 +18,7 @@ import httpx
 
 from app.core.config import settings
 from app.domains.jobs.aggregators import robots
+from app.domains.jobs.aggregators.ats_links import extract_boards
 from app.domains.jobs.aggregators.base import (
     BaseAggregator,
     SourceDisabledError,
@@ -61,6 +62,8 @@ class _Board(BaseAggregator):
 
     # URL of one board's feed ("{board}" is replaced); used for robots.txt checks.
     board_url: str = ""
+    # (offset, total) of this run's slice of a long board list (pick_boards).
+    _rotation: tuple[int, int] | None = None
 
     def board_tokens(self) -> list[str]:
         """This source's company boards: staff-managed rows when loaded, else the
@@ -83,6 +86,8 @@ class _Board(BaseAggregator):
         if len(batch) < per_run:
             batch += ordered[: per_run - len(batch)]
         self.next_cursor = {"offset": (offset + per_run) % len(ordered), "boards": len(ordered)}
+        # _many moves the offset only past the boards it reached in time.
+        self._rotation = (offset, len(ordered))
         return batch
 
     def _job(
@@ -104,6 +109,8 @@ class _Board(BaseAggregator):
         title = self.clean_text(title)
         if not title:
             return None
+        # Board discovery: other ATS career sites linked from this posting (no requests).
+        self.discovered |= extract_boards(url, description)
         description = (self.clean_rich_text(description) or title)[
             : settings.JOB_DESCRIPTION_MAX_CHARS
         ]
@@ -133,7 +140,11 @@ class _Board(BaseAggregator):
         """Fetch boards concurrently; one bad board never fails the whole source."""
         # Few boards in memory at once (small instances), and a polite pause per request.
         sem = asyncio.Semaphore(max(1, settings.ATS_BOARD_CONCURRENCY))
+        limiter = robots.HostLimiter(settings.JOB_SOURCE_REQUEST_DELAY_SECONDS)
         answered = blocked = 0
+        reached: set[str] = set()
+        rotation = self._rotation
+        self._rotation = None
         async with httpx.AsyncClient(
             timeout=TIMEOUT,
             follow_redirects=True,
@@ -142,22 +153,34 @@ class _Board(BaseAggregator):
 
             async def one(board: str) -> list[JobPostCreate]:
                 async with sem:
+                    if self.out_of_time():
+                        return []  # the run's time budget is spent; next run resumes here
+                    reached.add(board)
                     try:
                         nonlocal answered, blocked
-                        if self.board_url and not await robots.allowed(
-                            client, self.board_url.format(board=board)
-                        ):
+                        url = self.board_url.format(board=board) if self.board_url else ""
+                        if url and not await robots.allowed(client, url):
                             blocked += 1
                             return []
                         if settings.JOB_SOURCE_REQUEST_DELAY_SECONDS > 0:
-                            await asyncio.sleep(settings.JOB_SOURCE_REQUEST_DELAY_SECONDS)
+                            # Per-ATS pacing (robots.txt Crawl-delay wins if larger).
+                            await limiter.wait(url or f"https://{board}/")
                         result = await fetch(client, board)
                         answered += 1
+                        self.board_outcomes[board] = 200
                         return result
+                    except httpx.HTTPStatusError as exc:
+                        self.board_outcomes[board] = exc.response.status_code
+                        return []
                     except Exception:
                         return []
 
             results = await asyncio.gather(*(one(b) for b in boards))
+        if rotation is not None and len(reached) < len(boards):
+            # Checkpoint at the first board this run did not reach.
+            done = next(i for i, b in enumerate(boards) if b not in reached)
+            offset, total = rotation
+            self.next_cursor = {"offset": (offset + done) % total, "boards": total}
         if boards and blocked == len(boards):
             raise SourceDisabledError("robots.txt disallows this source's feed")
         if boards and not answered:

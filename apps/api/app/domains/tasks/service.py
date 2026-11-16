@@ -44,6 +44,7 @@ BACKOFF_SECONDS = (60, 300, 900, 3600)
 TASK_IMPORT_SOURCE = "jobs.import_source"
 TASK_MAINTAIN_CATALOGUE = "jobs.maintain_catalogue"
 TASK_VALIDATE_BOARDS = "jobs.validate_boards"
+TASK_DISCOVER_BOARDS = "jobs.discover_boards"
 TASK_FLUSH_EMAIL_OUTBOX = "notifications.flush_email_outbox"
 TASK_OUTBOX_EVENT = "outbox.handle_event"
 
@@ -248,7 +249,7 @@ class TaskService:
         await self.db.commit()
         return run
 
-    async def requeue_stale(self, older_than: timedelta = timedelta(minutes=30)) -> int:
+    async def requeue_stale(self, older_than: timedelta = timedelta(minutes=65)) -> int:
         """Runs that were QUEUED/STARTED/RETRYING longer than `older_than` without a
         terminal state are sent to the broker again (same run id). Returns the count."""
         cutoff = _now() - older_than

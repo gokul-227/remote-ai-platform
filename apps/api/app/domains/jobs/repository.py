@@ -255,12 +255,14 @@ class JobRepository:
         inserted = [r[0] for r in result if r[1]]
         return inserted, len(result) - len(inserted)
 
-    async def expire_unseen_jobs(self, source: str) -> int:
+    async def expire_unseen_jobs(self, source: str, cutoff: datetime | None = None) -> int:
         """Take this source's imported jobs off the public list when no sync has
         seen them among the source's recent listings for JOB_UNSEEN_EXPIRY_DAYS
-        (a freshness policy: they may still be open at the source). Called only
-        after that source synced successfully; posted jobs never auto-expire."""
-        cutoff = datetime.now(UTC) - timedelta(days=settings.JOB_UNSEEN_EXPIRY_DAYS)
+        (a freshness policy: they may still be open at the source), or since
+        `cutoff` after a complete sweep of the source. Called only after that
+        source synced successfully; posted jobs never auto-expire."""
+        if cutoff is None:
+            cutoff = datetime.now(UTC) - timedelta(days=settings.JOB_UNSEEN_EXPIRY_DAYS)
         stale = (
             JobPost.source == source,
             JobPost.company_id.is_(None),
@@ -277,6 +279,30 @@ class JobRepository:
         )
         self.expired_job_ids.extend(ids)
         return int(getattr(result, "rowcount", 0) or 0)  # CursorResult for UPDATE
+
+    async def expire_external_ids(self, source: str, external_ids: list[str]) -> int:
+        """Expire this source's imported jobs the source reported as closed."""
+        expired = 0
+        for start in range(0, len(external_ids), 1000):
+            chunk = external_ids[start : start + 1000]
+            where = (
+                JobPost.source == source,
+                JobPost.company_id.is_(None),
+                JobPost.expired_at.is_(None),
+                JobPost.external_id.in_(chunk),
+            )
+            ids = list((await self.db.scalars(select(JobPost.id).where(*where))).all())
+            if not ids:
+                continue
+            await self.db.execute(
+                update(JobPost)
+                .where(JobPost.id.in_(ids))
+                .values(expired_at=datetime.now(UTC))
+                .execution_options(synchronize_session=False)
+            )
+            self.expired_job_ids.extend(ids)
+            expired += len(ids)
+        return expired
 
     async def duplicates_elsewhere(
         self, jobs: list[JobPostCreate]

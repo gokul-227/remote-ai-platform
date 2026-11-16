@@ -15,9 +15,9 @@ rate limit, permission, company boards and board validation.
 | SMARTRECRUITERS | ATS | none | 3-hourly | rotation | `api.smartrecruiters.com/robots.txt` disallows all agents but LinkedInBot, so the robots check keeps it off |
 | RECRUITEE, PERSONIO, TEAMTAILOR, BAMBOOHR, BREEZY, RIPPLING | ATS (new) | none | 3-hourly | rotation | per-company subdomains, robots.txt checked per company |
 | WORKDAY | ATS (new) | `WORKDAY_SITES` (+ list) | `30 4 * * *` | rotation | **starts paused** (`permission_confirmed=false`): no published third-party terms |
-| BUNDESAGENTUR | Germany, Bundesagentur für Arbeit Jobsuche | `BUNDESAGENTUR_API_KEY` (public client id, defaulted) | `40 */2 * * *` | `veroeffentlichtseit` days since last run | ≤ `BUNDESAGENTUR_MAX_PAGES`×100 per run |
-| JOBTECH | Sweden, Arbetsförmedlingen open data (CC0) | none | `25 * * * *` | `published-after` | offset ≤ 2000 per query |
-| NAV | Norway, arbeidsplassen.no feed | `NAV_FEED_TOKEN` optional (public token endpoint otherwise) | `10 * * * *` | feed page id | starts at the newest page (no back-fill) |
+| BUNDESAGENTUR | Germany, Bundesagentur für Arbeit Jobsuche | `BUNDESAGENTUR_API_KEY` (public client id, defaulted) | `40 */2 * * *` | checkpointed full sweep in facet partitions | a query reaches 10,000 results; the ~780k catalogue is split by occupational field, working time, contract, temp agency |
+| JOBTECH | Sweden, Arbetsförmedlingen open data (CC0) | none | `25 * * * *` | full sweep in publication-date windows each run | offset ≤ 2000 per query, so busy windows are halved |
+| NAV | Norway, arbeidsplassen.no feed | `NAV_FEED_TOKEN` optional (public token endpoint otherwise) | `10 * * * *` | feed page id | walks the whole feed from its first page, then forward; restarts every `NAV_REWALK_DAYS` (7); INACTIVE entries expire ads |
 | FRANCETRAVAIL | France Travail Offres d'emploi v2 | `FRANCE_TRAVAIL_CLIENT_ID`, `FRANCE_TRAVAIL_CLIENT_SECRET` | `50 */3 * * *` | `minCreationDate` | free partner account |
 | ADZUNA | 19 countries (`ADZUNA_COUNTRIES`) | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_LICENSE_CONFIRMED=true` | `5 */6 * * *` | `max_days_old` | needs a commercial licence for production |
 | JOOBLE | aggregator | `JOOBLE_API_KEY` | `0 6 * * *` | — | small lifetime request budget per key |
@@ -32,7 +32,8 @@ Landing.jobs (robots.txt disallows `/api/`), Authentic Jobs (robots.txt
 disallows `/feed/`), Jobspresso (robots.txt disallows the query URL its job
 feed needs), Job Bank Canada open data (monthly UTF-16 CSV with no employer
 name and no posting URL, so a listing could not link to the job), EURES (no
-public API without a partner agreement).
+public API without a partner agreement), Switzerland's job-room.ch (robots.txt:
+"Do not crawl Job Adverts"), the Netherlands' UWV/werk.nl (no public jobs API).
 
 ## Company boards
 
@@ -51,19 +52,26 @@ public API without a partner agreement).
   `60 / rate_limit_per_minute` seconds between boards, and records
   `ok / empty / not_found / robots_blocked / error` and the job count. It never
   runs during an import.
-* Long lists rotate: each run takes `ATS_BOARDS_PER_RUN` (300) boards from the
-  offset stored in the import checkpoint, so a hourly source refreshes 7,200
-  boards a day. A board seen by no run for `JOB_UNSEEN_EXPIRY_DAYS` (30) leaves
-  the list.
+* Long lists rotate: each run takes up to `ATS_BOARDS_PER_RUN` (6,000) boards
+  from the offset stored in the import checkpoint and stops starting boards when
+  `JOB_IMPORT_FETCH_BUDGET_SECONDS` (1,500 s) is spent; the offset moves only
+  past the boards it reached. A board answering 404/410 in
+  `JOB_BOARD_DEAD_AFTER_404S` (3) runs in a row is marked `not_found`.
+* **Discovery** (`jobs.discover_boards`, every 6 h at :50, see
+  `docs/operations/job-imports.md`) adds boards found in outbound links of
+  imported postings and optional public lists (`JOB_BOARD_SEED_URLS`), after one
+  validating request each (`job_board_candidates`, migration 077).
 
 ## Politeness
 
 * User agent `JOB_SOURCE_USER_AGENT`; robots.txt read per host and cached for
   24 h (`JOB_SOURCE_RESPECT_ROBOTS`): 4xx = no rules, 5xx/unreachable = treat as
   disallowed. A source whose every board is disallowed reports DISABLED.
-* `ATS_BOARD_CONCURRENCY` (3) requests at once per source, a
-  `JOB_SOURCE_REQUEST_DELAY_SECONDS` (0.25 s) pause before each.
-* Government APIs are read sequentially, page by page, with the page caps above.
+* `ATS_BOARD_CONCURRENCY` (4) requests at once per source, and at most one
+  request per `JOB_SOURCE_REQUEST_DELAY_SECONDS` (0.25 s) per ATS (all company
+  subdomains of one ATS share the limit); a robots.txt `Crawl-delay` (Lever's
+  API asks for 1 s) wins when larger. Discovery validation uses 1 s per ATS.
+* Government APIs are read sequentially, page by page, within each run's time budget.
 
 ## Retention and listings
 
@@ -85,20 +93,20 @@ public API without a partner agreement).
 * Row size with descriptions capped at 5,000 characters plus indexes is
   ~4–6 KB, so 1M jobs ≈ 5–6 GB and 3M ≈ 15–18 GB.
 
-### Reachable volume (90-day window, estimates)
+### Reachable volume (90-day window)
+
+Measured with single polite requests on 2026-11-16 unless marked estimate.
 
 | Group | Active jobs reachable | Basis |
 |---|---|---|
-| ATS boards (bundled lists: 1,516 boards that answered on 2026-11-15, plus 46 SmartRecruiters and 171 Workday tokens kept but not fetched) | 40k–70k | Greenhouse ≈ 450 boards × ~60, Ashby ≈ 385 × ~25, Lever ≈ 250 × ~30, Workable ≈ 200 × ~10, smaller ATSes |
-| Bundesagentur (keyless) | 500k–900k | ~1M listed; ~7.5k new per day; capacity 5k per run × 12 runs/day |
-| JobTech (keyless) | 40k–50k | Sweden's whole open job stream |
-| NAV (keyless) | 15k–25k after ~60 days | forward-only feed |
-| Remote boards (existing + Get on Board) | 15k–25k | |
-| **Keyless total** | **~0.6M–1.1M** | |
-| France Travail (free key) | +500k–900k | ~20k new/day; capacity 3k per run × 8 |
-| Adzuna, Careerjet, Jooble, USAJobs (keys/licence) | +100k–300k | page caps per run |
-| **With keys** | **~1.2M–2.3M** | |
+| Bundesagentur (keyless) | ~780k listed (measured: 777,016); after the 90-day posting filter an estimated 450k–650k | full partitioned sweep, ~7.8k requests of 100 at ~1.2 s, i.e. ~2–3 runs per sweep |
+| JobTech (keyless) | 42k (measured: 42,253) | whole catalogue every run, ~450 requests |
+| NAV (keyless) | 27k (measured on arbeidsplassen.no: 27,073) | full feed walk, 1,000 entries per page at ~0.13 s |
+| ATS boards, bundled lists (~1.5k boards) | 40k–70k (estimate) | current live: Greenhouse 23k, Ashby 8.7k, Lever 3.5k |
+| ATS boards, discovered | grows with discovery; ~30 jobs per board on average (estimate) | |
+| Remote boards (existing) | ~30k (current live: Himalayas 18k, Arbeitnow 5.8k, Jobicy 2k, others) | |
+| **Keyless total** | **~0.6M–0.85M** (estimate) | |
+| France Travail (free key) | +500k–900k (estimate) | API limits one query to 3,150 results; partitioning needed once a key exists |
+| Adzuna, Careerjet, Jooble, USAJobs (keys/licence) | +100k–300k (estimate) | page caps per run |
 
-Growing further means more ATS boards (validate more tokens, raise
-`ATS_BOARDS_PER_RUN` or cadence), more government feeds, or raising page caps;
-the database budget and worker concurrency above leave headroom for ~3M jobs.
+The database budget (60 GB) and worker settings leave headroom for ~3M jobs.
