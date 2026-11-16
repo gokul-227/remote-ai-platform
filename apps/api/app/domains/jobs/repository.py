@@ -870,49 +870,61 @@ class JobRepository:
         total = await self.count(**filters)
         week = datetime.now(UTC) - timedelta(days=7)
         recent = await self.count(**filters, posted_since=week)
+        # Select the keyword window before aggregating or excluding missing pay.
+        # Reading its projected columns avoids a second scan of job_posts and
+        # prevents IN-subquery plans from rechecking the window per salary row.
+        keyword_rows = None
+        if filters.get("query"):
+            keyword_rows = (
+                self._filtered(
+                    select(
+                        JobPost.id, JobPost.company_name, JobPost.salary_min,
+                        JobPost.salary_max, JobPost.currency, JobPost.salary_period,
+                        JobPost.seniority, JobPost.posted_at, JobPost.skills,
+                    ),
+                    **filters,
+                )
+                .order_by(JobPost.posted_at.desc(), JobPost.id.desc())
+                .limit(settings.JOB_KEYWORD_COUNT_CAP)
+                .correlate(None)
+                .subquery("landing_keyword_rows")
+            )
+        rows = keyword_rows.c if keyword_rows is not None else JobPost
+        companies_stmt = select(rows.company_name, func.count().label("n"))
+        salary_stmt = select(
+            rows.salary_min, rows.salary_max, rows.currency,
+            rows.salary_period, rows.seniority,
+        )
+        if keyword_rows is None:
+            companies_stmt = self._filtered(companies_stmt, **filters)
+            salary_stmt = self._filtered(salary_stmt, **filters)
         companies: Sequence[Any] = (
             await self.db.execute(
-                self._keyword_window(
-                    self._filtered(select(JobPost.company_name, func.count().label("n")), **filters),
-                    filters,
-                    None,
-                )
-                .group_by(JobPost.company_name)
-                .order_by(func.count().desc(), JobPost.company_name.asc())
+                companies_stmt
+                .group_by(rows.company_name)
+                .order_by(func.count().desc(), rows.company_name.asc())
                 .limit(5)
             )
         ).all()
         salary_rows: Sequence[Any] = (
             await self.db.execute(
-                self._filtered(
-                    select(
-                        JobPost.salary_min,
-                        JobPost.salary_max,
-                        JobPost.currency,
-                        JobPost.salary_period,
-                        JobPost.seniority,
-                    ),
-                    **filters,
-                )
+                salary_stmt
                 .where(
-                    JobPost.currency.is_not(None),
-                    JobPost.salary_period.is_not(None),
-                    or_(JobPost.salary_min.is_not(None), JobPost.salary_max.is_not(None)),
-                    *([] if not filters.get("query") else [JobPost.id.in_(
-                        self._filtered(select(JobPost.id), **filters).order_by(JobPost.posted_at.desc(), JobPost.id.desc()).limit(settings.JOB_KEYWORD_COUNT_CAP)
-                    )]),
+                    rows.currency.is_not(None),
+                    rows.salary_period.is_not(None),
+                    or_(rows.salary_min.is_not(None), rows.salary_max.is_not(None)),
                 )
-                .order_by(JobPost.posted_at.desc())
+                .order_by(rows.posted_at.desc())
                 .limit(2000)
             )
         ).all()
-        # The newest matching jobs (bounded) for skills and the weekly trend.
+        # Keyword skills/trend use the same selected IDs as company/pay stats.
+        # Without a keyword, retain the existing newest-2000 sample.
+        recent_stmt = select(rows.skills, rows.posted_at)
+        if keyword_rows is None:
+            recent_stmt = self._filtered(recent_stmt, **filters)
         recent_rows: Sequence[Any] = (
-            await self.db.execute(
-                self._filtered(select(JobPost.skills, JobPost.posted_at), **filters)
-                .order_by(JobPost.posted_at.desc())
-                .limit(2000)
-            )
+            await self.db.execute(recent_stmt.order_by(rows.posted_at.desc()).limit(2000))
         ).all()
         return {
             "total": total,
