@@ -473,7 +473,9 @@ class JobRepository:
         if unknown:
             raise TypeError(f"unknown job filters: {sorted(unknown)}")
         stmt = stmt.where(
-            JobPost.is_active.is_(True), JobPost.is_deleted.is_(False), JobPost.expired_at.is_(None)
+            # Match the partial index predicates exactly; IS TRUE/IS FALSE prevents
+            # PostgreSQL from proving eligibility for the live FTS/covering indexes.
+            JobPost.is_active, ~JobPost.is_deleted, JobPost.expired_at.is_(None)
         )
         # Imported jobs past the retention window leave listings at once, even
         # before the nightly retention task deletes them.

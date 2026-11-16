@@ -163,3 +163,34 @@ async def test_keyword_landing_window_semantics_and_postgres_plans(monkeypatch, 
             await db.rollback()
     finally:
         await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_live_keyword_query_can_use_partial_fulltext_index():
+    assert urlsplit(URL).hostname in {"localhost", "127.0.0.1", "::1"}
+    engine = create_async_engine(URL)
+    try:
+        async with async_sessionmaker(engine)() as db:
+            await db.execute(text("SET LOCAL enable_seqscan = off"))
+            await db.execute(text("SET LOCAL enable_indexscan = off"))
+            await db.execute(text("SET LOCAL enable_indexonlyscan = off"))
+            repo = JobRepository(db)
+            stmt = repo._filtered(select(JobPost.id), query="python", is_remote=True).limit(1000)
+            sql = str(stmt.compile(dialect=engine.dialect, compile_kwargs={"literal_binds": True}))
+            plan = (await db.execute(text("EXPLAIN (FORMAT JSON) " + sql))).scalar_one()[0]
+
+            def index_names(node):
+                yield node.get("Index Name")
+                for child in node.get("Plans", []):
+                    yield from index_names(child)
+
+            assert "ix_job_posts_live_fts" in set(index_names(plan["Plan"])), plan
+            # The old boolean spelling was semantically equivalent for NOT NULL
+            # columns but could not imply the partial index's bare predicates.
+            legacy_sql = sql.replace("job_posts.is_active AND", "job_posts.is_active IS TRUE AND").replace(
+                "NOT job_posts.is_deleted", "job_posts.is_deleted IS FALSE"
+            )
+            legacy = (await db.execute(text("EXPLAIN (FORMAT JSON) " + legacy_sql))).scalar_one()[0]
+            assert "ix_job_posts_live_fts" not in set(index_names(legacy["Plan"])), legacy
+    finally:
+        await engine.dispose()
