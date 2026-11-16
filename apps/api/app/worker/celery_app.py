@@ -64,6 +64,10 @@ celery_app.conf.update(
             "task": "jobs.backfill_filters",
             "schedule": crontab(hour=2, minute=50),
         },
+        "billing-message-refunds": {
+            "task": "billing.refund_unanswered_messages",
+            "schedule": crontab(hour=5, minute=10),
+        },
         "cost-guard":{"task": "ops.cost_guard", "schedule": crontab(hour="*/6", minute=15)},
         "seo-indexing-sweep": {
             "task": "seo.indexing_sweep",

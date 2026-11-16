@@ -1,6 +1,6 @@
 import { JobSource } from "@/components/JobSource";
 import Link from "next/link";
-import type { PublicJob } from "@/lib/site";
+import { API_URL, type PublicJob } from "@/lib/site";
 
 /** Server-rendered list of job links for landing pages (crawlable, no JavaScript needed). */
 export function JobList({ jobs }: { jobs: PublicJob[] }) {
@@ -37,5 +37,32 @@ export function JoinCta() {
         Join free
       </Link>
     </div>
+  );
+}
+
+/** Paid Featured jobs pinned above a hub's list, always labelled. Nothing while billing is off. */
+export async function FeaturedJobs() {
+  let featured: { label: string; job: PublicJob }[] = [];
+  try {
+    const res = await fetch(`${API_URL}/api/v1/billing/placements/jobs`, { next: { revalidate: 300 } });
+    if (res.ok) featured = (await res.json()).featured ?? [];
+  } catch {
+    featured = [];
+  }
+  if (!featured.length) return null;
+  return (
+    <ul aria-label="Featured jobs" className="mb-4 divide-y divide-amber-200 rounded-xl border border-amber-300 bg-amber-50">
+      {featured.map(({ label, job }) => (
+        <li key={job.id} className="flex flex-wrap items-center gap-3 p-4">
+          <span className="rounded-full border border-amber-400 px-2 py-0.5 text-xs font-semibold text-amber-900">
+            {label}
+          </span>
+          <Link href={`/jobs/${job.id}`} className="font-semibold text-brand hover:underline">
+            {job.title}
+          </Link>
+          <span className="text-sm text-slate-600">{job.company_name}</span>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -107,6 +107,8 @@ components:
     - assistant
     - auth
     - auth.workos
+    - billing.admin
+    - billing
     - browser
     - channels
     - companies.members

@@ -501,6 +501,17 @@ class Settings(BaseSettings):
     # stay available regardless so no funds are ever stranded.
     MARKETPLACE_PAYMENTS_ENABLED: bool = False
 
+    # ── Billing (paid features, Stripe Checkout) ──────────────────────────────
+    # Separate from marketplace money movement. Off: pricing shows "coming
+    # soon", checkout answers 404 and nothing is chargeable. A live Stripe key
+    # is refused unless APP_ENV=production AND BILLING_ENABLED
+    # (app/services/billing/stripe_gateway.py). See docs/operations/billing.md.
+    BILLING_ENABLED: bool = False
+    BILLING_FREE_PROPOSALS_MONTHLY: int = 20
+    BILLING_SPONSORED_DEFAULT_CPC_CENTS: int = 50
+    BILLING_REFERRAL_CREDIT_CENTS: int = 1000
+    BILLING_MESSAGE_REFUND_DAYS: int = 14
+
     # ── Email ─────────────────────────────────────────────────────────────────
     # "none" (default, honest no-op -- matches the behavior this app has always
     # had; no email was ever actually sent before this) or "resend".

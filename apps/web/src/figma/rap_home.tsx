@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { GithubConnect } from "./rap_collab";
+import { BillingPanel, UpgradeLink } from "./rap_billing";
 import api, { extractErrorMessage } from "@/lib/api";
 import { useApi, toFigmaJob, goRoute, isMember } from "./live";
 import { useAuth } from "@/lib/auth";
@@ -845,7 +846,7 @@ export function Settings({ initial }: { initial?: string } = {}) {
     <Page title="Settings" sub="Manage your account and how your profile appears">
       <div className="grid gap-5 md:grid-cols-[180px_1fr]">
         <div>
-          {["Account", "Notifications", "Privacy", "Security", "Connected accounts"].map((t) => (
+          {["Account", "Billing", "Notifications", "Privacy", "Security", "Connected accounts"].map((t) => (
             <button
               key={t}
               onClick={() => {
@@ -864,6 +865,8 @@ export function Settings({ initial }: { initial?: string } = {}) {
         <Card>
           {tab === "Connected accounts" ? (
             <GithubConnect />
+          ) : tab === "Billing" ? (
+            <BillingPanel />
           ) : tab === "Notifications" ? (
             <NotificationPreferences />
           ) : tab === "Account" ? (
@@ -1474,6 +1477,10 @@ export function PostJob() {
               <h2 className="text-xl font-bold">Job published</h2>
               <p className="mt-1 text-sm text-slate-500">
                 Your role is live. Candidates are ranked by explainable match as they apply.
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Want more visibility? Feature or sponsor this job (always labelled as paid).{" "}
+                <UpgradeLink text="Promotion options" plan="featured_job" />
               </p>
               <div className="mt-4 flex justify-center gap-2">
                 <Btn v="primary" icon="users" onClick={() => visit("candidates")}>

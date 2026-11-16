@@ -4,6 +4,13 @@ Signed contracts and payment records belong to both parties, and every
 foreign key to users cascades: deleting one person would erase the other
 party's contract and payment history. Until a retention policy (keep and
 anonymise) is decided, such accounts are closed through support instead.
+
+Paid features (app/domains/billing) do not block deletion: live
+subscriptions are cancelled at the end of the paid period with Stripe before
+the account is erased (a Stripe failure refuses the deletion, so nobody keeps
+being billed), entitlements and credits go with the account, and purchases
+and invoices are kept without the user link (user_id set to NULL) because
+accounting and tax law require them.
 """
 
 import uuid
@@ -35,3 +42,10 @@ async def records_to_keep(db: AsyncSession, user_id: uuid.UUID) -> list[str]:
     if paid is not None:
         reasons.append("payment records")
     return reasons
+
+
+async def settle_billing_before_deletion(db: AsyncSession, user_id: uuid.UUID) -> int:
+    """Cancel live subscriptions at period end; returns how many were cancelled."""
+    from app.domains.billing.service import cancel_for_deletion
+
+    return await cancel_for_deletion(db, user_id)

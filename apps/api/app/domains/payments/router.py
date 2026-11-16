@@ -19,6 +19,8 @@ from app.core.database import get_db
 from app.core.logging import get_logger
 from app.domains.auth.dependencies import get_current_user, require_role
 from app.domains.auth.models import User, UserRole
+from app.domains.billing.service import BILLING_EVENTS
+from app.domains.billing.service import handle_event as handle_billing_event
 from app.domains.companies.models import CompanyProfile
 from app.domains.marketplace.models import ProjectTask
 from app.domains.payments.models import StripeWebhookEvent
@@ -345,14 +347,16 @@ _TERMINAL_STATUSES = {"RELEASED", "REFUNDED", "FAILED"}
 
 @router.post("/webhooks/stripe", include_in_schema=False)
 async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -> dict:
-    """Stripe webhook receiver -- the only path that ever marks an escrow as
+    """Stripe webhook receiver for marketplace escrow and paid features
+    (billing events go to app/domains/billing/service.py) -- the only path that ever marks an escrow as
     actually funded, since that requires the customer to have confirmed the
     PaymentIntent client-side (this app never sees card details).
 
     Never active unless PAYMENT_PROVIDER=stripe and STRIPE_WEBHOOK_SECRET is
     configured; every event's signature is verified before any DB write.
     """
-    if settings.PAYMENT_PROVIDER != "stripe" or not settings.STRIPE_WEBHOOK_SECRET:
+    marketplace = settings.PAYMENT_PROVIDER == "stripe"
+    if not (marketplace or settings.BILLING_ENABLED) or not settings.STRIPE_WEBHOOK_SECRET:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     payload = await request.body()
@@ -380,7 +384,14 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)) -
         logger.info("Duplicate Stripe webhook event ignored", event_id=event_id, event_type=event["type"])
         return {"received": True, "duplicate": True}
 
-    new_status = _WEBHOOK_STATUS_MAP.get(event["type"])
+    if event["type"] in BILLING_EVENTS:
+        # Paid features (app/domains/billing): grants, purchases, invoices.
+        if settings.BILLING_ENABLED:
+            await handle_billing_event(db, event)
+        await db.commit()
+        return {"received": True}
+
+    new_status = _WEBHOOK_STATUS_MAP.get(event["type"]) if marketplace else None
     if not new_status:
         await db.commit()
         return {"received": True}  # event type we don't act on
