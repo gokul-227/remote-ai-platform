@@ -674,3 +674,16 @@ def test_docs_list_every_command():
     for name, cmd in commands.REGISTRY.items():
         if name == cmd.name:
             assert f"`/rap {name}" in doc, name
+
+
+def test_alert_buttons_have_unique_action_ids():
+    """Slack rejects a whole message (invalid_blocks) when buttons share an action_id."""
+    from app.services import slack as slack_service
+
+    blocks = slack_service.alert_buttons(
+        slack_service.button("Run now", "rap_alert", "cmd:sources run X"),
+        slack_service.button("Pause source", "rap_alert", "cmd:sources pause X"),
+    )
+    ids = [e["action_id"] for e in blocks[0]["elements"]]
+    assert len(ids) == len(set(ids)) == 3
+    assert all(i.startswith("rap_alert") for i in ids)

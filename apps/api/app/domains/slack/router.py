@@ -112,7 +112,7 @@ async def interaction(request: Request, db: AsyncSession = Depends(get_db)) -> d
             replace_original=True,
         )
         return {}
-    if action_id == "rap_alert":
+    if action_id == "rap_alert" or action_id.startswith("rap_alert:"):
         if value == "ack":
             await service.acknowledge(db, slack_user, team, response_url)
             return {}

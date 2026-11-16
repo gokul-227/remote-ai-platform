@@ -76,8 +76,13 @@ def button(text: str, action_id: str, value: str, style: str | None = None) -> d
 
 def alert_buttons(*buttons: dict[str, Any]) -> list[dict[str, Any]]:
     """Alert actions handled by /slack/interactions; always offers Acknowledge."""
-    items = [*buttons, button("Acknowledge", "rap_alert", "ack")]
-    return [{"type": "actions", "elements": items[:5]}]
+    items = [*buttons, button("Acknowledge", "rap_alert", "ack")][:5]
+    # Slack rejects a block whose elements share an action_id (invalid_blocks),
+    # so each button gets a unique suffix; the handler matches the prefix.
+    for i, item in enumerate(items):
+        if item.get("action_id") == "rap_alert":
+            item["action_id"] = f"rap_alert:{i}"
+    return [{"type": "actions", "elements": items}]
 
 
 def reset() -> None:
@@ -147,7 +152,14 @@ async def post(
             )
         ok = res.status_code == 200 and bool(res.json().get("ok"))
         if not ok:
-            logger.warning("Slack post rejected", channel=channel, status=res.status_code)
+            error = None
+            try:
+                error = res.json().get("error")
+            except Exception:  # noqa: S110 - non-JSON reply; status is logged
+                pass
+            logger.warning(
+                "Slack post rejected", channel=channel, status=res.status_code, error=error
+            )
         return ok
     except Exception as exc:  # never into the caller
         logger.warning("Slack post failed", channel=channel, error=type(exc).__name__)
