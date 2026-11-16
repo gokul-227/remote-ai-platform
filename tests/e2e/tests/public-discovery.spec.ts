@@ -12,20 +12,20 @@ test("homepage discovery and signup links render without JavaScript", async ({ b
     const page = await context.newPage();
     const response = await page.goto("/");
     expect(response?.status()).toBe(200);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Connect\. Find work\.\s*Get work done\./);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Remote jobs");
     await expect(page.getByRole("link", { name: "Create your free account", exact: true })).toHaveAttribute(
       "href",
       /^\/?#register$/,
     );
-    await expect(page.getByRole("link", { name: "Explore remote jobs", exact: true })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "All remote jobs", exact: true }).first()).toHaveAttribute(
       "href",
       "/remote-jobs",
     );
-    await expect(page.getByRole("link", { name: "Python jobs", exact: true })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Remote jobs by country", exact: true }).first()).toHaveAttribute(
       "href",
-      "/remote-jobs/python",
+      "/remote-jobs/in",
     );
-    await expect(page.getByRole("img", { name: "Remote AI Platform" }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: "Remote AI Platform home", exact: true }).first()).toBeVisible();
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
   } finally {
     await context.close();
@@ -40,7 +40,7 @@ test("homepage signup opens the real registration form and back returns to disco
   await expect(page.getByLabel("Full name", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Connect\. Find work\.\s*Get work done\./);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Remote jobs");
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Welcome back", exact: true })).toBeVisible();
 });

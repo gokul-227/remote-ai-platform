@@ -55,7 +55,7 @@ export default async function Home() {
       <div className="min-h-screen bg-mist text-charcoal">
         <SiteNav home />
         <main id="main" className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
-          <section className="grid items-start gap-10 md:grid-cols-[3fr_2fr]">
+          <section className="grid grid-cols-1 items-start gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <div>
               <h1 className="font-bold" style={{ fontSize: "clamp(2.25rem, 4vw, 3.25rem)", lineHeight: 1.12 }}>
                 Remote jobs

@@ -50,12 +50,12 @@ export function SiteNav({ home = false }: { home?: boolean }) {
           ))}
         </ul>
         <div className="flex items-center gap-4 text-sm font-semibold">
-          <Link href="/#login" className={`text-navy hover:underline ${focus}`}>
+          <a href="/#login" className={`text-navy hover:underline ${focus}`}>
             Sign in
-          </Link>
-          <Link href="/#register" className={`rounded-lg bg-brand px-4 py-2 text-white hover:bg-brand-hover ${focus}`}>
+          </a>
+          <a href="/#register" className={`rounded-lg bg-brand px-4 py-2 text-white hover:bg-brand-hover ${focus}`}>
             Join free
-          </Link>
+          </a>
         </div>
       </nav>
     </header>
