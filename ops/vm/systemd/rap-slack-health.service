@@ -1,0 +1,10 @@
+[Unit]
+Description=Remote AI Platform VM health checks to Slack (disk, memory, CPU, TLS, Postgres size)
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/rap/repo/ops/vm/slack-health.sh
+TimeoutStartSec=2min
+Nice=10

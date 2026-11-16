@@ -119,6 +119,8 @@ services:
       SLACK_CHANNEL_ALERTS_ERRORS: ${SLACK_CHANNEL_ALERTS_ERRORS:-}
       SLACK_CHANNEL_BACKUPS: ${SLACK_CHANNEL_BACKUPS:-}
       SLACK_CHANNEL_COSTS: ${SLACK_CHANNEL_COSTS:-}
+      SLACK_CHANNEL_SECURITY: ${SLACK_CHANNEL_SECURITY:-}
+      SLACK_CHANNEL_PAYMENTS: ${SLACK_CHANNEL_PAYMENTS:-}
     volumes:
       - ../ops/slack-relay/relay.py:/relay/relay.py:ro
     networks: [ops]

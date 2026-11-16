@@ -205,11 +205,12 @@ class TaskService:
             run.status = TASK_DEAD
             run.finished_at = _now()
             run.next_retry_at = None
-            self.db.add(
-                DeadLetter(
-                    task_run_id=run.id, task_name=run.task_name, args=run.args, error=error[:4000]
-                )
+            dead = DeadLetter(
+                task_run_id=run.id, task_name=run.task_name, args=run.args, error=error[:4000]
             )
+            self.db.add(dead)
+            await self.db.flush()
+            dead_id = str(dead.id)
             await self.db.commit()
             from app.services import slack
 
@@ -218,6 +219,9 @@ class TaskService:
                 f":skull: Task moved to dead letters: {run.task_name}",
                 dedup_key=f"dead:{run.task_name}",
                 fields={"run_id": str(run.id), "attempts": run.attempts, "error": error[:300]},
+                actions=slack.alert_buttons(
+                    slack.button("Retry", "rap_alert", f"cmd:imports retry {dead_id}", "primary")
+                ),
             )
             return TASK_DEAD, None
         delay = BACKOFF_SECONDS[min(run.attempts - 1, len(BACKOFF_SECONDS) - 1)]

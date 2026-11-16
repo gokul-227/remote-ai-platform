@@ -79,6 +79,7 @@ celery_app.conf.update(
             "task": "seo.indexing_sweep",
             "schedule": crontab(hour="*/4", minute=25),
         },
+        "daily-kpi-digest": {"task": "ops.daily_kpi_digest", "schedule": crontab(hour=7, minute=5)},
         "seo-weekly-report": {
             "task": "ops.seo_weekly_report",
             "schedule": crontab(day_of_week=1, hour=7, minute=30),

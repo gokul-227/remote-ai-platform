@@ -52,6 +52,8 @@ AREA_ROLES: dict[str, frozenset[str]] = {
     "catalogue": frozenset({"ops_admin", "eng_operator"}),
     "feature-flags": frozenset({"ops_admin"}),
     "announcements": frozenset({"ops_admin"}),
+    # Every staff member may link their own Slack account (/rap).
+    "slack": frozenset(STAFF_ROLES),
 }
 # Read-only views every staff role may open (the console overview and own permissions).
 SHARED_READ_AREAS = frozenset({"dashboard", "stats", "me", "feature-flags"})

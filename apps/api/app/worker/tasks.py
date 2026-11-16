@@ -117,6 +117,10 @@ async def import_source_async(
                     f"attempt {run.attempts}/{run.max_attempts})",
                     dedup_key=f"import-fail:{source}:{run.status}",
                     fields={"run_id": str(run_id), "error": (run.error or "")[:300]},
+                    actions=slack.alert_buttons(
+                        slack.button("Run now", "rap_alert", f"cmd:sources run {source}"),
+                        slack.button("Pause source", "rap_alert", f"cmd:sources pause {source}"),
+                    ),
                 )
 
 
@@ -550,3 +554,23 @@ async def refund_unanswered_messages_async() -> dict[str, Any]:
 def refund_unanswered_messages() -> dict[str, Any]:
     """Return messaging credits for first messages with no reply in 14 days."""
     return runtime.run(refund_unanswered_messages_async())
+
+
+@shared_task(name="slack.run_command", soft_time_limit=120, time_limit=150)
+def slack_run_command(**kwargs: Any) -> dict[str, Any]:
+    """/rap work queued by app/domains/slack/router.py; answers via response_url."""
+    from app.domains.slack.service import run as run_slack
+
+    message = runtime.run(run_slack(**kwargs))
+    return {"text": str(message.get("text", ""))[:200]}
+
+
+@shared_task(name="ops.daily_kpi_digest")
+def daily_kpi_digest() -> dict[str, Any]:
+    from app.worker import ops
+
+    async def go() -> dict[str, Any]:
+        async with runtime.session_factory()() as db:
+            return await ops.daily_kpi_digest(db)
+
+    return runtime.run(go())

@@ -121,11 +121,12 @@ def _session_with_tax_fallback(params: dict[str, Any]) -> dict[str, Any]:
         logger.warning("Stripe Tax unavailable; checkout without automatic tax", error=str(exc)[:200])
         from app.services import slack
 
-        slack.notify(
-            "errors",
-            "Billing: Stripe Tax is not active; checkout is running without automatic tax.",
-            dedup_key="billing-stripe-tax-off",
-        )
+        for channel in ("errors", "payments"):
+            slack.notify(
+                channel,
+                "Billing: Stripe Tax is not active; checkout is running without automatic tax.",
+                dedup_key="billing-stripe-tax-off",
+            )
         fallback = {k: v for k, v in params.items() if k not in {"automatic_tax", "tax_id_collection"}}
         return gateway.create_checkout_session(fallback)
 
@@ -486,6 +487,50 @@ async def handle_event(db: AsyncSession, event: Any) -> None:
         await on_subscription_changed(db, obj, deleted=True)
     elif kind == "charge.refunded":
         await on_charge_refunded(db, obj)
+    billing_alert(kind, obj)
+
+
+def _money(cents: Any, currency: Any) -> str | None:
+    if cents is None:
+        return None
+    return f"{int(cents) / 100:.2f} {str(currency or 'eur').upper()}"
+
+
+# Stripe event -> (emoji + title, money field). Posted to Slack #payments (else #signups).
+_BILLING_ALERTS: dict[str, tuple[str, str]] = {
+    "checkout.session.completed": (":moneybag: New purchase", "amount_total"),
+    "invoice.paid": (":receipt: Invoice paid", "amount_paid"),
+    "invoice.payment_failed": (":x: Payment failed", "amount_due"),
+    "customer.subscription.created": (":tada: New subscription", ""),
+    "customer.subscription.deleted": (":wave: Subscription cancelled", ""),
+    "charge.refunded": (":leftwards_arrow_with_hook: Refund issued", "amount_refunded"),
+}
+
+
+def billing_alert(kind: str, obj: dict) -> None:
+    """Owner notification for money events. Ids and amounts only, never names or emails."""
+    spec = _BILLING_ALERTS.get(kind)
+    if spec is None:
+        return
+    if kind == "checkout.session.completed" and obj.get("payment_status") not in {
+        "paid",
+        "no_payment_required",
+    }:
+        return
+    if kind == "invoice.paid" and not int(obj.get("amount_paid") or 0):
+        return
+    title, money_key = spec
+    from app.services import slack
+
+    metadata = obj.get("metadata") or {}
+    fields: dict[str, Any] = {
+        "amount": _money(obj.get(money_key), obj.get("currency")) if money_key else None,
+        "plan": metadata.get("plan_slug"),
+        "stripe id": obj.get("id"),
+    }
+    if kind == "invoice.payment_failed":
+        fields["attempt"] = obj.get("attempt_count")
+    slack.notify("payments", title, dedup_key=f"billing:{kind}:{obj.get('id')}", fields=fields)
 
 
 # ── account deletion (auth/retention.py) ────────────────────────────────────

@@ -1,0 +1,30 @@
+# Slack app manifest for the existing "RAP Alerts" bot (docs/operations/slack.md).
+# Apply: api.slack.com/apps -> RAP Alerts -> App Manifest -> paste -> Save, then
+# reinstall the app to the workspace when Slack asks (new scope: commands).
+display_information:
+  name: RAP Alerts
+  description: Remote AI Platform alerts and the /rap staff console
+  background_color: "#1d2433"
+features:
+  bot_user:
+    display_name: RAP Alerts
+    always_online: true
+  slash_commands:
+    - command: /rap
+      url: https://api.remoteaiplatform.com/api/v1/slack/commands
+      description: Staff console from Slack (try /rap help)
+      usage_hint: "status | users find <email> | sources pause <name> | billing revenue | help"
+      should_escape: false
+oauth_config:
+  scopes:
+    bot:
+      - chat:write          # post alerts (existing)
+      - chat:write.public   # post to channels the bot was not invited to
+      - commands            # /rap
+settings:
+  interactivity:
+    is_enabled: true
+    request_url: https://api.remoteaiplatform.com/api/v1/slack/interactions
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false

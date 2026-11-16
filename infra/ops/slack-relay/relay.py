@@ -24,6 +24,8 @@ CHANNELS = {
     "signups": "SLACK_CHANNEL_SIGNUPS",
     "security": "SLACK_CHANNEL_SECURITY",
     "costs": "SLACK_CHANNEL_COSTS",
+    "payments": "SLACK_CHANNEL_PAYMENTS",
+    "seo": "SLACK_CHANNEL_SEO",
 }
 MAX_PER_MINUTE = int(os.environ.get("SLACK_MAX_PER_MINUTE", "30"))
 _sent: deque[float] = deque()
