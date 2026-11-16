@@ -23,7 +23,9 @@ function Item({ item, enabled }: { item: CatalogItem; enabled: boolean }) {
     <li className="flex flex-col rounded-xl border border-slate-200 bg-white p-5" data-testid={`plan-${item.slug}`}>
       <h3 className="text-lg font-semibold">{item.name}</h3>
       <p className="mt-1 text-xl font-bold">{priceLabel(item)}</p>
-      {item.trial_days ? <p className="text-sm text-slate-600">{item.trial_days}-day free trial, once per member</p> : null}
+      {item.trial_days ? (
+        <p className="text-sm text-slate-600">{item.trial_days}-day free trial, once per member</p>
+      ) : null}
       <p className="mt-2 flex-1 text-sm text-slate-700">{item.description}</p>
       {available ? (
         <Link
@@ -87,8 +89,8 @@ export function PricingView({ catalog }: { catalog: Catalog }) {
       <section className="mt-10 space-y-2 text-sm text-slate-700">
         <h2 className="text-xl font-semibold text-slate-900">Good to know</h2>
         <p>
-          Prices are in euros and include VAT where it applies. VAT is worked out at checkout from your billing
-          address; businesses can add a VAT number. Payments are handled by our payment processor.
+          Prices are in euros and include VAT where it applies. VAT is worked out at checkout from your billing address;
+          businesses can add a VAT number. Payments are handled by our payment processor.
         </p>
         <p>
           Featured, Sponsored and Promoted placements are always labelled as paid. They never change the order of
@@ -96,12 +98,19 @@ export function PricingView({ catalog }: { catalog: Catalog }) {
         </p>
         <p>
           Subscriptions renew automatically until you cancel in Settings &gt; Billing; cancelling stops the next
-          renewal. Credits expire 12 months after purchase. For digital services that start straight away you agree
-          at checkout that the 14-day right of withdrawal ends once the service has been fully provided.
+          renewal. Credits expire 12 months after purchase. For digital services that start straight away you agree at
+          checkout that the 14-day right of withdrawal ends once the service has been fully provided.
         </p>
         <p>
-          Full details: <Link className="text-brand underline" href="/terms#paid-services">Terms of Service, Paid services</Link>{" "}
-          and <Link className="text-brand underline" href="/employer-terms">Job Posting and Employer Terms</Link>.
+          Full details:{" "}
+          <Link className="text-brand underline" href="/terms#paid-services">
+            Terms of Service, Paid services
+          </Link>{" "}
+          and{" "}
+          <Link className="text-brand underline" href="/employer-terms">
+            Job Posting and Employer Terms
+          </Link>
+          .
         </p>
       </section>
     </article>

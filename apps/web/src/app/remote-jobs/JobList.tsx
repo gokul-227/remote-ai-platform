@@ -51,7 +51,10 @@ export async function FeaturedJobs() {
   }
   if (!featured.length) return null;
   return (
-    <ul aria-label="Featured jobs" className="mb-4 divide-y divide-amber-200 rounded-xl border border-amber-300 bg-amber-50">
+    <ul
+      aria-label="Featured jobs"
+      className="mb-4 divide-y divide-amber-200 rounded-xl border border-amber-300 bg-amber-50"
+    >
       {featured.map(({ label, job }) => (
         <li key={job.id} className="flex flex-wrap items-center gap-3 p-4">
           <span className="rounded-full border border-amber-400 px-2 py-0.5 text-xs font-semibold text-amber-900">

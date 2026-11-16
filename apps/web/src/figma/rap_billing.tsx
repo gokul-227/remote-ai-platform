@@ -7,9 +7,31 @@ import { goRoute, useApi } from "./live";
 import { Btn, cx } from "./rap_kit";
 
 type Entitlement = { id: string; key: string; quantity: number; subject_id: string | null; expires_at: string | null };
-type Sub = { id: string; plan: string; plan_name: string; status: string; current_period_end: string | null; cancel_at_period_end: boolean };
-type Purchase = { id: string; plan_slug: string; status: string; amount_total: number | null; currency: string; created_at: string; fulfilment_status: string };
-type Invoice = { id: string; amount_paid: number; currency: string; created_at: string; hosted_invoice_url: string | null; invoice_pdf: string | null };
+type Sub = {
+  id: string;
+  plan: string;
+  plan_name: string;
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+};
+type Purchase = {
+  id: string;
+  plan_slug: string;
+  status: string;
+  amount_total: number | null;
+  currency: string;
+  created_at: string;
+  fulfilment_status: string;
+};
+type Invoice = {
+  id: string;
+  amount_paid: number;
+  currency: string;
+  created_at: string;
+  hosted_invoice_url: string | null;
+  invoice_pdf: string | null;
+};
 type Monthly = { available: number; monthly_remaining: number; pack_remaining: number; included_monthly: number };
 export type MyBilling = {
   enabled: boolean;
@@ -43,7 +65,11 @@ export function PromotionChip({ kind }: { kind: string }) {
   );
 }
 
-type Placement = { label: string; campaign_id?: string | null; job: { id: string; title: string; company_name?: string | null } };
+type Placement = {
+  label: string;
+  campaign_id?: string | null;
+  job: { id: string; title: string; company_name?: string | null };
+};
 
 /** Featured and Sponsored jobs above the organic results, each labelled. Empty while billing is off. */
 export function PaidPlacements() {
@@ -58,7 +84,11 @@ export function PaidPlacements() {
     <ul aria-label="Paid placements" className="border-b border-amber-200 bg-amber-50/40">
       {items.map((p) => (
         <li key={`${p.label}-${p.job.id}`}>
-          <button type="button" onClick={() => open(p)} className="flex w-full items-center gap-3 p-3 text-left hover:bg-amber-50">
+          <button
+            type="button"
+            onClick={() => open(p)}
+            className="flex w-full items-center gap-3 p-3 text-left hover:bg-amber-50"
+          >
             <PromotionChip kind={p.label.toLowerCase()} />
             <span className="min-w-0 flex-1 truncate font-semibold">{p.job.title}</span>
             <span className="text-sm text-slate-500">{p.job.company_name}</span>
@@ -247,7 +277,9 @@ export function BillingPanel() {
             ))}
           </ul>
         ) : (
-          <p className="mt-1 text-sm text-slate-500">No invoices yet. Receipts for one-off purchases are emailed by Stripe.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            No invoices yet. Receipts for one-off purchases are emailed by Stripe.
+          </p>
         )}
       </section>
 

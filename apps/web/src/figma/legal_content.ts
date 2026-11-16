@@ -248,8 +248,12 @@ export const TERMS: Section[] = [
         "Featured, Urgent, Sponsored and Promoted placements are advertising. They are always labelled as paid, they do not change the order of organic results, and we may refuse or remove a placement that breaks our rules.",
         "Promotion codes and referral credits apply only as described when they are offered, and can't be exchanged for cash.",
       ],
-      "Right of withdrawal (consumers in the EU/EEA): you normally have 14 days to withdraw from a purchase of a digital service. Because paid services start straight away, at checkout you ask us to start immediately and acknowledge that you lose the right of withdrawal once the service has been fully provided. If you withdraw within 14 days before that, we refund the amount for the part not yet provided. To withdraw, " + write + " or use Settings > Billing.",
-      "Refunds: apart from the right of withdrawal and your statutory rights, payments are not refundable, but if something we sold you didn't work as described, " + write + " and we will put it right or refund you. Refunds go back to the original payment method.",
+      "Right of withdrawal (consumers in the EU/EEA): you normally have 14 days to withdraw from a purchase of a digital service. Because paid services start straight away, at checkout you ask us to start immediately and acknowledge that you lose the right of withdrawal once the service has been fully provided. If you withdraw within 14 days before that, we refund the amount for the part not yet provided. To withdraw, " +
+        write +
+        " or use Settings > Billing.",
+      "Refunds: apart from the right of withdrawal and your statutory rights, payments are not refundable, but if something we sold you didn't work as described, " +
+        write +
+        " and we will put it right or refund you. Refunds go back to the original payment method.",
     ],
   },
   {
@@ -431,7 +435,7 @@ export const EMPLOYER_TERMS: Section[] = [
     body: [
       "Featured jobs, Urgent badges, sponsored jobs, social and newsletter boosts, job credits, messaging credits, candidate database access, team seats, employer branding and the Hire and Hire Pro subscriptions are optional. The Paid services section of our Terms of Service (billing, renewals, cancellation, refunds and VAT) applies to them.",
       [
-        "Paid placements are advertising and are always labelled \"Featured\", \"Urgent\" or \"Sponsored\". They never change the order of organic results, and a paid job must meet every job post requirement above.",
+        'Paid placements are advertising and are always labelled "Featured", "Urgent" or "Sponsored". They never change the order of organic results, and a paid job must meet every job post requirement above.',
         "Sponsored jobs are charged per click from your prepaid balance, up to your daily budget and maximum cost per click. We count a click once per visitor per day and do not charge for clicks we identify as automated or for your own clicks. When your balance runs out the job stops being sponsored.",
         "Candidate search shows only members who have chosen to be open to opportunities and to make their profile public. Messaging credits are for genuine recruiting messages; the Candidate data rules below apply to everything you see.",
         "Social and newsletter boosts are scheduled by our team after purchase; we may decline content that doesn't fit our channels and refund you if we do.",
@@ -807,7 +811,10 @@ export const HELP_FAQ: [string, string][] = [
     "How do I report abuse or a security issue?",
     `Use Report on the post, profile or job, or email ${CONTACT_EMAIL} with details. Please don’t include sign-in codes.`,
   ],
-  ["Are there paid plans?", "Job search, viewing jobs and applying are free. Optional paid features for members and employers are listed on the pricing page; prices include VAT where it applies."],
+  [
+    "Are there paid plans?",
+    "Job search, viewing jobs and applying are free. Optional paid features for members and employers are listed on the pricing page; prices include VAT where it applies.",
+  ],
 ];
 
 export const isFact = (b: Block): b is Fact => typeof b === "object" && !Array.isArray(b);

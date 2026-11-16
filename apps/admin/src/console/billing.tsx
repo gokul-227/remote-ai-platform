@@ -66,17 +66,45 @@ export function BillingRevenue() {
       <State loading={r.loading && !d} error={r.error} retry={r.reload} />
       {d && (
         <div className="card">
-          {!d.billing_enabled && <p className="muted">Billing is off (BILLING_ENABLED=false); nothing is chargeable.</p>}
+          {!d.billing_enabled && (
+            <p className="muted">Billing is off (BILLING_ENABLED=false); nothing is chargeable.</p>
+          )}
           <table>
             <tbody>
-              <tr><th>MRR</th><td>{eur(d.mrr_cents)}</td></tr>
-              <tr><th>Active subscriptions</th><td>{d.active_subscriptions}</td></tr>
-              <tr><th>In trial</th><td>{d.trialing_subscriptions}</td></tr>
-              <tr><th>Churned (30 days)</th><td>{d.churned_30d} ({(d.churn_rate_30d * 100).toFixed(1)}%)</td></tr>
-              <tr><th>One-off revenue (30 days)</th><td>{eur(d.one_off_revenue_cents_30d)}</td></tr>
-              <tr><th>One-off revenue (all time)</th><td>{eur(d.one_off_revenue_cents_total)}</td></tr>
-              <tr><th>Subscription invoices (30 days)</th><td>{eur(d.subscription_invoices_cents_30d)}</td></tr>
-              <tr><th>Sponsored-job ad spend (30 days)</th><td>{eur(d.ad_spend_cents_30d)}</td></tr>
+              <tr>
+                <th>MRR</th>
+                <td>{eur(d.mrr_cents)}</td>
+              </tr>
+              <tr>
+                <th>Active subscriptions</th>
+                <td>{d.active_subscriptions}</td>
+              </tr>
+              <tr>
+                <th>In trial</th>
+                <td>{d.trialing_subscriptions}</td>
+              </tr>
+              <tr>
+                <th>Churned (30 days)</th>
+                <td>
+                  {d.churned_30d} ({(d.churn_rate_30d * 100).toFixed(1)}%)
+                </td>
+              </tr>
+              <tr>
+                <th>One-off revenue (30 days)</th>
+                <td>{eur(d.one_off_revenue_cents_30d)}</td>
+              </tr>
+              <tr>
+                <th>One-off revenue (all time)</th>
+                <td>{eur(d.one_off_revenue_cents_total)}</td>
+              </tr>
+              <tr>
+                <th>Subscription invoices (30 days)</th>
+                <td>{eur(d.subscription_invoices_cents_30d)}</td>
+              </tr>
+              <tr>
+                <th>Sponsored-job ad spend (30 days)</th>
+                <td>{eur(d.ad_spend_cents_30d)}</td>
+              </tr>
             </tbody>
           </table>
           <p className="muted">From recorded Stripe webhooks; amounts include VAT.</p>
@@ -101,20 +129,38 @@ export function BillingPurchases({ writable }: { writable: boolean }) {
           ))}
         </select>
       </label>
-      <State loading={list.loading && !list.data} error={list.error} empty={list.data?.length === 0} retry={list.reload} />
+      <State
+        loading={list.loading && !list.data}
+        error={list.error}
+        empty={list.data?.length === 0}
+        retry={list.reload}
+      />
       {!!list.data?.length && (
         <table>
           <thead>
-            <tr><th>When</th><th>Product</th><th>Member</th><th>Status</th><th>Amount</th><th>Fulfilment</th><th /></tr>
+            <tr>
+              <th>When</th>
+              <th>Product</th>
+              <th>Member</th>
+              <th>Status</th>
+              <th>Amount</th>
+              <th>Fulfilment</th>
+              <th />
+            </tr>
           </thead>
           <tbody>
             {list.data.map((p) => (
               <tr key={p.id}>
                 <td>{p.created_at.slice(0, 10)}</td>
                 <td>{p.plan_slug}</td>
-                <td><code>{p.user_id ?? "deleted"}</code></td>
+                <td>
+                  <code>{p.user_id ?? "deleted"}</code>
+                </td>
                 <td>{p.status}</td>
-                <td>{eur(p.amount_total)}{p.amount_refunded ? ` (refunded ${eur(p.amount_refunded)})` : ""}</td>
+                <td>
+                  {eur(p.amount_total)}
+                  {p.amount_refunded ? ` (refunded ${eur(p.amount_refunded)})` : ""}
+                </td>
                 <td>
                   {p.fulfilment_status}
                   {p.fulfilment_status === "queued" && (
@@ -182,19 +228,36 @@ export function BillingSubscriptions() {
   const list = useLoad<Sub[]>("/admin/billing/subscriptions?limit=100");
   return (
     <Section title="Subscriptions">
-      <State loading={list.loading && !list.data} error={list.error} empty={list.data?.length === 0} retry={list.reload} />
+      <State
+        loading={list.loading && !list.data}
+        error={list.error}
+        empty={list.data?.length === 0}
+        retry={list.reload}
+      />
       {!!list.data?.length && (
         <table>
           <thead>
-            <tr><th>Member</th><th>Status</th><th>Period end</th><th>Stripe</th></tr>
+            <tr>
+              <th>Member</th>
+              <th>Status</th>
+              <th>Period end</th>
+              <th>Stripe</th>
+            </tr>
           </thead>
           <tbody>
             {list.data.map((s) => (
               <tr key={s.id}>
-                <td><code>{s.user_id}</code></td>
-                <td>{s.status}{s.cancel_at_period_end ? " (cancels at period end)" : ""}</td>
+                <td>
+                  <code>{s.user_id}</code>
+                </td>
+                <td>
+                  {s.status}
+                  {s.cancel_at_period_end ? " (cancels at period end)" : ""}
+                </td>
                 <td>{s.current_period_end?.slice(0, 10) ?? "—"}</td>
-                <td><code>{s.stripe_subscription_id}</code></td>
+                <td>
+                  <code>{s.stripe_subscription_id}</code>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -207,22 +270,38 @@ export function BillingSubscriptions() {
 export function BillingEntitlements({ writable }: { writable: boolean }) {
   const [user, setUser] = useState("");
   const [dialog, setDialog] = useState<Action | null>(null);
-  const list = useLoad<Ent[]>(`/admin/billing/entitlements?limit=200${user ? `&user_id=${encodeURIComponent(user)}` : ""}`);
+  const list = useLoad<Ent[]>(
+    `/admin/billing/entitlements?limit=200${user ? `&user_id=${encodeURIComponent(user)}` : ""}`,
+  );
   return (
     <Section title="Entitlements">
       <label>
         Member id <input className="input" value={user} onChange={(e) => setUser(e.target.value.trim())} />
       </label>
-      <State loading={list.loading && !list.data} error={list.error} empty={list.data?.length === 0} retry={list.reload} />
+      <State
+        loading={list.loading && !list.data}
+        error={list.error}
+        empty={list.data?.length === 0}
+        retry={list.reload}
+      />
       {!!list.data?.length && (
         <table>
           <thead>
-            <tr><th>Member</th><th>Key</th><th>Qty</th><th>Source</th><th>Expires</th><th /></tr>
+            <tr>
+              <th>Member</th>
+              <th>Key</th>
+              <th>Qty</th>
+              <th>Source</th>
+              <th>Expires</th>
+              <th />
+            </tr>
           </thead>
           <tbody>
             {list.data.map((e) => (
               <tr key={e.id}>
-                <td><code>{e.user_id}</code></td>
+                <td>
+                  <code>{e.user_id}</code>
+                </td>
                 <td>{e.key}</td>
                 <td>{e.quantity}</td>
                 <td>{e.source}</td>
@@ -237,7 +316,10 @@ export function BillingEntitlements({ writable }: { writable: boolean }) {
                           title: `Revoke ${e.key}`,
                           danger: true,
                           run: async (reason) => {
-                            await api(`/admin/billing/entitlements/${e.id}/revoke`, { method: "POST", json: { reason } });
+                            await api(`/admin/billing/entitlements/${e.id}/revoke`, {
+                              method: "POST",
+                              json: { reason },
+                            });
                             list.reload();
                           },
                         })
@@ -278,7 +360,13 @@ export function BillingPrices({ writable }: { writable: boolean }) {
       {!!list.data?.length && (
         <table>
           <thead>
-            <tr><th>Product</th><th>Interval</th><th>Price (EUR, incl. VAT)</th><th>Available</th><th /></tr>
+            <tr>
+              <th>Product</th>
+              <th>Interval</th>
+              <th>Price (EUR, incl. VAT)</th>
+              <th>Available</th>
+              <th />
+            </tr>
           </thead>
           <tbody>
             {list.data.map((p) => (
@@ -304,7 +392,10 @@ export function BillingPrices({ writable }: { writable: boolean }) {
                       setDialog({
                         title: `Change ${p.name} to ${eur(cents)}`,
                         run: async (reason) => {
-                          await api(`/admin/billing/plans/${p.slug}`, { method: "PATCH", json: { reason, price_cents: cents } });
+                          await api(`/admin/billing/plans/${p.slug}`, {
+                            method: "PATCH",
+                            json: { reason, price_cents: cents },
+                          });
                           setEdits(({ [p.slug]: _drop, ...rest }) => rest);
                           list.reload();
                         },
@@ -320,7 +411,10 @@ export function BillingPrices({ writable }: { writable: boolean }) {
                       setDialog({
                         title: `${p.is_active ? "Withdraw" : "Offer"} ${p.name}`,
                         run: async (reason) => {
-                          await api(`/admin/billing/plans/${p.slug}`, { method: "PATCH", json: { reason, is_active: !p.is_active } });
+                          await api(`/admin/billing/plans/${p.slug}`, {
+                            method: "PATCH",
+                            json: { reason, is_active: !p.is_active },
+                          });
                           list.reload();
                         },
                       })

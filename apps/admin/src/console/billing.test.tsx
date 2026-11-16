@@ -24,9 +24,16 @@ beforeEach(() => {
     if (path.startsWith("/admin/billing/revenue"))
       return {
         data: {
-          mrr_cents: 9900, active_subscriptions: 1, trialing_subscriptions: 0, churned_30d: 0, churn_rate_30d: 0,
-          one_off_revenue_cents_30d: 4900, one_off_revenue_cents_total: 4900, subscription_invoices_cents_30d: 9900,
-          ad_spend_cents_30d: 150, billing_enabled: false,
+          mrr_cents: 9900,
+          active_subscriptions: 1,
+          trialing_subscriptions: 0,
+          churned_30d: 0,
+          churn_rate_30d: 0,
+          one_off_revenue_cents_30d: 4900,
+          one_off_revenue_cents_total: 4900,
+          subscription_invoices_cents_30d: 9900,
+          ad_spend_cents_30d: 150,
+          billing_enabled: false,
         },
       };
     if (path.startsWith("/admin/billing/plans"))

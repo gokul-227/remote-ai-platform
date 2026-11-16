@@ -29,11 +29,25 @@ const me = {
   has_customer: true,
   entitlements: [],
   subscriptions: [
-    { id: "s", plan: "premium_monthly", plan_name: "Premium (monthly)", status: "active", current_period_end: "2026-12-16T00:00:00Z", cancel_at_period_end: true },
+    {
+      id: "s",
+      plan: "premium_monthly",
+      plan_name: "Premium (monthly)",
+      status: "active",
+      current_period_end: "2026-12-16T00:00:00Z",
+      cancel_at_period_end: true,
+    },
   ],
   purchases: [],
   invoices: [
-    { id: "i", amount_paid: 900, currency: "eur", created_at: "2026-11-16T00:00:00Z", hosted_invoice_url: null, invoice_pdf: "https://pay.example/pdf" },
+    {
+      id: "i",
+      amount_paid: 900,
+      currency: "eur",
+      created_at: "2026-11-16T00:00:00Z",
+      hosted_invoice_url: null,
+      invoice_pdf: "https://pay.example/pdf",
+    },
   ],
   balances: {
     featured_job_credits: 0,
@@ -49,13 +63,20 @@ beforeEach(() => {
   mocks.post.mockReset();
   mocks.get.mockImplementation((path: string) => {
     if (path === "/billing/catalog")
-      return Promise.resolve({ data: { enabled: mocks.enabled, currency: "eur", prices_include_vat: true, items: [item] } });
+      return Promise.resolve({
+        data: { enabled: mocks.enabled, currency: "eur", prices_include_vat: true, items: [item] },
+      });
     if (path === "/billing/me") return Promise.resolve({ data: { ...me, enabled: mocks.enabled } });
     if (path === "/billing/referral") return Promise.resolve({ data: { code: "ABC123", credit_cents: 1000 } });
     if (path === "/billing/placements/jobs")
       return Promise.resolve({
         data: mocks.enabled
-          ? { featured: [], sponsored: [{ label: "Sponsored", campaign_id: "c1", job: { id: "j1", title: "Editor", company_name: "Acme" } }] }
+          ? {
+              featured: [],
+              sponsored: [
+                { label: "Sponsored", campaign_id: "c1", job: { id: "j1", title: "Editor", company_name: "Acme" } },
+              ],
+            }
           : { featured: [], sponsored: [] },
       });
     return Promise.resolve({ data: [] });
@@ -82,7 +103,9 @@ describe("billing gate", () => {
     expect(screen.getByRole("link", { name: "Download PDF" })).toHaveAttribute("href", "https://pay.example/pdf");
     expect(screen.getByText("ABC123")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Buy" }));
-    await waitFor(() => expect(mocks.post).toHaveBeenCalledWith("/billing/checkout", { plan: "premium_monthly", subject_id: undefined }));
+    await waitFor(() =>
+      expect(mocks.post).toHaveBeenCalledWith("/billing/checkout", { plan: "premium_monthly", subject_id: undefined }),
+    );
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://checkout.example/s"));
     fireEvent.click(screen.getByRole("button", { name: "Manage billing and cancel" }));
     await waitFor(() => expect(mocks.post).toHaveBeenCalledWith("/billing/portal"));

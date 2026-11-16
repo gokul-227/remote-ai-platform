@@ -13,10 +13,44 @@ const base: Omit<CatalogItem, "slug" | "name" | "price_cents" | "billing_interva
   entitlements: {},
 };
 const items: CatalogItem[] = [
-  { ...base, slug: "featured_job", name: "Featured job", price_cents: 4900, billing_interval: "one_time", mode: "payment", audience: "employer", target: "job" },
-  { ...base, slug: "hire", name: "Hire", price_cents: 9900, billing_interval: "month", mode: "subscription", audience: "employer" },
-  { ...base, slug: "premium_yearly", name: "Premium (yearly)", price_cents: 7900, billing_interval: "year", mode: "subscription", audience: "member" },
-  { ...base, slug: "verified_badge", name: "Verified badge", price_cents: 1900, billing_interval: "one_time", mode: "payment", audience: "member", is_active: false },
+  {
+    ...base,
+    slug: "featured_job",
+    name: "Featured job",
+    price_cents: 4900,
+    billing_interval: "one_time",
+    mode: "payment",
+    audience: "employer",
+    target: "job",
+  },
+  {
+    ...base,
+    slug: "hire",
+    name: "Hire",
+    price_cents: 9900,
+    billing_interval: "month",
+    mode: "subscription",
+    audience: "employer",
+  },
+  {
+    ...base,
+    slug: "premium_yearly",
+    name: "Premium (yearly)",
+    price_cents: 7900,
+    billing_interval: "year",
+    mode: "subscription",
+    audience: "member",
+  },
+  {
+    ...base,
+    slug: "verified_badge",
+    name: "Verified badge",
+    price_cents: 1900,
+    billing_interval: "one_time",
+    mode: "payment",
+    audience: "member",
+    is_active: false,
+  },
 ];
 const catalog = (enabled: boolean): Catalog => ({ enabled, currency: "eur", prices_include_vat: true, items });
 
@@ -31,7 +65,10 @@ describe("pricing page", () => {
   it("links each available item to checkout when billing is on", () => {
     render(<PricingView catalog={catalog(true)} />);
     expect(screen.queryByRole("status")).toBeNull();
-    expect(within(screen.getByTestId("plan-hire")).getByRole("link", { name: "Buy" })).toHaveAttribute("href", "/#billing?plan=hire");
+    expect(within(screen.getByTestId("plan-hire")).getByRole("link", { name: "Buy" })).toHaveAttribute(
+      "href",
+      "/#billing?plan=hire",
+    );
     expect(within(screen.getByTestId("plan-featured_job")).getByRole("link")).toHaveTextContent("Choose a job");
     expect(within(screen.getByTestId("plan-verified_badge")).getByText("Not available yet")).toBeInTheDocument();
   });

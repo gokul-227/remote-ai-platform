@@ -40,6 +40,20 @@ def _user(name: str = "user_id", ondelete: str = "CASCADE", nullable: bool = Fal
     return sa.Column(name, UUID, sa.ForeignKey("users.id", ondelete=ondelete), nullable=nullable)
 
 
+_RLS_TABLES = (
+    "billing_customers",
+    "billing_purchases",
+    "billing_invoices",
+    "entitlements",
+    "sponsored_campaigns",
+    "ad_clicks",
+    "message_credit_spends",
+    "credit_usage",
+    "billing_referrals",
+    "billing_referral_codes",
+)
+
+
 def upgrade() -> None:
     for col in (
         sa.Column("description", sa.Text, nullable=True),
@@ -221,6 +235,12 @@ def upgrade() -> None:
                 sort_order=item["sort_order"],
             )
         )
+
+    # DATA-03: every public table has row level security (no policies: only the
+    # API's own role, which bypasses RLS as owner, reads these tables).
+    if op.get_bind().dialect.name == "postgresql":
+        for table in _RLS_TABLES:
+            op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
 
 
 def downgrade() -> None:
