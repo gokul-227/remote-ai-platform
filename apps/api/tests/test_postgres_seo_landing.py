@@ -171,6 +171,28 @@ async def test_live_keyword_query_can_use_partial_fulltext_index():
     engine = create_async_engine(URL)
     try:
         async with async_sessionmaker(engine)() as db:
+            # Rows plus statistics (rolled back with the transaction): on an empty,
+            # never-analyzed table every index with the same live predicate (075
+            # added ix_job_posts_live_pay/_sitemap/_employer) costs the same as the
+            # full-text one, so the planner's pick says nothing about whether the
+            # query matches ix_job_posts_live_fts. With a selective keyword over
+            # thousands of live rows only the GIN index is cheap.
+            tag = uuid.uuid4().hex
+            await db.execute(
+                insert(JobPost),
+                [
+                    {
+                        "slug": f"fts-{tag}-{i}",
+                        "title": "Python engineer" if i < 5 else "Account executive",
+                        "description": "Role description",
+                        "source": tag,
+                        "company_name": "Plan",
+                        "skills": [],
+                    }
+                    for i in range(3000)
+                ],
+            )
+            await db.execute(text("ANALYZE job_posts"))
             await db.execute(text("SET LOCAL enable_seqscan = off"))
             await db.execute(text("SET LOCAL enable_indexscan = off"))
             await db.execute(text("SET LOCAL enable_indexonlyscan = off"))
