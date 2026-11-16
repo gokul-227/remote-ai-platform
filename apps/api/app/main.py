@@ -39,6 +39,8 @@ from app.domains.assistant.router import router as assistant_router
 # Domain routers — imported as they are implemented
 from app.domains.auth.router import router as auth_router
 from app.domains.auth.workos_router import router as workos_auth_router
+from app.domains.billing.admin_router import router as billing_admin_router
+from app.domains.billing.router import router as billing_router
 from app.domains.browser.router import router as browser_router
 from app.domains.channels.router import router as channels_router
 from app.domains.companies.members_router import router as organisation_members_router
@@ -356,6 +358,8 @@ def create_app() -> FastAPI:
     app.include_router(github_router, prefix=prefix)
     app.include_router(trust_router, prefix=prefix)
     app.include_router(payments_router, prefix=prefix)
+    app.include_router(billing_router, prefix=prefix)
+    app.include_router(billing_admin_router, prefix=prefix)
     app.include_router(groups_router, prefix=prefix)
     app.include_router(quality_router, prefix=prefix)
     app.include_router(analytics_router, prefix=prefix)

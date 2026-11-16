@@ -5,7 +5,7 @@ import { SITE_URL } from "@/lib/site";
 import { fetchLandingJobs, lastPage, pageHref, parsePage } from "@/lib/landing";
 import { PLACES, TOPICS, topicForSearch } from "@/lib/seo";
 import { PublicFrame } from "../PublicChrome";
-import { JobList, JoinCta } from "./JobList";
+import { FeaturedJobs, JobList, JoinCta } from "./JobList";
 import { PublicFilterForm, fetchFilteredJobs } from "./PublicFilters";
 import { activeCount, parseFilters } from "@/lib/jobFilters";
 
@@ -105,6 +105,7 @@ export default async function RemoteJobsIndex({ searchParams }: Props) {
             ? `${total.toLocaleString("en-US")} remote jobs matching “${q}”`
             : "Latest remote jobs"}
       </h2>
+      <FeaturedJobs />
       <JobList jobs={latest} />
       {!result && last > 1 && (
         <nav aria-label="Pagination" className="mt-6 flex items-center justify-between text-sm">

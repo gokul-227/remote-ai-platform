@@ -1,3 +1,4 @@
+import { UpgradeLink } from "./rap_billing";
 import { MeetingAdmission } from "./MeetingAdmission";
 import { ChannelThreads } from "./ChannelThreads";
 import { AttachmentPicker, MessageAttachments, type Attachment } from "./ChannelAttachments";
@@ -740,7 +741,12 @@ export function AssistantChat({ go, compact }: { go?: (r: string) => void; compa
           />
           <Btn icon="spark">Send</Btn>
         </form>
-        <p className="text-xs text-slate-500">AI answers can be wrong. Uses your monthly AI allowance.</p>
+        <p className="text-xs text-slate-500">
+          AI answers can be wrong. Uses your monthly AI allowance.{" "}
+          {turns.some((t) => t.role === "assistant" && /allowance/i.test(t.text)) && (
+            <UpgradeLink text="Get more AI" plan="ai_pack_5" />
+          )}
+        </p>
       </Card>
     </>
   );

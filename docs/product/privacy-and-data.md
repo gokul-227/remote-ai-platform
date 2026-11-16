@@ -19,6 +19,10 @@
   so the account is not silently re-created, and erases the identity-provider user; failed erasures are
   retried by a task. Deletion is refused while signed contracts or payment records exist
   (`auth/retention.py`); support then suspends and removes profile content by hand.
+- **Paid features:** deletion is not blocked by purchases. Live subscriptions are cancelled at the end of the
+  paid period in Stripe first (a Stripe failure refuses the deletion); entitlements and credits are deleted;
+  purchases and invoices are kept without the account link for accounting and tax. The export includes
+  purchases, invoices, entitlements, sponsored campaigns, credit usage and referrals, without Stripe ids.
 - **Correction:** members edit their own profile.
 
 ## Rules for staff and operators

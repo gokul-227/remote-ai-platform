@@ -89,6 +89,14 @@ features:
     screens: [contracts, contractsign, earnings, copayments]
     api: [contracts, payments, deliverables]
     uses: [stripe, storage]
+  - id: billing
+    icon: concepts/wallet
+    name: Paid plans & billing
+    step: 7
+    personas: [professional, organisation, admin]
+    screens: [billing]
+    api: [billing, billing.admin]
+    uses: [stripe]
   - id: delivery
     icon: concepts/kanban
     name: Projects & delivery

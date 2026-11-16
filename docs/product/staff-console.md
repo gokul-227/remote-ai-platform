@@ -21,6 +21,7 @@ The first admin is bootstrapped from `ADMIN_EMAILS`; afterwards admins are promo
 | | Job sources | Enable/disable sources, schedule, caps, permission flag; run an import manually |
 | | Background processing | Task runs, queues, dead letters (retry with reason), worker/scheduler heartbeats |
 | | Contracts · Project portfolio | Inspect contracts and projects for support cases |
+| Billing & Revenue | Revenue · Purchases & refunds · Subscriptions · Entitlements · Prices | MRR, churn, one-off and ad revenue from recorded Stripe events; refund through Stripe and mark social boosts done; grant or revoke entitlements; edit prices and availability (reason required, audited). See [billing](../operations/billing.md) |
 | Support | Ticket queue · My assigned tickets · Resolved | Answer tickets, internal notes, SLA |
 | AI | AI usage & allowances · Assistant activity | Token use by feature, per-user allowances, assistant tool calls |
 | Configuration | Feature flags | Override flags (audited); defaults come from settings |

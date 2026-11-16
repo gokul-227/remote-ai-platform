@@ -148,6 +148,7 @@ SCREENS: dict[str, str] = {
     "repos": "repositories", "quality": "code review", "browser": "web browser",
     # Account
     "settings": "account settings", "security": "security and verification", "privacydata": "privacy and data",
+    "billing": "billing and paid plans",
     "apps": "connected apps", "help": "help center", "support": "support tickets",
 }
 

@@ -7,6 +7,7 @@ import { CONSOLE_ENV, envLabel, envMatches } from "@/lib/env";
 import { errText } from "./kit";
 import { Ic } from "./icons";
 import { Incidents } from "./incidents";
+import { BillingEntitlements, BillingPrices, BillingPurchases, BillingRevenue, BillingSubscriptions } from "./billing";
 import { OperationsInventory } from "./inventory";
 import { Background } from "./background";
 import { Backups, ServiceCatalogue } from "./catalogue";
@@ -123,6 +124,24 @@ const SECTIONS: {
         items: [
           ["portfolio", "Project portfolio", "briefcase"],
           ["operations", "Platform operations", "chart"],
+        ],
+      },
+    ],
+  },
+  {
+    name: "Billing & Revenue",
+    tab: "Billing",
+    icon: "chart",
+    blurb: "Paid features, refunds and prices",
+    groups: [
+      {
+        label: "Billing",
+        items: [
+          ["revenue", "Revenue", "chart"],
+          ["purchases", "Purchases & refunds", "list"],
+          ["subscriptions", "Subscriptions", "user"],
+          ["entitlements", "Entitlements", "shield"],
+          ["prices", "Prices", "layers"],
         ],
       },
     ],
@@ -302,6 +321,11 @@ export default function Console() {
     sources: <JobSources />,
     background: <Background writable={writable} />,
     incidents: <Incidents writable={writable} />,
+    revenue: <BillingRevenue />,
+    purchases: <BillingPurchases writable={writable} />,
+    subscriptions: <BillingSubscriptions />,
+    entitlements: <BillingEntitlements writable={writable} />,
+    prices: <BillingPrices writable={writable} />,
     inventory: <OperationsInventory />,
     catalogue: <ServiceCatalogue />,
     backups: <Backups />,

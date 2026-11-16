@@ -16,6 +16,7 @@ import {
   type Filters,
 } from "@/lib/jobFilters";
 import { useAuth } from "@/lib/auth";
+import { UpgradeLink, PromotionChip, PaidPlacements } from "./rap_billing";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
@@ -221,6 +222,7 @@ export function Jobs() {
                 </button>
               </div>
             )}
+            <PaidPlacements />
             {!jobsQ.loading && !jobsQ.error && list.length === 0 && (
               <div className="p-10 text-center text-slate-500">
                 <Ic n="search" s={32} c="mx-auto mb-2" />
@@ -257,6 +259,9 @@ export function Jobs() {
                     </p>
                     <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                       <span className="font-semibold text-emerald-700">{j.post}</span>
+                      {(j.raw?.promotions ?? []).map((p) => (
+                        <PromotionChip key={p} kind={p} />
+                      ))}
                       {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
                       {j.easy && (
                         <span className="flex items-center gap-1 font-semibold">
@@ -809,6 +814,12 @@ export function Profile() {
               <p className="mt-2 text-xs text-slate-500">
                 AI allowance: {aiUse.data.used_this_month.toLocaleString()} of{" "}
                 {aiUse.data.monthly_allowance.toLocaleString()} tokens used this month
+                {aiUse.data.used_this_month >= aiUse.data.monthly_allowance && (
+                  <>
+                    {" "}
+                    · <UpgradeLink text="Get more AI" plan="premium_monthly" />
+                  </>
+                )}
               </p>
             )}
           </Card>

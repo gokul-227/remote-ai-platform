@@ -36,7 +36,10 @@ async def erase_account(db: AsyncSession, user: User) -> None:
 
     The caller has already checked permissions and records_to_keep. Commits.
     """
+    from app.domains.auth.retention import settle_billing_before_deletion
     from app.domains.engineers.service import _resume_object_key
+
+    await settle_billing_before_deletion(db, user.id)
 
     profile = await db.scalar(select(EngineerProfile).where(EngineerProfile.user_id == user.id))
     if profile and profile.resume_url:

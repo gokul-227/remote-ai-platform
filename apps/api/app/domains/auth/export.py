@@ -109,6 +109,22 @@ SOURCES: tuple[Source, ...] = (
         ("user_id",),
         drop=frozenset({"stripe_customer_id", "stripe_subscription_id"}),
     ),
+    # Paid features. Stripe ids are provider internals; invoice links are capabilities.
+    Source(
+        "billing_purchases",
+        ("user_id",),
+        drop=frozenset({"stripe_checkout_session_id", "stripe_payment_intent_id", "stripe_subscription_id"}),
+    ),
+    Source(
+        "billing_invoices",
+        ("user_id",),
+        drop=frozenset({"stripe_invoice_id", "stripe_subscription_id", "hosted_invoice_url", "invoice_pdf"}),
+    ),
+    Source("entitlements", ("user_id",), drop=frozenset({"source_ref"})),
+    Source("sponsored_campaigns", ("user_id",)),
+    Source("message_credit_spends", ("user_id",), drop=frozenset({"recipient_id", "entitlement_id"})),
+    Source("credit_usage", ("user_id",)),
+    Source("billing_referrals", ("referrer_id",)),
     # Reports the user made; who reviewed them and the moderator's notes stay internal.
     Source(
         "moderation_reports", ("reporter_id",), drop=frozenset({"reviewed_by_id", "decision_note"})
@@ -167,6 +183,13 @@ EXCLUDED: dict[tuple[str, str], str] = {
     ("file_activity", "actor_id"): "actions on files that may belong to other people",
     ("file_nodes", "project_id"): "project-scoped files are exported through owner_id",
     ("file_nodes", "company_id"): "organisation-scoped files are exported through owner_id",
+    ("billing_referrals", "referred_id"): "who referred the user identifies another member",
+    ("billing_customers", "user_id"): "only the Stripe customer id, a provider internal",
+    ("billing_referral_codes", "user_id"): "the user's own referral code, shown in Settings > Billing",
+    (
+        "message_credit_spends",
+        "recipient_id",
+    ): "credits another member spent to message the user are that member's records",
     (
         "staff_roles",
         "user_id",

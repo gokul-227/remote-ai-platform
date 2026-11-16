@@ -533,3 +533,20 @@ def send_job_alerts() -> dict[str, Any]:
             return await _send(db)
 
     return runtime.run(go())
+
+
+async def refund_unanswered_messages_async() -> dict[str, Any]:
+    from app.domains.billing.placements import refund_unanswered_messages as sweep
+
+    if not settings.BILLING_ENABLED:
+        return {"skipped": True}
+    async with runtime.session_factory()() as db:
+        result = await sweep(db)
+        await db.commit()
+        return dict(result)
+
+
+@shared_task(name="billing.refund_unanswered_messages")
+def refund_unanswered_messages() -> dict[str, Any]:
+    """Return messaging credits for first messages with no reply in 14 days."""
+    return runtime.run(refund_unanswered_messages_async())

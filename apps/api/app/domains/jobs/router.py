@@ -175,6 +175,7 @@ async def list_jobs(
     response: Response,
     search_params: JobSearchQuery = Depends(job_search_query),
     service: JobService = Depends(get_job_service),
+    db: AsyncSession = Depends(get_db),
 ) -> list[JobPostResponse]:
     """Search & filter active jobs (every filter of `job_search_query`).
 
@@ -186,7 +187,18 @@ async def list_jobs(
         response.headers["X-Total-Count-Capped"] = "true"
     if search_params.sort == "recent" and len(raw_jobs) == search_params.limit:
         response.headers["X-Next-Cursor"] = job_cursor(raw_jobs[-1])
-    return [JobPostResponse.model_validate(j) for j in raw_jobs]
+    jobs = [JobPostResponse.model_validate(j) for j in raw_jobs]
+    return await _with_promotions(db, jobs)
+
+
+async def _with_promotions(db: AsyncSession, jobs: list[JobPostResponse]) -> list[JobPostResponse]:
+    """Mark paid labels (Featured, Urgent) on organic results without reordering them."""
+    from app.domains.billing.placements import job_promotions
+
+    promos = await job_promotions(db, [str(j.id) for j in jobs])
+    for job in jobs:
+        job.promotions = promos.get(str(job.id), [])
+    return jobs
 
 
 @router.get("/facets", response_model=JobFacets)
@@ -369,7 +381,7 @@ async def get_job_by_id(
         raise HTTPException(status_code=404, detail="Job post not found")
     if not job.is_active and not is_admin and not await _owns_job(db, job, current_user):
         raise HTTPException(status_code=404, detail="Job post not found")
-    return JobPostResponse.model_validate(job)
+    return (await _with_promotions(db, [JobPostResponse.model_validate(job)]))[0]
 
 
 @router.get("/{job_id}/availability", response_model=JobAvailability)

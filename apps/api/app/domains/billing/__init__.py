@@ -1,9 +1,9 @@
 """
-Billing & Entitlements domain.
+Billing & Entitlements domain: paid features sold through Stripe Checkout.
 
-Architecture-only scaffolding (no real pricing decisions made yet): a `Plan`
-concept, a `Subscription` linking a user to a plan, and a reusable
-entitlement-checking mechanism (see `entitlements.py`) that other domains can
-depend on later to gate features behind a plan. Nothing in this domain gates
-any existing endpoint -- see `entitlements.py` module docstring for details.
+The catalogue (`catalog.py`, seeded into `plans`), purchases, invoices,
+subscriptions and the `entitlements` table that features check through
+`grants.py`. Everything chargeable is gated by BILLING_ENABLED; see
+docs/operations/billing.md. `entitlements.py` keeps the older plan-level
+`require_entitlement` dependency.
 """
