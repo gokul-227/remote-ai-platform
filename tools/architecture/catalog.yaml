@@ -149,10 +149,11 @@ components:
   - id: slack
     name: Slack
     type: external
-    technology: Owner alerts (chat.postMessage, per-channel routing)
+    technology: Owner alerts and the /rap staff command (chat.postMessage, slash command, interactivity)
     group: saas
     detect:
       - setting: SLACK_BOT_TOKEN
+      - setting: SLACK_SIGNING_SECRET
 
   - id: resend
     name: Resend

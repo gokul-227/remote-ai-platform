@@ -68,6 +68,8 @@ from app.domains.quality.router import router as quality_router
 from app.domains.saved_jobs.router import router as saved_jobs_router
 from app.domains.search.router import router as search_router
 from app.domains.seo.router import router as seo_router
+from app.domains.slack.router import admin_router as slack_admin_router
+from app.domains.slack.router import router as slack_router
 from app.domains.social.router import router as social_router
 from app.domains.support.router import router as support_router
 from app.domains.support.router import staff_router as support_staff_router
@@ -368,6 +370,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_portfolio_router, prefix=prefix)
     app.include_router(background_router, prefix=prefix)
     app.include_router(seo_router, prefix=prefix)
+    app.include_router(slack_router, prefix=prefix)
+    app.include_router(slack_admin_router, prefix=prefix)
 
     return app
 

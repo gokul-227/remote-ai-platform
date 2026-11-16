@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { api } from "@/lib/client";
 import { ReasonDialog, Section, State, errText, useLoad, when } from "./kit";
+import { SlackLink } from "./slack";
 
 /* ---------------- Overview ---------------- */
 
@@ -779,6 +780,7 @@ const INTEGRATIONS = [
 export function Integrations() {
   return (
     <Section title="Integrations">
+      <SlackLink />
       <div className="card">
         <table>
           <thead>

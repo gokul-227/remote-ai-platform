@@ -301,7 +301,7 @@ async def test_checkout_falls_back_when_stripe_tax_is_off(client, billing_on, fa
     assert "automatic_tax" in first
     assert "automatic_tax" not in second
     assert "tax_id_collection" not in second
-    assert alerts == ["errors"]
+    assert alerts == ["errors", "payments"]
 
 
 @pytest.mark.asyncio

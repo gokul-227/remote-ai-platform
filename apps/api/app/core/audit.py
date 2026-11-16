@@ -4,12 +4,17 @@ Sanitizes sensitive keys before persisting events.
 """
 
 import uuid
+from contextvars import ContextVar
 from typing import Any
 
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.admin.models import AuditEvent
+
+# How the actor reached the API: None for the web apps, "slack" for /rap commands
+# (set by app/domains/slack). Recorded in every audit payload as `channel`.
+audit_channel: ContextVar[str | None] = ContextVar("audit_channel", default=None)
 
 SENSITIVE_KEYS = {
     "password",
@@ -39,6 +44,13 @@ def sanitize_payload(payload: dict[str, Any] | None) -> dict[str, Any]:
     return sanitized
 
 
+def _with_channel(payload: dict[str, Any]) -> dict[str, Any]:
+    channel = audit_channel.get()
+    if channel and "channel" not in payload:
+        payload["channel"] = channel
+    return payload
+
+
 async def record_audit_event(
     db: AsyncSession,
     action: str,
@@ -66,7 +78,7 @@ async def record_audit_event(
         resource_id=str(resource_id) if resource_id else None,
         ip_address=ip_address,
         user_agent=user_agent[:500] if user_agent else None,
-        payload=sanitize_payload(payload),
+        payload=_with_channel(sanitize_payload(payload)),
     )
     db.add(event)
     await db.flush()

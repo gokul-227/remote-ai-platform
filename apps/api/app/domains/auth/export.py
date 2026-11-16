@@ -194,6 +194,8 @@ EXCLUDED: dict[tuple[str, str], str] = {
         "staff_roles",
         "user_id",
     ): "staff permissions are operational records, not the user's personal data",
+    ("slack_identities", "user_id"): "staff Slack link for /rap, an operational record",
+    ("slack_link_codes", "user_id"): "short-lived staff linking codes, not personal data",
 }
 
 

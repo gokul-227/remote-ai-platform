@@ -121,7 +121,28 @@ def _session_revoked(user: User, issued_at: int | None) -> bool:
     return issued_at <= int(revoked_at.timestamp())
 
 
+# ASGI scope key set only by app/domains/slack/api.py when it calls the API
+# in-process for a linked staff member. Network clients cannot set scope keys
+# (servers build the scope; headers land in scope["headers"]), so this is not
+# reachable from outside the process.
+SLACK_ACTOR_SCOPE_KEY = "rap.slack_actor"
+
+
+async def _slack_actor(actor: object, db: AsyncSession) -> User:
+    import uuid
+
+    from app.core.audit import audit_channel
+
+    user = await db.get(User, uuid.UUID(str(actor)))
+    if user is None or not user.is_active or user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authorised")
+    audit_channel.set("slack")
+    set_ai_actor(user.id, db, unlimited=True)
+    return user
+
+
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Security(security_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User:
@@ -130,6 +151,9 @@ async def get_current_user(
     Raises 401 unconditionally if the token is missing or invalid — there is no
     DEBUG-mode fallback/mock user, regardless of settings.DEBUG.
     """
+    actor = request.scope.get(SLACK_ACTOR_SCOPE_KEY)
+    if actor:
+        return await _slack_actor(actor, db)
     if not credentials or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -171,6 +195,7 @@ async def get_current_user(
 
 
 async def get_optional_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials | None = Security(security_scheme),
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
@@ -178,7 +203,7 @@ async def get_optional_user(
     if not credentials or not credentials.credentials:
         return None
     try:
-        return await get_current_user(credentials, db)
+        return await get_current_user(request, credentials, db)
     except HTTPException:
         return None
 
@@ -205,6 +230,15 @@ def require_role(*allowed_roles: UserRole) -> Callable:
         if member_ok and current_user.role in (UserRole.ENGINEER, UserRole.COMPANY, UserRole.ADMIN):
             return current_user
         if current_user.role not in allowed_roles:
+            if staff_only:
+                from app.services import slack
+
+                slack.notify(
+                    "security",
+                    ":no_entry: Non-staff account tried a staff endpoint",
+                    dedup_key=f"staff-denied:{current_user.id}",
+                    fields={"user": str(current_user.id), "path": request.url.path[:200]},
+                )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"User role '{current_user.role.value}' is not permitted to access this resource. Required: {[r.value for r in allowed_roles]}",

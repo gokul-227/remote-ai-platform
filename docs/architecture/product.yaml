@@ -424,6 +424,8 @@ features:
     prefix: /health
   - domain: tasks
     prefix: /api/v1/admin/background
+  - domain: slack
+    prefix: /api/v1/slack
   uses:
   - id: job-boards
     name: Job boards
@@ -553,6 +555,8 @@ api:
     prefix: /search
   - domain: seo
     prefix: /public
+  - domain: slack
+    prefix: /slack
   - domain: social
     prefix: /social
   - domain: support
@@ -707,7 +711,7 @@ infrastructure:
     status: active
   - id: slack
     name: Slack
-    technology: Owner alerts (chat.postMessage, per-channel routing)
+    technology: Owner alerts and the /rap staff command (chat.postMessage, slash command, interactivity)
     group: saas
     status: active
   - id: resend

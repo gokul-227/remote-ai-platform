@@ -14040,6 +14040,65 @@ paths:
                   type: integer
                 type: object
                 title: Response Sitemap Counts Api V1 Public Sitemap Counts Get
+  /api/v1/admin/slack/link-code:
+    post:
+      tags:
+      - Admin Slack
+      summary: Link Code
+      description: One-time code (valid SLACK_LINK_CODE_MINUTES) to run as `/rap link <code>` in Slack.
+      operationId: link_code_api_v1_admin_slack_link_code_post
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkCodeOut'
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/slack/identities:
+    get:
+      tags:
+      - Admin Slack
+      summary: My Identities
+      operationId: my_identities_api_v1_admin_slack_identities_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlackIdentityOut'
+                type: array
+                title: Response My Identities Api V1 Admin Slack Identities Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/slack/identities/{identity_id}:
+    delete:
+      tags:
+      - Admin Slack
+      summary: Unlink Identity
+      operationId: unlink_identity_api_v1_admin_slack_identities__identity_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: identity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Identity Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AIUsageStatsResponse:
@@ -19152,6 +19211,24 @@ components:
       - name
       - count
       title: LandingSkill
+    LinkCodeOut:
+      properties:
+        code:
+          type: string
+          title: Code
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+        command:
+          type: string
+          title: Command
+      type: object
+      required:
+      - code
+      - expires_at
+      - command
+      title: LinkCodeOut
     LogoutIn:
       properties:
         everywhere:
@@ -21316,6 +21393,42 @@ components:
       - count
       - endorsed_by_me
       title: SkillCount
+    SlackIdentityOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        slack_user_id:
+          type: string
+          title: Slack User Id
+        slack_team_id:
+          type: string
+          title: Slack Team Id
+        slack_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Slack Username
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        last_used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Used At
+      type: object
+      required:
+      - id
+      - slack_user_id
+      - slack_team_id
+      - slack_username
+      - created_at
+      - last_used_at
+      title: SlackIdentityOut
     SourceOut:
       properties:
         name:

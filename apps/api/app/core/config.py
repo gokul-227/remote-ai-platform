@@ -588,6 +588,14 @@ class Settings(BaseSettings):
     SLACK_CHANNEL_SECURITY: str = ""
     SLACK_CHANNEL_COSTS: str = ""
     SLACK_CHANNEL_SEO: str = ""  # weekly Search Console summary; empty -> #signups
+    SLACK_CHANNEL_PAYMENTS: str = ""  # purchases, subscriptions, failed payments, refunds; empty -> #signups
+    SLACK_CHANNEL_KPIS: str = ""  # daily KPI digest; empty -> #signups
+    # Slack app (/rap slash command + interactivity, app/domains/slack). Requests are
+    # rejected while this is empty. From the Slack app's Basic Information page.
+    SLACK_SIGNING_SECRET: str = ""
+    SLACK_LINK_CODE_MINUTES: int = 10  # one-time console code that links a Slack user to staff
+    SLACK_CONFIRM_MINUTES: int = 10  # a confirmation button stops working after this
+    SLACK_KPI_DIGEST_ENABLED: bool = True
     ADMIN_URL: str = ""  # staff console base URL, linked from Slack messages
     SLACK_DEDUP_SECONDS: int = 900  # identical dedup keys are dropped inside this window
     SLACK_MAX_PER_MINUTE: int = 20  # per channel, per process

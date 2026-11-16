@@ -40,6 +40,7 @@ import app.domains.notifications.models  # noqa: F401
 import app.domains.payments.models  # noqa: F401
 import app.domains.projects.models  # noqa: F401
 import app.domains.saved_jobs.models  # noqa: F401
+import app.domains.slack.models  # noqa: F401
 import app.domains.social.models  # noqa: F401
 import app.domains.support.models  # noqa: F401
 import app.domains.tasks.models  # noqa: F401

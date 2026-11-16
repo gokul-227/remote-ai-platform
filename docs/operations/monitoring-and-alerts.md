@@ -18,6 +18,11 @@ messages, and GitHub Actions (`deploy-notify.yml`, `infra/ops/slack-notify.sh`).
 | `#security` | `SLACK_CHANNEL_SECURITY` | Role/staff/flag changes, session revocations, auth-failure bursts, identity conflicts, spikes |
 | `#costs` | `SLACK_CHANNEL_COSTS` | Free-tier usage at 70 % / 90 % |
 | `#seo` | `SLACK_CHANNEL_SEO` | Weekly Search Console summary (`SEO_WEEKLY_REPORT_ENABLED`; empty channel → `#signups`) |
+| `#payments` | `SLACK_CHANNEL_PAYMENTS` | Purchases, invoices, subscriptions, failed payments, refunds, Stripe Tax off (empty → `#signups`) |
+| `#kpis` | `SLACK_CHANNEL_KPIS` | Daily KPI digest (`SLACK_KPI_DIGEST_ENABLED`; empty → `#signups`) |
+
+Staff can also act from Slack with `/rap`, and some alerts carry buttons (Retry, Pause source, Acknowledge):
+see [slack.md](slack.md) for the command reference, the app manifest and the setup of external services.
 
 Non-production senders prefix messages with `[<APP_ENV>]`.
 
@@ -42,7 +47,14 @@ Non-production senders prefix messages with `[<APP_ENV>]`.
 | Application error | GlitchTip new issue | errors | grouped by issue |
 | Uptime (on VM) | Uptime Kuma: API ready, web, admin; 60 s, 3 failures | critical | on down and up |
 | TLS expiry | Uptime Kuma, 21/14/7 days | critical | per threshold |
-| Deploys | `deploy-notify.yml` | deploys | every run |
+| Deploys and CI | `deploy-notify.yml` (deploy, CI, API image, CodeQL, Release) | deploys | every run |
+| Billing | Stripe webhook: purchase, invoice paid, subscription created/cancelled, payment failed, refund | payments | per Stripe object |
+| Daily KPIs | 07:05 UTC: users, sign-ups, jobs live, imports, subscriptions, revenue, Postgres size | kpis | daily |
+| Non-staff on staff endpoint | a member account calls `/admin/*` | security | per account per 15 min |
+| Refused `/rap` user | Slack user not linked to active staff | security | per Slack user per 15 min |
+| VM disk / memory / CPU | `ops/vm/slack-health.sh` every 5 min: disk ≥ 85 %, memory ≥ 90 %, load > 2/core | critical | hourly while high, one recovery |
+| TLS expiry (VM check) | same script, ≤ 14 days | critical | hourly while true |
+| Postgres size | same script, ≥ `PG_WARN_MB`; also `cost_guard` and the KPI digest | critical / costs / kpis | hourly / per day |
 
 An off-VM monitor (UptimeRobot free, 5 min) also watches the public URLs; until a Slack incoming webhook
 is added it notifies by email. `POST /api/v1/ops/uptime-hook` (`UPTIME_HOOK_TOKEN`) accepts webhooks from
