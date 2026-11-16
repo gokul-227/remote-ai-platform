@@ -574,3 +574,20 @@ def daily_kpi_digest() -> dict[str, Any]:
             return await ops.daily_kpi_digest(db)
 
     return runtime.run(go())
+
+
+async def retry_referral_credits_async() -> dict[str, Any]:
+    from app.domains.billing.service import retry_referral_credits
+
+    if not settings.BILLING_ENABLED:
+        return {"skipped": True}
+    async with runtime.session_factory()() as db:
+        result = await retry_referral_credits(db)
+        await db.commit()
+        return dict(result)
+
+
+@shared_task(name="billing.retry_referral_credits")
+def retry_referral_credits() -> dict[str, Any]:
+    """Retry failed referral credits (exponential backoff, capped at a day)."""
+    return runtime.run(retry_referral_credits_async())

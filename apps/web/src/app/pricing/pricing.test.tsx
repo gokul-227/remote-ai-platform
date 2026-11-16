@@ -63,8 +63,9 @@ describe("pricing page", () => {
   });
 
   it("links each available item to checkout when billing is on", () => {
-    render(<PricingView catalog={catalog(true)} />);
+    render(<PricingView catalog={{ ...catalog(true), tax_calculated: true }} />);
     expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByText(/VAT is worked out at checkout/)).toBeInTheDocument();
     expect(within(screen.getByTestId("plan-hire")).getByRole("link", { name: "Buy" })).toHaveAttribute(
       "href",
       "/#billing?plan=hire",
@@ -76,7 +77,7 @@ describe("pricing page", () => {
   it("is honest: free core features, VAT note, labelled placements and terms links", () => {
     render(<PricingView catalog={catalog(true)} />);
     expect(screen.getByText("Search, view and apply for jobs")).toBeInTheDocument();
-    expect(screen.getByText(/include VAT where it applies/)).toBeInTheDocument();
+    expect(screen.getByText(/final amount you pay, including any VAT/)).toBeInTheDocument();
     expect(screen.getByText(/always labelled as paid/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Paid services/ })).toHaveAttribute("href", "/terms#paid-services");
     expect(screen.getByRole("link", { name: /Employer Terms/ })).toHaveAttribute("href", "/employer-terms");

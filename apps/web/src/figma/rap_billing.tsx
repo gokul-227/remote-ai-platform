@@ -5,6 +5,7 @@ import api, { extractErrorMessage } from "@/lib/api";
 import { PROMOTION_LABELS, formatPrice, priceLabel, type Catalog, type CatalogItem } from "@/lib/billing";
 import { goRoute, useApi } from "./live";
 import { Btn, cx } from "./rap_kit";
+import { BrandingEditor, ReferralBox } from "./rap_billing_extras";
 
 type Entitlement = { id: string; key: string; quantity: number; subject_id: string | null; expires_at: string | null };
 type Sub = {
@@ -227,7 +228,10 @@ export function BillingPanel() {
       <section>
         <h3 className="font-semibold">Buy</h3>
         <p className="text-xs text-slate-500">
-          Prices include VAT where it applies; tax is calculated at checkout. Paid placements are always labelled.
+          {cat.data?.tax_calculated
+            ? "Prices include VAT where it applies; tax is calculated at checkout."
+            : "Prices are the final amount you pay."}{" "}
+          Paid placements are always labelled.
         </p>
         {(jobs.data?.length ?? 0) > 0 && (
           <label className="mt-2 block text-sm">
@@ -298,15 +302,9 @@ export function BillingPanel() {
         </section>
       )}
 
-      {ref.data && (
-        <section>
-          <h3 className="font-semibold">Refer a friend</h3>
-          <p className="mt-1 text-sm text-slate-600">
-            Share code <b>{ref.data.code}</b>. When they make their first payment you both get{" "}
-            {formatPrice(ref.data.credit_cents)} of credit towards future payments.
-          </p>
-        </section>
-      )}
+      <BrandingEditor />
+
+      {ref.data && <ReferralBox code={ref.data.code} creditCents={ref.data.credit_cents} />}
     </div>
   );
 }

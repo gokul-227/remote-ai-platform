@@ -17,6 +17,7 @@ import {
 } from "@/lib/jobFilters";
 import { useAuth } from "@/lib/auth";
 import { UpgradeLink, PromotionChip, PaidPlacements } from "./rap_billing";
+import { CompanyBranding, OpenToOpportunitiesBanner } from "./rap_billing_extras";
 import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
@@ -652,6 +653,12 @@ export function Profile() {
     <div className="bg-[#F0F2F5] py-5">
       <div className="mx-auto grid max-w-[1200px] gap-5 px-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-3">
+          <OpenToOpportunitiesBanner
+            open={p.is_open_to_work === true}
+            onOptIn={() =>
+              run("open", () => api.put("/engineers/me", { is_open_to_work: true }), "You’re now open to opportunities")
+            }
+          />
           <Card p={false} c="overflow-hidden rounded-lg">
             <div className="h-48 bg-gradient-to-r from-[#031B4E] via-brand to-[#5B4BDB]" />
             <div className="relative px-6 pb-6">
@@ -1250,6 +1257,7 @@ export function Company() {
           {tab === "Home" && (
             <>
               {overview}
+              <CompanyBranding companyId={id} />
               {jobsCard}
             </>
           )}

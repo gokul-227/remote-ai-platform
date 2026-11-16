@@ -16,7 +16,14 @@ export type CatalogItem = {
   is_active: boolean;
   entitlements: Record<string, unknown>;
 };
-export type Catalog = { enabled: boolean; currency: string; prices_include_vat: boolean; items: CatalogItem[] };
+export type Catalog = {
+  enabled: boolean;
+  currency: string;
+  prices_include_vat: boolean;
+  /** Stripe Tax on: VAT is worked out at checkout. Off: prices are final amounts. */
+  tax_calculated?: boolean;
+  items: CatalogItem[];
+};
 
 export const EMPTY_CATALOG: Catalog = { enabled: false, currency: "eur", prices_include_vat: true, items: [] };
 

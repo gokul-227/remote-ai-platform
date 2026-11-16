@@ -16,7 +16,8 @@ async def _profile(db, skills, updated_ago_days=0, **kw):
     db.add(user)
     await db.flush()
     prof = EngineerProfile(user_id=user.id, skills=skills, years_of_experience=5,
-                           updated_at=datetime.now(UTC) - timedelta(days=updated_ago_days), **kw)
+                           updated_at=datetime.now(UTC) - timedelta(days=updated_ago_days),
+                           **{"is_open_to_work": True, **kw})
     db.add(prof)
     await db.flush()
     return prof

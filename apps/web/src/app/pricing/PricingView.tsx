@@ -89,8 +89,10 @@ export function PricingView({ catalog }: { catalog: Catalog }) {
       <section className="mt-10 space-y-2 text-sm text-slate-700">
         <h2 className="text-xl font-semibold text-slate-900">Good to know</h2>
         <p>
-          Prices are in euros and include VAT where it applies. VAT is worked out at checkout from your billing address;
-          businesses can add a VAT number. Payments are handled by our payment processor.
+          {catalog.tax_calculated
+            ? "Prices are in euros and include VAT where it applies. VAT is worked out at checkout from your billing address; businesses can add a VAT number."
+            : "Prices are in euros and are the final amount you pay, including any VAT that applies."}{" "}
+          Payments are handled by our payment processor.
         </p>
         <p>
           Featured, Sponsored and Promoted placements are always labelled as paid. They never change the order of

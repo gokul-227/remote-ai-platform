@@ -768,9 +768,12 @@ paths:
         in: query
         required: false
         schema:
-          type: boolean
-          default: true
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Only members open to opportunities (opt-in)
           title: Is Open To Work
+        description: Only members open to opportunities (opt-in)
       - name: skip
         in: query
         required: false
@@ -1196,6 +1199,41 @@ paths:
       responses:
         '204':
           description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/organisations/{company_id}/seats:
+    get:
+      tags:
+      - Organisation Members
+      summary: Seats
+      description: Team seats used and included (free seats plus paid Extra team seats).
+      operationId: seats_api_v1_organisations__company_id__seats_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: boolean
+                title: Response Seats Api V1 Organisations  Company Id  Seats Get
         '422':
           description: Validation Error
           content:
@@ -12012,6 +12050,202 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
       security:
       - HTTPBearer: []
+  /api/v1/billing/branding/me:
+    get:
+      tags:
+      - Billing
+      summary: My Branding
+      operationId: my_branding_api_v1_billing_branding_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandingOut'
+      security:
+      - HTTPBearer: []
+    put:
+      tags:
+      - Billing
+      summary: Set Branding
+      operationId: set_branding_api_v1_billing_branding_me_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandingIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandingOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/branding/{company_id}:
+    get:
+      tags:
+      - Billing
+      summary: Company Branding
+      description: 'Public: the cover video and testimonials, only while the company is entitled.'
+      operationId: company_branding_api_v1_billing_branding__company_id__get
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandingOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/branding/me/testimonials:
+    post:
+      tags:
+      - Billing
+      summary: Add Testimonial
+      operationId: add_testimonial_api_v1_billing_branding_me_testimonials_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestimonialIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestimonialOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/branding/me/testimonials/{testimonial_id}:
+    put:
+      tags:
+      - Billing
+      summary: Edit Testimonial
+      operationId: edit_testimonial_api_v1_billing_branding_me_testimonials__testimonial_id__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: testimonial_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Testimonial Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestimonialIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestimonialOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Billing
+      summary: Delete Testimonial
+      operationId: delete_testimonial_api_v1_billing_branding_me_testimonials__testimonial_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: testimonial_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Testimonial Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/messages/quote:
+    get:
+      tags:
+      - Billing
+      summary: Message Quote
+      description: 'For the composer: whether sending uses a messaging credit, and the balance.'
+      operationId: message_quote_api_v1_billing_messages_quote_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: recipient_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Recipient Id
+      - name: conversation_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Conversation Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Message Quote Api V1 Billing Messages Quote Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /api/v1/admin/billing/purchases:
     get:
       tags:
@@ -14930,6 +15164,35 @@ components:
       required:
       - file
       title: Body_upload_resume_api_v1_engineers_me_resume_post
+    BrandingIn:
+      properties:
+        cover_video_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cover Video Url
+      type: object
+      title: BrandingIn
+    BrandingOut:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+        cover_video_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cover Video Url
+        testimonials:
+          items:
+            $ref: '#/components/schemas/TestimonialOut'
+          type: array
+          title: Testimonials
+          default: []
+      type: object
+      required:
+      - enabled
+      title: BrandingOut
     CallbackIn:
       properties:
         code:
@@ -15137,6 +15400,10 @@ components:
           type: boolean
           title: Prices Include Vat
           default: true
+        tax_calculated:
+          type: boolean
+          title: Tax Calculated
+          default: false
         items:
           items:
             $ref: '#/components/schemas/PlanOut'
@@ -16728,7 +16995,7 @@ components:
         is_open_to_work:
           type: boolean
           title: Is Open To Work
-          default: true
+          default: false
       type: object
       title: EngineerProfileCreate
     EngineerProfileResponse:
@@ -16876,7 +17143,7 @@ components:
         is_open_to_work:
           type: boolean
           title: Is Open To Work
-          default: true
+          default: false
         id:
           type: string
           format: uuid
@@ -17236,7 +17503,7 @@ components:
         is_open_to_work:
           type: boolean
           title: Is Open To Work
-          default: true
+          default: false
         id:
           type: string
           format: uuid
@@ -22022,6 +22289,64 @@ components:
           title: Sprint Id
       type: object
       title: TaskUpdate
+    TestimonialIn:
+      properties:
+        author_name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Author Name
+        author_title:
+          anyOf:
+          - type: string
+            maxLength: 160
+          - type: 'null'
+          title: Author Title
+        quote:
+          type: string
+          maxLength: 1000
+          minLength: 1
+          title: Quote
+        sort_order:
+          type: integer
+          maximum: 1000.0
+          minimum: 0.0
+          title: Sort Order
+          default: 0
+      additionalProperties: false
+      type: object
+      required:
+      - author_name
+      - quote
+      title: TestimonialIn
+    TestimonialOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        author_name:
+          type: string
+          title: Author Name
+        author_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Author Title
+        quote:
+          type: string
+          title: Quote
+        sort_order:
+          type: integer
+          title: Sort Order
+      type: object
+      required:
+      - id
+      - author_name
+      - author_title
+      - quote
+      - sort_order
+      title: TestimonialOut
     TicketCreate:
       properties:
         subject:

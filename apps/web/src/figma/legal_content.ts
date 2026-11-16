@@ -240,7 +240,7 @@ export const TERMS: Section[] = [
     body: [
       "Remote AI Platform (the trading name of the seller shown on your receipt) offers optional paid services: subscriptions (for example Premium, Freelancer Plus, Hire and Hire Pro), one-off purchases (for example Featured jobs, Urgent badges, profile boosts) and credits (for example job, messaging, proposal and AI credits, and a prepaid balance for sponsored jobs). Current prices and what each includes are on our pricing page. Core features (searching, viewing and applying for jobs) are never paid.",
       [
-        "Prices are in euros and include VAT where it applies. VAT is calculated at checkout from your billing address; businesses can add a VAT number. Payments are handled by our payment processor, and you receive a receipt or invoice by email; subscription invoices can also be downloaded in Settings > Billing.",
+        "Prices are in euros and are the final amount you pay, including any VAT that applies; the pricing page and checkout show the amount before you pay. Payments are handled by our payment processor, and you receive a receipt or invoice by email; subscription invoices can also be downloaded in Settings > Billing.",
         "Subscriptions renew automatically at the end of each billing period (monthly or yearly) at the price shown when you subscribed, until you cancel. You can cancel at any time in Settings > Billing; cancelling stops the next renewal and you keep access until the end of the period you paid for. We will tell you before any price change applies to your subscription, and you can cancel before it does.",
         "A free trial, where offered, is available once per member. If you don't cancel before it ends, the subscription starts and is charged.",
         "If a renewal payment fails, we and our payment processor will email you and retry for a short period; if it still fails, the subscription ends.",
@@ -813,7 +813,7 @@ export const HELP_FAQ: [string, string][] = [
   ],
   [
     "Are there paid plans?",
-    "Job search, viewing jobs and applying are free. Optional paid features for members and employers are listed on the pricing page; prices include VAT where it applies.",
+    "Job search, viewing jobs and applying are free. Optional paid features for members and employers are listed on the pricing page; prices shown are the final amount you pay.",
   ],
 ];
 

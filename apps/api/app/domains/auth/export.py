@@ -134,6 +134,7 @@ SOURCES: tuple[Source, ...] = (
     # The user's organisation's own postings and projects.
     Source("job_posts", ("company_id",), scope="company_profile"),
     Source("projects", ("company_id",), scope="company_profile"),
+    Source("company_testimonials", ("company_id",), scope="company_profile"),
 )
 
 # User/profile-linked columns deliberately not used to select rows.

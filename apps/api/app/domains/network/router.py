@@ -444,6 +444,11 @@ async def send_message(
     for node_id in attachment_ids:
         if not await accessible_file(db, node_id, current_user):
             raise HTTPException(404, "Attachment not found")
+    # An employer's first message to a candidate they aren't connected with uses
+    # a messaging credit (billing on only); returned if there is no reply in 14 days.
+    from app.domains.billing.team import charge_first_message
+
+    await charge_first_message(db, current_user.id, other, conversation.id)
     message = Message(
         attachment_ids=[str(n) for n in attachment_ids],
         conversation_id=conversation.id,

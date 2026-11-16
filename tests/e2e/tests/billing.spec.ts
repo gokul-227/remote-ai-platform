@@ -9,7 +9,7 @@ test("pricing is public HTML that says coming soon while billing is off", async 
   await expect(page.getByRole("heading", { name: "Pricing", exact: true })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("coming soon");
   await expect(page.getByRole("link", { name: /^Buy/ })).toHaveCount(0);
-  await expect(page.getByText(/include VAT where it applies/)).toBeVisible();
+  await expect(page.getByText(/final amount you pay/)).toBeVisible();
   await expect(page.getByRole("link", { name: /Paid services/ })).toHaveAttribute("href", "/terms#paid-services");
   await context.close();
 });

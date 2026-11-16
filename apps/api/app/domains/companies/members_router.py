@@ -24,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domains.auth.dependencies import get_current_user
 from app.domains.auth.models import User
+from app.domains.billing.team import SEAT_STATUSES, require_seat, seat_status
 from app.domains.companies.access import role_in
 from app.domains.companies.models import MANAGING_ROLES, CompanyProfile, OrganisationMember
 from app.domains.companies.schemas import CompanyProfileResponse
@@ -182,9 +183,12 @@ async def invite_member(
             OrganisationMember.company_id == company.id, OrganisationMember.user_id == target.id
         )
     )
+    if existing is not None and existing.status == "active":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Already a member")
+    if existing is None or existing.status not in SEAT_STATUSES:
+        # Paid team seats (only while billing is on): invites beyond the seats are refused.
+        await require_seat(db, company)
     if existing is not None:
-        if existing.status == "active":
-            raise HTTPException(status.HTTP_409_CONFLICT, "Already a member")
         existing.role = body.role
         existing.invited_by_id = user.id
         member = existing
@@ -274,3 +278,15 @@ async def decline_invitation(
     member = await _invitation(db, member_id, user)
     await db.delete(member)
     await db.flush()
+
+
+@router.get("/{company_id}/seats")
+async def seats(
+    company_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, int | bool]:
+    """Team seats used and included (free seats plus paid Extra team seats)."""
+    company = await _company(db, company_id)
+    await _require(db, company, user, MANAGING_ROLES)
+    return await seat_status(db, company)

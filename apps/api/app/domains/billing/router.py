@@ -11,14 +11,15 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.schemas import HttpUrlIn
 from app.domains.auth.dependencies import get_current_user, get_optional_user
 from app.domains.auth.models import User
-from app.domains.billing import grants, placements, service
+from app.domains.billing import grants, placements, service, team
 from app.domains.billing.models import (
     Entitlement,
     Invoice,
@@ -55,6 +56,8 @@ class CatalogOut(BaseModel):
     enabled: bool
     currency: str = "eur"
     prices_include_vat: bool = True
+    # False: prices are final gross amounts; no tax is calculated at checkout.
+    tax_calculated: bool = False
     items: list[PlanOut]
 
 
@@ -174,7 +177,7 @@ class BadgesIn(BaseModel):
 @router.get("/catalog", response_model=CatalogOut)
 async def catalog(db: AsyncSession = Depends(get_db)) -> CatalogOut:
     plans = await service.sellable_plans(db)
-    return CatalogOut(enabled=settings.BILLING_ENABLED, items=[PlanOut.model_validate(p) for p in plans])
+    return CatalogOut(enabled=settings.BILLING_ENABLED, tax_calculated=settings.STRIPE_TAX_ENABLED, items=[PlanOut.model_validate(p) for p in plans])
 
 
 @router.post("/checkout", response_model=UrlOut, dependencies=enabled)
@@ -427,3 +430,155 @@ async def badges(
         if key not in out[str(uid)]:
             out[str(uid)].append(key)
     return out
+
+
+# ── employer branding (paid; shown on the company page while entitled) ──────
+
+
+class TestimonialIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    author_name: str = Field(min_length=1, max_length=120)
+    author_title: str | None = Field(default=None, max_length=160)
+    quote: str = Field(min_length=1, max_length=1000)
+    sort_order: int = Field(default=0, ge=0, le=1000)
+
+
+class TestimonialOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    author_name: str
+    author_title: str | None
+    quote: str
+    sort_order: int
+
+
+class BrandingIn(BaseModel):
+    cover_video_url: HttpUrlIn = None
+
+
+class BrandingOut(BaseModel):
+    enabled: bool
+    cover_video_url: str | None = None
+    testimonials: list[TestimonialOut] = []
+
+
+async def _my_company(db: AsyncSession, user: User) -> Any:
+    from app.domains.companies.models import CompanyProfile
+
+    company = await db.scalar(select(CompanyProfile).where(CompanyProfile.user_id == user.id))
+    if company is None:
+        raise HTTPException(404, "Create your company profile first")
+    return company
+
+
+async def _branding(db: AsyncSession, company: Any, force: bool = False) -> BrandingOut:
+    from app.domains.companies.models import CompanyTestimonial
+
+    enabled = await team.branding_enabled(db, company.user_id)
+    if not force and not enabled:
+        return BrandingOut(enabled=False)
+    rows = await db.scalars(
+        select(CompanyTestimonial)
+        .where(CompanyTestimonial.company_id == company.id)
+        .order_by(CompanyTestimonial.sort_order, CompanyTestimonial.created_at)
+    )
+    return BrandingOut(
+        enabled=enabled,
+        cover_video_url=company.cover_video_url,
+        testimonials=[TestimonialOut.model_validate(t) for t in rows.all()],
+    )
+
+
+async def _require_branding(db: AsyncSession, user: User) -> Any:
+    company = await _my_company(db, user)
+    if not await team.branding_enabled(db, user.id):
+        raise HTTPException(402, "Employer branding is a paid add-on; see Settings > Billing")
+    return company
+
+
+@router.get("/branding/me", response_model=BrandingOut)
+async def my_branding(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> BrandingOut:
+    return await _branding(db, await _my_company(db, user), force=True)
+
+
+@router.get("/branding/{company_id}", response_model=BrandingOut)
+async def company_branding(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> BrandingOut:
+    """Public: the cover video and testimonials, only while the company is entitled."""
+    from app.domains.companies.models import CompanyProfile
+
+    company = await db.get(CompanyProfile, company_id)
+    if company is None:
+        raise HTTPException(404, "Company not found")
+    return await _branding(db, company)
+
+
+@router.put("/branding/me", response_model=BrandingOut)
+async def set_branding(
+    data: BrandingIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> BrandingOut:
+    company = await _require_branding(db, user)
+    company.cover_video_url = data.cover_video_url
+    await db.flush()
+    return await _branding(db, company, force=True)
+
+
+@router.post("/branding/me/testimonials", response_model=TestimonialOut, status_code=201)
+async def add_testimonial(
+    data: TestimonialIn, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> TestimonialOut:
+    from app.domains.companies.models import CompanyTestimonial
+
+    company = await _require_branding(db, user)
+    count = await db.scalar(
+        select(func.count()).select_from(CompanyTestimonial).where(CompanyTestimonial.company_id == company.id)
+    )
+    if (count or 0) >= 20:
+        raise HTTPException(409, "Up to 20 testimonials")
+    row = CompanyTestimonial(company_id=company.id, **data.model_dump())
+    db.add(row)
+    await db.flush()
+    return TestimonialOut.model_validate(row)
+
+
+async def _own_testimonial(db: AsyncSession, user: User, testimonial_id: uuid.UUID) -> Any:
+    from app.domains.companies.models import CompanyTestimonial
+
+    company = await _require_branding(db, user)
+    row = await db.get(CompanyTestimonial, testimonial_id)
+    if row is None or row.company_id != company.id:
+        raise HTTPException(404, "Testimonial not found")
+    return row
+
+
+@router.put("/branding/me/testimonials/{testimonial_id}", response_model=TestimonialOut)
+async def edit_testimonial(
+    testimonial_id: uuid.UUID, data: TestimonialIn, user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> TestimonialOut:
+    row = await _own_testimonial(db, user, testimonial_id)
+    for key, value in data.model_dump().items():
+        setattr(row, key, value)
+    await db.flush()
+    return TestimonialOut.model_validate(row)
+
+
+@router.delete("/branding/me/testimonials/{testimonial_id}", status_code=204)
+async def delete_testimonial(
+    testimonial_id: uuid.UUID, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> None:
+    row = await _own_testimonial(db, user, testimonial_id)
+    await db.delete(row)
+    await db.flush()
+
+
+@router.get("/messages/quote")
+async def message_quote(
+    recipient_id: uuid.UUID,
+    conversation_id: uuid.UUID | None = None,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """For the composer: whether sending uses a messaging credit, and the balance."""
+    required = await team.message_credit_needed(db, user.id, recipient_id, conversation_id)
+    available = (await placements.messaging_status(db, user.id))["available"] if required else None
+    return {"required": required, "available": available}

@@ -9,7 +9,7 @@ slipped past the dedup ledger changes nothing.
 
 import secrets
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import stripe
@@ -110,8 +110,11 @@ async def _check_subject(db: AsyncSession, user: User, plan: Plan, subject_id: s
 
 
 def _session_with_tax_fallback(params: dict[str, Any]) -> dict[str, Any]:
-    """Stripe Tax on; if the account has no active Stripe Tax, retry without it
-    (prices are tax-inclusive) and alert the owner."""
+    """With STRIPE_TAX_ENABLED, Stripe Tax is on; if the account has no active
+    Stripe Tax, retry without it (prices are tax-inclusive) and alert the owner.
+    Without it, the session is created as given (no tax requested, no retry)."""
+    if "automatic_tax" not in params:
+        return gateway.create_checkout_session(params)
     try:
         return gateway.create_checkout_session(params)
     except stripe.InvalidRequestError as exc:
@@ -173,14 +176,15 @@ async def start_checkout(
         "success_url": _web("/#/settings?tab=Billing&checkout=success"),
         "cancel_url": _web("/pricing?checkout=cancelled"),
         "metadata": metadata,
-        "automatic_tax": {"enabled": True},
         "billing_address_collection": "required",
-        "tax_id_collection": {"enabled": True},
         "customer_update": {"address": "auto", "name": "auto"},
         "allow_promotion_codes": True,
         "consent_collection": {"terms_of_service": "required"},
         "custom_text": {"submit": {"message": WAIVER_TEXT}},
     }
+    if settings.STRIPE_TAX_ENABLED:
+        params["automatic_tax"] = {"enabled": True}
+        params["tax_id_collection"] = {"enabled": True}
     if plan.mode == "payment":
         params["payment_intent_data"] = {"metadata": metadata}
         params["invoice_creation"] = {"enabled": True, "invoice_data": {"metadata": metadata}}
@@ -281,25 +285,79 @@ async def _upsert_subscription(
     return sub
 
 
-async def _reward_referral(db: AsyncSession, user_id: uuid.UUID) -> None:
+async def _qualify_referral(db: AsyncSession, user_id: uuid.UUID) -> None:
     referral = await db.scalar(
-        select(Referral).where(Referral.referred_id == user_id, Referral.rewarded_at.is_(None))
+        select(Referral).where(Referral.referred_id == user_id, Referral.qualified_at.is_(None))
     )
     if referral is None:
         return
-    amount = settings.BILLING_REFERRAL_CREDIT_CENTS
-    for uid in (referral.referrer_id, referral.referred_id):
-        customer = await db.get(BillingCustomer, uid)
-        if customer is None:
-            user = await db.get(User, uid)
-            if user is None:
-                continue
-            customer = await customer_for(db, user)
-        gateway.credit_customer_balance(
-            customer=customer.stripe_customer_id, amount_cents=amount, description="Referral credit"
-        )
-    referral.rewarded_at = grants.now()
+    referral.qualified_at = grants.now()
+    referral.next_attempt_at = grants.now()
     await db.flush()
+    await apply_referral_credits(db, referral)
+
+
+def _backoff_minutes(attempts: int) -> int:
+    return min(2 ** attempts, 24 * 60)
+
+
+async def apply_referral_credits(db: AsyncSession, referral: Referral) -> bool:
+    """Credit each side once; on a Stripe error schedule a retry with backoff.
+    Returns True when both sides are credited."""
+    amount = settings.BILLING_REFERRAL_CREDIT_CENTS
+    sides = (("referrer_credited_at", referral.referrer_id), ("referred_credited_at", referral.referred_id))
+    try:
+        for field, uid in sides:
+            if getattr(referral, field) is not None:
+                continue
+            customer = await db.get(BillingCustomer, uid)
+            if customer is None:
+                user = await db.get(User, uid)
+                if user is None:
+                    setattr(referral, field, grants.now())  # account gone: nothing to credit
+                    continue
+                customer = await customer_for(db, user)
+            gateway.credit_customer_balance(
+                customer=customer.stripe_customer_id, amount_cents=amount, description="Referral credit"
+            )
+            setattr(referral, field, grants.now())
+            await db.flush()
+    except (stripe.StripeError, gateway.BillingConfigError) as exc:
+        referral.attempts += 1
+        referral.last_error = type(exc).__name__
+        referral.next_attempt_at = grants.now() + timedelta(minutes=_backoff_minutes(referral.attempts))
+        logger.warning("Referral credit failed; will retry", attempts=referral.attempts, error=type(exc).__name__)
+        if referral.attempts >= settings.BILLING_REFERRAL_MAX_ATTEMPTS:
+            from app.services import slack
+
+            slack.notify("errors", "Billing: a referral credit keeps failing; see staff console.",
+                         dedup_key=f"referral-{referral.id}")
+        await db.flush()
+        return False
+    referral.rewarded_at = grants.now()
+    referral.next_attempt_at = None
+    await db.flush()
+    return True
+
+
+async def retry_referral_credits(db: AsyncSession, limit: int = 50) -> dict[str, int]:
+    """Celery Beat: retry referral credits whose backoff has passed."""
+    rows = (
+        await db.scalars(
+            select(Referral)
+            .where(
+                Referral.qualified_at.is_not(None),
+                Referral.rewarded_at.is_(None),
+                Referral.attempts < settings.BILLING_REFERRAL_MAX_ATTEMPTS,
+                Referral.next_attempt_at <= grants.now(),
+            )
+            .limit(limit)
+        )
+    ).all()
+    done = 0
+    for referral in rows:
+        done += int(await apply_referral_credits(db, referral))
+    return {"due": len(rows), "credited": done}
 
 
 async def on_checkout_completed(db: AsyncSession, session: dict) -> None:
@@ -348,10 +406,7 @@ async def on_checkout_completed(db: AsyncSession, session: dict) -> None:
                 customer.trial_used_at = grants.now()
     await db.flush()
     if (purchase.amount_total or 0) > 0:
-        try:
-            await _reward_referral(db, purchase.user_id)
-        except (stripe.StripeError, gateway.BillingConfigError) as exc:
-            logger.warning("Referral credit failed; will not retry automatically", error=type(exc).__name__)
+        await _qualify_referral(db, purchase.user_id)
 
 
 async def on_checkout_expired(db: AsyncSession, session: dict) -> None:

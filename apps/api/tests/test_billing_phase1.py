@@ -231,7 +231,8 @@ async def test_webhook_is_off_without_billing_or_marketplace(client: AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_checkout_uses_tax_tax_ids_promotion_codes_and_waiver(client, billing_on, fake_stripe):
+async def test_checkout_uses_tax_tax_ids_promotion_codes_and_waiver(client, billing_on, fake_stripe, monkeypatch):
+    monkeypatch.setattr(settings, "STRIPE_TAX_ENABLED", True)
     await seed_catalog()
     employer = await make_user(UserRole.COMPANY)
     job = await make_job(employer)
@@ -288,8 +289,27 @@ async def test_premium_trial_is_offered_once(client, billing_on, fake_stripe):
 
 
 @pytest.mark.asyncio
+async def test_checkout_without_stripe_tax_requests_no_tax(client, billing_on, fake_stripe, monkeypatch):
+    from app.services import slack
+
+    alerts: list[str] = []
+    monkeypatch.setattr(slack, "notify", lambda channel, text, **k: alerts.append(channel))
+    fake_stripe.fail_tax_once = True  # would fail if tax were requested
+    await seed_catalog()
+    member = await make_user()
+    await checkout(client, member, "ai_pack_5")
+    (only,) = fake_stripe.named("checkout")
+    assert "automatic_tax" not in only
+    assert "tax_id_collection" not in only
+    assert alerts == []
+    assert (await client.get("/api/v1/billing/catalog")).json()["tax_calculated"] is False
+
+
+@pytest.mark.asyncio
 async def test_checkout_falls_back_when_stripe_tax_is_off(client, billing_on, fake_stripe, monkeypatch):
     from app.services import slack
+
+    monkeypatch.setattr(settings, "STRIPE_TAX_ENABLED", True)
 
     alerts: list[str] = []
     monkeypatch.setattr(slack, "notify", lambda channel, text, **k: alerts.append(channel))
@@ -719,7 +739,10 @@ async def test_referral_credit_on_first_payment(client, billing_on, fake_stripe)
     assert len(credits) == 2
     assert all(c["amount"] == -1000 for c in credits)
     async with TestingSessionLocal() as db:
-        assert (await db.scalar(select(Referral))).rewarded_at is not None
+        ref = await db.scalar(select(Referral))
+        assert ref.rewarded_at is not None
+        assert ref.referrer_credited_at is not None
+        assert ref.referred_credited_at is not None
 
 
 # ── account deletion and export ─────────────────────────────────────────────

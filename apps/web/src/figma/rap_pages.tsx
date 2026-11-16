@@ -1,3 +1,4 @@
+import { SeatsNote } from "./rap_billing_extras";
 import { JobSource } from "@/components/JobSource";
 import { useState, useEffect } from "react";
 import {
@@ -1756,6 +1757,7 @@ export function OrgTeam({ orgId }: { orgId: string }) {
         </div>
       )}
       <p className="mt-2 text-xs text-slate-500">{ROLE_HELP[role]}</p>
+      {canManage && <SeatsNote key={q.data?.length ?? 0} orgId={orgId} />}
       {msg && (
         <p
           role={msg.ok ? "status" : "alert"}

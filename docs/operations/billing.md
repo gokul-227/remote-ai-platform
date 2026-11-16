@@ -18,6 +18,9 @@ Staff console: Billing & Revenue (`apps/admin/src/console/billing.tsx`).
 | `STRIPE_SECRET_KEY` | unset | `sk_test_`/`rk_test_` always allowed. A live key (`sk_live_`/`rk_live_`) is refused unless `APP_ENV=production` **and** `BILLING_ENABLED=true`. |
 | `STRIPE_WEBHOOK_SECRET` | unset | Signing secret of the endpoint below. Without it the webhook answers 404. |
 | `STRIPE_PUBLISHABLE_KEY` | unset | Not needed by Checkout (hosted page); kept for later client-side use. |
+| `STRIPE_TAX_ENABLED` | `false` | Off: checkout requests no tax (no `automatic_tax`, no tax-id collection, no retry, no Slack warning); prices are final gross amounts and invoices carry no VAT line. On: Stripe Tax with the fallback described below. |
+| `BILLING_FREE_TEAM_SEATS` | 3 | Organisation members (besides the owner) included free; Extra team seat adds one each. |
+| `BILLING_REFERRAL_MAX_ATTEMPTS` | 8 | Retries of a failed referral credit before it stops and alerts. |
 | `BILLING_FREE_PROPOSALS_MONTHLY` | 20 | Free proposals on freelance projects per month. |
 | `BILLING_SPONSORED_DEFAULT_CPC_CENTS` | 50 | Default max cost per click for sponsored jobs. |
 | `BILLING_REFERRAL_CREDIT_CENTS` | 1000 | Give/get referral credit (Stripe customer balance). |
@@ -35,7 +38,7 @@ truth: staff change prices and availability in the console (Billing & Revenue > 
 creates a new tax-inclusive Stripe Price at once when Stripe is configured (otherwise the sync script does);
 existing subscribers keep their price until it is changed in Stripe.
 
-| Slug | Price (EUR, incl. VAT) | Grants |
+| Slug | Price (EUR, final amount) | Grants |
 |---|---|---|
 | `featured_job` | 49 one-off | Job pinned and labelled "Featured" for 30 days |
 | `job_pack_5` / `job_pack_10` | 199 / 349 | 5 / 10 credits; each features a job for 30 days; credits expire after 12 months |
@@ -61,10 +64,11 @@ monthly AI allowance (`AI_FREE_MONTHLY_TOKENS`) and 20 freelance proposals a mon
 
 ## How it works
 
-- **Checkout** (`POST /billing/checkout`): one Stripe Customer per member; Checkout Session with
-  `automatic_tax`, required billing address, tax-id collection, promotion codes, terms-of-service consent and
-  the immediate-performance / withdrawal text. If Stripe Tax is not active the session is retried without
-  automatic tax (prices are tax-inclusive) and a warning goes to the `errors` Slack channel.
+- **Checkout** (`POST /billing/checkout`): one Stripe Customer per member; Checkout Session with required
+  billing address, promotion codes, terms-of-service consent and the immediate-performance / withdrawal text.
+  With `STRIPE_TAX_ENABLED=true` it also sets `automatic_tax` and tax-id collection; if Stripe Tax is not active
+  the session is retried without them (prices are tax-inclusive) and a warning goes to the `errors` Slack
+  channel. With it off (the default) no tax is requested at all.
 - **Portal** (`POST /billing/portal`): cancel, change plan, update card, download invoices.
 - **Webhook**: the existing signed receiver `POST /api/v1/payments/webhooks/stripe` deduplicates by event id
   (`stripe_webhook_events`) and passes billing events to `billing/service.py`: `checkout.session.completed`
@@ -83,8 +87,22 @@ monthly AI allowance (`AI_FREE_MONTHLY_TOKENS`) and 20 freelance proposals a mon
   stops (`exhausted`) when the balance can't pay a click.
 - **Messaging credits**: spent with `POST /billing/messages/spend`; Celery Beat `billing.refund_unanswered_messages`
   (daily 05:10 UTC) returns credits after 14 days without a reply (also runnable from the console API).
-- **Referrals**: `GET /billing/referral` gives a code; `POST /billing/referral/claim` before the first
-  purchase; on the referred member's first paid checkout both get €10 customer-balance credit.
+- **Referrals**: Settings > Billing shows the member's code and share link (`/#billing?ref=CODE`, which
+  pre-fills the code box) and lets a member enter a code before their first purchase. On the referred
+  member's first paid checkout both get €10 customer-balance credit, each side once; a Stripe failure is
+  retried by Celery Beat `billing.retry_referral_credits` (every 10 minutes, exponential backoff capped at a
+  day, up to `BILLING_REFERRAL_MAX_ATTEMPTS`, then a Slack alert).
+- **Team seats**: while billing is on, inviting to an organisation beyond `BILLING_FREE_TEAM_SEATS` plus the
+  owner's Extra team seats is refused (402) with an upgrade prompt; `GET /organisations/{id}/seats` drives the
+  "Team seats: used of included" note on the team screen. Pending invites count; re-inviting does not.
+- **Employer branding**: with the entitlement, Settings > Billing has an editor for an http(s) cover video
+  link and testimonials (`/billing/branding/me...`); the company page shows them only while entitled.
+- **Composer messaging credits**: an employer's first message to a candidate they are not connected with
+  spends one credit in `POST /conversations/{id}/messages` (402 when none are left); the composer shows the
+  balance (`GET /billing/messages/quote`). Replies, connections and non-employers are free.
+- **Open to opportunities** is opt-in (migration `079_billing_followups` set it off for everyone, since there
+  was no record of deliberate opt-ins). Profiles show a one-time banner inviting members to turn it on. It
+  governs candidate search and employer-side matching; the member directory no longer filters on it.
 - **Account deletion** (`auth/retention.py`): live subscriptions are cancelled at period end in Stripe first
   (a Stripe failure refuses the deletion with 503); entitlements go with the account; purchases and invoices
   are kept with `user_id` cleared for accounting. The data export includes purchases, invoices,
@@ -94,13 +112,14 @@ monthly AI allowance (`AI_FREE_MONTHLY_TOKENS`) and 20 freelance proposals a mon
 
 ## Owner go-live checklist
 
-1. Stripe account: confirm it is activated (done: sole trader, bank and tax id). In Settings > Public
-   details set the public business name to **Remote AI Platform**, support email
-   `contact@remoteaiplatform.com`, and the Terms of Service URL `https://remoteaiplatform.com/terms`
-   (Checkout's terms consent needs it).
-2. Stripe Tax: Settings > Tax > activate, set the origin address, add registrations where you must collect
-   (your home country; the EU OSS registration once EU B2C sales need it). Until active, checkout falls
-   back to no automatic tax and alerts Slack.
+1. Stripe account: activated, and public details are done (trading name Remote AI Platform, support email
+   `contact@remoteaiplatform.com`, website, privacy and terms URLs). Our pages show only that contact
+   address, never the owner's name or address; Stripe shows the legal name on receipts.
+2. Tax: **pending** the owner's tax adviser (Steuerberater). Until decided, keep `STRIPE_TAX_ENABLED=false`:
+   prices are final gross amounts and invoices carry no VAT line. If VAT applies, activate Stripe Tax
+   (origin address, registrations, OSS where needed) and set `STRIPE_TAX_ENABLED=true`. If the small-business
+   rule (Kleinunternehmer, §19 UStG) applies, invoices need a note that no VAT is charged; that would be a
+   future toggle adding the note to Checkout invoices (not built yet).
 3. Customer Portal: Settings > Billing > Customer portal: allow cancel (at period end), plan switching
    between the subscription products, payment method updates and invoice history; save.
 4. Infisical (project secrets, production environment): `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`,

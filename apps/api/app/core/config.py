@@ -536,6 +536,11 @@ class Settings(BaseSettings):
     # is refused unless APP_ENV=production AND BILLING_ENABLED
     # (app/services/billing/stripe_gateway.py). See docs/operations/billing.md.
     BILLING_ENABLED: bool = False
+    # Stripe Tax (automatic_tax). Off until the seller's VAT status is confirmed:
+    # prices are final gross amounts and invoices carry no VAT line.
+    STRIPE_TAX_ENABLED: bool = False
+    BILLING_FREE_TEAM_SEATS: int = 3
+    BILLING_REFERRAL_MAX_ATTEMPTS: int = 8
     BILLING_FREE_PROPOSALS_MONTHLY: int = 20
     BILLING_SPONSORED_DEFAULT_CPC_CENTS: int = 50
     BILLING_REFERRAL_CREDIT_CENTS: int = 1000
