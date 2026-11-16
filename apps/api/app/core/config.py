@@ -474,7 +474,7 @@ class Settings(BaseSettings):
     # 0 disables the budget (self-hosted PostgreSQL holding millions of jobs).
     DATABASE_SIZE_BUDGET_MB: int = 420
     # Imported jobs posted longer ago than this are removed (or, if someone applied, hidden).
-    JOB_RETENTION_DAYS: int = 90
+    JOB_RETENTION_DAYS: int = 180
 
     JOB_SYNC_SCHEDULE: str = (
         "17 */3 * * *"  # Every 3 hours (default cron for job_sources rows)

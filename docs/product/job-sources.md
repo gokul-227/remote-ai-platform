@@ -1,7 +1,7 @@
 # Job sources: coverage, cadence and capacity
 
 Imported jobs come only from legal, free (or free-key) sources, are kept only
-while they were **posted in the last 90 days** (`JOB_RETENTION_DAYS`), and always
+while they were **posted in the last 180 days** (`JOB_RETENTION_DAYS`), and always
 link to the original posting. No GitHub-hosted job lists are used; GitHub
 Actions only deploys. Everything is operated from the staff console
 (`/admin/background/sources`): enable/disable, cron cadence, per-run cap,
@@ -75,7 +75,7 @@ public API without a partner agreement), Switzerland's job-room.ch (robots.txt:
 
 ## Retention and listings
 
-* Imported jobs posted more than 90 days ago are excluded from listings and
+* Imported jobs posted more than 180 days ago are excluded from listings and
   search at once (repository filter) and deleted by the nightly
   `jobs.maintain_catalogue` task (hidden instead when someone applied/saved).
 * Sitemaps list only jobs posted within `SITEMAP_JOB_MAX_AGE_DAYS` (90) and
@@ -93,7 +93,7 @@ public API without a partner agreement), Switzerland's job-room.ch (robots.txt:
 * Row size with descriptions capped at 5,000 characters plus indexes is
   ~4–6 KB, so 1M jobs ≈ 5–6 GB and 3M ≈ 15–18 GB.
 
-### Reachable volume (90-day window)
+### Reachable volume (180-day window)
 
 Measured with single polite requests on 2026-11-16 unless marked estimate.
 

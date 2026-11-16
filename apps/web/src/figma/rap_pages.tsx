@@ -482,7 +482,7 @@ export function JobDetail() {
               <h2 className="mb-2 text-xl font-bold">About the role</h2>
               {j.expired_at && (
                 <p className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-                  This job is no longer available (its source stopped listing it or it is over 90 days old). Check the
+                  This job is no longer available (its source stopped listing it or it is over 6 months old). Check the
                   original posting before applying.
                 </p>
               )}

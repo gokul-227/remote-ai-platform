@@ -26,7 +26,7 @@ describe("jobPostingJsonLd", () => {
     expect(ld.jobLocationType).toBe("TELECOMMUTE");
     expect(ld.jobLocation).toBeUndefined();
     expect(ld.url).toBe("https://remoteaiplatform.com/jobs/j1");
-    expect(ld.validThrough).toBe("2026-12-30T00:00:00.000Z");
+    expect(ld.validThrough).toBe("2027-03-30T00:00:00.000Z");
     expect((ld.baseSalary as { currency: string }).currency).toBe("EUR");
     expect(ld.directApply).toBe(false);
   });

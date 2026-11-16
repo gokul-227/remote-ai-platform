@@ -104,7 +104,7 @@ export const PRIVACY: Section[] = [
   {
     h: "Data retention",
     body: [
-      "Job listings collected from other sites are deleted automatically 90 days after they were posted, or earlier if the source withdraws them.",
+      "Job listings collected from other sites are deleted automatically 6 months (180 days) after they were posted, or earlier if the source withdraws them.",
       "We keep account, profile and content data until you delete it or your account. You can download a copy of your data at any time in Settings > Privacy. When you delete your account in Settings > Privacy, your profile, resume, applications, messages you sent and other content are deleted promptly, and your sign-in account is removed.",
       `If you have signed contracts or payment records with another member, we cannot delete those records on request because the other party relies on them. In that case ${write} and we will close your account, keep only those records and delete the rest.`,
       "To stop an old session from recreating a deleted account, we keep a one-way code derived from your sign-in identifier. It contains no name or email address.",
@@ -196,7 +196,7 @@ export const TERMS: Section[] = [
       [
         "Listings may be out of date, incomplete or inaccurate, or may already be filled. Check the original posting before you apply.",
         "When you apply on another site, that site's terms and privacy policy apply, not ours.",
-        "Imported listings are removed automatically once they are older than our listing window (currently 90 days), or earlier if the source withdraws them.",
+        "Imported listings are removed automatically once they are older than our listing window (currently 6 months), or earlier if the source withdraws them.",
         `If you own a listing and want it corrected or removed, ${write}.`,
       ],
     ],

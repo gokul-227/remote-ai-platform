@@ -137,12 +137,12 @@ const EMPLOYMENT: Record<string, string> = {
 
 /**
  * schema.org JobPosting for Google's job search (structured data). Remote jobs
- * use jobLocationType TELECOMMUTE; listings expire 90 days after posting, the
+ * use jobLocationType TELECOMMUTE; listings expire 180 days after posting, the
  * same window the platform keeps imported jobs.
  */
 export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string, unknown> {
   const posted = job.posted_at ? new Date(job.posted_at) : new Date();
-  const until = new Date(posted.getTime() + 90 * 24 * 3600 * 1000);
+  const until = new Date(posted.getTime() + 180 * 24 * 3600 * 1000);
   const type = EMPLOYMENT[(job.job_type || "").toLowerCase().replace(/[\s_-]+/g, "")];
   const unit = { year: "YEAR", month: "MONTH", hour: "HOUR" }[job.salary_period || ""];
   const ld: Record<string, unknown> = {
