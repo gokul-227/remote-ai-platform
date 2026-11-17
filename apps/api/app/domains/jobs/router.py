@@ -170,23 +170,42 @@ def job_search_query(
     )
 
 
+def job_read_headers(response: Response) -> None:
+    """Prevent HTTP caches from sharing auth-dependent application links."""
+    response.headers["Cache-Control"] = "private, no-store"
+    response.headers["Vary"] = "Authorization, Cookie"
+
+
+def job_for_viewer(job: object, user: User | None) -> JobPostResponse:
+    """Copy shared cache data before removing the schema's application URL.
+
+    Descriptions and AI analysis remain public pending the SEO policy decision.
+    """
+    payload = JobPostResponse.model_validate(job)
+    if user is None:
+        return payload.model_copy(update={"external_url": None})
+    return payload
+
+
 @router.get("", response_model=list[JobPostResponse])
 async def list_jobs(
     response: Response,
     search_params: JobSearchQuery = Depends(job_search_query),
     service: JobService = Depends(get_job_service),
+    current_user: User | None = Depends(get_optional_user),
 ) -> list[JobPostResponse]:
     """Search & filter active jobs (every filter of `job_search_query`).
 
     The total number of matches is returned in the X-Total-Count header.
     """
+    job_read_headers(response)
     raw_jobs, total = await service.search_jobs_cached(search_params)
     response.headers["X-Total-Count"] = str(total)
     if search_params.query and total >= settings.JOB_KEYWORD_COUNT_CAP:
         response.headers["X-Total-Count-Capped"] = "true"
     if search_params.sort == "recent" and len(raw_jobs) == search_params.limit:
         response.headers["X-Next-Cursor"] = job_cursor(raw_jobs[-1])
-    return [JobPostResponse.model_validate(j) for j in raw_jobs]
+    return [job_for_viewer(j, current_user) for j in raw_jobs]
 
 
 @router.get("/facets", response_model=JobFacets)
@@ -323,11 +342,14 @@ async def list_company_jobs(
 @router.get("/company/{company_id}", response_model=list[JobPostResponse])
 async def list_public_company_jobs(
     company_id: uuid.UUID,
+    response: Response,
     service: JobService = Depends(get_job_service),
+    current_user: User | None = Depends(get_optional_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
 ) -> list[JobPostResponse]:
     """Get public job listings for a specific company profile (no auth required)."""
+    job_read_headers(response)
     result = await service.repo.db.execute(
         select(JobPost)
         .where(
@@ -339,7 +361,7 @@ async def list_public_company_jobs(
         .offset(skip)
         .limit(limit)
     )
-    return [JobPostResponse.model_validate(job) for job in result.scalars().all()]
+    return [job_for_viewer(job, current_user) for job in result.scalars().all()]
 
 
 async def _owns_job(db: AsyncSession, job: JobPost, user: User | None) -> bool:
@@ -354,6 +376,7 @@ async def _owns_job(db: AsyncSession, job: JobPost, user: User | None) -> bool:
 @router.get("/{job_id}", response_model=JobPostResponse)
 async def get_job_by_id(
     job_id: uuid.UUID,
+    response: Response,
     service: JobService = Depends(get_job_service),
     current_user: User | None = Depends(get_optional_user),
     db: AsyncSession = Depends(get_db),
@@ -363,13 +386,14 @@ async def get_job_by_id(
     Closed, hidden (e.g. by moderation) and removed postings are visible only
     to their organisation and admins; everyone else gets 404.
     """
+    job_read_headers(response)
     job = await service.get_by_id(job_id)
     is_admin = current_user is not None and current_user.role == UserRole.ADMIN
     if job.is_deleted and not is_admin:
         raise HTTPException(status_code=404, detail="Job post not found")
     if not job.is_active and not is_admin and not await _owns_job(db, job, current_user):
         raise HTTPException(status_code=404, detail="Job post not found")
-    return JobPostResponse.model_validate(job)
+    return job_for_viewer(job, current_user)
 
 
 @router.get("/{job_id}/availability", response_model=JobAvailability)

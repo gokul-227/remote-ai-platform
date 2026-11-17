@@ -19,7 +19,7 @@ the public groups. Literal `%` and `_` in the query are escaped.
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -35,6 +35,7 @@ from app.domains.documents.models import Document, DocumentShare
 from app.domains.engineers.repository import EngineerRepository
 from app.domains.engineers.schemas import EngineerPublicProfileResponse
 from app.domains.jobs.repository import JobRepository
+from app.domains.jobs.router import job_for_viewer, job_read_headers
 from app.domains.jobs.schemas import JobPostResponse
 from app.domains.projects.models import Project, ProjectMember
 
@@ -166,6 +167,7 @@ async def _channels(db: AsyncSession, user: User, pattern: str, limit: int) -> l
 
 @router.get("", response_model=GlobalSearchResponse)
 async def global_search(
+    response: Response,
     q: str = Query(..., min_length=1, max_length=120, description="Keywords"),
     is_remote: bool = Query(True),
     skip: int = Query(0, ge=0),
@@ -175,6 +177,7 @@ async def global_search(
 ) -> GlobalSearchResponse:
     """Unified search across public jobs, people and organisations, plus the caller's
     own projects, documents and channels when signed in."""
+    job_read_headers(response)
     job_repo = JobRepository(db)
     engineer_repo = EngineerRepository(db)
     pattern = _pattern(q)
@@ -212,7 +215,7 @@ async def global_search(
         "total_jobs": len(jobs),
         "total_engineers": len(engineers),
         "total_companies": len(companies),
-        "jobs": [JobPostResponse.model_validate(j) for j in jobs],
+        "jobs": [job_for_viewer(j, user) for j in jobs],
         "engineers": [EngineerPublicProfileResponse.model_validate(e) for e in engineers],
         "companies": [CompanyProfileResponse.model_validate(c) for c in companies],
         "signed_in": user is not None,
