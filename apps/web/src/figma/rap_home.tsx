@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { GithubConnect } from "./rap_collab";
 import { BillingPanel, UpgradeLink } from "./rap_billing";
 import api, { extractErrorMessage } from "@/lib/api";
-import { useApi, toFigmaJob, goRoute, isMember } from "./live";
+import { useApi, toFigmaJob, goRoute, isMember, takeReturnTo } from "./live";
 import { useAuth } from "@/lib/auth";
 import { downloadCsv } from "@/lib/csv";
 import { disablePush, enablePush, pushState, type PushState } from "@/lib/push";
@@ -1288,7 +1288,7 @@ export function Onboarding() {
             <p className="my-3 text-slate-500">
               Your profile is saved. Discover roles and refine your profile at any time.
             </p>
-            <Btn onClick={() => visit("dash")}>Go to my dashboard</Btn>
+            <Btn onClick={() => visit(takeReturnTo("dash"))}>Go to my dashboard</Btn>
           </div>
         )}
         {error && (
