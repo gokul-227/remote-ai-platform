@@ -50,8 +50,10 @@ test("jobs have public, crawlable pages and unknown addresses are real 404s", as
   expect(html).toContain(jobs[0].title.replace(/&/g, "&amp;"));
   expect((await request.get("/jobs/00000000-0000-4000-8000-000000000000")).status()).toBe(404);
   expect((await request.get("/no-such-page-anywhere")).status()).toBe(404);
-  // From the public page into the app.
+  // Public details remain readable; guests must register before applying.
   await page.goto(`/jobs/${jobs[0].id}`);
-  await page.getByRole("link", { name: "View and apply" }).click();
-  await expect(page).toHaveURL(new RegExp(`#jobdetail/${jobs[0].id}$`));
+  await page.getByRole("link", { name: "Sign up to apply" }).click();
+  await expect(page).toHaveURL(/#register$/);
+  await expect(page.getByRole("heading", { name: "Create your account", exact: true })).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem("rap-return-to"))).toBe(`jobdetail/${jobs[0].id}`);
 });
