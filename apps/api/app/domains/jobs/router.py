@@ -179,7 +179,7 @@ def job_read_headers(response: Response) -> None:
 def job_for_viewer(job: object, user: User | None) -> JobPostResponse:
     """Copy shared cache data before removing the schema's application URL.
 
-    Descriptions and AI analysis remain public pending the SEO policy decision.
+    Descriptions remain public so job details and structured data stay accessible to search.
     """
     payload = JobPostResponse.model_validate(job)
     if user is None:

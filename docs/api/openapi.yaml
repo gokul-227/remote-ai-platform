@@ -1417,6 +1417,8 @@ paths:
 
         The total number of matches is returned in the X-Total-Count header.
       operationId: list_jobs_api_v1_jobs_get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: query
         in: query
@@ -2433,6 +2435,8 @@ paths:
       summary: List Public Company Jobs
       description: Get public job listings for a specific company profile (no auth required).
       operationId: list_public_company_jobs_api_v1_jobs_company__company_id__get
+      security:
+      - HTTPBearer: []
       parameters:
       - name: company_id
         in: path
