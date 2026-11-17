@@ -12,7 +12,7 @@ test("homepage discovery and signup links render without JavaScript", async ({ b
     const page = await context.newPage();
     const response = await page.goto("/");
     expect(response?.status()).toBe(200);
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Remote jobs");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Find your next remote job.");
     await expect(page.getByRole("link", { name: "Create your free account", exact: true })).toHaveAttribute(
       "href",
       /^\/?#register$/,
@@ -40,7 +40,7 @@ test("homepage signup opens the real registration form and back returns to disco
   await expect(page.getByLabel("Full name", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Email address", { exact: true })).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Remote jobs");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Find your next remote job.");
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Welcome back", exact: true })).toBeVisible();
 });
@@ -55,8 +55,7 @@ test("public discovery fits narrow phones through desktop widths", async ({ page
   }
 });
 
-test("an imported job retains source attribution and applies externally without signup", async ({ page, context }) => {
-  // Owned synthetic API data keeps this check independent of external boards.
+test("an unsigned imported-job application requires signup without opening the source", async ({ page, context }) => {
   await page.route(`**/api/v1/jobs/${JOB_ID}*`, (route) =>
     route.fulfill({
       json: {
@@ -70,32 +69,19 @@ test("an imported job retains source attribution and applies externally without 
         location: "Remote (Germany)",
         is_remote: true,
         job_type: "full_time",
-        experience_level: "mid",
         skills: ["SQL"],
-        posted_at: "2026-11-05T10:00:00Z",
         expired_at: null,
       },
     }),
   );
-  await context.route("https://employer.example/**", (route) =>
-    route.fulfill({
-      contentType: "text/html",
-      body: "<h1>Example employer application</h1>",
-    }),
-  );
   await page.goto(`/#jobdetail/${JOB_ID}`);
   await expect(page.getByRole("heading", { name: "Remote Data Analyst", exact: true })).toBeVisible();
-  const original = page.getByRole("link", { name: "Arbeitnow — original listing", exact: true });
-  await expect(original).toHaveAttribute("href", SOURCE_URL);
-  await expect(original).toHaveAttribute("rel", /noopener/);
-  const popup = page.waitForEvent("popup");
-  await page.getByRole("button", { name: "Apply on original site", exact: true }).click();
-  const employer = await popup;
-  await expect(employer).toHaveURL(SOURCE_URL);
-  await expect(employer.getByRole("heading", { name: "Example employer application" })).toBeVisible();
-  await expect(page).toHaveURL(new RegExp(`#jobdetail/${JOB_ID}$`));
-  expect(await page.evaluate(() => localStorage.getItem("remote_ai_platform_token"))).toBeNull();
-  await employer.close();
+  await expect(page.locator(`a[href="${SOURCE_URL}"]`)).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign up to apply", exact: true }).click();
+  await expect(page).toHaveURL(/#register$/);
+  await expect(page.getByRole("heading", { name: "Create your account", exact: true })).toBeVisible();
+  expect(context.pages()).toHaveLength(1);
+  expect(await page.evaluate(() => sessionStorage.getItem("rap-return-to"))).toBe(`jobdetail/${JOB_ID}`);
 });
 
 test("returning signed-in members retain their workspace on the root address", async ({ page }) => {
@@ -164,6 +150,21 @@ test("location landing, trust pages and brand metadata render without JavaScript
     expect((await page.locator('script[type="application/ld+json"]').allTextContents()).join("")).toContain(
       '"WebSite"',
     );
+  } finally {
+    await context.close();
+  }
+});
+
+test("signed-out pages stay light with a saved dark preference and dark device", async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ baseURL, colorScheme: "dark" });
+  await context.addInitScript(() => localStorage.setItem("rap-theme", "dark"));
+  try {
+    const page = await context.newPage();
+    for (const path of ["/", "/#register", "/#jobs"]) {
+      await page.goto(path);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+      expect(await page.evaluate(() => localStorage.getItem("rap-theme"))).toBe("dark");
+    }
   } finally {
     await context.close();
   }

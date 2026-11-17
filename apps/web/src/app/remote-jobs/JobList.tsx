@@ -18,7 +18,7 @@ export function JobList({ jobs }: { jobs: PublicJob[] }) {
             {j.posted_at ? ` · ${new Date(j.posted_at).toISOString().slice(0, 10)}` : ""}
           </p>
           <p className="mt-1 text-xs text-slate-600">
-            <JobSource source={j.source} url={j.external_url} />
+            <JobSource source={j.source} />
           </p>
         </li>
       ))}

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { JobApplyLink } from "@/components/JobApplyLink";
 import { ShareButtons } from "@/figma/ShareButtons";
 import { socialMetadata } from "@/lib/share";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RichText } from "@/figma/richtext";
 import { SITE_URL, fetchPublicJob, jobHighlights, jobPostingJsonLd, summary } from "@/lib/site";
-import { permitsGoogleJobs, jobSourceName, originalJobUrl } from "@/lib/jobSources";
+import { permitsGoogleJobs, jobSourceName } from "@/lib/jobSources";
 import { PLACES, placeMatches, topicsForJob } from "@/lib/seo";
 import { fetchLandingJobs, topicFilter, topicHeading } from "@/lib/landing";
 import { JobList } from "../../remote-jobs/JobList";
@@ -92,27 +93,9 @@ export default async function JobPage({ params }: Props) {
             This job is no longer available: its source stopped listing it or it was posted more than 90 days ago.
           </p>
         )}
-        {originalJobUrl(job.external_url) && (
-          <p className="mt-4 text-sm text-slate-600">
-            Source:{" "}
-            <a
-              href={originalJobUrl(job.external_url)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-brand underline"
-            >
-              {jobSourceName(job.source)} — view original listing and apply
-            </a>
-            . No platform account required.
-          </p>
-        )}
+        <p className="mt-4 text-sm text-slate-600">Source: {jobSourceName(job.source)}</p>
         <p className="mt-6">
-          <a
-            href={`/#jobdetail/${job.id}`}
-            className="inline-flex rounded-full bg-brand px-5 py-2.5 font-semibold text-white hover:bg-brand-hover"
-          >
-            View and apply
-          </a>
+          <JobApplyLink id={job.id} />
         </p>
         <div className="mt-4">
           <ShareButtons

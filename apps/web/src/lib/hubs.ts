@@ -98,9 +98,7 @@ export function landingFaq(subject: string, stats: LandingStats | null): Faq[] {
 /** How applying works on this site (true for every listing). */
 export const APPLY_FAQ: Faq = {
   q: "How do I apply?",
-  a:
-    "Every listing links to the employer's own page or the job board it came from, and you apply there; " +
-    "no Remote AI Platform account is needed. A free account adds saved jobs, alerts and your applications in one place.",
+  a: "Create a free account to apply. Jobs posted here use the platform application form; imported jobs take signed-in members to the original employer or job board.",
 };
 
 /** Where remote jobs can be done from: an honest, general answer. */

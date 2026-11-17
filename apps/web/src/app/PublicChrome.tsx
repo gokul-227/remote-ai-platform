@@ -41,7 +41,7 @@ export function SiteNav({ home = false }: { home?: boolean }) {
       >
         <BrandLockup size={home ? 40 : 36} />
         <ul className="order-3 flex w-full flex-wrap gap-x-5 gap-y-1 text-sm font-semibold sm:order-none sm:w-auto">
-          {MAIN_SECTIONS.map(([label, href]) => (
+          {(home ? [MAIN_SECTIONS[0], MAIN_SECTIONS[3]] : MAIN_SECTIONS).map(([label, href]) => (
             <li key={href}>
               <Link href={href} className={`text-navy hover:text-brand hover:underline ${focus}`}>
                 {label}

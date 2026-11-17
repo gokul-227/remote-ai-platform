@@ -30,12 +30,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const workflows = [
-  ["Connect", "Build your professional profile, find people and share updates with your network.", "/#engineers"],
-  ["Find work", "Explore remote roles, save opportunities and manage your applications in one place.", "/remote-jobs"],
-  ["Hire", "Publish a role, review applications and connect with professionals.", "/#postjob"],
-  ["Get work done", "Bring projects, conversations, meetings and deliverables into a shared workspace.", "/#projects"],
-];
 const chip =
   "rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-brand hover:border-brand";
 
@@ -52,19 +46,17 @@ export default async function Home() {
   const faqs = [...landingFaq("remote jobs", stats).filter((f) => f !== APPLY_FAQ), LOCATION_FAQ, APPLY_FAQ];
   return (
     <AppEntry>
-      <div className="min-h-screen bg-mist text-charcoal">
+      <div className="min-h-screen bg-white text-charcoal">
         <SiteNav home />
-        <main id="main" className="mx-auto max-w-6xl px-5 py-10 sm:py-14">
-          <section className="grid grid-cols-1 items-start gap-10 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <main id="main" className="mx-auto max-w-6xl px-5 py-12 sm:py-20">
+          <section className="grid grid-cols-1 items-center gap-10 lg:gap-20 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
             <div>
-              <h1 className="font-bold" style={{ fontSize: "clamp(2.25rem, 4vw, 3.25rem)", lineHeight: 1.12 }}>
-                Remote jobs
+              <h1 className="font-bold" style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", lineHeight: 1.12 }}>
+                Find your next remote job.
               </h1>
               <p className="mt-4 max-w-xl text-lg text-slate-600">
-                {stats?.total ? `${fmt(stats.total)} remote and work-from-home jobs` : "Remote and work-from-home jobs"}{" "}
-                from employers and job boards
-                {stats?.new_last_7_days ? `, ${fmt(stats.new_last_7_days)} posted in the last 7 days` : ""}. Browse by
-                role, country or company, then apply on the employer&apos;s own page.
+                Discover opportunities, connect with professionals and bring your work together.
+                {stats?.total ? ` Explore ${fmt(stats.total)} open remote roles.` : ""}
               </p>
               <form action="/remote-jobs" method="get" role="search" className="mt-6 flex max-w-xl gap-2">
                 <label htmlFor="home-q" className="sr-only">
@@ -81,30 +73,25 @@ export default async function Home() {
                   Search
                 </button>
               </form>
-              <div className="mt-5 flex flex-wrap gap-3 text-sm font-semibold">
-                <Link href="/remote-jobs" className="text-brand underline">
-                  All remote jobs
-                </Link>
-                <Link href="/work-from-home-jobs" className="text-brand underline">
-                  Work from home jobs
-                </Link>
-                <Link href="/remote-jobs/in" className="text-brand underline">
-                  Remote jobs by country
-                </Link>
-                <Link href="/remote-jobs/in/worldwide" className="text-brand underline">
-                  Work from anywhere
-                </Link>
-              </div>
+              <p className="mt-4 text-sm text-slate-500">Free to join. Built for your next step.</p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-bold">Your professional network and workspace</h2>
+            <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm sm:p-9">
+              <h2 className="text-xl font-bold">Make your next move</h2>
               <p className="mt-3 text-slate-600">
-                A free profile gets you jobs matched to your skills, alerts for new roles and your applications in one
-                place, plus people, projects and meetings when you find the work.
+                Create your free profile to connect, save opportunities and manage your work in one place.
               </p>
-              <a href="#register" className="mt-5 inline-block rounded-lg bg-brand px-5 py-3 font-semibold text-white">
+              <a
+                href="#register"
+                className="mt-6 block rounded-lg bg-brand px-5 py-3 text-center font-semibold text-white"
+              >
                 Create your free account
               </a>
+              <p className="mt-5 text-center text-sm text-slate-600">
+                Already a member?{" "}
+                <a href="#login" className="font-semibold text-brand underline">
+                  Sign in to your account
+                </a>
+              </p>
             </div>
           </section>
 
@@ -112,54 +99,48 @@ export default async function Home() {
             <h2 id="latest" className="mb-4 text-2xl font-bold">
               Latest remote jobs
             </h2>
-            <JobList jobs={latest.jobs.slice(0, 15)} />
+            <JobList jobs={latest.jobs.slice(0, 6)} />
             <Link href="/remote-jobs" className="mt-4 inline-block font-semibold text-brand underline">
               See all {latest.total ? fmt(latest.total) : ""} remote jobs →
             </Link>
           </section>
 
-          <section className="mt-12">
-            <h2 className="text-2xl font-bold">Remote jobs by role</h2>
-            <ul className="mt-5 flex flex-wrap gap-2">
-              {topics.slice(0, 24).map(({ item: t, total }) => (
-                <li key={t.slug}>
-                  <Link href={`/remote-jobs/${t.slug}`} className={chip}>
-                    {topicHeading(t)}
-                    {count(total)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-          <section className="mt-10">
-            <h2 className="text-2xl font-bold">Remote jobs by country</h2>
-            <ul className="mt-5 flex flex-wrap gap-2">
-              {places.slice(0, 20).map(({ item: p, total }) => (
-                <li key={p.slug}>
-                  <Link href={`/remote-jobs/in/${p.slug}`} className={chip}>
-                    Remote jobs in {p.name}
-                    {count(total)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link href="/remote-jobs/in" className="mt-5 inline-block font-semibold text-brand underline">
-              All countries and regions →
-            </Link>
-          </section>
-
-          <section aria-label="What you can do" className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {workflows.map(([title, text, href]) => (
-              <article key={title} className="rounded-xl border border-slate-200 bg-white p-6">
-                <h2 className="text-xl font-bold">{title}</h2>
-                <p className="mt-3 text-sm leading-relaxed text-slate-600">{text}</p>
-                <a href={href} className="mt-4 inline-block font-semibold text-brand underline">
-                  Explore {title.toLowerCase()} →
-                </a>
-              </article>
-            ))}
-          </section>
-          <FaqSection faqs={faqs} title="Remote jobs: common questions" />
+          <details className="mt-12 border-t border-slate-200 pt-6">
+            <summary className="cursor-pointer font-semibold text-brand">Explore jobs by role and country</summary>
+            <section className="mt-12">
+              <h2 className="text-2xl font-bold">Remote jobs by role</h2>
+              <ul className="mt-5 flex flex-wrap gap-2">
+                {topics.slice(0, 12).map(({ item: t, total }) => (
+                  <li key={t.slug}>
+                    <Link href={`/remote-jobs/${t.slug}`} className={chip}>
+                      {topicHeading(t)}
+                      {count(total)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <section className="mt-10">
+              <h2 className="text-2xl font-bold">Remote jobs by country</h2>
+              <ul className="mt-5 flex flex-wrap gap-2">
+                {places.slice(0, 10).map(({ item: p, total }) => (
+                  <li key={p.slug}>
+                    <Link href={`/remote-jobs/in/${p.slug}`} className={chip}>
+                      Remote jobs in {p.name}
+                      {count(total)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <Link href="/remote-jobs/in" className="mt-5 inline-block font-semibold text-brand underline">
+                All countries and regions →
+              </Link>
+            </section>
+          </details>
+          <details className="mt-8 border-t border-slate-200 pt-6">
+            <summary className="cursor-pointer font-semibold text-brand">Questions about finding remote work</summary>
+            <FaqSection faqs={faqs} title="Remote jobs: common questions" />
+          </details>
         </main>
         <PublicFooter />
         <JsonLd data={[organizationJsonLd(site, OPERATOR.contactEmail), websiteJsonLd(site)]} />

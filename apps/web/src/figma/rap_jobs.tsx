@@ -16,7 +16,17 @@ import {
   type Filters,
 } from "@/lib/jobFilters";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, statusOf, type ApiJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
+import {
+  useApi,
+  toFigmaJob,
+  statusOf,
+  type ApiJob,
+  goRoute,
+  rememberReturnTo,
+  safeHref,
+  isMember,
+  uniqueSkills,
+} from "./live";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Modal, Bar, Stars, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
 
 const BL = BRAND.blue;
@@ -87,6 +97,11 @@ export function Jobs() {
   };
   const startApply = () => {
     if (!sel) return;
+    if (!user) {
+      rememberReturnTo(`jobdetail/${sel.id}`);
+      goRoute("register");
+      return;
+    }
     if (!sel.easy) {
       const link = safeHref(sel.raw.external_url);
       if (link) window.open(link, "_blank", "noopener");
@@ -363,7 +378,7 @@ export function Jobs() {
                         style={{ background: BL }}
                       >
                         {sel.easy && <Ic n="bolt" s={16} />}
-                        {!sel.easy ? "Apply on original site" : !user ? "Sign in to apply" : "Easy Apply"}
+                        {!user ? "Sign up to apply" : !sel.easy ? "Apply on original site" : "Easy Apply"}
                       </button>
                     )
                   )}
@@ -447,7 +462,7 @@ export function Jobs() {
                     <div className="flex-1">
                       <p className="font-bold">About {sel.co}</p>
                       <p className="text-sm text-slate-500">
-                        <JobSource source={sel.raw.source} url={sel.raw.external_url} />
+                        <JobSource source={sel.raw.source} url={user ? sel.raw.external_url : undefined} />
                       </p>
                     </div>
                   </div>

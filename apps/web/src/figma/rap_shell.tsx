@@ -296,16 +296,17 @@ export function AppShell({ r, go, children }: { r: string; go: (route: string) =
   useEffect(() => {
     const media = window.matchMedia?.("(prefers-color-scheme: dark)");
     const apply = () => {
-      const dark = theme === "dark" || (theme === "system" && !!media?.matches);
+      const dark = !!user && (theme === "dark" || (theme === "system" && !!media?.matches));
       document.documentElement.dataset.theme = dark ? "dark" : "light";
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
     };
     apply();
     try {
-      localStorage.setItem("rap-theme", theme);
+      if (user) localStorage.setItem("rap-theme", theme);
     } catch {}
     media?.addEventListener?.("change", apply);
     return () => media?.removeEventListener?.("change", apply);
-  }, [theme]);
+  }, [theme, user]);
   // The section picked in the menu; the sidebar shows only this section.
   const [chosen, setChosen] = useState(() => {
     try {

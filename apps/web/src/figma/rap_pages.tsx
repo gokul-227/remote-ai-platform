@@ -17,7 +17,7 @@ import {
 import api, { extractErrorMessage } from "@/lib/api";
 import { ShareButtons } from "./ShareButtons";
 import { useAuth } from "@/lib/auth";
-import { useApi, toFigmaJob, goRoute, safeHref, isMember, uniqueSkills } from "./live";
+import { useApi, toFigmaJob, goRoute, rememberReturnTo, safeHref, isMember, uniqueSkills } from "./live";
 import { Groups } from "./rap_social";
 import { Deliverables, Endorsements } from "./rap_collab";
 import { Ic, Av, Lg, Btn, Card, Tag, Tabs, Bar, Stars, Modal, cx, Field, inputCls, RichText, Notice } from "./rap_kit";
@@ -381,6 +381,11 @@ export function JobDetail() {
     savedQ.reload();
   };
   const startApply = () => {
+    if (!user) {
+      rememberReturnTo(`jobdetail/${j.id}`);
+      nav("register");
+      return;
+    }
     if (!fj.easy) {
       const link = safeHref(j.external_url);
       if (link) window.open(link, "_blank", "noopener");
@@ -433,7 +438,7 @@ export function JobDetail() {
                   ) : (
                     (!user || eng || !fj.easy) && (
                       <Btn v="primary" icon="send" onClick={startApply}>
-                        {!fj.easy ? "Apply on original site" : !user ? "Sign in to apply" : "Easy Apply"}
+                        {!user ? "Sign up to apply" : !fj.easy ? "Apply on original site" : "Easy Apply"}
                       </Btn>
                     )
                   )}
@@ -553,7 +558,7 @@ export function JobDetail() {
           <Card c="rounded-xl" p="p-5">
             <h3 className="font-bold">Source</h3>
             <p className="mt-1 text-sm text-slate-600">
-              <JobSource source={j.source} url={j.external_url} />
+              <JobSource source={j.source} url={user ? j.external_url : undefined} />
             </p>
           </Card>
         </div>
