@@ -129,7 +129,7 @@ async def search_engineers(
     min_years_exp: int | None = Query(None, ge=0),
     primary_role: str | None = Query(None),
     location: str | None = Query(None),
-    is_open_to_work: bool = Query(True),
+    is_open_to_work: bool | None = Query(None, description="Only members open to opportunities (opt-in)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     service: EngineerService = Depends(get_engineer_service),

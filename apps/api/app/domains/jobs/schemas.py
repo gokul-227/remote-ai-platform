@@ -112,6 +112,8 @@ class JobPostResponse(JobPostBase, JobFilterFields):
     timeline: str | None = None
     remote_preference: str | None = None
     ai_analysis: dict[str, Any] | None = None
+    # Paid, always-labelled placements on this job: "featured", "urgent".
+    promotions: list[str] = []
 
 
 class JobSearchQuery(BaseModel):

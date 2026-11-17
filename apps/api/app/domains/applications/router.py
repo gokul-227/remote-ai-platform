@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.domains.analytics.service import emit_analytics_event
 from app.domains.applications.models import JobApplication
@@ -127,6 +128,17 @@ async def apply_to_job(
     )
     if existing:
         raise HTTPException(status_code=409, detail="Application already exists")
+    if settings.BILLING_ENABLED and (job.job_type or "").lower() == "freelance":
+        # Proposals on freelance projects use proposal credits (a generous free
+        # monthly allowance, then packs). Job applications are always free.
+        from app.domains.billing.placements import spend_proposal
+
+        if await spend_proposal(db, current_user.id) is None:
+            raise HTTPException(
+                status_code=402,
+                detail="You've used this month's free proposals. They reset on the 1st, "
+                "or you can add proposal credits in Settings > Billing.",
+            )
     application = JobApplication(
         user_id=current_user.id, job_id=job_id, status="SUBMITTED", cover_note=data.cover_note
     )

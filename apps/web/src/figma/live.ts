@@ -11,6 +11,8 @@ import { useAuth } from "@/lib/auth";
 
 export interface ApiJob {
   id: string;
+  /** Paid labels on this job ("featured", "urgent"); always shown. */
+  promotions?: string[];
   title: string;
   description?: string | null;
   company_id?: string | null;

@@ -27,6 +27,7 @@ export type PublicJob = {
   workplace_type?: string | null;
   seniority?: string | null;
   region?: string | null;
+  country_code?: string | null;
   tz_min?: number | null;
   tz_max?: number | null;
   visa_sponsorship?: boolean | null;
@@ -137,12 +138,12 @@ const EMPLOYMENT: Record<string, string> = {
 
 /**
  * schema.org JobPosting for Google's job search (structured data). Remote jobs
- * use jobLocationType TELECOMMUTE; listings expire 90 days after posting, the
+ * use jobLocationType TELECOMMUTE; listings expire 180 days after posting, the
  * same window the platform keeps imported jobs.
  */
-export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string, unknown> {
+export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string, unknown> | null {
   const posted = job.posted_at ? new Date(job.posted_at) : new Date();
-  const until = new Date(posted.getTime() + 90 * 24 * 3600 * 1000);
+  const until = new Date(posted.getTime() + 180 * 24 * 3600 * 1000);
   const type = EMPLOYMENT[(job.job_type || "").toLowerCase().replace(/[\s_-]+/g, "")];
   const unit = { year: "YEAR", month: "MONTH", hour: "HOUR" }[job.salary_period || ""];
   const ld: Record<string, unknown> = {
@@ -159,10 +160,15 @@ export function jobPostingJsonLd(job: PublicJob, siteUrl: string): Record<string
   };
   if (type) ld.employmentType = type;
   const countries = inferCountries(job.location);
+  const code = (job.country_code || "").trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(code) && !countries.includes(code)) countries.push(code);
   if (job.is_remote) {
+    // Google requires applicantLocationRequirements on remote jobs. We never
+    // invent worldwide eligibility, so a remote job whose countries are unknown
+    // gets no JobPosting markup at all (it would be an invalid item).
+    if (!countries.length) return null;
     ld.jobLocationType = "TELECOMMUTE";
-    // Do not invent worldwide eligibility: only countries the posting names.
-    if (countries.length) ld.applicantLocationRequirements = countries.map((name) => ({ "@type": "Country", name }));
+    ld.applicantLocationRequirements = countries.map((name) => ({ "@type": "Country", name }));
   }
   if (!job.is_remote && job.location && !/^remote$/i.test(job.location.trim())) {
     ld.jobLocation = {

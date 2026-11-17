@@ -16,6 +16,8 @@ import {
   type Filters,
 } from "@/lib/jobFilters";
 import { useAuth } from "@/lib/auth";
+import { UpgradeLink, PromotionChip, PaidPlacements } from "./rap_billing";
+import { CompanyBranding, OpenToOpportunitiesBanner } from "./rap_billing_extras";
 import {
   useApi,
   toFigmaJob,
@@ -236,6 +238,7 @@ export function Jobs() {
                 </button>
               </div>
             )}
+            <PaidPlacements />
             {!jobsQ.loading && !jobsQ.error && list.length === 0 && (
               <div className="p-10 text-center text-slate-500">
                 <Ic n="search" s={32} c="mx-auto mb-2" />
@@ -272,6 +275,9 @@ export function Jobs() {
                     </p>
                     <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                       <span className="font-semibold text-emerald-700">{j.post}</span>
+                      {(j.raw?.promotions ?? []).map((p) => (
+                        <PromotionChip key={p} kind={p} />
+                      ))}
                       {j.m != null && <Tag t="indigo">{j.m}% match</Tag>}
                       {j.easy && (
                         <span className="flex items-center gap-1 font-semibold">
@@ -662,6 +668,12 @@ export function Profile() {
     <div className="bg-[#F0F2F5] py-5">
       <div className="mx-auto grid max-w-[1200px] gap-5 px-4 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
         <main className="min-w-0 space-y-3">
+          <OpenToOpportunitiesBanner
+            open={p.is_open_to_work === true}
+            onOptIn={() =>
+              run("open", () => api.put("/engineers/me", { is_open_to_work: true }), "You’re now open to opportunities")
+            }
+          />
           <Card p={false} c="overflow-hidden rounded-lg">
             <div className="h-48 bg-gradient-to-r from-[#031B4E] via-brand to-[#5B4BDB]" />
             <div className="relative px-6 pb-6">
@@ -824,6 +836,12 @@ export function Profile() {
               <p className="mt-2 text-xs text-slate-500">
                 AI allowance: {aiUse.data.used_this_month.toLocaleString()} of{" "}
                 {aiUse.data.monthly_allowance.toLocaleString()} tokens used this month
+                {aiUse.data.used_this_month >= aiUse.data.monthly_allowance && (
+                  <>
+                    {" "}
+                    · <UpgradeLink text="Get more AI" plan="premium_monthly" />
+                  </>
+                )}
               </p>
             )}
           </Card>
@@ -1254,6 +1272,7 @@ export function Company() {
           {tab === "Home" && (
             <>
               {overview}
+              <CompanyBranding companyId={id} />
               {jobsCard}
             </>
           )}

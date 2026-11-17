@@ -17,6 +17,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.domains.tasks.models import TASK_RETRYING
 from app.domains.tasks.service import (
+    TASK_DISCOVER_BOARDS,
     TASK_FLUSH_EMAIL_OUTBOX,
     TASK_IMPORT_SOURCE,
     TASK_MAINTAIN_CATALOGUE,
@@ -116,6 +117,10 @@ async def import_source_async(
                     f"attempt {run.attempts}/{run.max_attempts})",
                     dedup_key=f"import-fail:{source}:{run.status}",
                     fields={"run_id": str(run_id), "error": (run.error or "")[:300]},
+                    actions=slack.alert_buttons(
+                        slack.button("Run now", "rap_alert", f"cmd:sources run {source}"),
+                        slack.button("Pause source", "rap_alert", f"cmd:sources pause {source}"),
+                    ),
                 )
 
 
@@ -125,7 +130,9 @@ async def _task_run_model():  # noqa: ANN202
     return TaskRun
 
 
-@shared_task(name=TASK_IMPORT_SOURCE, bind=True)
+# Big catalogue sweeps: fetching stops at JOB_IMPORT_FETCH_BUDGET_SECONDS, saving
+# needs the rest; still inside the 3-hour slot.
+@shared_task(name=TASK_IMPORT_SOURCE, bind=True, soft_time_limit=3300, time_limit=3500)
 def import_source(
     self, run_id: str, source: str, limit: int | None = None, **_: Any
 ) -> dict[str, Any]:  # noqa: ANN001
@@ -164,6 +171,72 @@ async def validate_boards_async(run_id: uuid.UUID, source: str, limit: int = 100
         return {"source": source, "checked": sum(counts.values()), **counts}
 
     return await _with_run(run_id, work)
+
+
+async def discover_boards_async(run_id: uuid.UUID) -> dict[str, Any]:
+    """ATS board discovery (board_discovery.py); reports to Slack #job-imports."""
+    from app.domains.jobs.board_discovery import run_discovery
+    from app.services import slack
+
+    factory = runtime.session_factory()
+
+    async def work() -> dict[str, Any]:
+        async with factory() as db:
+            return await run_discovery(db)
+
+    result = await _with_run(run_id, work)
+    if "error" in result:
+        await slack.post(
+            "job_imports",
+            ":warning: Board discovery failed",
+            dedup_key=f"discovery-fail:{run_id}",
+            fields={"error": str(result["error"])[:300]},
+        )
+    elif not result.get("skipped"):
+        await slack.post(
+            "job_imports",
+            f":mag: Board discovery: {result.get('new_candidates', 0)} new boards found, "
+            f"{result.get('validated_checked', 0)} validated, "
+            f"{result.get('validated_promoted', 0)} added "
+            f"({result.get('validated_promoted_jobs', 0)} jobs listed), "
+            f"{result.get('validated_dead', 0)} dead",
+            dedup_key=f"discovery:{run_id}",
+            fields={
+                "live boards": result.get("boards_live"),
+                "candidates pending": result.get("candidates_pending"),
+                "jobs scanned": result.get("jobs_scanned"),
+                "not found / blocked / errors": (
+                    f"{result.get('validated_not_found', 0)} / "
+                    f"{result.get('validated_robots_blocked', 0)} / "
+                    f"{result.get('validated_error', 0)}"
+                ),
+                "seconds": result.get("seconds"),
+            },
+        )
+    return result
+
+
+@shared_task(name=TASK_DISCOVER_BOARDS, soft_time_limit=3300, time_limit=3500)
+def discover_boards_task(run_id: str, **_: Any) -> dict[str, Any]:
+    return runtime.run(discover_boards_async(_uuid(run_id)))
+
+
+@shared_task(name="jobs.discover_boards_scheduled")
+def discover_boards_scheduled() -> dict[str, Any]:
+    if not settings.JOB_BOARD_DISCOVERY_ENABLED:
+        return {"skipped": "disabled"}
+
+    async def go() -> dict[str, Any]:
+        from datetime import UTC, datetime
+
+        slot = datetime.now(UTC).strftime("%Y%m%dT%H")
+        async with runtime.session_factory()() as db:
+            run, created = await TaskService(db).enqueue(
+                TASK_DISCOVER_BOARDS, {}, idempotency_key=f"discover-boards:{slot}"
+            )
+            return {"run_id": str(run.id), "created": created}
+
+    return runtime.run(go())
 
 
 @shared_task(name=TASK_VALIDATE_BOARDS)
@@ -464,3 +537,57 @@ def send_job_alerts() -> dict[str, Any]:
             return await _send(db)
 
     return runtime.run(go())
+
+
+async def refund_unanswered_messages_async() -> dict[str, Any]:
+    from app.domains.billing.placements import refund_unanswered_messages as sweep
+
+    if not settings.BILLING_ENABLED:
+        return {"skipped": True}
+    async with runtime.session_factory()() as db:
+        result = await sweep(db)
+        await db.commit()
+        return dict(result)
+
+
+@shared_task(name="billing.refund_unanswered_messages")
+def refund_unanswered_messages() -> dict[str, Any]:
+    """Return messaging credits for first messages with no reply in 14 days."""
+    return runtime.run(refund_unanswered_messages_async())
+
+
+@shared_task(name="slack.run_command", soft_time_limit=120, time_limit=150)
+def slack_run_command(**kwargs: Any) -> dict[str, Any]:
+    """/rap work queued by app/domains/slack/router.py; answers via response_url."""
+    from app.domains.slack.service import run as run_slack
+
+    message = runtime.run(run_slack(**kwargs))
+    return {"text": str(message.get("text", ""))[:200]}
+
+
+@shared_task(name="ops.daily_kpi_digest")
+def daily_kpi_digest() -> dict[str, Any]:
+    from app.worker import ops
+
+    async def go() -> dict[str, Any]:
+        async with runtime.session_factory()() as db:
+            return await ops.daily_kpi_digest(db)
+
+    return runtime.run(go())
+
+
+async def retry_referral_credits_async() -> dict[str, Any]:
+    from app.domains.billing.service import retry_referral_credits
+
+    if not settings.BILLING_ENABLED:
+        return {"skipped": True}
+    async with runtime.session_factory()() as db:
+        result = await retry_referral_credits(db)
+        await db.commit()
+        return dict(result)
+
+
+@shared_task(name="billing.retry_referral_credits")
+def retry_referral_credits() -> dict[str, Any]:
+    """Retry failed referral credits (exponential backoff, capped at a day)."""
+    return runtime.run(retry_referral_credits_async())

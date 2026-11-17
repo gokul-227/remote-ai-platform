@@ -309,7 +309,7 @@ class Settings(BaseSettings):
     ADZUNA_LICENSE_CONFIRMED: bool = False
     WORKINGNOMADS_PERMISSION_CONFIRMED: bool = False
     # Arbeitnow serves 100 jobs per page; read this many pages per sync.
-    ARBEITNOW_MAX_PAGES: int = 50
+    ARBEITNOW_MAX_PAGES: int = 200
     # Public company career boards (comma-separated board names). The original lists
     # were verified live; later additions are best-effort (a missing board is skipped).
     GREENHOUSE_BOARDS: str = (
@@ -339,7 +339,7 @@ class Settings(BaseSettings):
     # to the original posting for the rest. The main lever on per-row size.
     JOB_DESCRIPTION_MAX_CHARS: int = 5000
     # Boards fetched at once per source, and a polite pause before each request.
-    ATS_BOARD_CONCURRENCY: int = 3
+    ATS_BOARD_CONCURRENCY: int = 4
     JOB_SOURCE_REQUEST_DELAY_SECONDS: float = 0.25
     # Workable public job-board accounts (apply.workable.com/<account>).
     WORKABLE_ACCOUNTS: str = (
@@ -396,8 +396,10 @@ class Settings(BaseSettings):
     # ── Global sources (docs/product/job-sources.md) ─────────────────────────
     # Bundled company board lists (app/domains/jobs/aggregators/boards/*.txt).
     ATS_BUNDLED_LISTS: bool = True
-    # Long board lists are walked this many boards per run (checkpointed offset).
-    ATS_BOARDS_PER_RUN: int = 300
+    # Long board lists are walked this many boards per run (checkpointed offset);
+    # a run also stops starting boards when JOB_IMPORT_FETCH_BUDGET_SECONDS is spent
+    # and the checkpoint moves only past the boards it actually fetched.
+    ATS_BOARDS_PER_RUN: int = 6000
     JOB_SOURCE_USER_AGENT: str = "RemoteAIPlatformBot/1.0 (+https://remoteaiplatform.com/bot)"
     # Check robots.txt (cached per host for 24 h) before every board/feed fetch.
     JOB_SOURCE_RESPECT_ROBOTS: bool = True
@@ -411,31 +413,38 @@ class Settings(BaseSettings):
     # Workday career sites as "tenant/wdN/site" (e.g. "nvidia/wd5/NVIDIAExternalCareerSite").
     WORKDAY_SITES: str = ""
     # Bundesagentur für Arbeit Jobsuche: the public client id documented for the
-    # open Jobsuche API (not a secret). Pages of 100 per run.
+    # open Jobsuche API (not a secret). Pages of 100; a query reaches at most 10,000
+    # results, so the full catalogue is swept in partitions across runs (government.py).
     BUNDESAGENTUR_API_KEY: str = "jobboerse-jobsuche"
-    BUNDESAGENTUR_MAX_PAGES: int = 50
-    # JobTech (Arbetsförmedlingen open data, CC0): pages of 100, offset <= 2000.
-    JOBTECH_MAX_PAGES: int = 20
+    BUNDESAGENTUR_MAX_PAGES: int = 3000
+    # JobTech (Arbetsförmedlingen open data, CC0): pages of 100, offset <= 2000 per
+    # query, so every run sweeps publication-date windows over the retention period.
+    JOBTECH_MAX_PAGES: int = 1500
     # NAV stillingsfeed: optional token; without it the public token endpoint is used.
     NAV_FEED_TOKEN: str | None = None
-    NAV_MAX_PAGES: int = 20
+    # Feed pages of 1,000 entries read per run (the run's time budget also bounds it).
+    NAV_MAX_PAGES: int = 3000
+    # Re-read the whole NAV feed from its first page this often, so unchanged open
+    # ads are seen again before JOB_UNSEEN_EXPIRY_DAYS.
+    NAV_REWALK_DAYS: int = 7
     # France Travail Offres d'emploi v2 (free partner account, OAuth client credentials).
     FRANCE_TRAVAIL_CLIENT_ID: str | None = None
     FRANCE_TRAVAIL_CLIENT_SECRET: str | None = None
-    FRANCE_TRAVAIL_MAX_PAGES: int = 20
+    # Requests per run (a query reaches 3,150 results; busy windows go per département).
+    FRANCE_TRAVAIL_MAX_PAGES: int = 2500
     # Careerjet partner API v4 (affiliate API key via HTTP basic auth).
     CAREERJET_API_KEY: str | None = None
     CAREERJET_LOCALES: str = "en_GB,en_US,de_DE,fr_FR,en_IN,en_CA,en_AU,es_ES,it_IT,nl_NL"
-    CAREERJET_MAX_PAGES: int = 5
-    ADZUNA_MAX_PAGES: int = 5
-    USAJOBS_MAX_PAGES: int = 10
+    CAREERJET_MAX_PAGES: int = 20
+    ADZUNA_MAX_PAGES: int = 20
+    USAJOBS_MAX_PAGES: int = 100
     # Remote boards' public RSS feeds (terms reviewed per feed; source starts paused).
     REMOTE_RSS_FEEDS: str = (
         "https://nodesk.co/remote-jobs/index.xml,"
         "https://www.realworkfromanywhere.com/rss.xml,"
         "https://remotefirstjobs.com/rss/jobs.rss"
     )
-    GETONBOARD_MAX_PAGES: int = 10
+    GETONBOARD_MAX_PAGES: int = 50
     # Optional aggregators with free developer keys (Infisical); skipped when unset.
     ADZUNA_APP_ID: str | None = None
     ADZUNA_APP_KEY: str | None = None
@@ -465,12 +474,32 @@ class Settings(BaseSettings):
     # 0 disables the budget (self-hosted PostgreSQL holding millions of jobs).
     DATABASE_SIZE_BUDGET_MB: int = 420
     # Imported jobs posted longer ago than this are removed (or, if someone applied, hidden).
-    JOB_RETENTION_DAYS: int = 90
+    JOB_RETENTION_DAYS: int = 180
 
     JOB_SYNC_SCHEDULE: str = (
         "17 */3 * * *"  # Every 3 hours (default cron for job_sources rows)
     )
-    JOB_SYNC_MAX_PER_SOURCE: int = 10000
+    # Per-run ceiling for one source (job_sources.max_per_run defaults to it). Runs
+    # are really bounded by JOB_IMPORT_FETCH_BUDGET_SECONDS and checkpoints.
+    JOB_SYNC_MAX_PER_SOURCE: int = 250000
+    # Time one import run may spend fetching before it stops and checkpoints; the
+    # rest of the slot is for saving (bulk upserts). Import tasks have a 55-minute
+    # soft limit (app/worker/tasks.py).
+    JOB_IMPORT_FETCH_BUDGET_SECONDS: int = Field(default=1500, ge=10)
+    # ATS board discovery (app/domains/jobs/board_discovery.py, every 6 hours).
+    JOB_BOARD_DISCOVERY_ENABLED: bool = True
+    # Candidate boards validated per discovery run (one request each).
+    JOB_BOARD_VALIDATE_PER_RUN: int = 3000
+    JOB_BOARD_DISCOVERY_BUDGET_SECONDS: int = Field(default=1500, ge=10)
+    # Minimum gap between two requests to one ATS (robots.txt Crawl-delay wins if larger).
+    JOB_BOARD_HOST_INTERVAL_SECONDS: float = 1.0
+    # A board (candidate or live) is dropped after this many 404/410 answers in a row.
+    JOB_BOARD_DEAD_AFTER_404S: int = 3
+    # Stored jobs scanned for outbound ATS links per discovery run.
+    JOB_BOARD_SCAN_ROWS_PER_RUN: int = 200000
+    # Optional public lists of career-site URLs (comma-separated http(s) URLs; plain
+    # text, HTML or XML). Only lists whose terms allow reuse; robots.txt is checked.
+    JOB_BOARD_SEED_URLS: str = ""
     # Freshness policy: imported jobs that no sync has seen among their
     # source's recent listings (each sync reads each source's newest ~30) for
     # this long are taken off the public list; they may still be open.
@@ -500,6 +529,22 @@ class Settings(BaseSettings):
     # the product owner deliberately enables it. Refunds of existing holds
     # stay available regardless so no funds are ever stranded.
     MARKETPLACE_PAYMENTS_ENABLED: bool = False
+
+    # ── Billing (paid features, Stripe Checkout) ──────────────────────────────
+    # Separate from marketplace money movement. Off: pricing shows "coming
+    # soon", checkout answers 404 and nothing is chargeable. A live Stripe key
+    # is refused unless APP_ENV=production AND BILLING_ENABLED
+    # (app/services/billing/stripe_gateway.py). See docs/operations/billing.md.
+    BILLING_ENABLED: bool = False
+    # Stripe Tax (automatic_tax). Off until the seller's VAT status is confirmed:
+    # prices are final gross amounts and invoices carry no VAT line.
+    STRIPE_TAX_ENABLED: bool = False
+    BILLING_FREE_TEAM_SEATS: int = 3
+    BILLING_REFERRAL_MAX_ATTEMPTS: int = 8
+    BILLING_FREE_PROPOSALS_MONTHLY: int = 20
+    BILLING_SPONSORED_DEFAULT_CPC_CENTS: int = 50
+    BILLING_REFERRAL_CREDIT_CENTS: int = 1000
+    BILLING_MESSAGE_REFUND_DAYS: int = 14
 
     # ── Email ─────────────────────────────────────────────────────────────────
     # "none" (default, honest no-op -- matches the behavior this app has always
@@ -548,6 +593,14 @@ class Settings(BaseSettings):
     SLACK_CHANNEL_SECURITY: str = ""
     SLACK_CHANNEL_COSTS: str = ""
     SLACK_CHANNEL_SEO: str = ""  # weekly Search Console summary; empty -> #signups
+    SLACK_CHANNEL_PAYMENTS: str = ""  # purchases, subscriptions, failed payments, refunds; empty -> #signups
+    SLACK_CHANNEL_KPIS: str = ""  # daily KPI digest; empty -> #signups
+    # Slack app (/rap slash command + interactivity, app/domains/slack). Requests are
+    # rejected while this is empty. From the Slack app's Basic Information page.
+    SLACK_SIGNING_SECRET: str = ""
+    SLACK_LINK_CODE_MINUTES: int = 10  # one-time console code that links a Slack user to staff
+    SLACK_CONFIRM_MINUTES: int = 10  # a confirmation button stops working after this
+    SLACK_KPI_DIGEST_ENABLED: bool = True
     ADMIN_URL: str = ""  # staff console base URL, linked from Slack messages
     SLACK_DEDUP_SECONDS: int = 900  # identical dedup keys are dropped inside this window
     SLACK_MAX_PER_MINUTE: int = 20  # per channel, per process

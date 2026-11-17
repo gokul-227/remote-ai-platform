@@ -37,7 +37,11 @@ CHANNELS: dict[str, str] = {
     "security": "SLACK_CHANNEL_SECURITY",
     "costs": "SLACK_CHANNEL_COSTS",
     "seo": "SLACK_CHANNEL_SEO",
+    "payments": "SLACK_CHANNEL_PAYMENTS",
+    "kpis": "SLACK_CHANNEL_KPIS",
 }
+# A logical channel whose own id is empty posts to this one instead.
+FALLBACK: dict[str, str] = {"payments": "signups", "kpis": "signups"}
 
 _seen: dict[str, float] = {}
 _sent: dict[str, deque[float]] = {}
@@ -51,7 +55,34 @@ def enabled() -> bool:
 
 def channel_id(channel: str) -> str:
     attr = CHANNELS.get(channel)
-    return str(getattr(settings, attr, "") or "") if attr else ""
+    value = str(getattr(settings, attr, "") or "") if attr else ""
+    if not value and channel in FALLBACK:
+        return channel_id(FALLBACK[channel])
+    return value
+
+
+def button(text: str, action_id: str, value: str, style: str | None = None) -> dict[str, Any]:
+    """One Block Kit button (interactive alerts, /rap confirmations)."""
+    out: dict[str, Any] = {
+        "type": "button",
+        "text": {"type": "plain_text", "text": text[:75]},
+        "action_id": action_id,
+        "value": value[:2000],
+    }
+    if style:
+        out["style"] = style
+    return out
+
+
+def alert_buttons(*buttons: dict[str, Any]) -> list[dict[str, Any]]:
+    """Alert actions handled by /slack/interactions; always offers Acknowledge."""
+    items = [*buttons, button("Acknowledge", "rap_alert", "ack")][:5]
+    # Slack rejects a block whose elements share an action_id (invalid_blocks),
+    # so each button gets a unique suffix; the handler matches the prefix.
+    for i, item in enumerate(items):
+        if item.get("action_id") == "rap_alert":
+            item["action_id"] = f"rap_alert:{i}"
+    return [{"type": "actions", "elements": items}]
 
 
 def reset() -> None:
@@ -91,8 +122,11 @@ async def post(
     *,
     dedup_key: str | None = None,
     fields: dict[str, Any] | None = None,
+    actions: list[dict[str, Any]] | None = None,
 ) -> bool:
-    """Post one message. Returns True when Slack accepted it. Never raises."""
+    """Post one message. Returns True when Slack accepted it. Never raises.
+
+    `actions` are Block Kit blocks (see `alert_buttons`) shown under the text."""
     try:
         target = channel_id(channel)
         if not enabled() or not target:
@@ -102,20 +136,48 @@ async def post(
         body = _prefix(text)[:3000]
         if fields:
             body += "\n" + "\n".join(f"• *{k}*: {v}" for k, v in fields.items() if v is not None)
+        message: dict[str, Any] = {"channel": target, "text": body[:3900], "unfurl_links": False}
+        if actions:
+            message["blocks"] = [
+                {"type": "section", "text": {"type": "mrkdwn", "text": body[:2900]}},
+                *actions,
+            ]
         async with httpx.AsyncClient(
             transport=_transport, timeout=settings.SLACK_TIMEOUT_SECONDS
         ) as client:
             res = await client.post(
                 POST_URL,
-                json={"channel": target, "text": body[:3900], "unfurl_links": False},
+                json=message,
                 headers={"Authorization": f"Bearer {settings.SLACK_BOT_TOKEN}"},
             )
         ok = res.status_code == 200 and bool(res.json().get("ok"))
         if not ok:
-            logger.warning("Slack post rejected", channel=channel, status=res.status_code)
+            error = None
+            try:
+                error = res.json().get("error")
+            except Exception:  # noqa: S110 - non-JSON reply; status is logged
+                pass
+            logger.warning(
+                "Slack post rejected", channel=channel, status=res.status_code, error=error
+            )
         return ok
     except Exception as exc:  # never into the caller
         logger.warning("Slack post failed", channel=channel, error=type(exc).__name__)
+        return False
+
+
+async def respond(response_url: str, payload: dict[str, Any]) -> bool:
+    """Answer a slash command or button click through its response_url. Never raises."""
+    try:
+        if not response_url.startswith("https://hooks.slack.com/"):
+            return False
+        async with httpx.AsyncClient(
+            transport=_transport, timeout=settings.SLACK_TIMEOUT_SECONDS
+        ) as client:
+            res = await client.post(response_url, json=payload)
+        return res.status_code == 200
+    except Exception as exc:
+        logger.warning("Slack response failed", error=type(exc).__name__)
         return False
 
 
@@ -125,6 +187,7 @@ def notify(
     *,
     dedup_key: str | None = None,
     fields: dict[str, Any] | None = None,
+    actions: list[dict[str, Any]] | None = None,
 ) -> None:
     """Fire-and-forget `post` on the running loop (request paths). Never raises."""
     if not enabled() or not channel_id(channel):
@@ -133,7 +196,9 @@ def notify(
         loop = asyncio.get_running_loop()
     except RuntimeError:
         return
-    task = loop.create_task(post(channel, text, dedup_key=dedup_key, fields=fields))
+    task = loop.create_task(
+        post(channel, text, dedup_key=dedup_key, fields=fields, actions=actions)
+    )
     _pending.add(task)
     task.add_done_callback(_pending.discard)
 

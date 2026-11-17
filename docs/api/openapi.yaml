@@ -768,9 +768,12 @@ paths:
         in: query
         required: false
         schema:
-          type: boolean
-          default: true
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Only members open to opportunities (opt-in)
           title: Is Open To Work
+        description: Only members open to opportunities (opt-in)
       - name: skip
         in: query
         required: false
@@ -1196,6 +1199,41 @@ paths:
       responses:
         '204':
           description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/organisations/{company_id}/seats:
+    get:
+      tags:
+      - Organisation Members
+      summary: Seats
+      description: Team seats used and included (free seats plus paid Extra team seats).
+      operationId: seats_api_v1_organisations__company_id__seats_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: boolean
+                title: Response Seats Api V1 Organisations  Company Id  Seats Get
         '422':
           description: Validation Error
           content:
@@ -11601,6 +11639,1006 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/catalog:
+    get:
+      tags:
+      - Billing
+      summary: Catalog
+      operationId: catalog_api_v1_billing_catalog_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogOut'
+  /api/v1/billing/checkout:
+    post:
+      tags:
+      - Billing
+      summary: Checkout
+      operationId: checkout_api_v1_billing_checkout_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/portal:
+    post:
+      tags:
+      - Billing
+      summary: Portal
+      operationId: portal_api_v1_billing_portal_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlOut'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/me:
+    get:
+      tags:
+      - Billing
+      summary: My Billing
+      operationId: my_billing_api_v1_billing_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyBilling'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/jobs/{job_id}/feature:
+    post:
+      tags:
+      - Billing
+      summary: Feature Job
+      description: 'Feature one of your jobs for 30 days: free while on Hire/Hire Pro, else one job-pack credit.'
+      operationId: feature_job_api_v1_billing_jobs__job_id__feature_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntitlementOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/placements/jobs:
+    get:
+      tags:
+      - Billing
+      summary: Placement Jobs
+      operationId: placement_jobs_api_v1_billing_placements_jobs_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10
+          minimum: 1
+          default: 3
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Placements'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/placements/sponsored/{campaign_id}/click:
+    post:
+      tags:
+      - Billing
+      summary: Sponsored Click
+      operationId: sponsored_click_api_v1_billing_placements_sponsored__campaign_id__click_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: campaign_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Campaign Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Sponsored Click Api V1 Billing Placements Sponsored  Campaign Id  Click Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/placements/profiles:
+    get:
+      tags:
+      - Billing
+      summary: Promoted Profiles
+      description: Engineer profile ids with an active Profile boost, shown labelled "Promoted".
+      operationId: promoted_profiles_api_v1_billing_placements_profiles_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                type: array
+                title: Response Promoted Profiles Api V1 Billing Placements Profiles Get
+  /api/v1/billing/sponsored:
+    get:
+      tags:
+      - Billing
+      summary: My Campaigns
+      operationId: my_campaigns_api_v1_billing_sponsored_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/CampaignOut'
+                type: array
+                title: Response My Campaigns Api V1 Billing Sponsored Get
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Billing
+      summary: Create Campaign
+      operationId: create_campaign_api_v1_billing_sponsored_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/sponsored/{campaign_id}:
+    patch:
+      tags:
+      - Billing
+      summary: Update Campaign
+      operationId: update_campaign_api_v1_billing_sponsored__campaign_id__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: campaign_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Campaign Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/candidates:
+    get:
+      tags:
+      - Billing
+      summary: Candidate Search
+      description: 'Candidate database (Hire Pro or the add-on): only public profiles open to opportunities.'
+      operationId: candidate_search_api_v1_billing_candidates_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Q
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 20
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Candidate Search Api V1 Billing Candidates Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/messages/spend:
+    post:
+      tags:
+      - Billing
+      summary: Spend Message Credit
+      description: Spend one messaging credit on a first message to a member (returned if no reply in 14 days).
+      operationId: spend_message_credit_api_v1_billing_messages_spend_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageSpendIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Spend Message Credit Api V1 Billing Messages Spend Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/referral:
+    get:
+      tags:
+      - Billing
+      summary: My Referral
+      operationId: my_referral_api_v1_billing_referral_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response My Referral Api V1 Billing Referral Get
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/referral/claim:
+    post:
+      tags:
+      - Billing
+      summary: Claim Referral
+      operationId: claim_referral_api_v1_billing_referral_claim_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CodeIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: boolean
+                type: object
+                title: Response Claim Referral Api V1 Billing Referral Claim Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/badges:
+    post:
+      tags:
+      - Billing
+      summary: Badges
+      description: Premium and priority-applicant flags for members (shown to employers, always labelled).
+      operationId: badges_api_v1_billing_badges_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BadgesIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                type: object
+                title: Response Badges Api V1 Billing Badges Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/branding/me:
+    get:
+      tags:
+      - Billing
+      summary: My Branding
+      operationId: my_branding_api_v1_billing_branding_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandingOut'
+      security:
+      - HTTPBearer: []
+    put:
+      tags:
+      - Billing
+      summary: Set Branding
+      operationId: set_branding_api_v1_billing_branding_me_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandingIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandingOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/branding/{company_id}:
+    get:
+      tags:
+      - Billing
+      summary: Company Branding
+      description: 'Public: the cover video and testimonials, only while the company is entitled.'
+      operationId: company_branding_api_v1_billing_branding__company_id__get
+      parameters:
+      - name: company_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Company Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandingOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/branding/me/testimonials:
+    post:
+      tags:
+      - Billing
+      summary: Add Testimonial
+      operationId: add_testimonial_api_v1_billing_branding_me_testimonials_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestimonialIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestimonialOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - HTTPBearer: []
+  /api/v1/billing/branding/me/testimonials/{testimonial_id}:
+    put:
+      tags:
+      - Billing
+      summary: Edit Testimonial
+      operationId: edit_testimonial_api_v1_billing_branding_me_testimonials__testimonial_id__put
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: testimonial_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Testimonial Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestimonialIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestimonialOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Billing
+      summary: Delete Testimonial
+      operationId: delete_testimonial_api_v1_billing_branding_me_testimonials__testimonial_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: testimonial_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Testimonial Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/billing/messages/quote:
+    get:
+      tags:
+      - Billing
+      summary: Message Quote
+      description: 'For the composer: whether sending uses a messaging credit, and the balance.'
+      operationId: message_quote_api_v1_billing_messages_quote_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: recipient_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Recipient Id
+      - name: conversation_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Conversation Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Message Quote Api V1 Billing Messages Quote Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/purchases:
+    get:
+      tags:
+      - Admin Billing
+      summary: Purchases
+      operationId: purchases_api_v1_admin_billing_purchases_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+      - name: fulfilment
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Fulfilment
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminPurchase'
+                title: Response Purchases Api V1 Admin Billing Purchases Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/subscriptions:
+    get:
+      tags:
+      - Admin Billing
+      summary: Subscriptions
+      operationId: subscriptions_api_v1_admin_billing_subscriptions_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminSubscription'
+                title: Response Subscriptions Api V1 Admin Billing Subscriptions Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/entitlements:
+    get:
+      tags:
+      - Admin Billing
+      summary: Entitlements
+      operationId: entitlements_api_v1_admin_billing_entitlements_get
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+      - name: key
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Key
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminEntitlement'
+                title: Response Entitlements Api V1 Admin Billing Entitlements Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Admin Billing
+      summary: Grant Entitlement
+      operationId: grant_entitlement_api_v1_admin_billing_entitlements_post
+      security:
+      - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrantIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEntitlement'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/entitlements/{entitlement_id}/revoke:
+    post:
+      tags:
+      - Admin Billing
+      summary: Revoke Entitlement
+      operationId: revoke_entitlement_api_v1_admin_billing_entitlements__entitlement_id__revoke_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: entitlement_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Entitlement Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/app__domains__billing__admin_router__Reason'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminEntitlement'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/purchases/{purchase_id}/refund:
+    post:
+      tags:
+      - Admin Billing
+      summary: Refund Purchase
+      operationId: refund_purchase_api_v1_admin_billing_purchases__purchase_id__refund_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: purchase_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Purchase Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Refund Purchase Api V1 Admin Billing Purchases  Purchase Id  Refund Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/purchases/{purchase_id}/fulfilment:
+    post:
+      tags:
+      - Admin Billing
+      summary: Set Fulfilment
+      operationId: set_fulfilment_api_v1_admin_billing_purchases__purchase_id__fulfilment_post
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: purchase_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Purchase Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FulfilIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminPurchase'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/plans:
+    get:
+      tags:
+      - Admin Billing
+      summary: Plans
+      operationId: plans_api_v1_admin_billing_plans_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/PlanOut'
+                type: array
+                title: Response Plans Api V1 Admin Billing Plans Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/billing/plans/{slug}:
+    patch:
+      tags:
+      - Admin Billing
+      summary: Edit Plan
+      description: |-
+        Edit name, description, availability or price. A new price gets a new
+        Stripe Price now when Stripe is configured (existing subscribers keep
+        theirs until changed in Stripe); otherwise the sync script creates it.
+      operationId: edit_plan_api_v1_admin_billing_plans__slug__patch
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanPatch'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/v1/admin/billing/revenue:
+    get:
+      tags:
+      - Admin Billing
+      summary: Revenue
+      description: Computed only from recorded Stripe events (purchases, invoices, subscriptions, clicks).
+      operationId: revenue_api_v1_admin_billing_revenue_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Revenue Api V1 Admin Billing Revenue Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/billing/messages/refund-sweep:
+    post:
+      tags:
+      - Admin Billing
+      summary: Refund Sweep
+      operationId: refund_sweep_api_v1_admin_billing_messages_refund_sweep_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: integer
+                type: object
+                title: Response Refund Sweep Api V1 Admin Billing Messages Refund Sweep Post
+      security:
+      - HTTPBearer: []
   /api/v1/groups:
     get:
       tags:
@@ -12910,7 +13948,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Reason'
+              $ref: '#/components/schemas/app__domains__tasks__router__Reason'
       responses:
         '200':
           description: Successful Response
@@ -12996,7 +14034,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Reason'
+              $ref: '#/components/schemas/app__domains__tasks__router__Reason'
       responses:
         '202':
           description: Successful Response
@@ -13236,6 +14274,65 @@ paths:
                   type: integer
                 type: object
                 title: Response Sitemap Counts Api V1 Public Sitemap Counts Get
+  /api/v1/admin/slack/link-code:
+    post:
+      tags:
+      - Admin Slack
+      summary: Link Code
+      description: One-time code (valid SLACK_LINK_CODE_MINUTES) to run as `/rap link <code>` in Slack.
+      operationId: link_code_api_v1_admin_slack_link_code_post
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkCodeOut'
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/slack/identities:
+    get:
+      tags:
+      - Admin Slack
+      summary: My Identities
+      operationId: my_identities_api_v1_admin_slack_identities_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SlackIdentityOut'
+                type: array
+                title: Response My Identities Api V1 Admin Slack Identities Get
+      security:
+      - HTTPBearer: []
+  /api/v1/admin/slack/identities/{identity_id}:
+    delete:
+      tags:
+      - Admin Slack
+      summary: Unlink Identity
+      operationId: unlink_identity_api_v1_admin_slack_identities__identity_id__delete
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: identity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Identity Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
     AIUsageStatsResponse:
@@ -13340,6 +14437,185 @@ components:
       - details
       - created_at
       title: ActivityLogResponse
+    AdminEntitlement:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        key:
+          type: string
+          title: Key
+        quantity:
+          type: integer
+          title: Quantity
+        subject_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subject Type
+        subject_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subject Id
+        source:
+          type: string
+          title: Source
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        source_ref:
+          type: string
+          title: Source Ref
+        revoked_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Revoked At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - key
+      - quantity
+      - subject_type
+      - subject_id
+      - source
+      - expires_at
+      - user_id
+      - source_ref
+      - revoked_at
+      - created_at
+      title: AdminEntitlement
+    AdminPurchase:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+        plan_slug:
+          type: string
+          title: Plan Slug
+        mode:
+          type: string
+          title: Mode
+        status:
+          type: string
+          title: Status
+        amount_total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Amount Total
+        amount_refunded:
+          type: integer
+          title: Amount Refunded
+        currency:
+          type: string
+          title: Currency
+        subject_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subject Id
+        fulfilment_status:
+          type: string
+          title: Fulfilment Status
+        stripe_payment_intent_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stripe Payment Intent Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        paid_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Paid At
+      type: object
+      required:
+      - id
+      - user_id
+      - plan_slug
+      - mode
+      - status
+      - amount_total
+      - amount_refunded
+      - currency
+      - subject_id
+      - fulfilment_status
+      - stripe_payment_intent_id
+      - created_at
+      - paid_at
+      title: AdminPurchase
+    AdminSubscription:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        plan_id:
+          type: string
+          format: uuid
+          title: Plan Id
+        status:
+          type: string
+          title: Status
+        current_period_end:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Current Period End
+        cancel_at_period_end:
+          type: boolean
+          title: Cancel At Period End
+        stripe_subscription_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Stripe Subscription Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - user_id
+      - plan_id
+      - status
+      - current_period_end
+      - cancel_at_period_end
+      - stripe_subscription_id
+      - created_at
+      title: AdminSubscription
     AdmissionDecision:
       properties:
         admission:
@@ -13672,6 +14948,19 @@ components:
       - full_name
       - role
       title: AuthorSummary
+    BadgesIn:
+      properties:
+        user_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 100
+          title: User Ids
+      type: object
+      required:
+      - user_ids
+      title: BadgesIn
     BatchEvaluationRequest:
       properties:
         submissions:
@@ -13875,6 +15164,35 @@ components:
       required:
       - file
       title: Body_upload_resume_api_v1_engineers_me_resume_post
+    BrandingIn:
+      properties:
+        cover_video_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cover Video Url
+      type: object
+      title: BrandingIn
+    BrandingOut:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+        cover_video_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cover Video Url
+        testimonials:
+          items:
+            $ref: '#/components/schemas/TestimonialOut'
+          type: array
+          title: Testimonials
+          default: []
+      type: object
+      required:
+      - enabled
+      title: BrandingOut
     CallbackIn:
       properties:
         code:
@@ -13895,6 +15213,89 @@ components:
       required:
       - code
       title: CallbackIn
+    CampaignIn:
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          title: Job Id
+        daily_budget_cents:
+          type: integer
+          maximum: 100000.0
+          minimum: 100.0
+          title: Daily Budget Cents
+        max_cpc_cents:
+          anyOf:
+          - type: integer
+            maximum: 10000.0
+            minimum: 10.0
+          - type: 'null'
+          title: Max Cpc Cents
+      type: object
+      required:
+      - job_id
+      - daily_budget_cents
+      title: CampaignIn
+    CampaignOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        job_id:
+          type: string
+          format: uuid
+          title: Job Id
+        daily_budget_cents:
+          type: integer
+          title: Daily Budget Cents
+        max_cpc_cents:
+          type: integer
+          title: Max Cpc Cents
+        status:
+          type: string
+          title: Status
+        spent_cents:
+          type: integer
+          title: Spent Cents
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - job_id
+      - daily_budget_cents
+      - max_cpc_cents
+      - status
+      - spent_cents
+      - created_at
+      title: CampaignOut
+    CampaignPatch:
+      properties:
+        status:
+          anyOf:
+          - type: string
+            pattern: ^(active|paused)$
+          - type: 'null'
+          title: Status
+        daily_budget_cents:
+          anyOf:
+          - type: integer
+            maximum: 100000.0
+            minimum: 100.0
+          - type: 'null'
+          title: Daily Budget Cents
+        max_cpc_cents:
+          anyOf:
+          - type: integer
+            maximum: 10000.0
+            minimum: 10.0
+          - type: 'null'
+          title: Max Cpc Cents
+      type: object
+      title: CampaignPatch
     CandidateMatchResponse:
       properties:
         id:
@@ -13986,6 +15387,33 @@ components:
       - updated_at
       title: CandidateMatchResponse
       description: 'A match shown to a company: the engineer appears only as their public profile.'
+    CatalogOut:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+        currency:
+          type: string
+          title: Currency
+          default: eur
+        prices_include_vat:
+          type: boolean
+          title: Prices Include Vat
+          default: true
+        tax_calculated:
+          type: boolean
+          title: Tax Calculated
+          default: false
+        items:
+          items:
+            $ref: '#/components/schemas/PlanOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - enabled
+      - items
+      title: CatalogOut
     CategoryPrefIn:
       properties:
         push:
@@ -14128,6 +15556,29 @@ components:
       required:
       - reply
       title: ChatOut
+    CheckoutIn:
+      properties:
+        plan:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Plan
+        subject_id:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Subject Id
+        quantity:
+          type: integer
+          maximum: 50.0
+          minimum: 1.0
+          title: Quantity
+          default: 1
+      type: object
+      required:
+      - plan
+      title: CheckoutIn
     CodeDeliverableCreate:
       properties:
         milestone_id:
@@ -14169,6 +15620,17 @@ components:
       - repo_url
       - commit_sha
       title: CodeDeliverableCreate
+    CodeIn:
+      properties:
+        code:
+          type: string
+          maxLength: 16
+          minLength: 4
+          title: Code
+      type: object
+      required:
+      - code
+      title: CodeIn
     CodeReviewReport:
       properties:
         overall_score:
@@ -15533,7 +16995,7 @@ components:
         is_open_to_work:
           type: boolean
           title: Is Open To Work
-          default: true
+          default: false
       type: object
       title: EngineerProfileCreate
     EngineerProfileResponse:
@@ -15681,7 +17143,7 @@ components:
         is_open_to_work:
           type: boolean
           title: Is Open To Work
-          default: true
+          default: false
         id:
           type: string
           format: uuid
@@ -16041,7 +17503,7 @@ components:
         is_open_to_work:
           type: boolean
           title: Is Open To Work
-          default: true
+          default: false
         id:
           type: string
           format: uuid
@@ -16079,6 +17541,47 @@ components:
         (ai_summary, profile_score, missing_skills, matching_keywords): it is
         coaching for the engineer, not an assessment to publish to others. The
         salary floor is private too; the advertised hourly_rate stays public.
+    EntitlementOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        key:
+          type: string
+          title: Key
+        quantity:
+          type: integer
+          title: Quantity
+        subject_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subject Type
+        subject_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subject Id
+        source:
+          type: string
+          title: Source
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+      type: object
+      required:
+      - id
+      - key
+      - quantity
+      - subject_type
+      - subject_id
+      - source
+      - expires_at
+      title: EntitlementOut
     EscrowCreate:
       properties:
         amount:
@@ -16292,6 +17795,23 @@ components:
       required:
       - name
       title: FolderIn
+    FulfilIn:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+        fulfilment_status:
+          type: string
+          pattern: ^(queued|done)$
+          title: Fulfilment Status
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      - fulfilment_status
+      title: FulfilIn
     FunnelSummaryRow:
       properties:
         event_name:
@@ -16382,6 +17902,48 @@ components:
       - jobs
       - engineers
       title: GlobalSearchResponse
+    GrantIn:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        key:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Key
+        quantity:
+          type: integer
+          maximum: 1000000.0
+          minimum: 1.0
+          title: Quantity
+          default: 1
+        days:
+          anyOf:
+          - type: integer
+            maximum: 3650.0
+            minimum: 1.0
+          - type: 'null'
+          title: Days
+        subject_id:
+          anyOf:
+          - type: string
+            maxLength: 64
+          - type: 'null'
+          title: Subject Id
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      - user_id
+      - key
+      title: GrantIn
     GroupCreate:
       properties:
         name:
@@ -16958,6 +18520,59 @@ components:
       required:
       - accept
       title: InvitationResponse
+    InvoiceOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        amount_paid:
+          type: integer
+          title: Amount Paid
+        currency:
+          type: string
+          title: Currency
+        status:
+          type: string
+          title: Status
+        hosted_invoice_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Hosted Invoice Url
+        invoice_pdf:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Invoice Pdf
+        period_start:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Period Start
+        period_end:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Period End
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - id
+      - amount_paid
+      - currency
+      - status
+      - hosted_invoice_url
+      - invoice_pdf
+      - period_start
+      - period_end
+      - created_at
+      title: InvoiceOut
     JobAvailability:
       properties:
         state:
@@ -17517,6 +19132,12 @@ components:
           type: string
           format: date-time
           title: Updated At
+        promotions:
+          items:
+            type: string
+          type: array
+          title: Promotions
+          default: []
       type: object
       required:
       - title
@@ -17857,6 +19478,24 @@ components:
       - name
       - count
       title: LandingSkill
+    LinkCodeOut:
+      properties:
+        code:
+          type: string
+          title: Code
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+        command:
+          type: string
+          title: Command
+      type: object
+      required:
+      - code
+      - expires_at
+      - command
+      title: LinkCodeOut
     LogoutIn:
       properties:
         everywhere:
@@ -18213,6 +19852,16 @@ components:
       required:
       - body
       title: MessageIn
+    MessageSpendIn:
+      properties:
+        recipient_id:
+          type: string
+          format: uuid
+          title: Recipient Id
+      type: object
+      required:
+      - recipient_id
+      title: MessageSpendIn
     MilestoneCreate:
       properties:
         project_id:
@@ -18318,6 +19967,48 @@ components:
       required:
       - muted
       title: MuteIn
+    MyBilling:
+      properties:
+        enabled:
+          type: boolean
+          title: Enabled
+        has_customer:
+          type: boolean
+          title: Has Customer
+        entitlements:
+          items:
+            $ref: '#/components/schemas/EntitlementOut'
+          type: array
+          title: Entitlements
+        subscriptions:
+          items:
+            $ref: '#/components/schemas/SubscriptionOut'
+          type: array
+          title: Subscriptions
+        purchases:
+          items:
+            $ref: '#/components/schemas/PurchaseOut'
+          type: array
+          title: Purchases
+        invoices:
+          items:
+            $ref: '#/components/schemas/InvoiceOut'
+          type: array
+          title: Invoices
+        balances:
+          additionalProperties: true
+          type: object
+          title: Balances
+      type: object
+      required:
+      - enabled
+      - has_customer
+      - entitlements
+      - subscriptions
+      - purchases
+      - invoices
+      - balances
+      title: MyBilling
     NodeDetail:
       properties:
         id:
@@ -18719,6 +20410,144 @@ components:
       - args
       - expires_at
       title: PendingAction
+    PlacementJob:
+      properties:
+        label:
+          type: string
+          title: Label
+        campaign_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Campaign Id
+        job:
+          $ref: '#/components/schemas/JobPostResponse'
+      type: object
+      required:
+      - label
+      - job
+      title: PlacementJob
+    Placements:
+      properties:
+        featured:
+          items:
+            $ref: '#/components/schemas/PlacementJob'
+          type: array
+          title: Featured
+        sponsored:
+          items:
+            $ref: '#/components/schemas/PlacementJob'
+          type: array
+          title: Sponsored
+      type: object
+      required:
+      - featured
+      - sponsored
+      title: Placements
+    PlanOut:
+      properties:
+        slug:
+          type: string
+          title: Slug
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        audience:
+          type: string
+          title: Audience
+        mode:
+          type: string
+          title: Mode
+        price_cents:
+          type: integer
+          title: Price Cents
+        currency:
+          type: string
+          title: Currency
+        billing_interval:
+          type: string
+          title: Billing Interval
+        duration_days:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Duration Days
+        target:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Target
+        trial_days:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Trial Days
+        is_active:
+          type: boolean
+          title: Is Active
+        entitlements:
+          additionalProperties: true
+          type: object
+          title: Entitlements
+      type: object
+      required:
+      - slug
+      - name
+      - description
+      - audience
+      - mode
+      - price_cents
+      - currency
+      - billing_interval
+      - duration_days
+      - target
+      - trial_days
+      - is_active
+      - entitlements
+      title: PlanOut
+    PlanPatch:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+        price_cents:
+          anyOf:
+          - type: integer
+            maximum: 1000000.0
+            minimum: 0.0
+          - type: 'null'
+          title: Price Cents
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+          title: Description
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      title: PlanPatch
     PlatformStatsResponse:
       properties:
         total_users:
@@ -19200,6 +21029,60 @@ components:
       - created_at
       - author
       title: PublicPost
+    PurchaseOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        plan_slug:
+          type: string
+          title: Plan Slug
+        status:
+          type: string
+          title: Status
+        amount_total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Amount Total
+        amount_refunded:
+          type: integer
+          title: Amount Refunded
+        currency:
+          type: string
+          title: Currency
+        subject_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Subject Id
+        fulfilment_status:
+          type: string
+          title: Fulfilment Status
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        paid_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Paid At
+      type: object
+      required:
+      - id
+      - plan_slug
+      - status
+      - amount_total
+      - amount_refunded
+      - currency
+      - subject_id
+      - fulfilment_status
+      - created_at
+      - paid_at
+      title: PurchaseOut
     PushKeysIn:
       properties:
         p256dh:
@@ -19282,17 +21165,6 @@ components:
       required:
       - reaction
       title: ReactionIn
-    Reason:
-      properties:
-        reason:
-          type: string
-          maxLength: 500
-          minLength: 3
-          title: Reason
-      type: object
-      required:
-      - reason
-      title: Reason
     RefreshIn:
       properties:
         refresh_token:
@@ -19304,6 +21176,24 @@ components:
       required:
       - refresh_token
       title: RefreshIn
+    RefundIn:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+        amount_cents:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Amount Cents
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      title: RefundIn
     ResumeUploadResponse:
       properties:
         resume_url:
@@ -19770,6 +21660,42 @@ components:
       - count
       - endorsed_by_me
       title: SkillCount
+    SlackIdentityOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        slack_user_id:
+          type: string
+          title: Slack User Id
+        slack_team_id:
+          type: string
+          title: Slack Team Id
+        slack_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Slack Username
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        last_used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Used At
+      type: object
+      required:
+      - id
+      - slack_user_id
+      - slack_team_id
+      - slack_username
+      - created_at
+      - last_used_at
+      title: SlackIdentityOut
     SourceOut:
       properties:
         name:
@@ -20136,6 +22062,39 @@ components:
       - requires_revision
       - revision_notes
       title: SubmissionQualityReport
+    SubscriptionOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        plan:
+          type: string
+          title: Plan
+        plan_name:
+          type: string
+          title: Plan Name
+        status:
+          type: string
+          title: Status
+        current_period_end:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Current Period End
+        cancel_at_period_end:
+          type: boolean
+          title: Cancel At Period End
+      type: object
+      required:
+      - id
+      - plan
+      - plan_name
+      - status
+      - current_period_end
+      - cancel_at_period_end
+      title: SubscriptionOut
     SystemHealthDetailResponse:
       properties:
         overall_status:
@@ -20330,6 +22289,64 @@ components:
           title: Sprint Id
       type: object
       title: TaskUpdate
+    TestimonialIn:
+      properties:
+        author_name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          title: Author Name
+        author_title:
+          anyOf:
+          - type: string
+            maxLength: 160
+          - type: 'null'
+          title: Author Title
+        quote:
+          type: string
+          maxLength: 1000
+          minLength: 1
+          title: Quote
+        sort_order:
+          type: integer
+          maximum: 1000.0
+          minimum: 0.0
+          title: Sort Order
+          default: 0
+      additionalProperties: false
+      type: object
+      required:
+      - author_name
+      - quote
+      title: TestimonialIn
+    TestimonialOut:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        author_name:
+          type: string
+          title: Author Name
+        author_title:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Author Title
+        quote:
+          type: string
+          title: Quote
+        sort_order:
+          type: integer
+          title: Sort Order
+      type: object
+      required:
+      - id
+      - author_name
+      - author_title
+      - quote
+      - sort_order
+      title: TestimonialOut
     TicketCreate:
       properties:
         subject:
@@ -20502,6 +22519,15 @@ components:
       - verified_skills_count
       - updated_at
       title: TrustScoreResponse
+    UrlOut:
+      properties:
+        url:
+          type: string
+          title: Url
+      type: object
+      required:
+      - url
+      title: UrlOut
     UserPartySummary:
       properties:
         id:
@@ -20937,6 +22963,18 @@ components:
       - redirect_uri
       - state
       title: AuthorizeIn
+    app__domains__billing__admin_router__Reason:
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          minLength: 3
+          title: Reason
+      additionalProperties: false
+      type: object
+      required:
+      - reason
+      title: Reason
     app__domains__channels__router__MessageOut:
       properties:
         id:
@@ -21218,6 +23256,17 @@ components:
       - internal
       - created_at
       title: MessageOut
+    app__domains__tasks__router__Reason:
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          minLength: 3
+          title: Reason
+      type: object
+      required:
+      - reason
+      title: Reason
   securitySchemes:
     HTTPBearer:
       type: http

@@ -1117,8 +1117,6 @@ async def create_task_offer(
     )
     if not profile or not profile.is_public:
         raise HTTPException(status_code=404, detail="Public professional profile not found")
-    if not profile.is_open_to_work:
-        raise HTTPException(status_code=409, detail="This professional is not open to work")
     required = {skill.strip().lower() for skill in (task.required_skills or []) if skill.strip()}
     available = {skill.strip().lower() for skill in (profile.skills or []) if skill.strip()}
     matched = sorted(required & available)

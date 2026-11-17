@@ -10,6 +10,8 @@ on:
       - "Deploy production (VM)"
       - "CI"
       - "Publish API image (GHCR)"
+      - "CodeQL"
+      - "Release"
     types: [requested, completed]
 
 permissions:

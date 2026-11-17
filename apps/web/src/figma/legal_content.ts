@@ -14,7 +14,7 @@ export const OPERATOR = {
   contactEmail: CONTACT_EMAIL,
 } as const;
 
-export const LAST_UPDATED = "15 November 2026";
+export const LAST_UPDATED = "16 November 2026";
 
 export type Fact = { fact: string | null; label: string };
 export type Block = string | string[] | Fact;
@@ -94,17 +94,18 @@ export const PRIVACY: Section[] = [
         "Email delivery providers",
         "AI model providers",
         "Error monitoring and security providers",
+        "Payment processing and tax calculation providers (only if you buy a paid feature)",
       ],
       "For legal reasons: when required by law or legal process, or to protect the rights, safety and property of our members, the public or Remote AI Platform.",
       "In a business transfer: if Remote AI Platform is involved in a merger, acquisition or sale of assets, your data may transfer as part of it, and this policy will continue to apply.",
       "We do not sell your personal data, and we do not share it with advertisers or for cross-context behavioural advertising. Job boards whose listings we show receive nothing about you; if you apply to an external job, you do so on that site under its own terms.",
-      "Payments are not processed through Remote AI Platform at this time. If that changes, we will update this policy first.",
+      "If you buy a paid feature, our payment processor collects your card details, billing address and any VAT number directly; we never see your full card number. We keep a record of what you bought, invoices and refunds for as long as accounting and tax law require, even after you delete your account (without the link to your account). Payments between members for contracts are not processed through Remote AI Platform.",
     ],
   },
   {
     h: "Data retention",
     body: [
-      "Job listings collected from other sites are deleted automatically 90 days after they were posted, or earlier if the source withdraws them.",
+      "Job listings collected from other sites are deleted automatically 6 months (180 days) after they were posted, or earlier if the source withdraws them.",
       "We keep account, profile and content data until you delete it or your account. You can download a copy of your data at any time in Settings > Privacy. When you delete your account in Settings > Privacy, your profile, resume, applications, messages you sent and other content are deleted promptly, and your sign-in account is removed.",
       `If you have signed contracts or payment records with another member, we cannot delete those records on request because the other party relies on them. In that case ${write} and we will close your account, keep only those records and delete the rest.`,
       "To stop an old session from recreating a deleted account, we keep a one-way code derived from your sign-in identifier. It contains no name or email address.",
@@ -186,7 +187,7 @@ export const TERMS: Section[] = [
   {
     h: "The Service",
     body: [
-      "Remote AI Platform lets professionals build profiles, find and apply for remote work and collaborate, and lets organisations post jobs, review candidates and manage work. The Service is free to use today and has no paid plans. We may change, add or remove features over time; if we remove a feature you rely on, we will try to give reasonable notice.",
+      "Remote AI Platform lets professionals build profiles, find and apply for remote work and collaborate, and lets organisations post jobs, review candidates and manage work. Searching, viewing and applying for jobs is free. Some optional features are paid; see Paid services below and our pricing page. We may change, add or remove features over time; if we remove a feature you rely on, we will try to give reasonable notice.",
     ],
   },
   {
@@ -196,7 +197,7 @@ export const TERMS: Section[] = [
       [
         "Listings may be out of date, incomplete or inaccurate, or may already be filled. Check the original posting before you apply.",
         "When you apply on another site, that site's terms and privacy policy apply, not ours.",
-        "Imported listings are removed automatically once they are older than our listing window (currently 90 days), or earlier if the source withdraws them.",
+        "Imported listings are removed automatically once they are older than our listing window (currently 6 months), or earlier if the source withdraws them.",
         `If you own a listing and want it corrected or removed, ${write}.`,
       ],
     ],
@@ -232,6 +233,27 @@ export const TERMS: Section[] = [
     h: "Contracts between members",
     body: [
       "Contracts created on the Service are agreements between the organisation and the professional; Remote AI Platform is not a party to them and is not an employer, agency or payment intermediary. Once either party has signed, the terms can no longer be edited. Payments are not processed through Remote AI Platform at this time: approving a milestone does not move money, and the parties arrange payment between themselves.",
+    ],
+  },
+  {
+    h: "Paid services",
+    body: [
+      "Remote AI Platform (the trading name of the seller shown on your receipt) offers optional paid services: subscriptions (for example Premium, Freelancer Plus, Hire and Hire Pro), one-off purchases (for example Featured jobs, Urgent badges, profile boosts) and credits (for example job, messaging, proposal and AI credits, and a prepaid balance for sponsored jobs). Current prices and what each includes are on our pricing page. Core features (searching, viewing and applying for jobs) are never paid.",
+      [
+        "Prices are in euros and are the final amount you pay, including any VAT that applies; the pricing page and checkout show the amount before you pay. Payments are handled by our payment processor, and you receive a receipt or invoice by email; subscription invoices can also be downloaded in Settings > Billing.",
+        "Subscriptions renew automatically at the end of each billing period (monthly or yearly) at the price shown when you subscribed, until you cancel. You can cancel at any time in Settings > Billing; cancelling stops the next renewal and you keep access until the end of the period you paid for. We will tell you before any price change applies to your subscription, and you can cancel before it does.",
+        "A free trial, where offered, is available once per member. If you don't cancel before it ends, the subscription starts and is charged.",
+        "If a renewal payment fails, we and our payment processor will email you and retry for a short period; if it still fails, the subscription ends.",
+        "Credits and prepaid balances expire 12 months after purchase and have no cash value. They are not refundable except as stated here or required by law. A messaging credit is returned automatically if the member you wrote to does not reply within 14 days.",
+        "Featured, Urgent, Sponsored and Promoted placements are advertising. They are always labelled as paid, they do not change the order of organic results, and we may refuse or remove a placement that breaks our rules.",
+        "Promotion codes and referral credits apply only as described when they are offered, and can't be exchanged for cash.",
+      ],
+      "Right of withdrawal (consumers in the EU/EEA): you normally have 14 days to withdraw from a purchase of a digital service. Because paid services start straight away, at checkout you ask us to start immediately and acknowledge that you lose the right of withdrawal once the service has been fully provided. If you withdraw within 14 days before that, we refund the amount for the part not yet provided. To withdraw, " +
+        write +
+        " or use Settings > Billing.",
+      "Refunds: apart from the right of withdrawal and your statutory rights, payments are not refundable, but if something we sold you didn't work as described, " +
+        write +
+        " and we will put it right or refund you. Refunds go back to the original payment method.",
     ],
   },
   {
@@ -271,7 +293,7 @@ export const TERMS: Section[] = [
   {
     h: "Limitation of liability",
     body: [
-      "To the extent permitted by law, Remote AI Platform is not liable for indirect, incidental, special or consequential damages, loss of profits, data or opportunity, or for the conduct of members or third-party sites. Because the Service is provided free of charge, our total liability for any claim relating to the Service is limited to the greatest extent the law allows.",
+      "To the extent permitted by law, Remote AI Platform is not liable for indirect, incidental, special or consequential damages, loss of profits, data or opportunity, or for the conduct of members or third-party sites. For the free Service, our total liability for any claim is limited to the greatest extent the law allows; for paid services, it is limited to the amount you paid us for the affected service in the 12 months before the claim, to the extent the law allows.",
       "Nothing in these Terms limits liability that cannot be limited by law, including for intent, gross negligence, fraud or injury to life, body or health, or your statutory rights as a consumer.",
     ],
   },
@@ -373,7 +395,7 @@ export const EMPLOYER_TERMS: Section[] = [
       [
         "You must be authorised to recruit for the organisation you represent and to accept these terms for it.",
         "Your organisation profile must be accurate and must not impersonate another organisation.",
-        "Posting jobs is free today. If we introduce paid features, we will publish their terms before you can buy them.",
+        "Posting jobs is free. Optional paid features are described below and in the Paid services section of our Terms of Service.",
       ],
     ],
   },
@@ -406,6 +428,18 @@ export const EMPLOYER_TERMS: Section[] = [
     h: "Hiring decisions",
     body: [
       "Match scores and AI summaries are aids, not decisions. You make your own hiring decisions and are responsible for them, including any screening or background checks you carry out, which must comply with the law.",
+    ],
+  },
+  {
+    h: "Paid features for employers",
+    body: [
+      "Featured jobs, Urgent badges, sponsored jobs, social and newsletter boosts, job credits, messaging credits, candidate database access, team seats, employer branding and the Hire and Hire Pro subscriptions are optional. The Paid services section of our Terms of Service (billing, renewals, cancellation, refunds and VAT) applies to them.",
+      [
+        'Paid placements are advertising and are always labelled "Featured", "Urgent" or "Sponsored". They never change the order of organic results, and a paid job must meet every job post requirement above.',
+        "Sponsored jobs are charged per click from your prepaid balance, up to your daily budget and maximum cost per click. We count a click once per visitor per day and do not charge for clicks we identify as automated or for your own clicks. When your balance runs out the job stops being sponsored.",
+        "Candidate search shows only members who have chosen to be open to opportunities and to make their profile public. Messaging credits are for genuine recruiting messages; the Candidate data rules below apply to everything you see.",
+        "Social and newsletter boosts are scheduled by our team after purchase; we may decline content that doesn't fit our channels and refund you if we do.",
+      ],
     ],
   },
   {
@@ -693,7 +727,7 @@ export const ABOUT: Section[] = [
         "Privacy: you control your profile visibility and your data, and we never sell it.",
         "Fairness: people make hiring decisions, not algorithms.",
       ],
-      "Remote AI Platform is free to use.",
+      "Searching, viewing and applying for jobs on Remote AI Platform is free; optional paid features are listed on our pricing page.",
     ],
   },
   { h: "Contact", body: [`Questions, press or partnerships: ${CONTACT_EMAIL}.`] },
@@ -777,7 +811,10 @@ export const HELP_FAQ: [string, string][] = [
     "How do I report abuse or a security issue?",
     `Use Report on the post, profile or job, or email ${CONTACT_EMAIL} with details. Please don’t include sign-in codes.`,
   ],
-  ["Are there paid plans?", "Remote AI Platform is free to use today and has no paid subscription plans."],
+  [
+    "Are there paid plans?",
+    "Job search, viewing jobs and applying are free. Optional paid features for members and employers are listed on the pricing page; prices shown are the final amount you pay.",
+  ],
 ];
 
 export const isFact = (b: Block): b is Fact => typeof b === "object" && !Array.isArray(b);

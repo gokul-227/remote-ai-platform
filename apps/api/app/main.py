@@ -39,6 +39,8 @@ from app.domains.assistant.router import router as assistant_router
 # Domain routers — imported as they are implemented
 from app.domains.auth.router import router as auth_router
 from app.domains.auth.workos_router import router as workos_auth_router
+from app.domains.billing.admin_router import router as billing_admin_router
+from app.domains.billing.router import router as billing_router
 from app.domains.browser.router import router as browser_router
 from app.domains.channels.router import router as channels_router
 from app.domains.companies.members_router import router as organisation_members_router
@@ -66,6 +68,8 @@ from app.domains.quality.router import router as quality_router
 from app.domains.saved_jobs.router import router as saved_jobs_router
 from app.domains.search.router import router as search_router
 from app.domains.seo.router import router as seo_router
+from app.domains.slack.router import admin_router as slack_admin_router
+from app.domains.slack.router import router as slack_router
 from app.domains.social.router import router as social_router
 from app.domains.support.router import router as support_router
 from app.domains.support.router import staff_router as support_staff_router
@@ -356,6 +360,8 @@ def create_app() -> FastAPI:
     app.include_router(github_router, prefix=prefix)
     app.include_router(trust_router, prefix=prefix)
     app.include_router(payments_router, prefix=prefix)
+    app.include_router(billing_router, prefix=prefix)
+    app.include_router(billing_admin_router, prefix=prefix)
     app.include_router(groups_router, prefix=prefix)
     app.include_router(quality_router, prefix=prefix)
     app.include_router(analytics_router, prefix=prefix)
@@ -364,6 +370,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_portfolio_router, prefix=prefix)
     app.include_router(background_router, prefix=prefix)
     app.include_router(seo_router, prefix=prefix)
+    app.include_router(slack_router, prefix=prefix)
+    app.include_router(slack_admin_router, prefix=prefix)
 
     return app
 

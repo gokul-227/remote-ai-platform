@@ -135,7 +135,7 @@ describe("public pages", () => {
 
   it("privacy policy states job retention and in-app export and deletion", () => {
     const html = renderToStaticMarkup(<Privacy />);
-    expect(html).toMatch(/90 days/);
+    expect(html).toMatch(/180 days/);
     expect(html).toMatch(/Settings &gt; Privacy/);
   });
 

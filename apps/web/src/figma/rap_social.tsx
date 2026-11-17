@@ -1,3 +1,4 @@
+import { MessageCreditNote } from "./rap_billing_extras";
 import { PrivateGroupAccess } from "./PrivateGroupAccess";
 import { AttachmentPicker, MessageAttachments } from "./ChannelAttachments";
 import { GroupModeration } from "./GroupModeration";
@@ -1123,6 +1124,11 @@ export function Messenger() {
               </p>
             )}
             <AttachmentPicker key={cur.id} selected={attachmentIds} onChange={setAttachmentIds} disabled={sending} />
+            <MessageCreditNote
+              participants={[String(cur.participant_one_id), String(cur.participant_two_id)]}
+              conversationId={String(cur.id)}
+              refresh={msgs.length}
+            />
             <form
               className="p-5 flex gap-3 border-t border-slate-100"
               onSubmit={(e) => {

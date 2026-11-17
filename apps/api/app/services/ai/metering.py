@@ -80,7 +80,14 @@ async def monthly_allowance(actor: AIActor) -> int | None:
     """None means unlimited (administrators)."""
     if actor.unlimited:
         return None
-    return settings.AI_FREE_MONTHLY_TOKENS
+    base = settings.AI_FREE_MONTHLY_TOKENS
+    if not settings.BILLING_ENABLED:
+        return base
+    # Premium multiplies the free allowance; AI credit packs add on top
+    # (app/domains/billing/placements.py).
+    from app.domains.billing.placements import ai_allowance
+
+    return await ai_allowance(actor.db, actor.user_id, base)
 
 
 async def reserve_ai_tokens(prompt_key: str | None = None, prompt_version: str | None = None) -> uuid.UUID:
@@ -123,6 +130,17 @@ async def settle_ai_tokens(reservation_id: uuid.UUID, **fields: object) -> None:
             return
         for key, value in fields.items():
             setattr(row, key, value)
+        await db.commit()
+        if settings.BILLING_ENABLED and row.user_id is not None:
+            await _draw_packs(db, row.user_id)
+
+
+async def _draw_packs(db: AsyncSession, user_id: uuid.UUID) -> None:
+    """Usage beyond the monthly (Premium) allowance is taken from AI credit packs."""
+    from app.domains.billing.placements import draw_ai_packs
+
+    used = await tokens_used(db, since=_month_start(), user_id=user_id)
+    if await draw_ai_packs(db, user_id, settings.AI_FREE_MONTHLY_TOKENS, used):
         await db.commit()
 
 

@@ -1,4 +1,4 @@
-"""MATCH-01: candidate search scores the whole open-to-work pool (not the
+"""MATCH-01: candidate search scores the whole public pool (not the
 first N by update time), stale scores are refreshed, and listings drop jobs
 and profiles that stopped being eligible after they were scored."""
 
@@ -51,7 +51,29 @@ async def test_best_candidate_beyond_the_first_page_is_found(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_candidates_drop_profiles_no_longer_open_to_work():
+async def test_free_matching_ignores_the_open_to_opportunities_opt_in():
+    """Only the paid candidate search requires the opt-in: free job matching keeps
+    suggesting public profiles, scored the same, whether or not they opted in."""
+    from conftest import TestingSessionLocal
+
+    from app.domains.matching.service import MatchingService
+
+    async with TestingSessionLocal() as db:
+        job = await _job(db, ["Python"])
+        opted_in = await _profile(db, ["Python"], is_open_to_work=True)
+        not_opted = await _profile(db, ["Python"], is_open_to_work=False)
+        await db.commit()
+        svc = MatchingService(db)
+        found = await svc.get_top_candidates_for_job(job.id)
+        assert {m.engineer_id for m in found} == {opted_in.id, not_opted.id}
+        scores = {m.engineer_id: m.overall_score for m in found}
+        assert scores[opted_in.id] == scores[not_opted.id]
+        listed = await svc.match_repo.list_top_candidates_for_job(job.id)
+        assert {m.engineer_id for m in listed} == {opted_in.id, not_opted.id}
+
+
+@pytest.mark.asyncio
+async def test_candidates_drop_profiles_that_become_private():
     from conftest import TestingSessionLocal
 
     from app.domains.matching.service import MatchingService
@@ -62,7 +84,7 @@ async def test_candidates_drop_profiles_no_longer_open_to_work():
         await db.commit()
         svc = MatchingService(db)
         assert [m.engineer_id for m in await svc.get_top_candidates_for_job(job.id)] == [prof.id]
-        prof.is_open_to_work = False
+        prof.is_public = False
         await db.commit()
         assert await svc.match_repo.list_top_candidates_for_job(job.id) == []
 

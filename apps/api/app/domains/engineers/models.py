@@ -94,7 +94,10 @@ class EngineerProfile(Base):
     # Indexed: EngineerRepository.search() applies `is_public.is_(True)` as its
     # unconditional base filter on every public-directory listing.
     is_public: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
-    is_open_to_work: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Explicit opt-in (migration 079): makes the member searchable in the paid candidate database.
+    is_open_to_work: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

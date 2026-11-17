@@ -128,6 +128,31 @@ class JobSourceBoard(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # 404/410 answers in a row during imports; JOB_BOARD_DEAD_AFTER_404S retires it.
+    fail_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    # Where the board came from: NULL = bundled list, else the discovery origin.
+    origin: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
+
+class JobBoardCandidate(Base):
+    """A company board found by discovery (app/domains/jobs/board_discovery.py)
+    and not yet confirmed. One request validates it; a live board is copied to
+    job_source_boards, a board answering 404 JOB_BOARD_DEAD_AFTER_404S times is
+    marked not_found and never fetched again."""
+
+    __tablename__ = "job_board_candidates"
+
+    source: Mapped[str] = mapped_column(String(50), primary_key=True)
+    token: Mapped[str] = mapped_column(String(200), primary_key=True)
+    origin: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    # pending | ok | empty | not_found | robots_blocked
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    fail_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    job_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    discovered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class DeadLetter(Base):

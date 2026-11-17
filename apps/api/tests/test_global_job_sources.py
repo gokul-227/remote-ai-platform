@@ -262,10 +262,9 @@ def test_bundled_lists_are_loaded_and_deduplicated(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_bundesagentur_incremental(net):
+async def test_bundesagentur_sweep(net):
     seen, _ = net
     agg = BundesagenturAggregator()
-    agg.cursor = {"since": (datetime.now(UTC) - timedelta(days=2)).isoformat()}
     jobs = await agg.fetch_jobs(limit=50)
     assert jobs[0].title.startswith("Lokalreporter")
     assert (
@@ -276,8 +275,10 @@ async def test_bundesagentur_incremental(net):
     assert jobs[0].salary_min == 36000
     req = [r for r in seen if r.url.host == "rest.arbeitsagentur.de"][0]
     assert req.headers["X-API-Key"] == "jobboerse-jobsuche"
-    assert req.url.params["veroeffentlichtseit"] == "3"
-    assert "since" in agg.next_cursor
+    assert req.url.params["size"] == "100"
+    # The fixture's one small partition is the whole catalogue: the sweep is complete.
+    assert agg.next_cursor == {}
+    assert agg.sweep_started is not None
 
 
 @pytest.mark.asyncio
@@ -295,8 +296,14 @@ async def test_jobtech_published_after(net):
     assert len(jobs) == 2
     assert "Sweden" in jobs[0].location
     assert jobs[0].external_url.startswith("https://arbetsformedlingen.se/platsbanken/annonser/")
-    assert "published-after" in seen[-1].url.params
-    assert agg.next_cursor
+    params = seen[-1].url.params
+    assert "published-after" in params
+    assert "published-before" in params
+    # Every one-day window of the retention period was read: the sweep is complete.
+    windows = [r for r in seen if r.url.host == "jobsearch.api.jobtechdev.se"]
+    assert len(windows) == settings.JOB_RETENTION_DAYS
+    assert agg.next_cursor == {}
+    assert agg.sweep_started is not None
 
 
 @pytest.mark.asyncio
@@ -307,11 +314,18 @@ async def test_nav_feed_cursor_and_public_token(net):
     assert jobs
     assert jobs[0].external_url.startswith("https://arbeidsplassen.nav.no/stillinger/stilling/")
     assert any(r.headers.get("Authorization") == "Bearer aaa.bbb.ccc" for r in seen)
-    assert agg.next_cursor == {"page": "5214f8c4-032e-4dee-9655-7a8e437cfab7"}
+    # A full walk starts at the feed's first page and here catches up at once.
+    feed_reqs = [r for r in seen if r.url.path.startswith("/api/v1/feed")]
+    assert feed_reqs[0].url.path == "/api/v1/feed"
+    assert "last" not in feed_reqs[0].url.params
+    assert agg.next_cursor["page"] == "5214f8c4-032e-4dee-9655-7a8e437cfab7"
+    assert agg.next_cursor["walk_done_at"]
+    assert agg.sweep_started is not None
     agg2 = NAVAggregator()
     agg2.cursor = agg.next_cursor
     await agg2.fetch_jobs()
     assert seen[-1].url.path.endswith("/5214f8c4-032e-4dee-9655-7a8e437cfab7")
+    assert agg2.sweep_started is None  # already caught up: no new sweep
 
 
 @pytest.mark.asyncio
@@ -395,7 +409,7 @@ async def test_sync_uses_board_rows_and_returns_cursor(db, net, monkeypatch):
     assert stats["RECRUITEE"] == 2
     jt = await service.sync_all_job_sources(source_name="JOBTECH", run_maintenance=False)
     assert jt["JOBTECH"] == 2
-    assert "since" in service.next_cursors["JOBTECH"]
+    assert service.next_cursors["JOBTECH"] == {}
 
 
 @pytest.mark.asyncio

@@ -107,6 +107,8 @@ components:
     - assistant
     - auth
     - auth.workos
+    - billing.admin
+    - billing
     - browser
     - channels
     - companies.members
@@ -134,6 +136,7 @@ components:
     - saved_jobs
     - search
     - seo
+    - slack
     - social
     - support
     - tasks
@@ -215,11 +218,12 @@ components:
 - id: slack
   name: Slack
   type: external
-  technology: Owner alerts (chat.postMessage, per-channel routing)
+  technology: Owner alerts and the /rap staff command (chat.postMessage, slash command, interactivity)
   group: saas
   status: active
   evidence:
   - 'apps/api/app/core/config.py: SLACK_BOT_TOKEN'
+  - 'apps/api/app/core/config.py: SLACK_SIGNING_SECRET'
 - id: resend
   name: Resend
   type: external
@@ -285,8 +289,6 @@ components:
   evidence:
   - .github/workflows/ci.yml ~ /health/(ready|live)/
   - .github/workflows/deploy-vm.yml ~ /health/(ready|live)/
-  - .github/workflows/keep-render-warm.yml ~ /health/(ready|live)/
-  - .github/workflows/production-canary.yml ~ /health/(ready|live)/
 - id: infisical
   name: Infisical
   type: secrets

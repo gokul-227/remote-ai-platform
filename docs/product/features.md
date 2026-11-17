@@ -26,7 +26,8 @@ Status reflects the code; "partial" items are labelled honestly in the product.
 | Search | One search across jobs, people, organisations, projects, files, documents, filtered by access | Working |
 | Support | Tickets with a thread; safety reports prioritised | Working |
 | Privacy | Data export, account deletion with retention rules ([privacy-and-data.md](privacy-and-data.md)) | Working |
-| Plans and payments | Paid plans and in-platform payments | Off by design (`MARKETPLACE_PAYMENTS_ENABLED`) |
+| Paid plans | Pricing page, Stripe Checkout and Customer Portal, Settings > Billing; employer one-offs (Featured, Urgent, packs, boosts), sponsored jobs (pay-per-click), Hire / Hire Pro, candidate database, messaging and proposal credits, Premium (7-day trial), Freelancer Plus, profile boost, AI credit packs; paid placements always labelled ([billing.md](../operations/billing.md)) | Built; off until `BILLING_ENABLED` |
+| Payments between members | Escrow and payouts for contracts | Off by design (`MARKETPLACE_PAYMENTS_ENABLED`) |
 | Trending skills | Widget shows "Coming soon" behind `FEATURE_TRENDING_SKILLS` | Not built |
 
 Public, indexable pages: home, `/remote-jobs`, `/jobs/<id>` (with schema.org JobPosting where the source

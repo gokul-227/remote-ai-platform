@@ -28,6 +28,7 @@ with open(out, "w") as f:
 print(f"{len(merged)} settings rendered")
 PY
 # Keep the VM-generated database password already on the host.
-ssh -i "$KEY" -o BatchMode=yes "$TARGET" 'sudo grep -E "^(POSTGRES_PASSWORD|RAP_IMAGE|WEB_IMAGE|ADMIN_IMAGE|CADDY_IMAGE)=" /opt/rap/.env || true' >> "$tmp"
+ssh -i "$KEY" -o BatchMode=yes "$TARGET" 'grep -E "^(POSTGRES_PASSWORD|RAP_IMAGE|WEB_IMAGE|ADMIN_IMAGE|CADDY_IMAGE)=" /opt/rap/.env || true' >> "$tmp"
+grep -q "^POSTGRES_PASSWORD=." "$tmp" || { echo "POSTGRES_PASSWORD not found on the host; refusing to install an .env without it" >&2; exit 1; }
 scp -q -i "$KEY" "$tmp" "$TARGET:/tmp/rap.env.new"
 ssh -i "$KEY" -o BatchMode=yes "$TARGET" 'sudo install -m 600 -o opc -g opc /tmp/rap.env.new /opt/rap/.env && rm -f /tmp/rap.env.new && echo "installed $(wc -l < /opt/rap/.env) lines"'

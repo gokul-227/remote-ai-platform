@@ -16,7 +16,7 @@ import {
   type LandingFilter,
 } from "@/lib/landing";
 import { Breadcrumbs, JsonLd, PublicFrame } from "../PublicChrome";
-import { JobList, JoinCta } from "./JobList";
+import { FeaturedJobs, JobList, JoinCta } from "./JobList";
 import { LandingInsights } from "./LandingInsights";
 import { FaqSection } from "../Faq";
 import { landingFaq } from "@/lib/hubs";
@@ -90,6 +90,7 @@ export async function LandingPage({ spec, searchParams }: { spec: LandingSpec | 
         {spec.note ?? "Every listing links to the employer or original job board."}
       </p>
       <div className="mt-6">
+        <FeaturedJobs />
         <JobList jobs={jobs} />
       </div>
       {last > 1 && (

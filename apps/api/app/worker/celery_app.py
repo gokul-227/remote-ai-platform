@@ -29,7 +29,9 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     worker_max_tasks_per_child=100,
     broker_connection_retry_on_startup=True,
-    broker_transport_options={"visibility_timeout": 3600},
+    # Above the longest task time limit (imports: 3500 s), so a running task is
+    # never redelivered to a second worker.
+    broker_transport_options={"visibility_timeout": 7200},
     task_default_queue="default",
     task_routes={"jobs.*": {"queue": "imports"}},
     task_always_eager=settings.TASKS_ALWAYS_EAGER,
@@ -54,6 +56,10 @@ celery_app.conf.update(
             "task": "ops.daily_import_summary",
             "schedule": crontab(hour=7, minute=0),
         },
+        "discover-job-boards": {
+            "task": "jobs.discover_boards_scheduled",
+            "schedule": crontab(hour="*/6", minute=50),
+        },
         "check-backups": {"task": "ops.check_backups", "schedule": crontab(hour=8, minute=0)},
         "job-alerts": {"task": "jobs.send_alerts", "schedule": crontab(minute=40)},
         "refresh-catalogue-stats": {
@@ -64,11 +70,17 @@ celery_app.conf.update(
             "task": "jobs.backfill_filters",
             "schedule": crontab(hour=2, minute=50),
         },
+        "billing-referral-retries": {"task": "billing.retry_referral_credits", "schedule": 600.0},
+        "billing-message-refunds": {
+            "task": "billing.refund_unanswered_messages",
+            "schedule": crontab(hour=5, minute=10),
+        },
         "cost-guard":{"task": "ops.cost_guard", "schedule": crontab(hour="*/6", minute=15)},
         "seo-indexing-sweep": {
             "task": "seo.indexing_sweep",
             "schedule": crontab(hour="*/4", minute=25),
         },
+        "daily-kpi-digest": {"task": "ops.daily_kpi_digest", "schedule": crontab(hour=7, minute=5)},
         "seo-weekly-report": {
             "task": "ops.seo_weekly_report",
             "schedule": crontab(day_of_week=1, hour=7, minute=30),

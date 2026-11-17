@@ -71,7 +71,7 @@ class EngineerProfileBase(BaseModel):
     projects: Sequence[ProjectItem] = []
     education: list[EducationItem] = []
     is_public: bool = True
-    is_open_to_work: bool = True
+    is_open_to_work: bool = False
 
 
 # Input bounds (the columns' limits); not applied to responses, so stored
@@ -181,6 +181,6 @@ class EngineerSearchQuery(BaseModel):
     min_years_exp: int | None = None
     primary_role: str | None = None
     location: str | None = None
-    is_open_to_work: bool = True
+    is_open_to_work: bool | None = None
     skip: int = 0
     limit: int = 20

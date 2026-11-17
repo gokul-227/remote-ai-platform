@@ -211,8 +211,15 @@ jobs:
         if: vars.VM_EDGE_LIVE == 'true'
         run: |
           expected="${{ needs.meta.outputs.sha }}"
-          live=$(curl -sf -A "rap-deploy-smoke/1.0" --max-time 15 "${{ vars.PROD_FRONTEND_URL }}/api/version" | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))")
-          [ "$live" = "$expected" ] || { echo "::error::site reports $live, expected $expected"; exit 1; }
+          # The web container may still be warming up behind Cloudflare: retry for ~90 s.
+          live=""
+          for attempt in $(seq 1 18); do
+            live=$(curl -sf -A "rap-deploy-smoke/1.0" --max-time 15 "${{ vars.PROD_FRONTEND_URL }}/api/version" \
+              | python3 -c "import json,sys; print(json.load(sys.stdin).get('git_sha',''))" 2>/dev/null || true)
+            [ "$live" = "$expected" ] && break
+            sleep 5
+          done
+          [ "$live" = "$expected" ] || { echo "::error::site reports '$live', expected $expected"; exit 1; }
           curl -sf -A "rap-deploy-smoke/1.0" --max-time 15 "${{ vars.PROD_FRONTEND_URL }}/robots.txt" | grep -qx "Allow: /"
           curl -sf -A "rap-deploy-smoke/1.0" --max-time 15 "https://admin.remoteaiplatform.com/" | grep -q "Operations console"
           curl -sf -A "rap-deploy-smoke/1.0" --max-time 30 -o /dev/null "${{ vars.PROD_API_BASE_URL }}/health/ready"

@@ -611,10 +611,19 @@ code {
 
 @media (max-width: 1200px) {
   .top {
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  /* Ten sections must fit a tablet: narrower icons, and the bar scrolls inside
+     itself rather than pushing the page sideways. */
+  .tabs {
+    min-width: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
   .tabs button {
-    min-width: 56px;
+    min-width: 48px;
+    flex: 0 0 auto;
   }
   .tabs button span {
     display: none;

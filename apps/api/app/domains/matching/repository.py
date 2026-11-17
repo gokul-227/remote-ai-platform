@@ -132,7 +132,6 @@ class MatchingRepository:
                 JobMatch.job_id == job_id,
                 JobMatch.overall_score >= min_score,
                 EngineerProfile.is_public.is_(True),
-                EngineerProfile.is_open_to_work.is_(True),
             )
             .order_by(JobMatch.overall_score.desc(), JobMatch.engineer_id)
             .offset(skip)

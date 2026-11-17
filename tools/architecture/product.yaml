@@ -89,6 +89,14 @@ features:
     screens: [contracts, contractsign, earnings, copayments]
     api: [contracts, payments, deliverables]
     uses: [stripe, storage]
+  - id: billing
+    icon: concepts/wallet
+    name: Paid plans & billing
+    step: 7
+    personas: [professional, organisation, admin]
+    screens: [billing]
+    api: [billing, billing.admin]
+    uses: [stripe]
   - id: delivery
     icon: concepts/kanban
     name: Projects & delivery
@@ -117,7 +125,7 @@ features:
     name: Platform operations & moderation (staff console app)
     personas: [admin]
     screens: [admin]
-    api: [admin, admin.moderation, admin.operations, admin.portfolio, admin.staff, admin.backup, admin.incident, admin.inventory, analytics, health, tasks]
+    api: [admin, admin.moderation, admin.operations, admin.portfolio, admin.staff, admin.backup, admin.incident, admin.inventory, analytics, health, tasks, slack]
     uses: [job-boards, ai-providers, sentry]
   - id: help
     icon: concepts/life-buoy

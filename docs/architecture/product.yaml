@@ -279,6 +279,26 @@ features:
   - id: storage
     name: Object storage
     status: active
+- id: billing
+  name: Paid plans & billing
+  icon: concepts/wallet
+  step: 7
+  personas:
+  - professional
+  - organisation
+  - admin
+  screens:
+  - route: billing
+    label: Billing & plans
+  api:
+  - domain: billing
+    prefix: /api/v1/billing
+  - domain: billing.admin
+    prefix: /api/v1/admin/billing
+  uses:
+  - id: stripe
+    name: Stripe
+    status: disabled
 - id: delivery
   name: Projects & delivery
   icon: concepts/kanban
@@ -404,6 +424,8 @@ features:
     prefix: /health
   - domain: tasks
     prefix: /api/v1/admin/background
+  - domain: slack
+    prefix: /api/v1/slack
   uses:
   - id: job-boards
     name: Job boards
@@ -442,7 +464,7 @@ features:
 web:
   technology: Next.js 16 · standalone Node server
   provider: Oracle Cloud VM (behind Cloudflare DNS/proxy)
-  screens: 67
+  screens: 68
 api:
   technology: FastAPI 0.142 · Docker
   provider: Render web service
@@ -475,6 +497,10 @@ api:
     prefix: /auth
   - domain: auth.workos
     prefix: /auth/workos
+  - domain: billing.admin
+    prefix: /admin/billing
+  - domain: billing
+    prefix: /billing
   - domain: browser
     prefix: /browser
   - domain: channels
@@ -529,6 +555,8 @@ api:
     prefix: /search
   - domain: seo
     prefix: /public
+  - domain: slack
+    prefix: /slack
   - domain: social
     prefix: /social
   - domain: support
@@ -683,7 +711,7 @@ infrastructure:
     status: active
   - id: slack
     name: Slack
-    technology: Owner alerts (chat.postMessage, per-channel routing)
+    technology: Owner alerts and the /rap staff command (chat.postMessage, slash command, interactivity)
     group: saas
     status: active
   - id: resend
@@ -1016,9 +1044,6 @@ stack:
   - name: Infisical secrets
     icon: concepts/key-round
     evidence: README.md ~ /Infisical/
-  - name: Canary & keep-warm
-    icon: concepts/radar
-    evidence: .github/workflows/production-canary.yml
   - name: Prometheus /metrics
     icon: prometheus
     evidence: 'apps/api/pyproject.toml: prometheus-fastapi-instrumentator'

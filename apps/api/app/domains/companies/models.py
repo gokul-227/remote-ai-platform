@@ -6,7 +6,17 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -53,6 +63,8 @@ class CompanyProfile(Base):
     # Indexed: CompanyRepository.list_companies() filters on this when the
     # `is_verified` query param is passed.
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    # Employer branding (paid, shown only while entitled): an http(s) video link.
+    cover_video_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -111,4 +123,22 @@ class OrganisationMember(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class CompanyTestimonial(Base):
+    """A quote on the company page (employer branding)."""
+
+    __tablename__ = "company_testimonials"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("company_profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    author_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    author_title: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    quote: Mapped[str] = mapped_column(Text, nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )

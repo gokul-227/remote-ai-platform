@@ -168,6 +168,7 @@ export const catalog: Record<string, Area> = {
         label: "Settings",
         items: [
           ["settings", "Account settings", "settings"],
+          ["billing", "Billing & plans", "wallet"],
           ["security", "Security & verification", "shield"],
           ["notifysettings", "Notification settings", "bell"],
           ["privacydata", "Privacy & data", "lock"],

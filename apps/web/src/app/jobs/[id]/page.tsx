@@ -69,7 +69,9 @@ export default async function JobPage({ params }: Props) {
   const related = others(sameTopic.jobs.filter((j) => !employerJobs.some((e) => e.id === j.id)));
   return (
     <PublicFrame>
-      {!job.expired_at && permitsGoogleJobs(job.source) && <JsonLd data={jobPostingJsonLd(job, site)} />}
+      {!job.expired_at && permitsGoogleJobs(job.source) && jobPostingJsonLd(job, site) && (
+        <JsonLd data={jobPostingJsonLd(job, site)!} />
+      )}
       <JsonLd data={breadcrumbJsonLd(site, trail)} />
       <Breadcrumbs trail={trail} />
       <article className="mt-4 rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
@@ -90,7 +92,7 @@ export default async function JobPage({ params }: Props) {
         </p>
         {job.expired_at && (
           <p role="status" className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-            This job is no longer available: its source stopped listing it or it was posted more than 90 days ago.
+            This job is no longer available: its source stopped listing it or it was posted more than 6 months ago.
           </p>
         )}
         <p className="mt-4 text-sm text-slate-600">Source: {jobSourceName(job.source)}</p>

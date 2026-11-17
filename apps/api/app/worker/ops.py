@@ -5,6 +5,8 @@ Owner-facing operational checks that post to Slack (app/services/slack.py).
     daily_import_summary  07:00 UTC -> #job-imports
     check_backups         08:00 UTC: missed backup / unverified restore -> #backups (+ critical)
     cost_guard            every 6 h: free-tier usage at COST_WARN/CRITICAL_PERCENT -> #costs
+    daily_kpi_digest      07:05 UTC: users, sign-ups, jobs live, imports, revenue,
+                          Postgres size -> #kpis (else #signups)
     seo_weekly_report     Mondays 07:30 UTC: Search Console clicks, impressions, top
                           queries/pages and sitemap coverage -> #seo (else #signups)
 
@@ -323,3 +325,77 @@ async def seo_weekly_report(db: AsyncSession | None = None) -> dict[str, Any]:
         "submitted": submitted,
         "indexed": indexed,
     }
+
+
+async def daily_kpi_digest(db: AsyncSession) -> dict[str, Any]:
+    """One morning message with the numbers the owner checks first."""
+    if not settings.SLACK_KPI_DIGEST_ENABLED:
+        return {"skipped": True}
+    from app.domains.auth.models import User
+    from app.domains.billing.models import Invoice, Purchase, Subscription
+    from app.domains.jobs.models import JobPost
+    from app.domains.tasks.models import TaskRun
+    from app.domains.tasks.service import TASK_IMPORT_SOURCE
+
+    since = _now() - timedelta(days=1)
+
+    async def count(stmt: Any) -> int:
+        try:
+            return int(await db.scalar(stmt) or 0)
+        except Exception as exc:
+            logger.warning("kpi digest: probe failed", error=type(exc).__name__)
+            await db.rollback()
+            return 0
+
+    kpis: dict[str, Any] = {
+        "users": await count(select(func.count()).select_from(User)),
+        "new sign-ups (24 h)": await count(
+            select(func.count()).select_from(User).where(User.created_at >= since)
+        ),
+        "jobs live": await count(
+            select(func.count()).select_from(JobPost).where(JobPost.is_active.is_(True))
+        ),
+        "imports ok (24 h)": await count(
+            select(func.count()).select_from(TaskRun).where(
+                TaskRun.task_name == TASK_IMPORT_SOURCE,
+                TaskRun.created_at >= since,
+                TaskRun.status == "SUCCEEDED",
+            )
+        ),
+        "imports failed (24 h)": await count(
+            select(func.count()).select_from(TaskRun).where(
+                TaskRun.task_name == TASK_IMPORT_SOURCE,
+                TaskRun.created_at >= since,
+                TaskRun.status.in_(["DEAD", "RETRYING", "FAILED"]),
+            )
+        ),
+        "active subscriptions": await count(
+            select(func.count()).select_from(Subscription).where(
+                Subscription.status.in_(["active", "trialing"])
+            )
+        ),
+    }
+    purchases = await count(
+        select(func.coalesce(func.sum(Purchase.amount_total), 0)).where(
+            Purchase.paid_at >= since, Purchase.status.in_(["paid", "partially_refunded"])
+        )
+    )
+    invoices = await count(
+        select(func.coalesce(func.sum(Invoice.amount_paid), 0)).where(Invoice.created_at >= since)
+    )
+    kpis["revenue (24 h)"] = f"€{(purchases + invoices) / 100:,.2f} (purchases + invoices)"
+    try:
+        if db.bind is not None and db.bind.dialect.name == "postgresql":
+            size = await db.scalar(text("SELECT pg_database_size(current_database())"))
+            kpis["postgres size"] = (
+                f"{int(size or 0) / 1_048_576:,.0f} MB of {settings.COST_DB_LIMIT_MB} MB"
+            )
+    except Exception as exc:
+        logger.warning("kpi digest: database size failed", error=type(exc).__name__)
+    await slack.post(
+        "kpis",
+        f":sunrise: Daily KPIs, {_now():%a %d %b}",
+        dedup_key=f"kpis:{_now():%Y%m%d}",
+        fields=kpis,
+    )
+    return kpis

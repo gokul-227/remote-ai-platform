@@ -1,20 +1,25 @@
 """Public employment-service and partner job APIs.
 
-All of them are incremental: the import checkpoint stores when the last
-successful fetch started (``cursor["since"]``) and the next run asks only for
-postings published after that (first run: the last INITIAL_DAYS days). Every
-adapter is skipped (SourceDisabledError) when its key is missing.
+Bundesagentur, JobTech and NAV read their whole catalogue in checkpointed
+sweeps bounded by the run's time budget (see each class). France Travail is
+incremental: the checkpoint stores when the last successful fetch started
+(``cursor["since"]``; first run: the last INITIAL_DAYS days). Every adapter is
+skipped (SourceDisabledError) when its key is missing.
 
 Terms and limits (read November 2026):
 - Bundesagentur für Arbeit Jobsuche (Germany): open REST API used by the
   official Jobsuche apps; the documented public client id is sent as
-  ``X-API-Key``. No published quota: we read at most BUNDESAGENTUR_MAX_PAGES
-  pages of 100 per run, sequentially. Links go to the official job detail page.
+  ``X-API-Key``. No published quota: requests are sequential and swept in facet
+  partitions (one query reaches 10,000 results) within the run's time budget.
+  Links go to the official job detail page.
 - JobTech JobSearch (Arbetsförmedlingen, Sweden): open data under CC0, no key;
-  ``published-after`` gives incremental reads; offset is capped at 2000.
+  swept in publication-date windows (offset is capped at 2000 per query).
 - NAV stillingsfeed (Norway): public feed of arbeidsplassen.no; a public bearer
   token is published at /api/publicToken (or set NAV_FEED_TOKEN). The feed is
-  read forward from the stored page id; the first run starts at the newest page.
+  walked from its first page, then forward from the stored page id.
+- Not added (Nov 2026): Switzerland's job-room.ch asks crawlers not to read job
+  adverts in robots.txt; the Netherlands' UWV (werk.nl) has no public jobs API;
+  EURES needs a partner agreement.
 - France Travail Offres d'emploi v2: free partner account (FRANCE_TRAVAIL_CLIENT_ID
   / FRANCE_TRAVAIL_CLIENT_SECRET), OAuth client credentials; 150 results per
   request via ``range``; documented limit ~10 calls/s, we make one at a time.
@@ -29,7 +34,6 @@ Terms and limits (read November 2026):
 
 from __future__ import annotations
 
-import math
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -75,45 +79,91 @@ class _Incremental(_Board):
         self.next_cursor = {"since": started.isoformat(), **extra}
 
 
-class BundesagenturAggregator(_Incremental):
+class BundesagenturAggregator(_Board):
+    """Germany's Jobsuche. One query reaches at most 10,000 results (page * size),
+    while the catalogue holds ~780,000 postings (measured Nov 2026). Runs sweep the
+    whole catalogue in partitions that each fit under the cap: by occupational
+    field, then working time, contract type and temporary-agency flag, using the
+    facet counts the API returns. The partition queue and page are checkpointed, so
+    a sweep spans several runs; when it completes, postings not seen since it
+    started are expired."""
+
     source_name = "BUNDESAGENTUR"
     url = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs"
+    PAGE = 100
+    CAP = 10000
+    # Split dimensions, in order (query parameter = facet name).
+    SPLITS = ("berufsfeld", "arbeitszeit", "befristung", "zeitarbeit")
+
+    def _children(self, part: dict[str, str], facets: object) -> list[dict[str, str]]:
+        """Sub-partitions of `part` along its next split dimension (empty when
+        every dimension is used or the facet is missing)."""
+        if not isinstance(facets, dict):
+            return []
+        for dim in self.SPLITS:
+            if dim in part:
+                continue
+            counts = (facets.get(dim) or {}).get("counts") or {}
+            values = sorted(str(v) for v, n in counts.items() if n)
+            if len(values) > 1:
+                return [{**part, dim: v} for v in values]
+        return []
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
         if not settings.BUNDESAGENTUR_API_KEY:
             raise SourceDisabledError("BUNDESAGENTUR_API_KEY not set")
-        started = datetime.now(UTC)
-        days = max(1, min(100, math.ceil((started - self.since(started)).total_seconds() / 86400)))
+        queue: list[dict[str, str]] = [dict(p) for p in self.cursor.get("queue") or []]
+        page = int(self.cursor.get("page") or 1)
+        started_raw = self.cursor.get("sweep_started")
+        if not queue:
+            queue, page, started_raw = [{}], 1, datetime.now(UTC).isoformat()
         out: list[JobPostCreate] = []
+        seen: set[str] = set()
+        requests = 0
         try:
             async with _client(headers={"X-API-Key": settings.BUNDESAGENTUR_API_KEY}) as c:
-                for page in range(1, settings.BUNDESAGENTUR_MAX_PAGES + 1):
+                while queue and requests < settings.BUNDESAGENTUR_MAX_PAGES:
+                    if len(out) >= limit or self.out_of_time():
+                        break
+                    part = queue[0]
                     r = await c.get(
                         self.url,
-                        params={
-                            "angebotsart": 1,
-                            "veroeffentlichtseit": days,
-                            "size": 100,
-                            "page": page,
-                        },
+                        params={"angebotsart": 1, "size": self.PAGE, "page": page, **part},
                     )
+                    requests += 1
                     r.raise_for_status()
                     payload = r.json()
                     items = payload.get("stellenangebote") or payload.get("ergebnisliste") or []
                     if not isinstance(items, list):
                         raise SourceFetchError("payload is not a list")
                     for it in items:
+                        ref = str(it.get("refnr") or it.get("referenznummer") or "")
+                        if ref in seen:
+                            continue
+                        seen.add(ref)
                         job = self._from(it)
                         if job:
                             out.append(job)
                     total = int(payload.get("maxErgebnisse") or 0)
-                    if len(items) < 100 or page * 100 >= total or len(out) >= limit:
-                        break
+                    if page == 1 and total > self.CAP:
+                        children = self._children(part, payload.get("facetten"))
+                        if children:
+                            queue[0:1] = children
+                            continue
+                    if len(items) < self.PAGE or page * self.PAGE >= min(total, self.CAP):
+                        queue.pop(0)
+                        page = 1
+                    else:
+                        page += 1
         except (SourceFetchError, SourceDisabledError):
             raise
         except Exception as exc:
             raise SourceFetchError(type(exc).__name__) from exc
-        self.mark(started)
+        if queue:
+            self.next_cursor = {"queue": queue, "page": page, "sweep_started": started_raw}
+        else:
+            self.next_cursor = {}
+            self.sweep_started = datetime.fromisoformat(str(started_raw))
         return out[:limit]
 
     def _from(self, it: dict[str, Any]) -> JobPostCreate | None:
@@ -144,42 +194,95 @@ class BundesagenturAggregator(_Incremental):
         )
 
 
-class JobTechAggregator(_Incremental):
+class JobTechAggregator(_Board):
+    """Sweden's JobSearch (CC0). A query reaches offset 2,000, so each sweep walks
+    publication-date windows (one day, halved while a window holds more than the
+    cap) back over the retention period; ~42,000 ads (Nov 2026) take a few
+    hundred requests. The window queue is checkpointed; a finished sweep expires
+    ads that are no longer listed."""
+
     source_name = "JOBTECH"
     url = "https://jobsearch.api.jobtechdev.se/search"
+    PAGE = 100
+    CAP = 2000
+    FMT = "%Y-%m-%dT%H:%M:%S"
+
+    def _windows(self, now: datetime) -> list[list[str]]:
+        out = []
+        end = now
+        floor = now - timedelta(days=settings.JOB_RETENTION_DAYS)
+        while end > floor:
+            start = max(floor, end - timedelta(days=1))
+            out.append([start.strftime(self.FMT), end.strftime(self.FMT)])
+            end = start
+        return out
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
-        started = datetime.now(UTC)
-        since = self.since(started).strftime("%Y-%m-%dT%H:%M:%S")
+        now = datetime.now(UTC)
+        windows: list[list[str]] = [list(w) for w in self.cursor.get("windows") or []]
+        started_raw = self.cursor.get("sweep_started")
+        if not windows:
+            windows, started_raw = self._windows(now), now.isoformat()
         out: list[JobPostCreate] = []
+        seen: set[str] = set()
+        requests = 0
         try:
             async with _client(headers={"Accept": "application/json"}) as c:
-                for page in range(settings.JOBTECH_MAX_PAGES):
-                    offset = page * 100
-                    if offset > 2000:
+                while windows and requests < settings.JOBTECH_MAX_PAGES:
+                    if len(out) >= limit or self.out_of_time():
                         break
-                    r = await c.get(
-                        self.url,
-                        params={
-                            "published-after": since,
-                            "limit": 100,
-                            "offset": offset,
-                            "sort": "pubdate-desc",
-                        },
-                    )
-                    r.raise_for_status()
-                    hits = require_list(r.json(), "hits")
-                    for it in hits:
-                        job = self._from(it)
-                        if job:
-                            out.append(job)
-                    if len(hits) < 100 or len(out) >= limit:
-                        break
+                    after, before = windows[0]
+                    a = datetime.strptime(after, self.FMT)
+                    b = datetime.strptime(before, self.FMT)
+                    offset = 0
+                    split = False
+                    while offset <= self.CAP:
+                        r = await c.get(
+                            self.url,
+                            params={
+                                "published-after": after,
+                                "published-before": before,
+                                "limit": self.PAGE,
+                                "offset": offset,
+                                "sort": "pubdate-desc",
+                            },
+                        )
+                        requests += 1
+                        r.raise_for_status()
+                        payload = r.json()
+                        hits = require_list(payload, "hits")
+                        total = int((payload.get("total") or {}).get("value") or 0)
+                        if (
+                            offset == 0
+                            and total > self.CAP + self.PAGE
+                            and b - a > timedelta(hours=1)
+                        ):
+                            mid = (a + (b - a) / 2).strftime(self.FMT)
+                            windows[0:1] = [[mid, before], [after, mid]]
+                            split = True
+                            break
+                        for it in hits:
+                            key = str(it.get("id"))
+                            if key in seen:
+                                continue
+                            seen.add(key)
+                            job = self._from(it)
+                            if job:
+                                out.append(job)
+                        offset += self.PAGE
+                        if len(hits) < self.PAGE or offset >= total:
+                            break
+                    if not split:
+                        windows.pop(0)
         except SourceFetchError:
             raise
         except Exception as exc:
             raise SourceFetchError(type(exc).__name__) from exc
-        self.mark(started)
+        if windows:
+            self.next_cursor = {"windows": windows, "sweep_started": started_raw}
+        else:
+            self.next_cursor = {}
+            self.sweep_started = datetime.fromisoformat(str(started_raw))
         return out[:limit]
 
     def _from(self, it: dict[str, Any]) -> JobPostCreate | None:
@@ -218,37 +321,63 @@ class NAVAggregator(_Board):
         return token
 
     async def fetch_jobs(self, limit: int = 100) -> list[JobPostCreate]:
-        out: list[JobPostCreate] = []
+        """Walk the feed forward from the checkpoint. A full walk starts at the
+        feed's first page (2023) and catches up over one or more runs; after that
+        each run reads only new pages, and every NAV_REWALK_DAYS the walk starts
+        over so unchanged open ads are seen again. INACTIVE entries close ads."""
+        now = datetime.now(UTC)
         page_id = self.cursor.get("page")
+        walk_started = self.cursor.get("walk_started")
+        done_raw = self.cursor.get("walk_done_at")
+        try:
+            done_at = datetime.fromisoformat(done_raw) if done_raw else None
+        except ValueError:
+            done_at = None
+        if not page_id or (
+            done_at is not None and now - done_at > timedelta(days=settings.NAV_REWALK_DAYS)
+        ):
+            page_id, walk_started, done_raw = None, now.isoformat(), None
+        latest: dict[str, dict[str, Any]] = {}
+        caught_up = False
         try:
             async with _client() as c:
                 auth = {"Authorization": f"Bearer {await self._token(c)}"}
-                url = (
-                    f"{self.base}/api/v1/feed/{page_id}"
-                    if page_id
-                    else f"{self.base}/api/v1/feed?last=true"
-                )
+                url = f"{self.base}/api/v1/feed/{page_id}" if page_id else f"{self.base}/api/v1/feed"
                 for _ in range(settings.NAV_MAX_PAGES):
                     r = await c.get(url, headers=auth)
                     r.raise_for_status()
                     feed = r.json()
                     for it in require_list(feed, "items"):
-                        job = self._from(it)
-                        if job:
-                            out.append(job)
+                        entry = it.get("_feed_entry") or {}
+                        key = str(entry.get("uuid") or it.get("id") or "")
+                        if key:
+                            latest.pop(key, None)  # the latest entry of an ad wins
+                            latest[key] = it
                     page_id = feed.get("id") or page_id
                     nxt = feed.get("next_id")
-                    if not nxt or len(out) >= limit:
-                        # Resume at the next page if there is one, else re-read this one.
-                        page_id = nxt or page_id
+                    if not nxt:
+                        caught_up = True
                         break
                     page_id = nxt
                     url = f"{self.base}/api/v1/feed/{nxt}"
+                    if self.out_of_time() or len(latest) >= limit:
+                        break
         except SourceFetchError:
             raise
         except Exception as exc:
             raise SourceFetchError(type(exc).__name__) from exc
-        self.next_cursor = {"page": page_id}
+        out: list[JobPostCreate] = []
+        for key, it in latest.items():
+            if (it.get("_feed_entry") or {}).get("status") == "ACTIVE":
+                job = self._from(it)
+                if job:
+                    out.append(job)
+            else:
+                self.removed_ids.append(self.ext(key))
+        if caught_up and walk_started and not done_raw:
+            done_raw = now.isoformat()
+            self.sweep_started = datetime.fromisoformat(walk_started)
+        self.next_cursor = {"page": page_id, "walk_started": walk_started, "walk_done_at": done_raw}
         return out[:limit]
 
     def _from(self, it: dict[str, Any]) -> JobPostCreate | None:
@@ -268,8 +397,30 @@ class NAVAggregator(_Board):
         )
 
 
+def _content_range_total(header: str) -> int:
+    """Total from France Travail's ``Content-Range: offres 0-149/12345``."""
+    try:
+        return int(header.rsplit("/", 1)[1])
+    except (IndexError, ValueError):
+        return 0
+
+
+# Départements (incl. Corsica and overseas) for partitioned France Travail queries.
+DEPARTEMENTS = (
+    *[f"{n:02d}" for n in range(1, 96) if n != 20],
+    "2A",
+    "2B",
+    "971",
+    "972",
+    "973",
+    "974",
+    "976",
+)
+
+
 class FranceTravailAggregator(_Incremental):
     source_name = "FRANCETRAVAIL"
+    CAP = 3150
     token_url = "https://entreprise.francetravail.fr/connexion/oauth2/access_token"
     url = "https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search"
 
@@ -295,32 +446,47 @@ class FranceTravailAggregator(_Incremental):
                 )
                 t.raise_for_status()
                 auth = {"Authorization": f"Bearer {t.json()['access_token']}"}
-                for page in range(settings.FRANCE_TRAVAIL_MAX_PAGES):
-                    r = await c.get(
-                        self.url,
-                        headers=auth,
-                        params={
-                            "range": f"{page * 150}-{page * 150 + 149}",
-                            "minCreationDate": self.since(started).strftime(fmt),
-                            "maxCreationDate": started.strftime(fmt),
-                            "sort": 1,
-                        },
-                    )
-                    if r.status_code == 204:
-                        break
-                    r.raise_for_status()
-                    items = require_list(r.json(), "resultats")
-                    for it in items:
-                        job = self._from(it)
-                        if job:
-                            out.append(job)
-                    if len(items) < 150 or len(out) >= limit:
-                        break
+                # One query reaches 3,150 results (range <= 3149): a busier window
+                # is read per département instead.
+                parts: list[dict[str, str]] = [{}]
+                requests = 0
+                while parts and requests < settings.FRANCE_TRAVAIL_MAX_PAGES:
+                    part = parts.pop(0)
+                    for page in range(21):
+                        if len(out) >= limit or self.out_of_time():
+                            break
+                        r = await c.get(
+                            self.url,
+                            headers=auth,
+                            params={
+                                "range": f"{page * 150}-{page * 150 + 149}",
+                                "minCreationDate": self.since(started).strftime(fmt),
+                                "maxCreationDate": started.strftime(fmt),
+                                "sort": 1,
+                                **part,
+                            },
+                        )
+                        requests += 1
+                        if r.status_code == 204:
+                            break
+                        r.raise_for_status()
+                        total = _content_range_total(r.headers.get("content-range", ""))
+                        if page == 0 and not part and total > self.CAP:
+                            parts = [{"departement": d} for d in DEPARTEMENTS]
+                            break
+                        items = require_list(r.json(), "resultats")
+                        for it in items:
+                            job = self._from(it)
+                            if job:
+                                out.append(job)
+                        if len(items) < 150:
+                            break
         except (SourceFetchError, SourceDisabledError):
             raise
         except Exception as exc:
             raise SourceFetchError(type(exc).__name__) from exc
-        self.mark(started)
+        if not parts and not self.out_of_time() and len(out) < limit:
+            self.mark(started)  # else the next run reads the same window again
         return out[:limit]
 
     def _from(self, it: dict[str, Any]) -> JobPostCreate | None:

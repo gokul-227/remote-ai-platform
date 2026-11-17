@@ -108,6 +108,7 @@ export const REG: Record<string, any> = {
   home: Home,
   notifysettings: () => <Settings initial="Notifications" />,
   privacydata: () => <Settings initial="Privacy" />,
+  billing: () => <Settings initial="Billing" />,
   apps: () => <Settings initial="Connected accounts" />,
   browser: Browser,
   engineer: EngineerDetail,

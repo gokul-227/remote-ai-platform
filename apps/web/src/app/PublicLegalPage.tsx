@@ -1,6 +1,14 @@
 import { PublicFrame } from "./PublicChrome";
 import { LAST_UPDATED, OPERATOR, isFact, type Section } from "@/figma/legal_content";
 
+/** In-page anchor for a section heading ("Paid services" -> "paid-services"). */
+export const anchor = (heading: string) =>
+  heading
+    .toLowerCase()
+    .replace(/remote ai platform/g, "platform")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
 /** Legal content uses the same operator facts as the application screens. */
 export function PublicLegalPage({ title, sections }: { title: string; sections: Section[] }) {
   return (
@@ -15,7 +23,7 @@ export function PublicLegalPage({ title, sections }: { title: string; sections: 
           </a>
         </p>
         {sections.map((section) => (
-          <section key={section.h} className="mt-8">
+          <section key={section.h} id={anchor(section.h)} className="mt-8">
             <h2 className="text-xl font-semibold">{section.h}</h2>
             <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-700">
               {section.body.map((block, index) =>

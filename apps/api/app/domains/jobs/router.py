@@ -193,6 +193,7 @@ async def list_jobs(
     search_params: JobSearchQuery = Depends(job_search_query),
     service: JobService = Depends(get_job_service),
     current_user: User | None = Depends(get_optional_user),
+    db: AsyncSession = Depends(get_db),
 ) -> list[JobPostResponse]:
     """Search & filter active jobs (every filter of `job_search_query`).
 
@@ -205,7 +206,18 @@ async def list_jobs(
         response.headers["X-Total-Count-Capped"] = "true"
     if search_params.sort == "recent" and len(raw_jobs) == search_params.limit:
         response.headers["X-Next-Cursor"] = job_cursor(raw_jobs[-1])
-    return [job_for_viewer(j, current_user) for j in raw_jobs]
+    jobs = [job_for_viewer(j, current_user) for j in raw_jobs]
+    return await _with_promotions(db, jobs)
+
+
+async def _with_promotions(db: AsyncSession, jobs: list[JobPostResponse]) -> list[JobPostResponse]:
+    """Mark paid labels (Featured, Urgent) on organic results without reordering them."""
+    from app.domains.billing.placements import job_promotions
+
+    promos = await job_promotions(db, [str(j.id) for j in jobs])
+    for job in jobs:
+        job.promotions = promos.get(str(job.id), [])
+    return jobs
 
 
 @router.get("/facets", response_model=JobFacets)
@@ -393,7 +405,7 @@ async def get_job_by_id(
         raise HTTPException(status_code=404, detail="Job post not found")
     if not job.is_active and not is_admin and not await _owns_job(db, job, current_user):
         raise HTTPException(status_code=404, detail="Job post not found")
-    return job_for_viewer(job, current_user)
+    return (await _with_promotions(db, [job_for_viewer(job, current_user)]))[0]
 
 
 @router.get("/{job_id}/availability", response_model=JobAvailability)
